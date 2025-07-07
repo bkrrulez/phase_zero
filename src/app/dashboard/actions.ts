@@ -19,6 +19,7 @@ import {
     InitialData
 } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+import { format } from "date-fns";
 
 
 // AUTH
@@ -29,7 +30,7 @@ export async function login(email: string, password_input: string) {
 
     if (email.toLowerCase() === adminEmail?.toLowerCase()) {
         if (password_input === adminPassword) {
-            const users = await query<User>("SELECT * FROM users WHERE email = $1", [email]);
+            const users = await query<User>("SELECT * FROM users WHERE email ILIKE $1", [email]);
             if (users.length > 0) {
                 return { success: true, userId: users[0].id };
             }
@@ -39,7 +40,7 @@ export async function login(email: string, password_input: string) {
     }
     
     // Regular user login
-    const users = await query<User>('SELECT * FROM users WHERE email = $1', [email]);
+    const users = await query<User>('SELECT * FROM users WHERE email ILIKE $1', [email]);
     if (users.length === 0) {
         return { success: false, error: "User not found." };
     }
@@ -60,19 +61,38 @@ export async function getInitialData(): Promise<InitialData> {
         publicHolidays, customHolidays, freezeRules, pushMessages,
         notifications, systemLogs
     ] = await Promise.all([
-        query<User>('SELECT id, name, email, role, avatar, reports_to, team_id, contract_start_date, contract_end_date, contract_weekly_hours FROM users ORDER BY name ASC'),
-        query<TimeEntry>('SELECT * FROM time_entries ORDER BY date DESC'),
-        query<HolidayRequest>('SELECT * FROM holiday_requests'),
-        query<Project>('SELECT p.*, array_agg(pt.task_id) as task_ids FROM projects p LEFT JOIN project_tasks pt ON p.id = pt.project_id GROUP BY p.id ORDER BY p.name ASC'),
+        query<User>('SELECT id, name, email, role, avatar, reports_to as "reportsTo", team_id as "teamId", contract_start_date as "startDate", contract_end_date as "endDate", contract_weekly_hours as "weeklyHours" FROM users ORDER BY name ASC'),
+        query<TimeEntry>(`
+            SELECT 
+                te.id, 
+                te.user_id as "userId", 
+                te.date, 
+                te.start_time as "startTime", 
+                te.end_time as "endTime", 
+                p.name || ' - ' || t.name as task, 
+                te.duration, 
+                te.remarks
+            FROM time_entries te
+            JOIN projects p ON te.project_id = p.id
+            JOIN tasks t ON te.task_id = t.id
+            ORDER BY te.date DESC
+        `),
+        query<HolidayRequest>('SELECT id, user_id as "userId", start_date as "startDate", end_date as "endDate", status FROM holiday_requests'),
+        query<Project>('SELECT p.*, array_agg(pt.task_id) as "taskIds" FROM projects p LEFT JOIN project_tasks pt ON p.id = pt.project_id GROUP BY p.id ORDER BY p.name ASC'),
         query<Task>('SELECT * FROM tasks ORDER BY name ASC'),
-        query<Team>('SELECT t.*, array_agg(tp.project_id) as project_ids FROM teams t LEFT JOIN team_projects tp ON t.id = tp.team_id GROUP BY t.id ORDER BY t.name ASC'),
+        query<Team>('SELECT t.*, array_agg(tp.project_id) as "projectIds" FROM teams t LEFT JOIN team_projects tp ON t.id = tp.team_id GROUP BY t.id ORDER BY t.name ASC'),
         query<PublicHoliday>('SELECT * FROM public_holidays'),
-        query<CustomHoliday>('SELECT * FROM custom_holidays'),
-        query<FreezeRule>('SELECT * FROM freeze_rules'),
-        query<PushMessage>('SELECT * FROM push_messages'),
+        query<CustomHoliday>('SELECT id, country, name, date, type, applies_to as "appliesTo" FROM custom_holidays'),
+        query<FreezeRule>('SELECT id, team_id as "teamId", start_date as "startDate", end_date as "endDate" FROM freeze_rules'),
+        query<PushMessage>('SELECT id, context, message_body as "messageBody", start_date as "startDate", end_date as "endDate", receivers FROM push_messages'),
         query<AppNotification>(`
             SELECT 
-                an.*,
+                an.id,
+                an.type,
+                an.timestamp,
+                an.title,
+                an.body,
+                an.reference_id as "referenceId",
                 COALESCE(array_agg(DISTINCT nr.user_id) FILTER (WHERE nr.user_id IS NOT NULL), '{}') as "recipientIds",
                 COALESCE(array_agg(DISTINCT nrb.user_id) FILTER (WHERE nrb.user_id IS NOT NULL), '{}') as "readBy"
             FROM app_notifications an
@@ -83,12 +103,25 @@ export async function getInitialData(): Promise<InitialData> {
         `),
         query<LogEntry>('SELECT * FROM system_logs ORDER BY timestamp DESC'),
     ]);
+    
+    const userProjects = await query<{userId: string, projectId: string}>('SELECT user_id as "userId", project_id as "projectId" FROM user_projects');
+
+    const membersWithProjects = teamMembers.map(member => ({
+        ...member,
+        contract: {
+            startDate: format(new Date(member.startDate), 'yyyy-MM-dd'),
+            endDate: member.endDate ? format(new Date(member.endDate), 'yyyy-MM-dd') : null,
+            weeklyHours: member.weeklyHours
+        },
+        associatedProjectIds: userProjects.filter(up => up.userId === member.id).map(up => up.projectId)
+    }));
+
 
     // This is a placeholder for user-specific message states. In a real app this would be a separate query.
     const userMessageStates: Record<string, UserMessageState> = {};
 
     return {
-        teamMembers, timeEntries, holidayRequests, projects, tasks, teams,
+        teamMembers: membersWithProjects, timeEntries, holidayRequests, projects, tasks, teams,
         publicHolidays, customHolidays, freezeRules, pushMessages,
         userMessageStates, notifications, systemLogs,
         annualLeaveAllowance: 25 // This could also come from a settings table
@@ -102,9 +135,9 @@ export async function addMember(user: User) {
     // In a real app, password should be hashed. Here we'll use a default.
     const password = "password"; 
     
-    const newUser = await query<User>(
+    await query(
         `INSERT INTO users (id, name, email, password, role, reports_to, team_id, avatar, contract_start_date, contract_end_date, contract_weekly_hours)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [id, name, email, password, role, reportsTo, teamId, user.avatar, contract.startDate, contract.endDate, contract.weeklyHours]
     );
 
@@ -114,16 +147,16 @@ export async function addMember(user: User) {
         }
     }
     revalidatePath('/dashboard/settings/members');
-    return newUser[0];
+    return user;
 }
 
 export async function updateMember(user: User) {
     const { id, name, email, role, reportsTo, teamId, contract, associatedProjectIds } = user;
     await query(
         `UPDATE users SET name = $1, email = $2, role = $3, reports_to = $4, team_id = $5, 
-         contract_start_date = $6, contract_end_date = $7, contract_weekly_hours = $8
-         WHERE id = $9`,
-        [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, id]
+         contract_start_date = $6, contract_end_date = $7, contract_weekly_hours = $8, avatar = $9
+         WHERE id = $10`,
+        [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, user.avatar, id]
     );
 
     await query('DELETE FROM user_projects WHERE user_id = $1', [id]);
@@ -153,14 +186,26 @@ export async function logTime(entry: Omit<TimeEntry, 'id' | 'duration' | 'task'>
         throw new Error('Invalid project or task');
     }
 
-    const newEntry = await query<TimeEntry>(
+    const newEntryResult = await query<{id: string, duration: number}>(
         `INSERT INTO time_entries (id, user_id, project_id, task_id, date, start_time, end_time, duration, remarks)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, duration`,
         [`t-${Date.now()}`, userId, projectResult[0].id, taskResult[0].id, date, startTime, endTime, duration, remarks]
     );
 
     revalidatePath('/dashboard');
-    return newEntry[0];
+    
+    const newEntry: TimeEntry = {
+        id: newEntryResult[0].id,
+        userId: userId,
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        task: `${project} - ${task}`,
+        duration: newEntryResult[0].duration,
+        remarks: remarks,
+    };
+
+    return newEntry;
 }
 
 

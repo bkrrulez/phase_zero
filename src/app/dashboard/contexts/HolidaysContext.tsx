@@ -1,15 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { 
-  publicHolidays as initialPublicHolidays, 
-  customHolidays as initialCustomHolidays,
-  holidayRequests as initialHolidayRequests,
-  type PublicHoliday, 
-  type CustomHoliday,
-  type HolidayRequest
-} from "@/lib/mock-data";
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { type PublicHoliday, type CustomHoliday, type HolidayRequest } from "@/lib/types";
 import { useSystemLog } from './SystemLogContext';
 import { useMembers } from './MembersContext';
 import { useNotifications } from './NotificationsContext';
@@ -18,9 +10,9 @@ import { useAuth } from './AuthContext';
 
 interface HolidaysContextType {
   publicHolidays: PublicHoliday[];
-  setPublicHolidays: (holidays: PublicHoliday[] | ((prev: PublicHoliday[]) => PublicHoliday[])) => void;
+  setPublicHolidays: React.Dispatch<React.SetStateAction<PublicHoliday[]>>;
   customHolidays: CustomHoliday[];
-  setCustomHolidays: (holidays: CustomHoliday[] | ((prev: CustomHoliday[]) => CustomHoliday[])) => void;
+  setCustomHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[]>>;
   annualLeaveAllowance: number;
   setAnnualLeaveAllowance: (allowance: number) => void;
   holidayRequests: HolidayRequest[];
@@ -32,15 +24,29 @@ interface HolidaysContextType {
 
 export const HolidaysContext = React.createContext<HolidaysContextType | undefined>(undefined);
 
-export function HolidaysProvider({ children }: { children: React.ReactNode }) {
+interface HolidaysProviderProps {
+  children: React.ReactNode;
+  initialPublicHolidays: PublicHoliday[];
+  initialCustomHolidays: CustomHoliday[];
+  initialHolidayRequests: HolidayRequest[];
+  initialAnnualLeaveAllowance: number;
+}
+
+export function HolidaysProvider({ 
+  children, 
+  initialPublicHolidays,
+  initialCustomHolidays,
+  initialHolidayRequests,
+  initialAnnualLeaveAllowance,
+}: HolidaysProviderProps) {
     const { logAction } = useSystemLog();
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { addNotification } = useNotifications();
-    const [publicHolidays, setPublicHolidays] = useLocalStorage<PublicHoliday[]>('publicHolidays', initialPublicHolidays);
-    const [customHolidays, setCustomHolidays] = useLocalStorage<CustomHoliday[]>('customHolidays', initialCustomHolidays);
-    const [annualLeaveAllowance, _setAnnualLeaveAllowance] = useLocalStorage<number>('annualLeaveAllowance', 25);
-    const [holidayRequests, setHolidayRequests] = useLocalStorage<HolidayRequest[]>('holidayRequests', initialHolidayRequests);
+    const [publicHolidays, setPublicHolidays] = React.useState<PublicHoliday[]>(initialPublicHolidays);
+    const [customHolidays, setCustomHolidays] = React.useState<CustomHoliday[]>(initialCustomHolidays);
+    const [annualLeaveAllowance, _setAnnualLeaveAllowance] = React.useState<number>(initialAnnualLeaveAllowance);
+    const [holidayRequests, setHolidayRequests] = React.useState<HolidayRequest[]>(initialHolidayRequests);
 
     const setAnnualLeaveAllowance = (allowance: number) => {
       _setAnnualLeaveAllowance(allowance);

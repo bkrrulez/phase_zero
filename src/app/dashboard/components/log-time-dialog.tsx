@@ -84,8 +84,8 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
     return false;
   };
 
-  function onSubmit(data: LogTimeFormValues) {
-    const { success } = logTime(data);
+  async function onSubmit(data: LogTimeFormValues) {
+    const { success } = await logTime(data);
     if(success) {
         onOpenChange(false);
         form.reset();

@@ -2,11 +2,9 @@
 'use client';
 
 import * as React from 'react';
-import { type FreezeRule } from "@/lib/mock-data";
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { type FreezeRule } from "@/lib/types";
 import { useSystemLog } from './SystemLogContext';
 import { useAuth } from './AuthContext';
-import { freezeRules as initialFreezeRules } from '@/lib/mock-data';
 
 interface AccessControlContextType {
   freezeRules: FreezeRule[];
@@ -16,8 +14,8 @@ interface AccessControlContextType {
 
 const AccessControlContext = React.createContext<AccessControlContextType | undefined>(undefined);
 
-export function AccessControlProvider({ children }: { children: React.ReactNode }) {
-  const [freezeRules, setFreezeRules] = useLocalStorage<FreezeRule[]>('freezeRules', initialFreezeRules);
+export function AccessControlProvider({ children, initialFreezeRules }: { children: React.ReactNode, initialFreezeRules: FreezeRule[] }) {
+  const [freezeRules, setFreezeRules] = React.useState<FreezeRule[]>(initialFreezeRules);
   const { logAction } = useSystemLog();
   const { currentUser } = useAuth();
 

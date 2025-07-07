@@ -1,18 +1,17 @@
 
 'use client';
 import * as React from 'react';
-import { teams as initialTeams, type Team } from "@/lib/mock-data";
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { type Team } from "@/lib/types";
 
 interface TeamsContextType {
   teams: Team[];
-  setTeams: (teams: Team[] | ((prev: Team[]) => Team[])) => void;
+  setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
 }
 
 export const TeamsContext = React.createContext<TeamsContextType | undefined>(undefined);
 
-export function TeamsProvider({ children }: { children: React.ReactNode }) {
-  const [teams, setTeams] = useLocalStorage<Team[]>('teams', initialTeams);
+export function TeamsProvider({ children, initialTeams }: { children: React.ReactNode, initialTeams: Team[] }) {
+  const [teams, setTeams] = React.useState<Team[]>(initialTeams);
 
   return (
     <TeamsContext.Provider value={{ teams, setTeams }}>

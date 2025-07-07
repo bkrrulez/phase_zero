@@ -1,8 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { projects as initialProjects, type Project } from "@/lib/mock-data";
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { type Project } from "@/lib/types";
 
 interface ProjectsContextType {
   projects: Project[];
@@ -13,8 +12,8 @@ interface ProjectsContextType {
 
 export const ProjectsContext = React.createContext<ProjectsContextType | undefined>(undefined);
 
-export function ProjectsProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useLocalStorage<Project[]>('projects', initialProjects);
+export function ProjectsProvider({ children, initialProjects }: { children: React.ReactNode, initialProjects: Project[] }) {
+  const [projects, setProjects] = React.useState<Project[]>(initialProjects);
 
   const addProject = (projectData: Omit<Project, 'id'>) => {
       const newProject: Project = { ...projectData, id: `project-${Date.now()}` };

@@ -2,13 +2,10 @@
 'use client';
 
 import * as React from 'react';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import {
-  pushMessages as initialPushMessages,
-  userMessageStates as initialUserMessageStates,
   type PushMessage,
   type UserMessageState,
-} from '@/lib/mock-data';
+} from '@/lib/types';
 
 interface PushMessagesContextType {
   pushMessages: PushMessage[];
@@ -21,10 +18,9 @@ interface PushMessagesContextType {
 
 const PushMessagesContext = React.createContext<PushMessagesContextType | undefined>(undefined);
 
-export function PushMessagesProvider({ children }: { children: React.ReactNode }) {
-  const [pushMessages, setPushMessages] = useLocalStorage<PushMessage[]>('pushMessages', initialPushMessages);
-  const [userMessageStates, setUserMessageStates] = useLocalStorage<Record<string, UserMessageState>>(
-    'userMessageStates',
+export function PushMessagesProvider({ children, initialPushMessages, initialUserMessageStates }: { children: React.ReactNode, initialPushMessages: PushMessage[], initialUserMessageStates: Record<string, UserMessageState> }) {
+  const [pushMessages, setPushMessages] = React.useState<PushMessage[]>(initialPushMessages);
+  const [userMessageStates, setUserMessageStates] = React.useState<Record<string, UserMessageState>>(
     initialUserMessageStates
   );
 

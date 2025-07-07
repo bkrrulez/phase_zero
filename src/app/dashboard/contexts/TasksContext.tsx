@@ -1,8 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { tasks as initialTasks, type Task } from "@/lib/mock-data";
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { type Task } from "@/lib/types";
 
 interface TasksContextType {
   tasks: Task[];
@@ -13,8 +12,8 @@ interface TasksContextType {
 
 export const TasksContext = React.createContext<TasksContextType | undefined>(undefined);
 
-export function TasksProvider({ children }: { children: React.ReactNode }) {
-    const [tasks, setTasks] = useLocalStorage<Task[]>('tasks', initialTasks);
+export function TasksProvider({ children, initialTasks }: { children: React.ReactNode, initialTasks: Task[] }) {
+    const [tasks, setTasks] = React.useState<Task[]>(initialTasks);
     
     const addTask = (taskData: Omit<Task, 'id'>) => {
         const newTask: Task = { ...taskData, id: `task-${Date.now()}` };
