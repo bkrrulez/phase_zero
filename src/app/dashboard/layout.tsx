@@ -71,6 +71,8 @@ import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesCo
 import { SystemLogProvider } from "./contexts/SystemLogContext";
 import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { getInitialData } from "./actions";
+import { type InitialData } from "@/lib/types";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -316,23 +318,26 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function DashboardLayout({
+
+function DataProviders({
   children,
+  initialData,
 }: {
   children: React.ReactNode;
+  initialData: InitialData;
 }) {
   return (
-    <SystemLogProvider>
-      <TeamsProvider>
-        <ProjectsProvider>
-          <TasksProvider>
-            <MembersProvider>
-              <NotificationsProvider>
-                <PushMessagesProvider>
+    <SystemLogProvider initialLogs={initialData.systemLogs}>
+      <TeamsProvider initialTeams={initialData.teams}>
+        <ProjectsProvider initialProjects={initialData.projects}>
+          <TasksProvider initialTasks={initialData.tasks}>
+            <MembersProvider initialMembers={initialData.teamMembers}>
+              <NotificationsProvider initialNotifications={initialData.notifications}>
+                <PushMessagesProvider initialPushMessages={initialData.pushMessages} initialUserMessageStates={initialData.userMessageStates}>
                   <AuthProvider>
-                    <HolidaysProvider>
-                      <TimeTrackingProvider>
-                        <AccessControlProvider>
+                    <HolidaysProvider initialPublicHolidays={initialData.publicHolidays} initialCustomHolidays={initialData.customHolidays} initialHolidayRequests={initialData.holidayRequests} initialAnnualLeaveAllowance={initialData.annualLeaveAllowance}>
+                      <TimeTrackingProvider initialTimeEntries={initialData.timeEntries}>
+                        <AccessControlProvider initialFreezeRules={initialData.freezeRules}>
                           <LayoutContent>{children}</LayoutContent>
                         </AccessControlProvider>
                       </TimeTrackingProvider>
@@ -345,5 +350,34 @@ export default function DashboardLayout({
         </ProjectsProvider>
       </TeamsProvider>
     </SystemLogProvider>
+  )
+}
+
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [initialData, setInitialData] = React.useState<InitialData | null>(null);
+  
+  React.useEffect(() => {
+    getInitialData().then(data => {
+      setInitialData(data);
+    }).catch(console.error);
+  }, []);
+
+  if (!initialData) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="text-xl font-semibold text-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <DataProviders initialData={initialData}>
+      {children}
+    </DataProviders>
   );
 }

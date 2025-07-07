@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { type User } from '@/lib/mock-data';
+import { type User } from '@/lib/types';
 import { useMembers } from './MembersContext';
 
 interface AuthContextType {
@@ -21,8 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   
-  // This state will be false on the server and on the first client render,
-  // then true after the component mounts.
   const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -30,8 +28,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    // Only perform auth checks once the component has mounted on the client.
-    // This gives useLocalStorage hooks time to hydrate their state.
     if (!isMounted) {
       return;
     }
@@ -40,16 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = teamMembers.find(u => u.id === currentUserId);
       if (user) {
         setCurrentUser(user);
-        setIsLoading(false);
       } else if (teamMembers.length > 0) {
         // If team members are loaded but the user ID is invalid, log out.
-        setCurrentUserId(null); // This will trigger a re-render and the else block below
+        setCurrentUserId(null); 
       }
-      // If teamMembers is empty, we wait, as it might still be loading.
     } else {
-      // If there's no user ID, redirect to login.
       router.push('/');
     }
+    setIsLoading(false);
   }, [currentUserId, teamMembers, router, setCurrentUserId, isMounted]);
 
   const logout = () => {
@@ -58,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/');
   };
 
-  // While loading or before mounting, or if the user is not found yet, show the loading screen.
   if (isLoading || !isMounted || !currentUser) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">

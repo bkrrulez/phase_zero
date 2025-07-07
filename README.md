@@ -12,6 +12,7 @@ You can run this application on your local machine. Here's how:
 
 -   [Node.js](https://nodejs.org/) (version 20 or later recommended)
 -   npm (comes with Node.js)
+-   [PostgreSQL](https://www.postgresql.org/download/)
 
 ### 1. Install Dependencies
 
@@ -21,12 +22,30 @@ Open your terminal in the project's root directory and run the following command
 npm install
 ```
 
-### 2. Set Up Environment Variables
+### 2. Set Up PostgreSQL Database
+
+This application requires a PostgreSQL database.
+
+1.  **Create the Database**: Create a new database named `timetool_db`.
+2.  **Run the Schema Script**: Use a tool like `psql` or pgAdmin to execute the `docs/db.sql` script on your new database. This will create all the necessary tables and populate them with mock data.
+    ```bash
+    psql -U your_postgres_user -d timetool_db -f docs/db.sql
+    ```
+
+### 3. Set Up Environment Variables
 
 This application uses environment variables for configuration. Create a new file named `.env.local` in the root of the project and add the following content.
 
+**Database Connection:**
+Update the connection string with your PostgreSQL username, password, and host.
+
+```env
+# PostgreSQL connection string
+DATABASE_URL="postgresql://YOUR_USERNAME:YOUR_PASSWORD@localhost:5432/timetool_db"
+```
+
 **Admin User:**
-The system requires credentials for the initial Super Admin user. The default email is `admin@example.com`.
+The system uses these credentials for the Super Admin user. The default password for all other demo users in the database is `password`.
 
 ```env
 # Admin User Credentials
@@ -35,7 +54,7 @@ NEXT_PUBLIC_ADMIN_PASSWORD=password
 ```
 
 **Email Notifications:**
-The application uses `nodemailer` to send password change notifications via email. For this to work, you need to provide SMTP server credentials.
+The application uses `nodemailer` to send password change notifications via email.
 
 ```env
 # SMTP Configuration for Nodemailer
@@ -48,7 +67,7 @@ SMTP_FROM="TimeTool <no-reply@yourdomain.com>"
 
 **Note:** The email sending feature will fail without the SMTP variables, but the rest of the application will still function.
 
-### 3. Run the Development Server
+### 4. Run the Development Server
 
 Once the dependencies are installed and environment variables are set, start the Next.js development server:
 
@@ -62,15 +81,10 @@ The application should now be running and accessible at [http://localhost:3000](
 
 ## Data Persistence
 
-**Important:** The current version of this application is a high-fidelity prototype. **It uses your browser's `localStorage` to store all data.** This means:
--   All data (users, time entries, projects, etc.) is stored directly in your browser.
--   The data will persist as long as you use the same browser and don't clear your site data.
--   The data is not shared between different browsers or computers.
+This application uses a PostgreSQL database for data persistence. All data (users, time entries, projects, etc.) is stored in the `timetool_db` database you configured.
 
-### Database Schema (For Future Development)
+### Database Schema
 
-To prepare for a full backend implementation, a complete PostgreSQL database schema has been defined. You can find the schema documentation and a runnable SQL script here:
+The complete database schema is defined in the following files:
 -   **Schema Documentation**: `docs/db_schema.md`
 -   **PostgreSQL Script**: `docs/db.sql`
-
-To use this, you would need a local PostgreSQL server. You could then run the `db.sql` script to create and populate the database, which would serve as a starting point for connecting a real backend. However, the current application code **does not** connect to this database.

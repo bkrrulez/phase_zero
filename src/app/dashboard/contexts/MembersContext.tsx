@@ -2,46 +2,49 @@
 'use client';
 
 import * as React from 'react';
-import { teamMembers as initialTeamMembers, type User } from "@/lib/mock-data";
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { type User } from "@/lib/types";
+import { addMember as addMemberAction, updateMember as updateMemberAction } from '../actions';
+import { useToast } from '@/hooks/use-toast';
+import { useSystemLog } from './SystemLogContext';
+import { useAuth } from './AuthContext';
 
 interface MembersContextType {
   teamMembers: User[];
-  updateMember: (updatedUser: User) => void;
-  addMember: (newUser: User) => void;
+  updateMember: (updatedUser: User) => Promise<void>;
+  addMember: (newUser: User) => Promise<void>;
 }
 
 export const MembersContext = React.createContext<MembersContextType | undefined>(undefined);
 
-export function MembersProvider({ children }: { children: React.ReactNode }) {
-  const [rawTeamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
-
-  // This memoized value ensures that we always work with a list of unique members,
-  // preventing "duplicate key" errors in React, even if localStorage data is temporarily corrupted.
-  const teamMembers = React.useMemo(() => {
-    const uniqueMembers = new Map<string, User>();
-    rawTeamMembers.forEach(member => {
-      uniqueMembers.set(member.id, member);
-    });
-    return Array.from(uniqueMembers.values());
-  }, [rawTeamMembers]);
+export function MembersProvider({ children, initialMembers }: { children: React.ReactNode; initialMembers: User[] }) {
+  const [teamMembers, setTeamMembers] = React.useState<User[]>(initialMembers);
+  const { toast } = useToast();
+  const { logAction } = useSystemLog();
+  const { currentUser } = useAuth();
 
 
-  const updateMember = (updatedUser: User) => {
-    setTeamMembers(prevMembers =>
-        prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
-    );
+  const updateMember = async (updatedUser: User) => {
+    try {
+      await updateMemberAction(updatedUser);
+      setTeamMembers(prevMembers =>
+          prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
+      );
+      toast({ title: "Member Updated", description: `Details for ${updatedUser.name} have been updated.` });
+      logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
+    } catch (error) {
+      toast({ variant: 'destructive', title: "Error", description: "Failed to update member."});
+    }
   };
 
-  const addMember = (newUser: User) => {
-    // Ensure we don't add a user if one with the same ID already exists.
-    setTeamMembers(prev => {
-        const userExists = prev.some(member => member.id === newUser.id);
-        if (userExists) {
-            return prev.map(member => member.id === newUser.id ? newUser : member);
-        }
-        return [...prev, newUser];
-    });
+  const addMember = async (newUser: User) => {
+    try {
+      const addedUser = await addMemberAction(newUser);
+      setTeamMembers(prev => [...prev, addedUser]);
+      toast({ title: "Member Added", description: `${newUser.name} has been added.` });
+      logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
+    } catch (error) {
+       toast({ variant: 'destructive', title: "Error", description: "Failed to add member."});
+    }
   };
 
   return (

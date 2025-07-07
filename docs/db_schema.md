@@ -18,6 +18,7 @@ Stores information about individual users.
 -   `id` (PK, TEXT): Unique identifier for the user (e.g., 'user-1').
 -   `name` (TEXT, NOT NULL): Full name of the user.
 -   `email` (TEXT, NOT NULL, UNIQUE): Email address, used for login.
+-   `password` (TEXT, NOT NULL): User's password (for a real app, this should be a hash).
 -   `role` (TEXT, NOT NULL): User's role ('Employee', 'Team Lead', 'Super Admin').
 -   `avatar` (TEXT): URL to the user's avatar image.
 -   `team_id` (FK -> `teams.id`, TEXT): The team the user belongs to. Can be NULL.

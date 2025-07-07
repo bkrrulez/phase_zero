@@ -8,72 +8,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { LogoIcon } from "@/components/ui/logo-icon";
-import { teamMembers as initialTeamMembers, type User } from '@/lib/mock-data';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { login } from './dashboard/actions';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [teamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
+  const [isLoading, setIsLoading] = useState(false);
   const [, setCurrentUserId] = useLocalStorage<string | null>('currentUserId', null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    setIsLoading(true);
 
-    // Special login check for the Super Admin
-    if (adminEmail && email.toLowerCase() === adminEmail.toLowerCase()) {
-      if (password === adminPassword) {
-        let user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-        // Self-healing: If the admin user isn't in localStorage (e.g., due to stale data),
-        // find them in the mock data and add them, ensuring no duplicates.
-        if (!user) {
-          const adminFromMock = initialTeamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
-          if (adminFromMock) {
-            const updatedMembers = teamMembers.filter(m => m.email.toLowerCase() !== email.toLowerCase());
-            setTeamMembers([...updatedMembers, adminFromMock]);
-            user = adminFromMock;
-          }
-        }
-        
-        if (user) {
-          setCurrentUserId(user.id);
-          router.push('/dashboard');
-        } else {
-          // This can happen if the .env.local email doesn't match any user in mock-data.
-          toast({
-            variant: 'destructive',
-            title: 'Configuration Error',
-            description: 'Admin user not found in the database.',
-          });
-        }
+    try {
+      const result = await login(email, password);
+      
+      if (result.success && result.userId) {
+        setCurrentUserId(result.userId);
+        router.push('/dashboard');
       } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: 'Incorrect password for admin user.',
+          description: result.error || 'Invalid email or password.',
         });
       }
-      return; // Stop further execution
-    }
-
-    // Default behavior for other demo users (no password check)
-    const user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (user) {
-      setCurrentUserId(user.id);
-      router.push('/dashboard');
-    } else {
+    } catch (error) {
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
-        description: 'No user found with that email address.',
+        title: 'Login Error',
+        description: 'An unexpected error occurred. Please try again.',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -92,7 +63,7 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
+                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
@@ -101,10 +72,10 @@ export default function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
+                <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
               </div>
-              <Button type="submit" className="w-full">
-                  Login
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
           </CardContent>
