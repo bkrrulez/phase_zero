@@ -1,13 +1,16 @@
-
 'use client';
 
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { currentUser } from "@/lib/mock-data";
+import { currentUser, publicHolidays as initialPublicHolidays, customHolidays as initialCustomHolidays, type PublicHoliday, type CustomHoliday } from "@/lib/mock-data";
 import { PublicHolidaysTab } from "./components/public-holidays-tab";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomHolidaysTab } from "./components/custom-holidays-tab";
 
 export default function HolidaysSettingsPage() {
+  const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>(initialPublicHolidays);
+  const [customHolidays, setCustomHolidays] = useState<CustomHoliday[]>(initialCustomHolidays);
+
   if (currentUser.role !== 'Super Admin') {
     return (
         <Card>
@@ -34,10 +37,10 @@ export default function HolidaysSettingsPage() {
           <TabsTrigger value="custom-holidays">Custom Holidays</TabsTrigger>
         </TabsList>
         <TabsContent value="public-holidays" className="mt-4">
-          <PublicHolidaysTab />
+          <PublicHolidaysTab holidays={publicHolidays} setHolidays={setPublicHolidays} />
         </TabsContent>
         <TabsContent value="custom-holidays" className="mt-4">
-            <CustomHolidaysTab />
+            <CustomHolidaysTab publicHolidays={publicHolidays} holidays={customHolidays} setHolidays={setCustomHolidays} />
         </TabsContent>
       </Tabs>
     </div>

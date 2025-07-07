@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { publicHolidays as initialPublicHolidays, type PublicHoliday } from '@/lib/mock-data';
+import { type PublicHoliday } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditHolidayDialog, type HolidayFormValues } from './add-edit-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
@@ -17,9 +17,13 @@ import { ImportHolidaysDialog } from './import-holidays-dialog';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
-export function PublicHolidaysTab() {
+interface PublicHolidaysTabProps {
+    holidays: PublicHoliday[];
+    setHolidays: React.Dispatch<React.SetStateAction<PublicHoliday[]>>;
+}
+
+export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabProps) {
     const { toast } = useToast();
-    const [holidays, setHolidays] = useState<PublicHoliday[]>(initialPublicHolidays);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);

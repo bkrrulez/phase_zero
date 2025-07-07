@@ -9,16 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { customHolidays as initialCustomHolidays, teams, type CustomHoliday } from '@/lib/mock-data';
+import { teams, type CustomHoliday, type PublicHoliday } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditCustomHolidayDialog, type CustomHolidayFormValues } from './add-edit-custom-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
-export function CustomHolidaysTab() {
+interface CustomHolidaysTabProps {
+    holidays: CustomHoliday[];
+    setHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[]>>;
+    publicHolidays: PublicHoliday[];
+}
+
+export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: CustomHolidaysTabProps) {
     const { toast } = useToast();
-    const [holidays, setHolidays] = useState<CustomHoliday[]>(initialCustomHolidays);
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
@@ -32,6 +37,19 @@ export function CustomHolidaysTab() {
     }, [holidays, selectedYear]);
 
     const handleSaveHoliday = (data: CustomHolidayFormValues) => {
+        const holidayDateStr = new Date(data.date).toDateString();
+        const isPublicHoliday = publicHolidays.some(ph => new Date(ph.date).toDateString() === holidayDateStr);
+
+        if (isPublicHoliday) {
+            toast({
+                variant: "destructive",
+                title: "Date Conflict",
+                description: "This date is already a public holiday and cannot be added as a custom holiday.",
+            });
+            return;
+        }
+
+
         if (editingHoliday) {
             // Edit
             setHolidays(prev => prev.map(h => h.id === editingHoliday.id ? { ...h, ...data, date: data.date.toISOString() } : h));
