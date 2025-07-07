@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { useToast } from '@/hooks/use-toast';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { type User } from '@/lib/types';
 import { initialData } from '@/lib/mock-data';
+import { ForgotPasswordDialog } from './components/forgot-password-dialog';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [, setCurrentUserId] = useLocalStorage<string | null>('currentUserId', null);
+  const [isForgotDialogOpen, setIsForgotDialogOpen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,41 +60,52 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-sm mx-auto shadow-xl">
-          <CardHeader className="text-center">
-            <div className="flex justify-center items-center mb-4">
-              <LogoIcon className="w-10 h-10" />
-            </div>
-            <CardTitle className="text-2xl font-bold font-headline text-primary">TimeTool</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
+    <>
+      <div className="flex flex-col min-h-screen bg-background">
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm mx-auto shadow-xl">
+            <CardHeader className="text-center">
+              <div className="flex justify-center items-center mb-4">
+                <LogoIcon className="w-10 h-10" />
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="#" className="inline-block ml-auto text-sm underline" prefetch={false}>
-                    Forgot password?
-                  </Link>
+              <CardTitle className="text-2xl font-bold font-headline text-primary">TimeTool</CardTitle>
+              <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
                 </div>
-                <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Logging in...' : 'Login'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </main>
-      <footer className="p-4 text-center text-xs text-muted-foreground">
-        Created by Bikramjit Chowdhury
-      </footer>
-    </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="inline-block ml-auto h-auto p-0 text-sm underline"
+                      onClick={() => setIsForgotDialogOpen(true)}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                  <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Logging in...' : 'Login'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </main>
+        <footer className="p-4 text-center text-xs text-muted-foreground">
+          Created by Bikramjit Chowdhury
+        </footer>
+      </div>
+      <ForgotPasswordDialog 
+        isOpen={isForgotDialogOpen}
+        onOpenChange={setIsForgotDialogOpen}
+      />
+    </>
   );
 }
