@@ -11,10 +11,10 @@ import {
 } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSystemLog } from './SystemLogContext';
-import { currentUser } from '@/lib/mock-data';
 import { useMembers } from './MembersContext';
 import { useNotifications } from './NotificationsContext';
 import { format } from 'date-fns';
+import { useAuth } from './AuthContext';
 
 interface HolidaysContextType {
   publicHolidays: PublicHoliday[];
@@ -35,6 +35,7 @@ export const HolidaysContext = React.createContext<HolidaysContextType | undefin
 export function HolidaysProvider({ children }: { children: React.ReactNode }) {
     const { logAction } = useSystemLog();
     const { teamMembers } = useMembers();
+    const { currentUser } = useAuth();
     const { addNotification } = useNotifications();
     const [publicHolidays, setPublicHolidays] = useLocalStorage<PublicHoliday[]>('publicHolidays', initialPublicHolidays);
     const [customHolidays, setCustomHolidays] = useLocalStorage<CustomHoliday[]>('customHolidays', initialCustomHolidays);

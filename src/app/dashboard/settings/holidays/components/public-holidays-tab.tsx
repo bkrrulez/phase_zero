@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { currentUser, type PublicHoliday } from '@/lib/mock-data';
+import { type PublicHoliday } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditHolidayDialog, type HolidayFormValues } from './add-edit-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
 import { ImportHolidaysDialog } from './import-holidays-dialog';
 import { useSystemLog } from '@/app/dashboard/contexts/SystemLogContext';
+import { useAuth } from '@/app/dashboard/contexts/AuthContext';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
@@ -26,6 +27,7 @@ interface PublicHolidaysTabProps {
 export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabProps) {
     const { toast } = useToast();
     const { logAction } = useSystemLog();
+    const { currentUser } = useAuth();
     const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
 
     const [isAddEditDialogOpen, setIsAddEditDialogOpen] = React.useState(false);

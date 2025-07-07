@@ -148,8 +148,6 @@ const alexSmithUser: User = {
   },
 };
 
-export const currentUser: User = adminUser;
-
 export const teamMembers: User[] = [
   alexSmithUser,
   {
@@ -239,8 +237,8 @@ export const holidayRequests: HolidayRequest[] = [
 
 export const monthlyChartData = Array.from({ length: 12 }, (_, i) => {
     const day = i + 1;
-    const entry = timeEntries.find(e => new Date(e.date).getDate() === day && e.userId === currentUser.id);
-    return { date: day.toString(), hours: entry ? entry.duration : 0 };
+    const adminEntry = timeEntries.find(e => new Date(e.date).getDate() === day && e.userId === 'admin-1');
+    return { date: day.toString(), hours: adminEntry ? adminEntry.duration : 0 };
 }).map(d => {
     if (d.date === "5" || d.date === "6") d.hours = 0; // weekend
     if (d.date === "8") d.hours = 8;

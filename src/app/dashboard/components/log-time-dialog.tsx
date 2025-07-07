@@ -17,11 +17,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { currentUser } from "@/lib/mock-data";
 import { useAccessControl } from "../contexts/AccessControlContext";
 import { useProjects } from "../contexts/ProjectsContext";
 import { useTasks } from "../contexts/TasksContext";
 import { useTimeTracking } from "../contexts/TimeTrackingContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const logTimeSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -44,6 +44,7 @@ interface LogTimeDialogProps {
 
 export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
   const { logTime } = useTimeTracking();
+  const { currentUser } = useAuth();
   const form = useForm<LogTimeFormValues>({
     resolver: zodResolver(logTimeSchema),
     defaultValues: {

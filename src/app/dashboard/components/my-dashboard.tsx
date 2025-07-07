@@ -5,17 +5,19 @@ import * as React from 'react';
 import { Clock, Users, BarChart as BarChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, type User } from "@/lib/mock-data";
+import { type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
 import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
   const { teamMembers } = useMembers();
+  const { currentUser } = useAuth();
   
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
@@ -152,7 +154,7 @@ export function MyDashboard() {
     const remainingDays = userAllowance - takenDays;
 
     return { totalHours, expectedHours, overtime, takenDays, remainingDays };
-  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays]);
+  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays, currentUser]);
 
 
   return (

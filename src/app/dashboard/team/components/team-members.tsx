@@ -11,18 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, type User } from "@/lib/mock-data";
+import { type User } from "@/lib/mock-data";
 import { EditMemberDialog } from "./edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./change-password-dialog";
 import { sendPasswordChangeEmail } from "@/lib/mail";
 import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function TeamMembers() {
     const { toast } = useToast();
     const { teamMembers, updateMember } = useMembers();
     const { teams } = useTeams();
+    const { currentUser } = useAuth();
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
@@ -36,7 +38,7 @@ export function TeamMembers() {
         }
         // Employee
         return teamMembers.filter(member => member.id === currentUser.id);
-    }, [teamMembers]);
+    }, [teamMembers, currentUser]);
     
     const handleSaveDetails = (updatedUser: User) => {
         updateMember(updatedUser);

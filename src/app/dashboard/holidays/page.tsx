@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { currentUser, type User, type PublicHoliday, type CustomHoliday, type HolidayRequest } from "@/lib/mock-data";
+import { type User, type HolidayRequest } from "@/lib/mock-data";
 import { format, differenceInCalendarDays, addDays, isSameDay, startOfYear, endOfYear, max, min } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useAuth } from '../contexts/AuthContext';
 
 
 const getStatusVariant = (status: "Pending" | "Approved" | "Rejected"): "secondary" | "default" | "destructive" => {
@@ -44,6 +45,7 @@ function TeamRequestsTab() {
   const { toast } = useToast();
   const { holidayRequests, approveRequest, rejectRequest } = useHolidays();
   const { teamMembers } = useMembers();
+  const { currentUser } = useAuth();
 
   const pendingRequests = React.useMemo(() => {
     return holidayRequests.filter(req => {
@@ -55,7 +57,7 @@ function TeamRequestsTab() {
       }
       return false;
     });
-  }, [holidayRequests, teamMembers]);
+  }, [holidayRequests, teamMembers, currentUser]);
 
   const getMemberDetails = (userId: string) => {
     return teamMembers.find(m => m.id === userId);
@@ -149,6 +151,7 @@ function TeamRequestsTab() {
 export default function HolidaysPage() {
   const { annualLeaveAllowance, holidayRequests, addHolidayRequest, withdrawRequest, publicHolidays, customHolidays } = useHolidays();
   const { teamMembers } = useMembers();
+  const { currentUser } = useAuth();
   const { toast } = useToast();
   const [isRequestDialogOpen, setIsRequestDialogOpen] = React.useState(false);
   const [withdrawingRequest, setWithdrawingRequest] = React.useState<HolidayRequest | null>(null);

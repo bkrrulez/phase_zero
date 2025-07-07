@@ -2,12 +2,13 @@
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { currentUser } from "@/lib/mock-data";
 import { MyDashboard } from "./components/my-dashboard";
 import { TeamDashboard } from "./components/team-dashboard";
+import { useAuth } from "./contexts/AuthContext";
 
 
 export default function DashboardPage() {
+    const { currentUser } = useAuth();
     const canViewTeamDashboard = currentUser.role === 'Team Lead' || currentUser.role === 'Super Admin';
 
     return (

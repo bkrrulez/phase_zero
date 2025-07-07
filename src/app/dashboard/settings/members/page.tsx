@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, type User } from "@/lib/mock-data";
+import { type User } from "@/lib/mock-data";
 import { EditMemberDialog } from "@/app/dashboard/team/components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "@/app/dashboard/team/components/add-member-dialog";
@@ -20,12 +20,14 @@ import { sendPasswordChangeEmail } from "@/lib/mail";
 import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
     const { teamMembers, updateMember, addMember } = useMembers();
     const { teams } = useTeams();
     const { logAction } = useSystemLog();
+    const { currentUser } = useAuth();
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
@@ -40,7 +42,7 @@ export default function MembersSettingsPage() {
         }
         // Employee
         return teamMembers.filter(member => member.id === currentUser.id);
-    }, [teamMembers]);
+    }, [teamMembers, currentUser]);
 
     const handleSaveDetails = (updatedUser: User) => {
         updateMember(updatedUser);

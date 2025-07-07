@@ -3,12 +3,13 @@
 
 import * as React from 'react';
 import type { TimeEntry } from "@/lib/mock-data";
-import { timeEntries as initialTimeEntries, currentUser } from "@/lib/mock-data";
+import { timeEntries as initialTimeEntries } from "@/lib/mock-data";
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSystemLog } from './SystemLogContext';
+import { useAuth } from './AuthContext';
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
@@ -28,6 +29,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
   const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', initialTimeEntries);
   const { toast } = useToast();
   const { logAction } = useSystemLog();
+  const { currentUser } = useAuth();
 
   const logTime = (data: LogTimeFormValues): { success: boolean } => {
     const newEntry: TimeEntry = {

@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { currentUser } from "@/lib/mock-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { sendPasswordChangeEmail } from "@/lib/mail";
 import { ChangePasswordDialog } from "../team/components/change-password-dialog";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function ProfilePage() {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 

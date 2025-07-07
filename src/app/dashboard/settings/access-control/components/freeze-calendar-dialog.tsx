@@ -16,8 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { currentUser } from '@/lib/mock-data';
 import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
+import { useAuth } from '@/app/dashboard/contexts/AuthContext';
 
 const freezeSchema = z.object({
   teamId: z.string().min(1, 'Please select a team.'),
@@ -47,6 +47,7 @@ const allMonths = Array.from({ length: 12 }, (_, i) => ({
 export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCalendarDialogProps) {
   const { toast } = useToast();
   const { teams } = useTeams();
+  const { currentUser } = useAuth();
   const form = useForm<FreezeFormValues>({
     resolver: zodResolver(freezeSchema),
     defaultValues: { teamId: '', timePeriod: 'month' },
@@ -69,7 +70,7 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
     if (currentUser.role === 'Super Admin') return teams;
     if (currentUser.role === 'Team Lead') return teams.filter(t => t.id === currentUser.teamId);
     return [];
-  }, [teams]);
+  }, [teams, currentUser]);
 
   useEffect(() => {
     const now = new Date();

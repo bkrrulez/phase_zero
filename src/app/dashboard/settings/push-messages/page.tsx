@@ -10,13 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { currentUser, type PushMessage } from '@/lib/mock-data';
+import { type PushMessage } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { usePushMessages } from '../../contexts/PushMessagesContext';
 import { useTeams } from '../../contexts/TeamsContext';
 import { AddEditPushMessageDialog, type PushMessageFormValues } from './components/add-edit-push-message-dialog';
 import { DeletePushMessageDialog } from './components/delete-push-message-dialog';
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -44,6 +45,7 @@ export default function PushMessagesSettingsPage() {
   const { pushMessages, addMessage, updateMessage, deleteMessage } = usePushMessages();
   const { teams } = useTeams();
   const { logAction } = useSystemLog();
+  const { currentUser } = useAuth();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingMessage, setEditingMessage] = React.useState<PushMessage | null>(null);

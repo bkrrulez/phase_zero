@@ -5,13 +5,14 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { currentUser, type PushMessage } from '@/lib/mock-data';
+import { type PushMessage } from '@/lib/mock-data';
 import { format, formatDistanceToNow } from 'date-fns';
 import { usePushMessages } from '../contexts/PushMessagesContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useHolidays } from '../contexts/HolidaysContext';
 import { Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NotificationPopoverProps {
   onClose: () => void;
@@ -28,6 +29,7 @@ const getStatus = (startDate: string, endDate: string) => {
 
 export function NotificationPopover({ onClose }: NotificationPopoverProps) {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
   // Push Messages (Broadcast)
   const { pushMessages, userMessageStates, markMessageAsRead } = usePushMessages();
   const pushMessageUserReadIds = userMessageStates[currentUser.id]?.readMessageIds || [];
@@ -41,7 +43,7 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
       }
       return false;
     });
-  }, [pushMessages]);
+  }, [pushMessages, currentUser]);
   
   const activePushMessages = applicablePushMessages.filter(msg => getStatus(msg.startDate, msg.endDate) === 'Active');
   
@@ -60,7 +62,7 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
       return notifications
         .filter(n => n.recipientIds.includes(currentUser.id) && n.type === 'holidayRequest')
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [notifications]);
+  }, [notifications, currentUser]);
 
   // Combined notifications
   const allDisplayableItems = React.useMemo(() => {
@@ -81,7 +83,7 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
     }));
 
     return [...pushItems, ...appItems].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [displayablePushMessages, userAppNotifications, pushMessageUserReadIds]);
+  }, [displayablePushMessages, userAppNotifications, pushMessageUserReadIds, currentUser]);
 
 
   const handleDismissPushMessage = (messageId: string) => {

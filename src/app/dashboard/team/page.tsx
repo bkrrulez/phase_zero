@@ -4,15 +4,17 @@
 import * as React from 'react';
 import { PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { currentUser, type User } from "@/lib/mock-data";
+import { type User } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { useMembers } from "../contexts/MembersContext";
 import { TeamMembers } from './components/team-members';
 import { AddMemberDialog } from './components/add-member-dialog';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function TeamPage() {
     const { toast } = useToast();
     const { teamMembers, addMember } = useMembers();
+    const { currentUser } = useAuth();
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';

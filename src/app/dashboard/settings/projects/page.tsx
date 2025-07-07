@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { currentUser, type Project } from '@/lib/mock-data';
+import { type Project } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddProjectDialog, type ProjectFormValues } from './components/add-project-dialog';
 import { EditProjectDialog } from './components/edit-project-dialog';
@@ -15,12 +15,14 @@ import { DeleteProjectDialog } from './components/delete-project-dialog';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useTasks } from '../../contexts/TasksContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function ProjectsSettingsPage() {
     const { toast } = useToast();
     const { projects, addProject, updateProject, deleteProject } = useProjects();
     const { tasks: allTasks } = useTasks();
     const { logAction } = useSystemLog();
+    const { currentUser } = useAuth();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingProject, setEditingProject] = React.useState<Project | null>(null);

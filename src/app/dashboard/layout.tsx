@@ -56,7 +56,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { currentUser } from "@/lib/mock-data";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
 import { LogTimeDialog } from "./components/log-time-dialog";
@@ -71,6 +70,7 @@ import { TeamsProvider } from "./contexts/TeamsContext";
 import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
 import { SystemLogProvider } from "./contexts/SystemLogContext";
 import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -83,6 +83,7 @@ const getStatus = (startDate: string, endDate: string) => {
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { currentUser, logout } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
@@ -105,14 +106,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
              getStatus(msg.startDate, msg.endDate) === 'Active' && 
              !userReadIds.includes(msg.id);
     }).length;
-  }, [pushMessages, userMessageStates]);
+  }, [pushMessages, userMessageStates, currentUser]);
 
   const unreadRequestCount = React.useMemo(() => {
     return notifications.filter(n => n.recipientIds.includes(currentUser.id) && !n.readBy.includes(currentUser.id)).length;
-  }, [notifications]);
+  }, [notifications, currentUser]);
 
   const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
-
 
   return (
     <SidebarProvider>
@@ -243,11 +243,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </CollapsibleContent>
             </Collapsible>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link href="/">
+              <SidebarMenuButton onClick={logout}>
                   <LogOut />
                   Logout
-                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -298,9 +296,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/">Logout</Link>
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -325,25 +321,27 @@ export default function DashboardLayout({
 }) {
   return (
     <SystemLogProvider>
-      <TimeTrackingProvider>
-        <TeamsProvider>
-          <ProjectsProvider>
-            <TasksProvider>
-              <MembersProvider>
-                <NotificationsProvider>
-                  <HolidaysProvider>
-                    <PushMessagesProvider>
-                      <AccessControlProvider>
+      <TeamsProvider>
+        <ProjectsProvider>
+          <TasksProvider>
+            <MembersProvider>
+              <NotificationsProvider>
+                <PushMessagesProvider>
+                  <AuthProvider>
+                    <HolidaysProvider>
+                      <TimeTrackingProvider>
+                        <AccessControlProvider>
                           <LayoutContent>{children}</LayoutContent>
-                      </AccessControlProvider>
-                    </PushMessagesProvider>
-                  </HolidaysProvider>
-                </NotificationsProvider>
-              </MembersProvider>
-            </TasksProvider>
-          </ProjectsProvider>
-        </TeamsProvider>
-      </TimeTrackingProvider>
+                        </AccessControlProvider>
+                      </TimeTrackingProvider>
+                    </HolidaysProvider>
+                  </AuthProvider>
+                </PushMessagesProvider>
+              </NotificationsProvider>
+            </MembersProvider>
+          </TasksProvider>
+        </ProjectsProvider>
+      </TeamsProvider>
     </SystemLogProvider>
   );
 }

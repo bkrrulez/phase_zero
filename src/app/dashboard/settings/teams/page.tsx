@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { currentUser, type User, type Team } from '@/lib/mock-data';
+import { type User, type Team } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddTeamDialog, type TeamFormValues } from './components/add-team-dialog';
 import { EditTeamDialog } from './components/edit-team-dialog';
@@ -15,6 +15,7 @@ import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
@@ -22,6 +23,7 @@ export default function TeamsSettingsPage() {
     const { teams, setTeams } = useTeams();
     const { projects } = useProjects();
     const { logAction } = useSystemLog();
+    const { currentUser } = useAuth();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingTeam, setEditingTeam] = React.useState<Team | null>(null);

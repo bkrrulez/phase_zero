@@ -19,12 +19,13 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { timeEntries, currentUser, type User, type TimeEntry } from '@/lib/mock-data';
+import { timeEntries, type User, type TimeEntry } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -84,6 +85,7 @@ export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { teamMembers } = useMembers();
+    const { currentUser } = useAuth();
     const { publicHolidays, customHolidays, holidayRequests } = useHolidays();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
@@ -97,7 +99,7 @@ export function IndividualReport() {
             return [currentUser, ...team];
         }
         return [currentUser];
-    }, [teamMembers]);
+    }, [teamMembers, currentUser]);
 
     const targetUserId = searchParams.get('userId') || currentUser.id;
     
@@ -108,7 +110,7 @@ export function IndividualReport() {
         const userFromParams = viewableUsers.find(u => u.id === targetUserId);
         const userToSelect = userFromParams || (viewableUsers.includes(currentUser) ? currentUser : viewableUsers[0]);
         setSelectedUser(userToSelect);
-    }, [targetUserId, viewableUsers]);
+    }, [targetUserId, viewableUsers, currentUser]);
 
     React.useEffect(() => {
         if (selectedUser) {

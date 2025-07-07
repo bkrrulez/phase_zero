@@ -7,18 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { currentUser, type Task } from '@/lib/mock-data';
+import { type Task } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddTaskDialog, type TaskFormValues } from './components/add-task-dialog';
 import { EditTaskDialog } from './components/edit-task-dialog';
 import { DeleteTaskDialog } from './components/delete-task-dialog';
 import { useTasks } from '../../contexts/TasksContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function TasksSettingsPage() {
     const { toast } = useToast();
     const { tasks, addTask, updateTask, deleteTask } = useTasks();
     const { logAction } = useSystemLog();
+    const { currentUser } = useAuth();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingTask, setEditingTask] = React.useState<Task | null>(null);

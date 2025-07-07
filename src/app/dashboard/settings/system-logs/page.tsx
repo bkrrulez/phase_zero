@@ -14,8 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { currentUser } from '@/lib/mock-data';
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -25,6 +25,7 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 export default function SystemLogsPage() {
   const { logs } = useSystemLog();
+  const { currentUser } = useAuth();
   const [filterType, setFilterType] = React.useState<'month' | 'range'>('month');
   const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());

@@ -7,16 +7,17 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser } from "@/lib/mock-data";
 import { isSameDay } from "date-fns";
 import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useMembers } from "../contexts/MembersContext";
 import { useHolidays } from "../contexts/HolidaysContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export function TeamDashboard() {
   const { timeEntries } = useTimeTracking();
   const { teamMembers } = useMembers();
   const { publicHolidays, customHolidays } = useHolidays();
+  const { currentUser } = useAuth();
 
   const teamPerformance = useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
@@ -87,7 +88,7 @@ export function TeamDashboard() {
         performance,
       }
     });
-  }, [timeEntries, teamMembers, publicHolidays, customHolidays]);
+  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser]);
 
   const usersWithOvertime = teamPerformance
     .filter(u => u.performance > 0)

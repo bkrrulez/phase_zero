@@ -1,13 +1,42 @@
 
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { currentUser } from "@/lib/mock-data";
 import { LogoIcon } from "@/components/ui/logo-icon";
+import { teamMembers as initialTeamMembers, type User } from '@/lib/mock-data';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [teamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
+  const [, setCurrentUserId] = useLocalStorage<string | null>('currentUserId', null);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (user) {
+      // In a real app, you'd also check the password here.
+      setCurrentUserId(user.id);
+      router.push('/dashboard');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'No user found with that email address.',
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 flex items-center justify-center p-4">
@@ -20,10 +49,10 @@ export default function LoginPage() {
             <CardDescription>Enter your credentials to access your dashboard</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="grid gap-4">
+            <form onSubmit={handleLogin} className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" defaultValue={currentUser.email} required />
+                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
@@ -32,14 +61,11 @@ export default function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input id="password" type="password" required />
+                <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
               </div>
-              <Button type="submit" className="w-full" asChild>
-                  <Link href="/dashboard">Login</Link>
+              <Button type="submit" className="w-full">
+                  Login
               </Button>
-              <p className="text-xs text-center text-muted-foreground pt-2">
-                This is a demo. You can use any email and password.
-              </p>
             </form>
           </CardContent>
         </Card>
