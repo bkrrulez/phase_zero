@@ -1,9 +1,10 @@
-
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { unparse } from 'papaparse';
+import { FileDown } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -29,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { IndividualReport } from './components/individual-report';
 import { useMembers } from '../contexts/MembersContext';
 import { useHolidays } from '../contexts/HolidaysContext';
@@ -135,6 +137,31 @@ export default function ReportsPage() {
     router.push(`/dashboard/reports?tab=${value}`);
   };
 
+  const handleExport = () => {
+    if (reportData.length === 0) return;
+
+    const csvData = reportData.map(member => ({
+        'Member': member.name,
+        'Email': member.email,
+        'Role': member.role,
+        'Expected Hours': member.expectedHours,
+        'Logged Hours': member.loggedHours,
+        'Remaining Hours': member.remainingHours,
+    }));
+
+    const csv = unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    const monthName = months.find(m => m.value === selectedMonth)?.label;
+    link.setAttribute('download', `team_report_${monthName}_${selectedYear}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin') {
       return (
         <div className="space-y-6">
@@ -167,6 +194,10 @@ export default function ReportsPage() {
                       Report for {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
                     </CardDescription>
                     <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleExport}>
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Export
+                        </Button>
                         <Select
                             value={String(selectedMonth)}
                             onValueChange={(value) => setSelectedMonth(Number(value))}
