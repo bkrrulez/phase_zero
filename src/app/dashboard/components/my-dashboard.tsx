@@ -4,15 +4,15 @@
 import { Clock, Users, BarChart as BarChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, holidayRequests } from "@/lib/mock-data";
+import { currentUser } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
-  const { publicHolidays, customHolidays } = useHolidays();
+  const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
 
   const today = new Date();
   const currentMonth = today.getMonth();
@@ -65,6 +65,21 @@ export function MyDashboard() {
 
   const expectedHours = workDaysSoFar * dailyHours;
   const overtime = totalHours - expectedHours;
+  
+  const userHolidayRequests = holidayRequests.filter(req => req.userId === currentUser.id);
+
+  const getDurationInDays = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return differenceInCalendarDays(end, start) + 1;
+  }
+  
+  const takenDays = userHolidayRequests
+    .filter(req => req.status === 'Approved')
+    .reduce((acc, req) => acc + getDurationInDays(req.startDate, req.endDate), 0);
+
+  const remainingDays = annualLeaveAllowance - takenDays;
+
 
   return (
     <div className="space-y-6">
@@ -108,9 +123,9 @@ export function MyDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1 Day</div>
+            <div className="text-2xl font-bold">{takenDays} Day{takenDays === 1 ? '' : 's'}</div>
             <p className="text-xs text-muted-foreground">
-              24 days remaining
+              {remainingDays} days remaining
             </p>
           </CardContent>
         </Card>
