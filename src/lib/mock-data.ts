@@ -36,6 +36,9 @@ export type HolidayRequest = {
 export type Project = {
   id: string;
   name: string;
+  taskIds?: string[];
+  budget?: number;
+  details?: string;
 };
 
 export type Task = {
@@ -189,10 +192,10 @@ export const monthlyChartData = Array.from({ length: 12 }, (_, i) => {
 });
 
 export const projects: Project[] = [
-  { id: "proj-1", name: "Project A" },
-  { id: "proj-2", name: "Project B" },
-  { id: "proj-3", name: "Internal" },
-  { id: "proj-4", name: "Client X" },
+  { id: "proj-1", name: "Project A", taskIds: ['task-1', 'task-2', 'task-4'], budget: 50000, details: "Development of the new company website." },
+  { id: "proj-2", name: "Project B", taskIds: ['task-2', 'task-3'], budget: 75000, details: "Migration of legacy systems to the cloud." },
+  { id: "proj-3", name: "Internal", taskIds: ['task-5', 'task-6', 'task-12'], budget: 10000, details: "Internal tools and process improvements." },
+  { id: "proj-4", name: "Client X", taskIds: ['task-7'], budget: 120000, details: "Marketing campaign for Client X." },
 ];
 
 export const tasks: Task[] = [
