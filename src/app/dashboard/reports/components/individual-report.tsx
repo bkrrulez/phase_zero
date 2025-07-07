@@ -19,10 +19,11 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays, type TimeEntry } from '@/lib/mock-data';
+import { timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays, type TimeEntry } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
+import { useMembers } from '../../contexts/MembersContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -81,6 +82,7 @@ const DayContent: React.FC<DayContentProps> = (props) => {
 export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { teamMembers } = useMembers();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
     const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
@@ -93,7 +95,7 @@ export function IndividualReport() {
             return [currentUser, ...team];
         }
         return [currentUser];
-    }, []);
+    }, [teamMembers]);
 
     const targetUserId = searchParams.get('userId') || currentUser.id;
     

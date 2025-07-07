@@ -11,16 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { teamMembers as initialTeamMembers, currentUser, type User, teams } from "@/lib/mock-data";
+import { currentUser, type User, teams } from "@/lib/mock-data";
 import { EditMemberDialog } from "./components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "./components/add-member-dialog";
 import { ChangePasswordDialog } from "./components/change-password-dialog";
 import { sendPasswordChangeEmail } from "@/lib/mail";
+import { useMembers } from "../contexts/MembersContext";
 
 export default function TeamPage() {
     const { toast } = useToast();
-    const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
+    const { teamMembers, addMember, updateMember } = useMembers();
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);
@@ -38,9 +39,7 @@ export default function TeamPage() {
     }, [teamMembers]);
     
     const handleSaveDetails = (updatedUser: User) => {
-        setTeamMembers(prevMembers =>
-            prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
-        );
+        updateMember(updatedUser);
         setEditingUser(null);
         toast({
             title: "Member Details Updated",
@@ -49,7 +48,7 @@ export default function TeamPage() {
     }
 
     const handleAddMember = (newUser: User) => {
-        setTeamMembers(prev => [...prev, newUser]);
+        addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({
             title: "Member Added",

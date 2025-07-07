@@ -54,6 +54,7 @@ import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
 import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
 import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
+import { MembersProvider } from "./contexts/MembersContext";
 
 function LayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -260,7 +261,9 @@ export default function DashboardLayout({
 }) {
   return (
     <TimeTrackingProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <MembersProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </MembersProvider>
     </TimeTrackingProvider>
   );
 }

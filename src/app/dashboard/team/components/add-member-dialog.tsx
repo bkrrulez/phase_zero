@@ -81,7 +81,6 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   useEffect(() => {
     if (roleWatcher === 'Super Admin') {
       form.setValue('reportsTo', undefined);
-      form.setValue('teamId', undefined);
     }
     
     if (roleWatcher === 'Employee' && reportsToWatcher) {

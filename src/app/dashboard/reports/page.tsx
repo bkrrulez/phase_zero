@@ -29,8 +29,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { teamMembers, timeEntries, currentUser, publicHolidays, customHolidays } from '@/lib/mock-data';
+import { timeEntries, currentUser, publicHolidays, customHolidays } from '@/lib/mock-data';
 import { IndividualReport } from './components/individual-report';
+import { useMembers } from '../contexts/MembersContext';
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -41,6 +42,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 export default function ReportsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { teamMembers } = useMembers();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -122,7 +124,7 @@ export default function ReportsPage() {
         remainingHours: remainingHours.toFixed(2),
       };
     });
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, teamMembers]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
