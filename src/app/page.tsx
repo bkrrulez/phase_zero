@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -18,7 +17,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [teamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
+  const [teamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
   const [, setCurrentUserId] = useLocalStorage<string | null>('currentUserId', null);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -30,12 +29,23 @@ export default function LoginPage() {
     // Special login check for the Super Admin
     if (adminEmail && email.toLowerCase() === adminEmail.toLowerCase()) {
       if (password === adminPassword) {
-        const user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        let user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+        // Self-healing: If the admin user isn't in localStorage (e.g., due to stale data),
+        // find them in the mock data and add them.
+        if (!user) {
+          const adminFromMock = initialTeamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
+          if (adminFromMock) {
+            setTeamMembers([...teamMembers, adminFromMock]);
+            user = adminFromMock;
+          }
+        }
+        
         if (user) {
           setCurrentUserId(user.id);
           router.push('/dashboard');
         } else {
-          // This case should not happen if the admin user is in mock-data.ts
+          // This can happen if the .env.local email doesn't match any user in mock-data.
           toast({
             variant: 'destructive',
             title: 'Configuration Error',
