@@ -27,6 +27,7 @@ interface HolidaysContextType {
   addHolidayRequest: (request: Omit<HolidayRequest, 'id' | 'userId' | 'status'>) => void;
   approveRequest: (requestId: string) => void;
   rejectRequest: (requestId: string) => void;
+  withdrawRequest: (requestId: string) => void;
 }
 
 export const HolidaysContext = React.createContext<HolidaysContextType | undefined>(undefined);
@@ -95,6 +96,15 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
         logAction(`Holiday request for '${user?.name || 'Unknown'}' rejected by '${currentUser.name}'.`);
     };
 
+    const withdrawRequest = (requestId: string) => {
+        const request = holidayRequests.find(r => r.id === requestId);
+        if (request?.userId !== currentUser.id) return; // Ensure only the user can withdraw
+        
+        setHolidayRequests(prev => prev.filter(req => req.id !== requestId));
+        logAction(`User '${currentUser.name}' withdrew a holiday request.`);
+    };
+
+
     return (
         <HolidaysContext.Provider value={{ 
           publicHolidays, 
@@ -107,6 +117,7 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
           addHolidayRequest,
           approveRequest,
           rejectRequest,
+          withdrawRequest,
         }}>
             {children}
         </HolidaysContext.Provider>

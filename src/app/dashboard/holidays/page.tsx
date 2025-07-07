@@ -2,20 +2,31 @@
 'use client';
 
 import * as React from 'react';
-import { PlusCircle, Check, X } from "lucide-react";
+import { PlusCircle, Check, X, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { currentUser, type User, type PublicHoliday, type CustomHoliday } from "@/lib/mock-data";
+import { currentUser, type User, type PublicHoliday, type CustomHoliday, type HolidayRequest } from "@/lib/mock-data";
 import { format, differenceInCalendarDays, addDays, isSameDay, startOfYear, endOfYear, max, min } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
 import { useMembers } from '../contexts/MembersContext';
 import { useToast } from '@/hooks/use-toast';
 import { RequestHolidayDialog } from './components/request-holiday-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 const getStatusVariant = (status: "Pending" | "Approved" | "Rejected"): "secondary" | "default" | "destructive" => {
     switch (status) {
@@ -136,10 +147,11 @@ function TeamRequestsTab() {
 }
 
 export default function HolidaysPage() {
-  const { annualLeaveAllowance, holidayRequests, addHolidayRequest, publicHolidays, customHolidays } = useHolidays();
+  const { annualLeaveAllowance, holidayRequests, addHolidayRequest, withdrawRequest, publicHolidays, customHolidays } = useHolidays();
   const { teamMembers } = useMembers();
   const { toast } = useToast();
   const [isRequestDialogOpen, setIsRequestDialogOpen] = React.useState(false);
+  const [withdrawingRequest, setWithdrawingRequest] = React.useState<HolidayRequest | null>(null);
   const canViewTeamRequests = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
   const calculateDurationInWorkdays = React.useCallback((startDate: Date, endDate: Date, userId: string): number => {
@@ -168,7 +180,6 @@ export default function HolidaysPage() {
   }, [publicHolidays, customHolidays, teamMembers]);
 
   const getProratedAllowance = React.useCallback((user: User) => {
-    // Helper function to parse YYYY-MM-DD strings as local dates to avoid timezone issues.
     const parseDateStringAsLocal = (dateString: string): Date => {
         const [year, month, day] = dateString.split('-').map(Number);
         return new Date(year, month - 1, day);
@@ -241,6 +252,15 @@ export default function HolidaysPage() {
     }
   };
 
+  const handleWithdrawRequest = (requestId: string) => {
+    withdrawRequest(requestId);
+    setWithdrawingRequest(null);
+    toast({
+        title: "Request Withdrawn",
+        description: "Your holiday request has been successfully withdrawn.",
+    });
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -301,6 +321,7 @@ export default function HolidaysPage() {
                                     <TableHead>Dates</TableHead>
                                     <TableHead className="hidden sm:table-cell">Duration</TableHead>
                                     <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -314,6 +335,13 @@ export default function HolidaysPage() {
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={getStatusVariant(req.status)} className={cn(getStatusVariant(req.status) === 'default' && 'bg-green-600')}>{req.status}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {req.status === 'Pending' && (
+                                            <Button variant="outline" size="sm" onClick={() => setWithdrawingRequest(req)}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Withdraw
+                                            </Button>
+                                        )}
                                     </TableCell>
                                     </TableRow>
                                 ))}
@@ -334,6 +362,22 @@ export default function HolidaysPage() {
         onOpenChange={setIsRequestDialogOpen}
         onSave={handleSaveRequest}
       />
+      <AlertDialog open={!!withdrawingRequest} onOpenChange={(isOpen) => !isOpen && setWithdrawingRequest(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will withdraw your holiday request. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleWithdrawRequest(withdrawingRequest!.id)}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
