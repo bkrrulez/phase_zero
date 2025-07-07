@@ -1,6 +1,8 @@
+
 'use client';
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { format } from "date-fns";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,31 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { teamMembers as initialTeamMembers, timeEntries, currentUser, type User } from "@/lib/mock-data";
+import { teamMembers as initialTeamMembers, currentUser, type User } from "@/lib/mock-data";
 import { EditContractDialog } from "./components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { AddMemberDialog } from "./components/add-member-dialog";
 
 export default function TeamPage() {
     const { toast } = useToast();
     const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
     const [editingUser, setEditingUser] = useState<User | null>(null);
-    const [loggedHours, setLoggedHours] = useState<Record<string, string>>({});
-
-    useEffect(() => {
-        const getLoggedHoursForUser = (userId: string) => {
-            return timeEntries
-                .filter(entry => entry.userId === userId && new Date(entry.date).getMonth() === new Date().getMonth())
-                .reduce((acc, entry) => acc + entry.duration, 0)
-                .toFixed(2);
-        }
-
-        const hoursMap: Record<string, string> = {};
-        for (const member of teamMembers) {
-            hoursMap[member.id] = getLoggedHoursForUser(member.id);
-        }
-        setLoggedHours(hoursMap);
-    }, [teamMembers]);
-
+    const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+    
     const handleSaveContract = (updatedUser: User) => {
         setTeamMembers(prevMembers =>
             prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
@@ -43,6 +31,15 @@ export default function TeamPage() {
             description: `Successfully updated contract for ${updatedUser.name}.`,
         });
     }
+
+    const handleAddMember = (newUser: User) => {
+        setTeamMembers(prev => [...prev, newUser]);
+        setIsAddMemberDialogOpen(false);
+        toast({
+            title: "Member Added",
+            description: `${newUser.name} has been added to the team.`,
+        });
+    };
 
     const canEditMember = (member: User) => {
         if (currentUser.id === member.id) return false;
@@ -63,7 +60,7 @@ export default function TeamPage() {
             <h1 className="text-3xl font-bold font-headline">Team Overview</h1>
             <p className="text-muted-foreground">Manage your team members and view their progress.</p>
           </div>
-          <Button>
+          <Button onClick={() => setIsAddMemberDialogOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add Member
           </Button>
         </div>
@@ -78,8 +75,8 @@ export default function TeamPage() {
                       <TableRow>
                           <TableHead>Member</TableHead>
                           <TableHead className="hidden md:table-cell">Role</TableHead>
-                          <TableHead className="hidden lg:table-cell">Contracted Hours</TableHead>
-                          <TableHead>Logged (This Month)</TableHead>
+                          <TableHead className="hidden lg:table-cell">Contract Start</TableHead>
+                          <TableHead className="hidden lg:table-cell">Contract End</TableHead>
                           <TableHead><span className="sr-only">Actions</span></TableHead>
                       </TableRow>
                   </TableHeader>
@@ -101,8 +98,8 @@ export default function TeamPage() {
                               <TableCell className="hidden md:table-cell">
                                   <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                               </TableCell>
-                              <TableCell className="hidden lg:table-cell">{member.contract.weeklyHours}h / week</TableCell>
-                              <TableCell>{loggedHours[member.id] ? `${loggedHours[member.id]}h` : '...'}</TableCell>
+                              <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
+                              <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
                               <TableCell>
                                   <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
@@ -142,6 +139,12 @@ export default function TeamPage() {
             onSave={handleSaveContract}
         />
       )}
+      <AddMemberDialog
+        isOpen={isAddMemberDialogOpen}
+        onOpenChange={setIsAddMemberDialogOpen}
+        onAddMember={handleAddMember}
+        teamMembers={teamMembers}
+      />
     </>
   )
 }

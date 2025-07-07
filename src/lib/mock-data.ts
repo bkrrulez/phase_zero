@@ -5,6 +5,8 @@ export type User = {
   email: string;
   role: "Employee" | "Team Lead" | "Super Admin";
   avatar: string;
+  reportsTo?: string; // User ID of manager
+  associatedProjectIds?: string[];
   contract: {
     startDate: string;
     endDate: string | null;
@@ -46,6 +48,8 @@ const alexSmithUser: User = {
   email: "alex.smith@example.com",
   role: "Team Lead",
   avatar: "https://placehold.co/100x100.png",
+  reportsTo: 'admin-1',
+  associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
   contract: {
     startDate: "2022-01-01",
     endDate: null,
@@ -59,6 +63,7 @@ const adminUser: User = {
   email: "admin1@example.com",
   role: "Super Admin",
   avatar: "https://placehold.co/100x100.png",
+  associatedProjectIds: ['proj-1', 'proj-2', 'proj-3', 'proj-4'],
   contract: {
     startDate: "2020-01-01",
     endDate: null,
@@ -76,6 +81,8 @@ export const teamMembers: User[] = [
     email: "jane.doe@example.com",
     role: "Employee",
     avatar: "https://placehold.co/100x100.png",
+    reportsTo: 'user-1',
+    associatedProjectIds: ['proj-1', 'proj-4'],
     contract: {
       startDate: "2022-03-15",
       endDate: null,
@@ -88,6 +95,8 @@ export const teamMembers: User[] = [
     email: "peter.jones@example.com",
     role: "Employee",
     avatar: "https://placehold.co/100x100.png",
+    reportsTo: 'user-1',
+    associatedProjectIds: ['proj-2'],
     contract: {
       startDate: "2023-08-01",
       endDate: "2024-08-01",
@@ -100,6 +109,8 @@ export const teamMembers: User[] = [
     email: "susan.miller@example.com",
     role: "Employee",
     avatar: "https://placehold.co/100x100.png",
+    reportsTo: 'user-1',
+    associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
     contract: {
       startDate: "2021-11-20",
       endDate: null,

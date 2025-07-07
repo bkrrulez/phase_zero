@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { projects, tasks } from "@/lib/mock-data";
+import { projects, tasks, currentUser } from "@/lib/mock-data";
 
 const logTimeSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -51,6 +51,8 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
       remarks: '',
     }
   });
+
+  const availableProjects = projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
 
   function onSubmit(data: LogTimeFormValues) {
     onLogTime(data);
@@ -149,9 +151,13 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.name}>{project.name}</SelectItem>
-                      ))}
+                      {availableProjects.length > 0 ? (
+                        availableProjects.map((project) => (
+                          <SelectItem key={project.id} value={project.name}>{project.name}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>No projects assigned</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
