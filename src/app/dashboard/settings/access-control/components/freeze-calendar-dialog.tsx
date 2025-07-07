@@ -57,6 +57,12 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
   const [tillDate, setTillDate] = useState<Date | undefined>(lastDayOfPreviousMonth);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   
+  const [isTillDatePickerOpen, setIsTillDatePickerOpen] = useState(false);
+  const [tempTillDate, setTempTillDate] = useState<Date | undefined>();
+
+  const [isDateRangePickerOpen, setIsDateRangePickerOpen] = useState(false);
+  const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>();
+
   const timePeriodWatcher = form.watch('timePeriod');
 
   const availableTeams = useMemo(() => {
@@ -193,25 +199,40 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
             )}
             
             {timePeriodWatcher === 'tillDate' && (
-              <Popover>
+              <Popover open={isTillDatePickerOpen} onOpenChange={setIsTillDatePickerOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !tillDate && "text-muted-foreground")}>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !tillDate && "text-muted-foreground")}
+                    onClick={() => {
+                        setTempTillDate(tillDate);
+                        setIsTillDatePickerOpen(true);
+                    }}
+                  >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {tillDate ? format(tillDate, 'PPP') : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={tillDate} onSelect={setTillDate} toDate={lastDayOfPreviousMonth} initialFocus />
+                  <Calendar mode="single" selected={tempTillDate} onSelect={setTempTillDate} toDate={lastDayOfPreviousMonth} initialFocus />
+                    <div className="p-2 border-t flex justify-end">
+                        <Button size="sm" onClick={() => {
+                            setTillDate(tempTillDate);
+                            setIsTillDatePickerOpen(false);
+                        }}>Ok</Button>
+                    </div>
                 </PopoverContent>
               </Popover>
             )}
 
             {timePeriodWatcher === 'customRange' && (
-               <Popover>
+               <Popover open={isDateRangePickerOpen} onOpenChange={setIsDateRangePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant={"outline"}
                     className={cn("w-full justify-start text-left font-normal", !dateRange?.from && "text-muted-foreground")}
+                     onClick={() => {
+                        setTempDateRange(dateRange);
+                        setIsDateRangePickerOpen(true);
+                    }}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {dateRange?.from ? (
@@ -232,11 +253,17 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
                     initialFocus
                     mode="range"
                     defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
+                    selected={tempDateRange}
+                    onSelect={setTempDateRange}
                     numberOfMonths={2}
                     toDate={lastDayOfPreviousMonth}
                   />
+                    <div className="p-2 border-t flex justify-end">
+                        <Button size="sm" onClick={() => {
+                            setDateRange(tempDateRange);
+                            setIsDateRangePickerOpen(false);
+                        }}>Ok</Button>
+                    </div>
                 </PopoverContent>
               </Popover>
             )}

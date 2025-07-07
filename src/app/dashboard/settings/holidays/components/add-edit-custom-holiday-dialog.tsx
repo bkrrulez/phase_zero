@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -47,6 +47,9 @@ export function AddEditCustomHolidayDialog({ isOpen, onOpenChange, onSave, holid
       appliesTo: 'all-members'
     },
   });
+
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>();
   
   useEffect(() => {
     if (holiday) {
@@ -115,12 +118,16 @@ export function AddEditCustomHolidayDialog({ isOpen, onOpenChange, onSave, holid
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <Popover>
+                  <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
                           variant={"outline"}
                           className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                          onClick={() => {
+                            setTempDate(field.value);
+                            setIsDatePickerOpen(true);
+                          }}
                         >
                           {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -130,10 +137,18 @@ export function AddEditCustomHolidayDialog({ isOpen, onOpenChange, onSave, holid
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
+                        selected={tempDate}
+                        onSelect={setTempDate}
                         initialFocus
                       />
+                       <div className="p-2 border-t flex justify-end">
+                            <Button size="sm" onClick={() => {
+                                if (tempDate) {
+                                    field.onChange(tempDate);
+                                }
+                                setIsDatePickerOpen(false);
+                            }}>Ok</Button>
+                        </div>
                     </PopoverContent>
                   </Popover>
                   <FormMessage />

@@ -21,6 +21,7 @@ import { currentUser } from "@/lib/mock-data";
 import { useAccessControl } from "../contexts/AccessControlContext";
 import { useProjects } from "../contexts/ProjectsContext";
 import { useTasks } from "../contexts/TasksContext";
+import { useTimeTracking } from "../contexts/TimeTrackingContext";
 
 const logTimeSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -39,10 +40,10 @@ export type LogTimeFormValues = z.infer<typeof logTimeSchema>;
 interface LogTimeDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onLogTime: (data: LogTimeFormValues) => void;
 }
 
-export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialogProps) {
+export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
+  const { logTime } = useTimeTracking();
   const form = useForm<LogTimeFormValues>({
     resolver: zodResolver(logTimeSchema),
     defaultValues: {
@@ -54,6 +55,10 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
       remarks: '',
     }
   });
+
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>();
+
   const { freezeRules } = useAccessControl();
   const { projects } = useProjects();
   const { tasks } = useTasks();
@@ -79,8 +84,11 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
   };
 
   function onSubmit(data: LogTimeFormValues) {
-    onLogTime(data);
-    form.reset();
+    const { success } = logTime(data);
+    if(success) {
+        onOpenChange(false);
+        form.reset();
+    }
   }
 
   return (
@@ -100,7 +108,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date</FormLabel>
-                  <Popover>
+                  <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -109,6 +117,10 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
                             "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
+                           onClick={() => {
+                              setTempDate(field.value);
+                              setIsDatePickerOpen(true);
+                           }}
                         >
                           {field.value ? (
                             format(field.value, "PPP")
@@ -122,12 +134,20 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
+                        selected={tempDate}
+                        onSelect={setTempDate}
                         toDate={new Date()}
                         disabled={(date) => date > new Date() || isDateFrozen(date)}
                         initialFocus
                       />
+                       <div className="p-2 border-t flex justify-end">
+                            <Button size="sm" onClick={() => {
+                                if (tempDate) {
+                                    field.onChange(tempDate);
+                                }
+                                setIsDatePickerOpen(false);
+                            }}>Ok</Button>
+                        </div>
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
