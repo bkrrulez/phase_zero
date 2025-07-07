@@ -1,3 +1,4 @@
+
 export type User = {
   id: string;
   name: string;
@@ -27,6 +28,16 @@ export type HolidayRequest = {
   startDate: string;
   endDate: string;
   status: "Pending" | "Approved" | "Rejected";
+};
+
+export type Project = {
+  id: string;
+  name: string;
+};
+
+export type Task = {
+  id: string;
+  name: string;
 };
 
 const alexSmithUser: User = {
@@ -128,3 +139,20 @@ export const monthlyChartData = Array.from({ length: 12 }, (_, i) => {
     if (d.date === "12") d.hours = 4;
     return d;
 });
+
+export const projects: Project[] = [
+  { id: "proj-1", name: "Project A" },
+  { id: "proj-2", name: "Project B" },
+  { id: "proj-3", name: "Internal" },
+  { id: "proj-4", name: "Client X" },
+];
+
+export const tasks: Task[] = [
+  { id: "task-1", name: "Feature Development" },
+  { id: "task-2", name: "Bug Fixing" },
+  { id: "task-3", name: "UI/UX Design" },
+  { id: "task-4", "name": "Code Review" },
+  { id: "task-5", name: "Documentation" },
+  { id: "task-6", name: "Team Meeting" },
+  { id: "task-7", name: "Client Communication" },
+];
