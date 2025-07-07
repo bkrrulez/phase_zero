@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { currentUser } from "@/lib/mock-data";
 
 export default function LoginPage() {
   return (
@@ -20,7 +21,7 @@ export default function LoginPage() {
           <form className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required />
+              <Input id="email" type="email" placeholder="m@example.com" defaultValue={currentUser.email} required />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">
@@ -34,6 +35,9 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" asChild>
                 <Link href="/dashboard">Login</Link>
             </Button>
+            <p className="text-xs text-center text-muted-foreground pt-2">
+              This is a demo. You can use any email and password.
+            </p>
           </form>
         </CardContent>
       </Card>
