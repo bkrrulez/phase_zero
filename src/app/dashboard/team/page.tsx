@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,7 +111,9 @@ export default function TeamPage() {
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
                                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                          <DropdownMenuItem>View Report</DropdownMenuItem>
+                                          <DropdownMenuItem asChild>
+                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>View Report</Link>
+                                          </DropdownMenuItem>
                                           <DropdownMenuItem 
                                             onClick={() => setEditingUser(member)}
                                             disabled={!canEditMember(member)}
