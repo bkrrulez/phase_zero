@@ -42,7 +42,7 @@ const editMemberSchema = z.object({
   teamId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required.'),
   endDate: z.string().optional().nullable(),
-  weeklyHours: z.coerce.number().int().min(1, 'Weekly hours must be at least 1.'),
+  weeklyHours: z.coerce.number().int().min(0, 'Weekly hours cannot be negative.').max(40, 'Weekly hours cannot exceed 40.'),
   associatedProjectIds: z.array(z.string()).min(1, 'Please select at least one project.'),
 }).refine(data => data.role === 'Super Admin' || !!data.reportsTo, {
     message: 'This field is required for Employees and Team Leads.',
