@@ -21,7 +21,7 @@ import {
   Shield,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, type ReactNode } from "react";
+import * as React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Sidebar,
   SidebarContent,
@@ -53,31 +58,51 @@ import {
 import { currentUser } from "@/lib/mock-data";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
-import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
-import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
+import { LogTimeDialog } from "./components/log-time-dialog";
+import { NotificationPopover } from "./components/notification-popover";
+import { TimeTrackingProvider } from "./contexts/TimeTrackingContext";
 import { MembersProvider } from "./contexts/MembersContext";
 import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
 import { TasksProvider } from "./contexts/TasksContext";
 import { HolidaysProvider } from "./contexts/HolidaysContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
+import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
 
-function LayoutContent({ children }: { children: ReactNode }) {
+const getStatus = (startDate: string, endDate: string) => {
+  const now = new Date();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (now < start) return 'Scheduled';
+  if (now > end) return 'Expired';
+  return 'Active';
+};
+
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = useState(false);
-  const { logTime } = useTimeTracking();
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
+  const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
+  
+  const { pushMessages, userMessageStates } = usePushMessages();
 
-  useEffect(() => {
+  React.useEffect(() => {
     setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
   }, [pathname]);
+  
+  const activeUnreadCount = React.useMemo(() => {
+    const userReadIds = userMessageStates[currentUser.id]?.readMessageIds || [];
+    return pushMessages.filter(msg => {
+      const isApplicable = msg.receivers === 'all-members' || 
+                           (msg.receivers === 'all-teams' && currentUser.teamId) ||
+                           (Array.isArray(msg.receivers) && currentUser.teamId && msg.receivers.includes(currentUser.teamId));
+      
+      return isApplicable && 
+             getStatus(msg.startDate, msg.endDate) === 'Active' && 
+             !userReadIds.includes(msg.id);
+    }).length;
+  }, [pushMessages, userMessageStates]);
 
-  const handleLogTime = (data: LogTimeFormValues) => {
-    const { success } = logTime(data);
-    if (success) {
-      setIsLogTimeDialogOpen(false);
-    }
-  };
 
   return (
     <SidebarProvider>
@@ -85,7 +110,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <LogoIcon className="w-8 h-8" />
-            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Wise</span></h1>
+            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Tool</span></h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -180,21 +205,23 @@ function LayoutContent({ children }: { children: ReactNode }) {
                         </SidebarMenuItem>
                       )}
                       {currentUser.role === 'Super Admin' && (
-                        <SidebarMenuItem>
-                          <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/holidays")}>
-                              <Link href="/dashboard/settings/holidays">
-                                  <CalendarDays /> Holidays
-                              </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
+                        <>
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/holidays")}>
+                                <Link href="/dashboard/settings/holidays">
+                                    <CalendarDays /> Holidays
+                                </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/push-messages")}>
+                                <Link href="/dashboard/settings/push-messages">
+                                    <Send /> Push Messages
+                                </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        </>
                       )}
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/push-messages")}>
-                            <Link href="/dashboard/settings/push-messages">
-                                <Send /> Push Messages
-                            </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
                     </SidebarMenu>
                 </CollapsibleContent>
             </Collapsible>
@@ -216,10 +243,22 @@ function LayoutContent({ children }: { children: ReactNode }) {
             <Button onClick={() => setIsLogTimeDialogOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" /> Log Time
             </Button>
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Notifications</span>
-            </Button>
+            <Popover open={isNotificationPopoverOpen} onOpenChange={setIsNotificationPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {activeUnreadCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                      {activeUnreadCount}
+                    </span>
+                  )}
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-96 p-0">
+                <NotificationPopover onClose={() => setIsNotificationPopoverOpen(false)} />
+              </PopoverContent>
+            </Popover>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 p-1 h-auto">
@@ -256,7 +295,6 @@ function LayoutContent({ children }: { children: ReactNode }) {
         <LogTimeDialog
           isOpen={isLogTimeDialogOpen}
           onOpenChange={setIsLogTimeDialogOpen}
-          onLogTime={handleLogTime}
         />
       </SidebarInset>
     </SidebarProvider>
@@ -276,7 +314,9 @@ export default function DashboardLayout({
             <TeamsProvider>
               <MembersProvider>
                 <AccessControlProvider>
-                  <LayoutContent>{children}</LayoutContent>
+                  <PushMessagesProvider>
+                    <LayoutContent>{children}</LayoutContent>
+                  </PushMessagesProvider>
                 </AccessControlProvider>
               </MembersProvider>
             </TeamsProvider>

@@ -78,6 +78,19 @@ export type FreezeRule = {
   endDate: string;
 };
 
+export type PushMessage = {
+  id: string;
+  context: string;
+  messageBody: string;
+  startDate: string; // ISO string
+  endDate: string; // ISO string
+  receivers: 'all-members' | 'all-teams' | string[]; // Array of team IDs if not all
+};
+
+export type UserMessageState = {
+  readMessageIds: string[];
+};
+
 export const teams: Team[] = [
     { id: "team-1", name: "Alpha Team", projectIds: ['proj-1', 'proj-2', 'proj-3'] },
     { id: "team-2", name: "Bravo Team", projectIds: ['proj-4'] },
@@ -258,3 +271,7 @@ export let customHolidays: CustomHoliday[] = [
 ];
 
 export let freezeRules: FreezeRule[] = [];
+
+export const pushMessages: PushMessage[] = [];
+
+export const userMessageStates: Record<string, UserMessageState> = {};
