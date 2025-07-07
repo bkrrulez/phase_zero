@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
+import * as React from 'react';
 import { teamMembers as initialTeamMembers, type User } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -11,9 +11,9 @@ interface MembersContextType {
   addMember: (newUser: User) => void;
 }
 
-export const MembersContext = createContext<MembersContextType | undefined>(undefined);
+export const MembersContext = React.createContext<MembersContextType | undefined>(undefined);
 
-export function MembersProvider({ children }: { children: ReactNode }) {
+export function MembersProvider({ children }: { children: React.ReactNode }) {
   const [teamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
 
   const updateMember = (updatedUser: User) => {
@@ -34,7 +34,7 @@ export function MembersProvider({ children }: { children: ReactNode }) {
 }
 
 export const useMembers = () => {
-  const context = useContext(MembersContext);
+  const context = React.useContext(MembersContext);
   if (!context) {
     throw new Error("useMembers must be used within a MembersProvider");
   }

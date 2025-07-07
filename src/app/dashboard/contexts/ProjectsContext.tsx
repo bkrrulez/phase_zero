@@ -1,6 +1,6 @@
 
 'use client';
-import { createContext, useContext, type ReactNode } from 'react';
+import * as React from 'react';
 import { projects as initialProjects, type Project } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -11,9 +11,9 @@ interface ProjectsContextType {
   deleteProject: (projectId: string) => void;
 }
 
-export const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
+export const ProjectsContext = React.createContext<ProjectsContextType | undefined>(undefined);
 
-export function ProjectsProvider({ children }: { children: ReactNode }) {
+export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useLocalStorage<Project[]>('projects', initialProjects);
 
   const addProject = (projectData: Omit<Project, 'id'>) => {
@@ -44,7 +44,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
 }
 
 export const useProjects = () => {
-  const context = useContext(ProjectsContext);
+  const context = React.useContext(ProjectsContext);
   if (!context) {
     throw new Error("useProjects must be used within a ProjectsProvider");
   }

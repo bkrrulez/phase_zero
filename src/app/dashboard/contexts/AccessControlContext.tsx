@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
+import * as React from 'react';
 import { freezeRules as initialFreezeRules, type FreezeRule } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -11,9 +11,9 @@ interface AccessControlContextType {
   removeFreezeRule: (ruleId: string) => void;
 }
 
-const AccessControlContext = createContext<AccessControlContextType | undefined>(undefined);
+const AccessControlContext = React.createContext<AccessControlContextType | undefined>(undefined);
 
-export function AccessControlProvider({ children }: { children: ReactNode }) {
+export function AccessControlProvider({ children }: { children: React.ReactNode }) {
   const [freezeRules, setFreezeRules] = useLocalStorage<FreezeRule[]>('freezeRules', initialFreezeRules);
 
   const addFreezeRule = (newRule: FreezeRule) => {
@@ -32,7 +32,7 @@ export function AccessControlProvider({ children }: { children: ReactNode }) {
 }
 
 export const useAccessControl = () => {
-  const context = useContext(AccessControlContext);
+  const context = React.useContext(AccessControlContext);
   if (!context) {
     throw new Error("useAccessControl must be used within an AccessControlProvider");
   }

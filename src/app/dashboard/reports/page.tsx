@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -47,10 +47,10 @@ export default function ReportsPage() {
   const { publicHolidays, customHolidays } = useHolidays();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
 
-  const reportData = useMemo(() => {
+  const reportData = React.useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
         if (currentUser.role === 'Super Admin') {
             return member.id !== currentUser.id;

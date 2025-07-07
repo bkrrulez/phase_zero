@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
+import * as React from 'react';
 import type { TimeEntry } from "@/lib/mock-data";
 import { timeEntries as initialTimeEntries, currentUser } from "@/lib/mock-data";
 import { format } from 'date-fns';
@@ -14,7 +14,7 @@ interface TimeTrackingContextType {
   logTime: (data: LogTimeFormValues) => { success: boolean };
 }
 
-export const TimeTrackingContext = createContext<TimeTrackingContextType | undefined>(undefined);
+export const TimeTrackingContext = React.createContext<TimeTrackingContextType | undefined>(undefined);
 
 const calculateDuration = (startTime: string, endTime: string): number => {
     const start = new Date(`1970-01-01T${startTime}`);
@@ -23,7 +23,7 @@ const calculateDuration = (startTime: string, endTime: string): number => {
     return diff / (1000 * 60 * 60);
 };
 
-export function TimeTrackingProvider({ children }: { children: ReactNode }) {
+export function TimeTrackingProvider({ children }: { children: React.ReactNode }) {
   const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', initialTimeEntries);
   const { toast } = useToast();
 
@@ -54,7 +54,7 @@ export function TimeTrackingProvider({ children }: { children: ReactNode }) {
 }
 
 export const useTimeTracking = () => {
-  const context = useContext(TimeTrackingContext);
+  const context = React.useContext(TimeTrackingContext);
   if (!context) {
     throw new Error("useTimeTracking must be used within a TimeTrackingProvider");
   }

@@ -1,6 +1,6 @@
 
 'use client';
-import { createContext, useContext, type ReactNode } from 'react';
+import * as React from 'react';
 import { teams as initialTeams, type Team } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -9,9 +9,9 @@ interface TeamsContextType {
   setTeams: (teams: Team[] | ((prev: Team[]) => Team[])) => void;
 }
 
-export const TeamsContext = createContext<TeamsContextType | undefined>(undefined);
+export const TeamsContext = React.createContext<TeamsContextType | undefined>(undefined);
 
-export function TeamsProvider({ children }: { children: ReactNode }) {
+export function TeamsProvider({ children }: { children: React.ReactNode }) {
   const [teams, setTeams] = useLocalStorage<Team[]>('teams', initialTeams);
 
   return (
@@ -22,7 +22,7 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
 }
 
 export const useTeams = () => {
-  const context = useContext(TeamsContext);
+  const context = React.useContext(TeamsContext);
   if (!context) {
     throw new Error("useTeams must be used within a TeamsProvider");
   }

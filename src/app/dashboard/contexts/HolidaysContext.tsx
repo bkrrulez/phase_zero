@@ -1,6 +1,6 @@
 
 'use client';
-import { createContext, useContext, type ReactNode } from 'react';
+import * as React from 'react';
 import { publicHolidays as initialPublicHolidays, customHolidays as initialCustomHolidays, type PublicHoliday, type CustomHoliday } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -11,9 +11,9 @@ interface HolidaysContextType {
   setCustomHolidays: (holidays: CustomHoliday[] | ((prev: CustomHoliday[]) => CustomHoliday[])) => void;
 }
 
-export const HolidaysContext = createContext<HolidaysContextType | undefined>(undefined);
+export const HolidaysContext = React.createContext<HolidaysContextType | undefined>(undefined);
 
-export function HolidaysProvider({ children }: { children: ReactNode }) {
+export function HolidaysProvider({ children }: { children: React.ReactNode }) {
     const [publicHolidays, setPublicHolidays] = useLocalStorage<PublicHoliday[]>('publicHolidays', initialPublicHolidays);
     const [customHolidays, setCustomHolidays] = useLocalStorage<CustomHoliday[]>('customHolidays', initialCustomHolidays);
 
@@ -25,7 +25,7 @@ export function HolidaysProvider({ children }: { children: ReactNode }) {
 }
 
 export const useHolidays = () => {
-  const context = useContext(HolidaysContext);
+  const context = React.useContext(HolidaysContext);
   if (!context) {
     throw new Error("useHolidays must be used within a HolidaysProvider");
   }
