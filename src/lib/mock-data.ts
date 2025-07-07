@@ -1,127 +1,97 @@
+import type { InitialData } from './types';
 
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: "Employee" | "Team Lead" | "Super Admin";
-  avatar: string;
-  reportsTo?: string; // User ID of manager
-  teamId?: string;
-  associatedProjectIds?: string[];
-  contract: {
-    startDate: string;
-    endDate: string | null;
-    weeklyHours: number;
-  };
-};
-
-export type TimeEntry = {
-  id: string;
-  userId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  task: string;
-  duration: number; // in hours
-  remarks?: string;
-};
-
-export type HolidayRequest = {
-  id: string;
-  userId: string;
-  startDate: string;
-  endDate: string;
-  status: "Pending" | "Approved" | "Rejected";
-};
-
-export type Project = {
-  id: string;
-  name: string;
-  taskIds?: string[];
-  budget?: number;
-  details?: string;
-};
-
-export type Task = {
-  id: string;
-  name: string;
-  details?: string;
-};
-
-export type Team = {
-  id: string;
-  name: string;
-  projectIds?: string[];
-};
-
-export type PublicHoliday = {
-  id: string;
-  country: string;
-  name: string;
-  date: string; // ISO string for simplicity
-  type: "Full Day" | "Half Day";
-};
-
-export type CustomHoliday = {
-  id: string;
-  country: string;
-  name: string;
-  date: string; // ISO string
-  type: "Full Day" | "Half Day";
-  appliesTo: string; // 'all-teams', 'all-members', or a teamId
-};
-
-export type FreezeRule = {
-  id: string;
-  teamId: string; // 'all-teams' or a specific team id
-  startDate: string;
-  endDate: string;
-};
-
-export type PushMessage = {
-  id: string;
-  context: string;
-  messageBody: string;
-  startDate: string; // ISO string
-  endDate: string; // ISO string
-  receivers: 'all-members' | 'all-teams' | string[]; // Array of team IDs if not all
-};
-
-export type UserMessageState = {
-  readMessageIds: string[];
-};
-
-export type AppNotification = {
-  id: string;
-  type: 'holidayRequest';
-  recipientIds: string[];
-  readBy: string[]; // array of userIds who have read it
-  timestamp: string;
-  title: string;
-  body: string;
-  referenceId: string; // holidayRequest id
-};
-
-
-export type LogEntry = {
-  id:string;
-  timestamp: string; // ISO string
-  message: string;
-};
-
-export type InitialData = {
-  teamMembers: User[];
-  timeEntries: TimeEntry[];
-  holidayRequests: HolidayRequest[];
-  projects: Project[];
-  tasks: Task[];
-  teams: Team[];
-  publicHolidays: PublicHoliday[];
-  customHolidays: CustomHoliday[];
-  freezeRules: FreezeRule[];
-  pushMessages: PushMessage[];
-  userMessageStates: Record<string, UserMessageState>;
-  notifications: AppNotification[];
-  systemLogs: LogEntry[];
-  annualLeaveAllowance: number;
+export const initialData: InitialData = {
+  teams: [
+    { id: 'team-design', name: 'Design' },
+    { id: 'team-eng', name: 'Engineering' },
+  ],
+  tasks: [
+    { id: 'task-1', name: 'UI Design', details: 'Designing user interfaces for new features.' },
+    { id: 'task-2', name: 'UX Research', details: 'Conducting user research and creating wireframes.' },
+    { id: 'task-3', name: 'Frontend Development', details: 'Building the user interface with React.' },
+    { id: 'task-4', name: 'Backend Development', details: 'Developing APIs and database logic.' },
+    { id: 'task-5', name: 'Project Management', details: 'Planning and overseeing project progress.' },
+  ],
+  projects: [
+    { id: 'proj-1', name: 'Website Redesign', budget: 50000, details: 'Complete overhaul of the company website.', taskIds: ['task-1', 'task-2', 'task-3', 'task-5'] },
+    { id: 'proj-2', name: 'Mobile App', budget: 75000, details: 'New mobile application for iOS and Android.', taskIds: ['task-1', 'task-3', 'task-4', 'task-5'] },
+    { id: 'proj-3', name: 'Internal CRM', budget: 30000, details: 'Customer relationship management tool for the sales team.', taskIds: ['task-3', 'task-4'] },
+  ],
+  teamMembers: [
+    {
+      id: 'user-admin',
+      name: 'Bikramjit Chowdhury',
+      email: 'admin@example.com',
+      role: 'Super Admin',
+      avatar: 'https://placehold.co/100x100.png',
+      associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
+      contract: { startDate: '2023-01-01', endDate: null, weeklyHours: 40 },
+    },
+    {
+      id: 'user-lead',
+      name: 'Jane Doe',
+      email: 'jane.doe@example.com',
+      role: 'Team Lead',
+      avatar: 'https://placehold.co/100x100.png',
+      reportsTo: 'user-admin',
+      teamId: 'team-eng',
+      associatedProjectIds: ['proj-2', 'proj-3'],
+      contract: { startDate: '2023-03-15', endDate: null, weeklyHours: 40 },
+    },
+    {
+      id: 'user-1',
+      name: 'John Smith',
+      email: 'john.smith@example.com',
+      role: 'Employee',
+      avatar: 'https://placehold.co/100x100.png',
+      reportsTo: 'user-lead',
+      teamId: 'team-eng',
+      associatedProjectIds: ['proj-2'],
+      contract: { startDate: '2023-05-20', endDate: null, weeklyHours: 40 },
+    },
+    {
+      id: 'user-2',
+      name: 'Emily White',
+      email: 'emily.white@example.com',
+      role: 'Employee',
+      avatar: 'https://placehold.co/100x100.png',
+      reportsTo: 'user-lead',
+      teamId: 'team-design',
+      associatedProjectIds: ['proj-1'],
+      contract: { startDate: '2023-07-01', endDate: '2024-12-31', weeklyHours: 32 },
+    },
+  ],
+  timeEntries: [
+    { id: 'te-1', userId: 'user-1', date: '2024-07-01', startTime: '09:00', endTime: '12:00', task: 'Mobile App - Backend Development', duration: 3, remarks: 'Worked on user auth API.' },
+    { id: 'te-2', userId: 'user-1', date: '2024-07-01', startTime: '13:00', endTime: '17:00', task: 'Mobile App - Backend Development', duration: 4, remarks: 'Database schema design.' },
+    { id: 'te-3', userId: 'user-2', date: '2024-07-02', startTime: '10:00', endTime: '16:00', task: 'Website Redesign - UI Design', duration: 5.5, remarks: 'Created new landing page mockups.' },
+  ],
+  holidayRequests: [
+    { id: 'hr-1', userId: 'user-1', startDate: '2024-08-05', endDate: '2024-08-09', status: 'Approved' },
+    { id: 'hr-2', userId: 'user-2', startDate: '2024-09-02', endDate: '2024-09-02', status: 'Pending' },
+  ],
+  publicHolidays: [
+    { id: 'ph-1', country: 'USA', name: 'Independence Day', date: '2024-07-04', type: 'Full Day' },
+    { id: 'ph-2', country: 'USA', name: 'Labor Day', date: '2024-09-02', type: 'Full Day' },
+  ],
+  customHolidays: [
+      { id: 'ch-1', country: 'Global', name: 'Company Anniversary', date: '2024-10-10', type: 'Full Day', appliesTo: 'all-members'},
+  ],
+  freezeRules: [],
+  pushMessages: [
+    {
+      id: 'msg-1',
+      context: 'Welcome!',
+      messageBody: 'Welcome to the new TimeTool platform!',
+      startDate: new Date(new Date().setDate(new Date().getDate() - 7)).toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+      receivers: 'all-members'
+    }
+  ],
+  userMessageStates: {},
+  notifications: [],
+  systemLogs: [
+    { id: 'log-1', timestamp: new Date().toISOString(), message: 'System initialized.'}
+  ],
+  annualLeaveAllowance: 25,
 };

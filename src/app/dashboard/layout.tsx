@@ -71,8 +71,7 @@ import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesCo
 import { SystemLogProvider } from "./contexts/SystemLogContext";
 import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { getInitialData } from "./actions";
-import { type InitialData } from "@/lib/types";
+import { initialData } from "@/lib/mock-data";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -321,10 +320,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
 function DataProviders({
   children,
-  initialData,
 }: {
   children: React.ReactNode;
-  initialData: InitialData;
 }) {
   return (
     <SystemLogProvider initialLogs={initialData.systemLogs}>
@@ -359,24 +356,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [initialData, setInitialData] = React.useState<InitialData | null>(null);
-  
-  React.useEffect(() => {
-    getInitialData().then(data => {
-      setInitialData(data);
-    }).catch(console.error);
-  }, []);
-
-  if (!initialData) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="text-xl font-semibold text-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   return (
-    <DataProviders initialData={initialData}>
+    <DataProviders>
       {children}
     </DataProviders>
   );

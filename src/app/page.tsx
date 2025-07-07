@@ -10,7 +10,8 @@ import Link from "next/link";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { useToast } from '@/hooks/use-toast';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { login } from './dashboard/actions';
+import { type User } from '@/lib/types';
+import { initialData } from '@/lib/mock-data';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,28 +25,35 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    try {
-      const result = await login(email, password);
-      
-      if (result.success && result.userId) {
-        setCurrentUserId(result.userId);
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com';
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'password';
+    
+    // Allow login with mock users or the admin account
+    const allUsers = initialData.teamMembers;
+    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    let loginSuccessful = false;
+    if (user) {
+      if (user.role === 'Super Admin' && password === adminPassword) {
+        loginSuccessful = true;
+      } else if (user.role !== 'Super Admin' && password === 'password') {
+        // All other mock users have the password 'password'
+        loginSuccessful = true;
+      }
+    }
+    
+    if (loginSuccessful && user) {
+        setCurrentUserId(user.id);
         router.push('/dashboard');
-      } else {
+    } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: result.error || 'Invalid email or password.',
+          description: 'Invalid email or password.',
         });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Error',
-        description: 'An unexpected error occurred. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsLoading(false);
   };
 
   return (
