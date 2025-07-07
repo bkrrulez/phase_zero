@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { add, format, lastDayOfMonth, startOfMonth, subMonths } from 'date-fns';
+import { format, lastDayOfMonth, startOfMonth, subMonths } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ interface FreezeCalendarDialogProps {
 
 const lastDayOfPreviousMonth = lastDayOfMonth(subMonths(new Date(), 1));
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-const months = Array.from({ length: 12 }, (_, i) => ({
+const allMonths = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
@@ -62,6 +62,27 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
     if (currentUser.role === 'Team Lead') return teams.filter(t => t.id === currentUser.teamId);
     return [];
   }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const previousMonthIndex = subMonths(now, 1).getMonth();
+
+    if (selectedYear === currentYear && selectedMonth > previousMonthIndex) {
+        setSelectedMonth(previousMonthIndex);
+    }
+  }, [selectedYear, selectedMonth]);
+
+  const availableMonths = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const previousMonthIndex = subMonths(new Date(), 1).getMonth();
+
+    if (selectedYear === currentYear) {
+        return allMonths.filter(m => m.value <= previousMonthIndex);
+    }
+    
+    return allMonths;
+  }, [selectedYear]);
 
   const handleSubmit = () => {
     form.trigger().then(isValid => {
@@ -157,7 +178,7 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
                 <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
                   <SelectTrigger><SelectValue/></SelectTrigger>
                   <SelectContent>
-                    {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
+                    {availableMonths.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
                  <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
@@ -212,7 +233,7 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
                     selected={dateRange}
                     onSelect={setDateRange}
                     numberOfMonths={2}
-                    toDate={add(lastDayOfPreviousMonth, {days: 1})}
+                    toDate={lastDayOfPreviousMonth}
                   />
                 </PopoverContent>
               </Popover>
