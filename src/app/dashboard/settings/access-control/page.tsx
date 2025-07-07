@@ -17,14 +17,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { teams, currentUser, type FreezeRule } from '@/lib/mock-data';
+import { currentUser, type FreezeRule } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { FreezeCalendarDialog, type FreezeFormSubmitData } from './components/freeze-calendar-dialog';
 import { useAccessControl } from '../../contexts/AccessControlContext';
+import { useTeams } from '../../contexts/TeamsContext';
 
 export default function AccessControlPage() {
   const { toast } = useToast();
   const { freezeRules, addFreezeRule, removeFreezeRule } = useAccessControl();
+  const { teams } = useTeams();
   const [isFreezeDialogOpen, setIsFreezeDialogOpen] = useState(false);
   const [unfreezingRule, setUnfreezingRule] = useState<FreezeRule | null>(null);
 

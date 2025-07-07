@@ -9,21 +9,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { teams, type CustomHoliday, type PublicHoliday } from '@/lib/mock-data';
+import { type CustomHoliday, type PublicHoliday } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditCustomHolidayDialog, type CustomHolidayFormValues } from './add-edit-custom-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
+import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
 interface CustomHolidaysTabProps {
     holidays: CustomHoliday[];
-    setHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[]>>;
+    setHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[] | ((prev: CustomHoliday[]) => CustomHoliday[])>>;
     publicHolidays: PublicHoliday[];
 }
 
 export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: CustomHolidaysTabProps) {
     const { toast } = useToast();
+    const { teams } = useTeams();
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
     const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
@@ -176,7 +178,6 @@ export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: Cus
                 }}
                 onSave={handleSaveHoliday}
                 holiday={editingHoliday}
-                teams={teams}
             />
             
             <DeleteHolidayDialog 

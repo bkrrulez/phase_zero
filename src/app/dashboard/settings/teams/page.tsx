@@ -7,16 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { teams as initialTeams, projects as allProjects, currentUser, type User, type Team } from '@/lib/mock-data';
+import { currentUser, type User, type Team } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddTeamDialog, type TeamFormValues } from './components/add-team-dialog';
 import { EditTeamDialog } from './components/edit-team-dialog';
 import { useMembers } from '../../contexts/MembersContext';
+import { useTeams } from '../../contexts/TeamsContext';
+import { useProjects } from '../../contexts/ProjectsContext';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
     const { teamMembers, updateMember } = useMembers();
-    const [teams, setTeams] = useState<Team[]>(initialTeams);
+    const { teams, setTeams } = useTeams();
+    const { projects } = useProjects();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -27,15 +30,15 @@ export default function TeamsSettingsPage() {
         return teams.map(team => {
             const lead = teamMembers.find(u => u.teamId === team.id && u.role === 'Team Lead');
             const members = teamMembers.filter(u => u.teamId === team.id && u.role === 'Employee');
-            const projects = allProjects.filter(p => team.projectIds?.includes(p.id));
+            const teamProjects = projects.filter(p => team.projectIds?.includes(p.id));
             return {
                 ...team,
                 lead,
                 members,
-                projects,
+                projects: teamProjects,
             }
         });
-    }, [teams, teamMembers]);
+    }, [teams, teamMembers, projects]);
 
     const handleAddTeam = (data: TeamFormValues) => {
         const finalLeadId = data.leadId === 'none' ? undefined : data.leadId;
@@ -182,7 +185,7 @@ export default function TeamsSettingsPage() {
                         onOpenChange={setIsAddDialogOpen}
                         onAddTeam={handleAddTeam}
                         allUsers={teamMembers}
-                        allProjects={allProjects}
+                        allProjects={projects}
                     />
                     {editingTeam && (
                         <EditTeamDialog
@@ -191,7 +194,7 @@ export default function TeamsSettingsPage() {
                             onSaveTeam={handleSaveTeam}
                             team={editingTeam}
                             allUsers={teamMembers}
-                            allProjects={allProjects}
+                            allProjects={projects}
                         />
                     )}
                 </>

@@ -1,8 +1,9 @@
 
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { teamMembers as initialTeamMembers, type User } from "@/lib/mock-data";
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 interface MembersContextType {
   teamMembers: User[];
@@ -13,7 +14,7 @@ interface MembersContextType {
 export const MembersContext = createContext<MembersContextType | undefined>(undefined);
 
 export function MembersProvider({ children }: { children: ReactNode }) {
-  const [teamMembers, setTeamMembers] = useState<User[]>(initialTeamMembers);
+  const [teamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
 
   const updateMember = (updatedUser: User) => {
     setTeamMembers(prevMembers =>

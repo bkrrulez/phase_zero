@@ -19,7 +19,7 @@ const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 
 
 interface PublicHolidaysTabProps {
     holidays: PublicHoliday[];
-    setHolidays: React.Dispatch<React.SetStateAction<PublicHoliday[]>>;
+    setHolidays: React.Dispatch<React.SetStateAction<PublicHoliday[] | ((prev: PublicHoliday[]) => PublicHoliday[])>>;
 }
 
 export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabProps) {

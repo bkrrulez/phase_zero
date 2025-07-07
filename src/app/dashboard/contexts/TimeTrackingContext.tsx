@@ -1,11 +1,13 @@
+
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { TimeEntry } from "@/lib/mock-data";
 import { timeEntries as initialTimeEntries, currentUser } from "@/lib/mock-data";
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
@@ -22,7 +24,7 @@ const calculateDuration = (startTime: string, endTime: string): number => {
 };
 
 export function TimeTrackingProvider({ children }: { children: ReactNode }) {
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(initialTimeEntries);
+  const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', initialTimeEntries);
   const { toast } = useToast();
 
   const logTime = (data: LogTimeFormValues): { success: boolean } => {

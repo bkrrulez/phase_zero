@@ -7,15 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { projects as initialProjects, tasks as allTasks, currentUser, type Project } from '@/lib/mock-data';
+import { currentUser, type Project } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddProjectDialog, type ProjectFormValues } from './components/add-project-dialog';
 import { EditProjectDialog } from './components/edit-project-dialog';
 import { DeleteProjectDialog } from './components/delete-project-dialog';
+import { useProjects } from '../../contexts/ProjectsContext';
+import { useTasks } from '../../contexts/TasksContext';
 
 export default function ProjectsSettingsPage() {
     const { toast } = useToast();
-    const [projects, setProjects] = useState<Project[]>(initialProjects);
+    const { projects, addProject, updateProject, deleteProject } = useProjects();
+    const { tasks: allTasks } = useTasks();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -31,7 +34,7 @@ export default function ProjectsSettingsPage() {
                 tasks,
             }
         });
-    }, [projects]);
+    }, [projects, allTasks]);
     
     const formatCurrency = (value?: number) => {
         if (value === undefined || value === null) return 'N/A';
@@ -39,15 +42,7 @@ export default function ProjectsSettingsPage() {
     }
 
     const handleAddProject = (data: ProjectFormValues) => {
-        const newProject: Project = {
-            id: `project-${Date.now()}`,
-            name: data.name,
-            taskIds: data.taskIds,
-            budget: data.budget,
-            details: data.details,
-        };
-
-        setProjects(prev => [...prev, newProject]);
+        addProject(data);
         setIsAddDialogOpen(false);
         toast({
             title: "Project Added",
@@ -56,17 +51,7 @@ export default function ProjectsSettingsPage() {
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
-        setProjects(prevProjects => 
-            prevProjects.map(project => 
-                project.id === projectId ? { 
-                    ...project, 
-                    name: data.name,
-                    taskIds: data.taskIds,
-                    budget: data.budget,
-                    details: data.details,
-                } : project
-            )
-        );
+        updateProject(projectId, data);
         setEditingProject(null);
         toast({
             title: "Project Updated",
@@ -75,7 +60,7 @@ export default function ProjectsSettingsPage() {
     }
 
     const handleDeleteProject = (projectId: string) => {
-        setProjects(prev => prev.filter(p => p.id !== projectId));
+        deleteProject(projectId);
         setDeletingProject(null);
         toast({
             title: "Project Deleted",

@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { tasks as initialTasks, currentUser, type Task } from '@/lib/mock-data';
+import { currentUser, type Task } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddTaskDialog, type TaskFormValues } from './components/add-task-dialog';
 import { EditTaskDialog } from './components/edit-task-dialog';
 import { DeleteTaskDialog } from './components/delete-task-dialog';
+import { useTasks } from '../../contexts/TasksContext';
 
 export default function TasksSettingsPage() {
     const { toast } = useToast();
-    const [tasks, setTasks] = useState<Task[]>(initialTasks);
+    const { tasks, addTask, updateTask, deleteTask } = useTasks();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -24,13 +25,7 @@ export default function TasksSettingsPage() {
     const canManageTasks = currentUser.role === 'Super Admin';
 
     const handleAddTask = (data: TaskFormValues) => {
-        const newTask: Task = {
-            id: `task-${Date.now()}`,
-            name: data.name,
-            details: data.details,
-        };
-
-        setTasks(prev => [...prev, newTask]);
+        addTask(data);
         setIsAddDialogOpen(false);
         toast({
             title: "Task Added",
@@ -39,15 +34,7 @@ export default function TasksSettingsPage() {
     };
 
     const handleSaveTask = (taskId: string, data: TaskFormValues) => {
-        setTasks(prevTasks => 
-            prevTasks.map(task => 
-                task.id === taskId ? { 
-                    ...task, 
-                    name: data.name,
-                    details: data.details,
-                } : task
-            )
-        );
+        updateTask(taskId, data);
         setEditingTask(null);
         toast({
             title: "Task Updated",
@@ -56,7 +43,7 @@ export default function TasksSettingsPage() {
     }
 
     const handleDeleteTask = (taskId: string) => {
-        setTasks(prev => prev.filter(p => p.id !== taskId));
+        deleteTask(taskId);
         setDeletingTask(null);
         toast({
             title: "Task Deleted",

@@ -1,15 +1,15 @@
+
 'use client';
 
-import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { currentUser, publicHolidays as initialPublicHolidays, customHolidays as initialCustomHolidays, type PublicHoliday, type CustomHoliday } from "@/lib/mock-data";
+import { currentUser } from "@/lib/mock-data";
 import { PublicHolidaysTab } from "./components/public-holidays-tab";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomHolidaysTab } from "./components/custom-holidays-tab";
+import { useHolidays } from "../../contexts/HolidaysContext";
 
 export default function HolidaysSettingsPage() {
-  const [publicHolidays, setPublicHolidays] = useState<PublicHoliday[]>(initialPublicHolidays);
-  const [customHolidays, setCustomHolidays] = useState<CustomHoliday[]>(initialCustomHolidays);
+  const { publicHolidays, setPublicHolidays, customHolidays, setCustomHolidays } = useHolidays();
 
   if (currentUser.role !== 'Super Admin') {
     return (

@@ -1,8 +1,9 @@
 
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { freezeRules as initialFreezeRules, type FreezeRule } from "@/lib/mock-data";
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 interface AccessControlContextType {
   freezeRules: FreezeRule[];
@@ -13,7 +14,7 @@ interface AccessControlContextType {
 const AccessControlContext = createContext<AccessControlContextType | undefined>(undefined);
 
 export function AccessControlProvider({ children }: { children: ReactNode }) {
-  const [freezeRules, setFreezeRules] = useState<FreezeRule[]>(initialFreezeRules);
+  const [freezeRules, setFreezeRules] = useLocalStorage<FreezeRule[]>('freezeRules', initialFreezeRules);
 
   const addFreezeRule = (newRule: FreezeRule) => {
     setFreezeRules(prev => [...prev, newRule]);

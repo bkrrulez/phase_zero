@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { type CustomHoliday, type Team } from '@/lib/mock-data';
+import { type CustomHoliday } from '@/lib/mock-data';
+import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
 
 const holidaySchema = z.object({
   country: z.string().min(1, 'Country is required.'),
@@ -32,10 +33,10 @@ interface AddEditCustomHolidayDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   onSave: (data: CustomHolidayFormValues) => void;
   holiday: CustomHoliday | null;
-  teams: Team[];
 }
 
-export function AddEditCustomHolidayDialog({ isOpen, onOpenChange, onSave, holiday, teams }: AddEditCustomHolidayDialogProps) {
+export function AddEditCustomHolidayDialog({ isOpen, onOpenChange, onSave, holiday }: AddEditCustomHolidayDialogProps) {
+  const { teams } = useTeams();
   const form = useForm<CustomHolidayFormValues>({
     resolver: zodResolver(holidaySchema),
     defaultValues: {

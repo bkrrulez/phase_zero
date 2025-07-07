@@ -11,17 +11,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, type User, teams } from "@/lib/mock-data";
+import { currentUser, type User } from "@/lib/mock-data";
 import { EditMemberDialog } from "./components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "./components/add-member-dialog";
 import { ChangePasswordDialog } from "./components/change-password-dialog";
 import { sendPasswordChangeEmail } from "@/lib/mail";
 import { useMembers } from "../contexts/MembersContext";
+import { useTeams } from "../contexts/TeamsContext";
 
 export default function TeamPage() {
     const { toast } = useToast();
     const { teamMembers, addMember, updateMember } = useMembers();
+    const { teams } = useTeams();
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);

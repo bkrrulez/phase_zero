@@ -32,7 +32,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type User, projects, teams } from '@/lib/mock-data';
+import { type User } from '@/lib/mock-data';
+import { useProjects } from '../../contexts/ProjectsContext';
+import { useTeams } from '../../contexts/TeamsContext';
 
 const addMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
@@ -60,6 +62,8 @@ interface AddMemberDialogProps {
 }
 
 export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers }: AddMemberDialogProps) {
+  const { projects } = useProjects();
+  const { teams } = useTeams();
   const form = useForm<AddMemberFormValues>({
     resolver: zodResolver(addMemberSchema),
     defaultValues: {

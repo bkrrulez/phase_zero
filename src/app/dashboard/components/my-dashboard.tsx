@@ -4,13 +4,15 @@
 import { Clock, Users, BarChart as BarChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, publicHolidays, customHolidays } from "@/lib/mock-data";
+import { currentUser, holidayRequests } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
 import { format, isSameDay } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
+import { useHolidays } from "../contexts/HolidaysContext";
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
+  const { publicHolidays, customHolidays } = useHolidays();
 
   const today = new Date();
   const currentMonth = today.getMonth();
