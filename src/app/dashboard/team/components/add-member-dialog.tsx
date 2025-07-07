@@ -239,37 +239,28 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                   {projects.map((project) => (
-                    <FormField
+                    <FormItem
                       key={project.id}
-                      control={form.control}
-                      name="associatedProjectIds"
-                      render={({ field }) => {
-                        return (
-                          <FormItem
-                            key={project.id}
-                            className="flex flex-row items-start space-x-3 space-y-0"
-                          >
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(project.id)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), project.id])
-                                    : field.onChange(
-                                        field.value?.filter(
-                                          (value) => value !== project.id
-                                        )
-                                      )
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                              {project.name}
-                            </FormLabel>
-                          </FormItem>
-                        )
-                      }}
-                    />
+                      className="flex flex-row items-start space-x-3 space-y-0"
+                    >
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value?.includes(project.id)}
+                          onCheckedChange={(checked) => {
+                            return checked
+                              ? field.onChange([...(field.value || []), project.id])
+                              : field.onChange(
+                                  field.value?.filter(
+                                    (value) => value !== project.id
+                                  )
+                                )
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        {project.name}
+                      </FormLabel>
+                    </FormItem>
                   ))}
                   </div>
                   <FormMessage />
