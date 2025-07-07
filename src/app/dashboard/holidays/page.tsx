@@ -2,15 +2,19 @@
 'use client';
 
 import * as React from 'react';
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, type User } from "@/lib/mock-data";
-import { format, differenceInCalendarDays } from "date-fns";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { currentUser, type User, type PublicHoliday, type CustomHoliday } from "@/lib/mock-data";
+import { format, differenceInCalendarDays, addDays, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
+import { useMembers } from '../contexts/MembersContext';
+import { useToast } from '@/hooks/use-toast';
 import { RequestHolidayDialog } from './components/request-holiday-dialog';
 
 const getStatusVariant = (status: "Pending" | "Approved" | "Rejected"): "secondary" | "default" | "destructive" => {
@@ -24,42 +28,197 @@ const getStatusVariant = (status: "Pending" | "Approved" | "Rejected"): "seconda
     }
 };
 
+// This component is moved from team/components
+function TeamRequestsTab() {
+  const { toast } = useToast();
+  const { holidayRequests, approveRequest, rejectRequest } = useHolidays();
+  const { teamMembers } = useMembers();
+
+  const pendingRequests = React.useMemo(() => {
+    return holidayRequests.filter(req => {
+      if (req.status !== 'Pending') return false;
+      if (currentUser.role === 'Super Admin') return true;
+      if (currentUser.role === 'Team Lead') {
+        const member = teamMembers.find(m => m.id === req.userId);
+        return member?.reportsTo === currentUser.id;
+      }
+      return false;
+    });
+  }, [holidayRequests, teamMembers]);
+
+  const getMemberDetails = (userId: string) => {
+    return teamMembers.find(m => m.id === userId);
+  };
+
+  const getDurationInDays = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    return differenceInCalendarDays(end, start) + 1;
+  };
+  
+  const handleApprove = (requestId: string) => {
+    approveRequest(requestId);
+    toast({ title: "Request Approved", description: "The holiday request has been approved." });
+  };
+  
+  const handleReject = (requestId: string) => {
+    rejectRequest(requestId);
+    toast({ title: "Request Rejected", description: "The holiday request has been rejected.", variant: 'destructive' });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Pending Holiday Requests</CardTitle>
+        <CardDescription>Review and approve or reject holiday requests from your team.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Member</TableHead>
+              <TableHead>Dates</TableHead>
+              <TableHead className="hidden sm:table-cell">Duration</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pendingRequests.length > 0 ? pendingRequests.map(req => {
+              const member = getMemberDetails(req.userId);
+              return (
+                <TableRow key={req.id}>
+                  <TableCell>
+                    {member ? (
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-9 h-9">
+                            <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar" />
+                            <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-xs text-muted-foreground">{member.email}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      'Unknown User'
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {format(new Date(req.startDate), 'PP')} - {format(new Date(req.endDate), 'PP')}
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {getDurationInDays(req.startDate, req.endDate)} days
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                        <Button size="sm" onClick={() => handleApprove(req.id)}>
+                            <Check className="mr-2 h-4 w-4" /> Approve
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
+                            <X className="mr-2 h-4 w-4" /> Reject
+                        </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            }) : (
+                <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                        No pending holiday requests.
+                    </TableCell>
+                </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function HolidaysPage() {
-  const { annualLeaveAllowance, holidayRequests, addHolidayRequest } = useHolidays();
+  const { annualLeaveAllowance, holidayRequests, addHolidayRequest, publicHolidays, customHolidays } = useHolidays();
+  const { teamMembers } = useMembers();
+  const { toast } = useToast();
   const [isRequestDialogOpen, setIsRequestDialogOpen] = React.useState(false);
+  const canViewTeamRequests = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
+
+  const calculateDurationInWorkdays = React.useCallback((startDate: Date, endDate: Date, userId: string): number => {
+    let workdays = 0;
+    const user = teamMembers.find(u => u.id === userId);
+    if (!user) return 0;
+
+    for (let dt = new Date(startDate); dt <= new Date(endDate); dt = addDays(dt, 1)) {
+        const dayOfWeek = dt.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const isPublic = publicHolidays.some(h => isSameDay(new Date(h.date), dt));
+        if (isPublic) continue;
+
+        const isCustom = customHolidays.some(h => {
+            const applies = (h.appliesTo === 'all-members') ||
+                            (h.appliesTo === 'all-teams' && !!user.teamId) ||
+                            (h.appliesTo === user.teamId);
+            return applies && isSameDay(new Date(h.date), dt);
+        });
+        if (isCustom) continue;
+        
+        workdays++;
+    }
+    return workdays;
+  }, [publicHolidays, customHolidays, teamMembers]);
 
   const getProratedAllowance = React.useCallback((user: User) => {
     const { startDate, endDate } = user.contract;
-    if (!endDate) {
-        return annualLeaveAllowance;
-    }
+    if (!endDate) return annualLeaveAllowance;
     const start = new Date(startDate);
     const end = new Date(endDate);
     const contractDuration = differenceInCalendarDays(end, start) + 1;
-    // Prorate based on a 365-day year.
     const prorated = (annualLeaveAllowance / 365) * contractDuration;
-    return Math.round(prorated * 2) / 2; // Round to nearest 0.5
+    return Math.round(prorated * 2) / 2;
   }, [annualLeaveAllowance]);
 
   const userAllowance = getProratedAllowance(currentUser);
   const userHolidayRequests = holidayRequests.filter(req => req.userId === currentUser.id);
 
-  const getDurationInDays = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    // +1 to include both start and end dates
-    return differenceInCalendarDays(end, start) + 1;
-  }
-  
+  const takenDays = userHolidayRequests
+    .filter(req => req.status === 'Approved')
+    .reduce((acc, req) => acc + calculateDurationInWorkdays(new Date(req.startDate), new Date(req.endDate), req.userId), 0);
+
+  const remainingDays = userAllowance - takenDays;
+
   const getDurationText = (days: number) => {
       return days === 1 ? '1 day' : `${days} days`;
   }
+  
+  const handleSaveRequest = (data: { date: { from: Date; to: Date } }) => {
+    if (data.date.from && data.date.to) {
+        const requestedDuration = calculateDurationInWorkdays(data.date.from, data.date.to, currentUser.id);
+        
+        if (requestedDuration <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Invalid Leave Dates',
+                description: 'Your request does not contain any working days. Please select a different date range.',
+            });
+            return;
+        }
 
-  const takenDays = userHolidayRequests
-    .filter(req => req.status === 'Approved')
-    .reduce((acc, req) => acc + getDurationInDays(req.startDate, req.endDate), 0);
+        if (requestedDuration > remainingDays) {
+            toast({
+                variant: 'destructive',
+                title: 'Insufficient Leave Allowance',
+                description: `You are requesting ${requestedDuration} days but only have ${remainingDays} days remaining.`,
+            });
+            return;
+        }
 
-  const remainingDays = userAllowance - takenDays;
+        addHolidayRequest({
+            startDate: data.date.from.toISOString(),
+            endDate: data.date.to.toISOString(),
+        });
+        setIsRequestDialogOpen(false);
+    }
+  };
 
   return (
     <>
@@ -73,80 +232,86 @@ export default function HolidaysPage() {
             <PlusCircle className="mr-2 h-4 w-4" /> Request Holiday
           </Button>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Total Allowance</CardTitle>
-                    <CardDescription>Based on your contract</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-3xl font-bold">{getDurationText(userAllowance)}</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Taken</CardTitle>
-                    <CardDescription>This year</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-3xl font-bold">{getDurationText(takenDays)}</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Remaining</CardTitle>
-                    <CardDescription>This year</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-3xl font-bold">{getDurationText(remainingDays)}</p>
-                </CardContent>
-            </Card>
-        </div>
-        <Card>
-          <CardHeader>
-              <CardTitle>My Requests</CardTitle>
-              <CardDescription>A list of your submitted holiday requests.</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead>Dates</TableHead>
-                          <TableHead className="hidden sm:table-cell">Duration</TableHead>
-                          <TableHead>Status</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {userHolidayRequests.map(req => (
-                          <TableRow key={req.id}>
-                             <TableCell className="font-medium">
-                                  {format(new Date(req.startDate), 'LLL dd, y')} - {format(new Date(req.endDate), 'LLL dd, y')}
-                             </TableCell>
-                             <TableCell className="hidden sm:table-cell">
-                                 {getDurationText(getDurationInDays(req.startDate, req.endDate))}
-                             </TableCell>
-                             <TableCell>
-                                  <Badge variant={getStatusVariant(req.status)} className={cn(getStatusVariant(req.status) === 'default' && 'bg-green-600')}>{req.status}</Badge>
-                             </TableCell>
-                          </TableRow>
-                      ))}
-                  </TableBody>
-              </Table>
-          </CardContent>
-        </Card>
+        
+        <Tabs defaultValue="my-requests" className="space-y-4">
+            <TabsList className={`grid w-full ${canViewTeamRequests ? 'grid-cols-2 md:w-[400px]' : 'grid-cols-1 w-[200px]'}`}>
+                <TabsTrigger value="my-requests">My Requests</TabsTrigger>
+                {canViewTeamRequests && <TabsTrigger value="team-requests">Team Requests</TabsTrigger>}
+            </TabsList>
+            <TabsContent value="my-requests">
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Total Allowance</CardTitle>
+                            <CardDescription>Based on your contract</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{getDurationText(userAllowance)}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Taken</CardTitle>
+                            <CardDescription>This year</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{getDurationText(takenDays)}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Remaining</CardTitle>
+                            <CardDescription>This year</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{getDurationText(remainingDays)}</p>
+                        </CardContent>
+                    </Card>
+                </div>
+                <Card className="mt-6">
+                    <CardHeader>
+                        <CardTitle>My Requests</CardTitle>
+                        <CardDescription>A list of your submitted holiday requests.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Dates</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Duration</TableHead>
+                                    <TableHead>Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {userHolidayRequests.map(req => (
+                                    <TableRow key={req.id}>
+                                    <TableCell className="font-medium">
+                                        {format(new Date(req.startDate), 'LLL dd, y')} - {format(new Date(req.endDate), 'LLL dd, y')}
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                        {getDurationText(calculateDurationInWorkdays(new Date(req.startDate), new Date(req.endDate), req.userId))}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={getStatusVariant(req.status)} className={cn(getStatusVariant(req.status) === 'default' && 'bg-green-600')}>{req.status}</Badge>
+                                    </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            {canViewTeamRequests && (
+                <TabsContent value="team-requests">
+                    <TeamRequestsTab />
+                </TabsContent>
+            )}
+        </Tabs>
       </div>
       <RequestHolidayDialog 
         isOpen={isRequestDialogOpen}
         onOpenChange={setIsRequestDialogOpen}
-        onSave={(data) => {
-            if (data.date.from && data.date.to) {
-                addHolidayRequest({
-                    startDate: data.date.from.toISOString(),
-                    endDate: data.date.to.toISOString(),
-                });
-                setIsRequestDialogOpen(false);
-            }
-        }}
+        onSave={handleSaveRequest}
       />
     </>
   )

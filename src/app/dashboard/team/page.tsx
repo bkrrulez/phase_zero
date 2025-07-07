@@ -8,8 +8,6 @@ import { currentUser, type User } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { useMembers } from "../contexts/MembersContext";
 import { TeamMembers } from './components/team-members';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HolidayRequestsTab } from './components/holiday-requests-tab';
 import { AddMemberDialog } from './components/add-member-dialog';
 
 export default function TeamPage() {
@@ -18,7 +16,6 @@ export default function TeamPage() {
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
-    const canViewRequests = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
     const handleAddMember = (newUser: User) => {
         addMember(newUser);
@@ -33,30 +30,17 @@ export default function TeamPage() {
         <>
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline">Team</h1>
-                    <p className="text-muted-foreground">Manage your team members and approve holiday requests.</p>
-                </div>
-                {canAddMember && (
-                    <Button onClick={() => setIsAddMemberDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Member
-                    </Button>
-                )}
-                </div>
-                 <Tabs defaultValue="overview" className="space-y-4">
-                    <TabsList className={`grid w-full ${canViewRequests ? 'grid-cols-2 md:w-[400px]' : 'grid-cols-1 md:w-[200px]'}`}>
-                        <TabsTrigger value="overview">Members</TabsTrigger>
-                        {canViewRequests && <TabsTrigger value="requests">Holiday Requests</TabsTrigger>}
-                    </TabsList>
-                    <TabsContent value="overview">
-                        <TeamMembers />
-                    </TabsContent>
-                    {canViewRequests && (
-                        <TabsContent value="requests">
-                            <HolidayRequestsTab />
-                        </TabsContent>
+                    <div>
+                        <h1 className="text-3xl font-bold font-headline">Team</h1>
+                        <p className="text-muted-foreground">Manage your team members and their details.</p>
+                    </div>
+                    {canAddMember && (
+                        <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Member
+                        </Button>
                     )}
-                </Tabs>
+                </div>
+                <TeamMembers />
             </div>
             
             <AddMemberDialog
