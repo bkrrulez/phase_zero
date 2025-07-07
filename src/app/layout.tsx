@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'TimeWise Teams',
+  title: 'TimeTool',
   description: 'Track work time for your teams.',
 };
 

@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Bell,
   ChevronDown,
-  Clock,
   Calendar as CalendarIcon,
   Home,
   LogOut,
@@ -38,6 +37,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { currentUser } from "@/lib/mock-data";
+import { LogoIcon } from "@/components/ui/logo-icon";
 
 export default function DashboardLayout({
   children,
@@ -53,8 +53,8 @@ export default function DashboardLayout({
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
-            <Clock className="w-8 h-8 text-primary" />
-            <h1 className="text-xl font-bold font-headline text-primary">TimeWise</h1>
+            <LogoIcon className="w-8 h-8" />
+            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Tool</span></h1>
           </div>
         </SidebarHeader>
         <SidebarContent>

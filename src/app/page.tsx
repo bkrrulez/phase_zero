@@ -1,10 +1,10 @@
-import { Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { currentUser } from "@/lib/mock-data";
+import { LogoIcon } from "@/components/ui/logo-icon";
 
 export default function LoginPage() {
   return (
@@ -12,9 +12,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm mx-auto shadow-xl">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-             <Clock className="w-10 h-10 text-primary" />
+             <LogoIcon className="w-10 h-10" />
           </div>
-          <CardTitle className="text-2xl font-bold font-headline">TimeWise Teams</CardTitle>
+          <CardTitle className="text-2xl font-bold font-headline text-primary">Time<span className="text-accent">Tool</span></CardTitle>
           <CardDescription>Enter your credentials to access your dashboard</CardDescription>
         </CardHeader>
         <CardContent>

@@ -31,7 +31,7 @@ export async function sendPasswordChangeEmail({ to, name }: SendPasswordChangeEm
       <p>This is a confirmation that the password for your account has just been changed.</p>
       <p>If you did not make this change, please contact your administrator immediately.</p>
       <p>Thanks,</p>
-      <p>The TimeWise Teams Team</p>
+      <p>The TimeTool Team</p>
     `,
   };
 
