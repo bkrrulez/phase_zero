@@ -32,11 +32,12 @@ export default function LoginPage() {
         let user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
 
         // Self-healing: If the admin user isn't in localStorage (e.g., due to stale data),
-        // find them in the mock data and add them.
+        // find them in the mock data and add them, ensuring no duplicates.
         if (!user) {
           const adminFromMock = initialTeamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
           if (adminFromMock) {
-            setTeamMembers([...teamMembers, adminFromMock]);
+            const updatedMembers = teamMembers.filter(m => m.email.toLowerCase() !== email.toLowerCase());
+            setTeamMembers([...updatedMembers, adminFromMock]);
             user = adminFromMock;
           }
         }
