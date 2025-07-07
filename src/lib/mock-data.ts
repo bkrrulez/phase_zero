@@ -116,6 +116,22 @@ export const teams: Team[] = [
     { id: "team-3", name: "Client Services" },
 ];
 
+const currentYear = new Date().getFullYear();
+
+const adminUser: User = {
+  id: "admin-1",
+  name: "Admin One",
+  email: "admin1@example.com",
+  role: "Super Admin",
+  avatar: "https://placehold.co/100x100.png",
+  associatedProjectIds: ['proj-1', 'proj-2', 'proj-3', 'proj-4'],
+  contract: {
+    startDate: `${currentYear - 4}-01-01`,
+    endDate: `${currentYear}-08-31`,
+    weeklyHours: 40,
+  },
+};
+
 const alexSmithUser: User = {
   id: "user-1",
   name: "Alex Smith",
@@ -126,22 +142,8 @@ const alexSmithUser: User = {
   teamId: 'team-1',
   associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
   contract: {
-    startDate: "2022-01-01",
+    startDate: `${currentYear - 2}-01-01`,
     endDate: null,
-    weeklyHours: 40,
-  },
-};
-
-const adminUser: User = {
-  id: "admin-1",
-  name: "Admin One",
-  email: "admin1@example.com",
-  role: "Super Admin",
-  avatar: "https://placehold.co/100x100.png",
-  associatedProjectIds: ['proj-1', 'proj-2', 'proj-3', 'proj-4'],
-  contract: {
-    startDate: "2020-01-01",
-    endDate: "2025-08-31",
     weeklyHours: 40,
   },
 };
@@ -160,7 +162,7 @@ export const teamMembers: User[] = [
     teamId: 'team-1',
     associatedProjectIds: ['proj-1', 'proj-4'],
     contract: {
-      startDate: "2022-03-15",
+      startDate: `${currentYear - 2}-03-15`,
       endDate: null,
       weeklyHours: 40,
     },
@@ -175,8 +177,8 @@ export const teamMembers: User[] = [
     teamId: 'team-1',
     associatedProjectIds: ['proj-2'],
     contract: {
-      startDate: "2023-08-01",
-      endDate: "2024-01-31", // 6 month contract
+      startDate: `${currentYear - 1}-08-01`,
+      endDate: `${currentYear}-01-31`, // 6 month contract
       weeklyHours: 20,
     },
   },
@@ -190,7 +192,7 @@ export const teamMembers: User[] = [
     teamId: 'team-1',
     associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
     contract: {
-      startDate: "2021-11-20",
+      startDate: `${currentYear - 3}-11-20`,
       endDate: null,
       weeklyHours: 40,
     },
@@ -270,8 +272,6 @@ export const tasks: Task[] = [
   { id: "task-11", name: "Customer Support", details: "Providing support to customers." },
   { id: "task-12", name: "Internal - HR Training", details: "Participating in HR training sessions." },
 ];
-
-const currentYear = new Date().getFullYear();
 
 export let publicHolidays: PublicHoliday[] = [
     { id: 'ph-1', country: 'USA', name: 'New Year\'s Day', date: new Date(currentYear, 0, 1).toISOString(), type: 'Full Day' },
