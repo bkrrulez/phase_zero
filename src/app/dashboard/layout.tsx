@@ -10,6 +10,7 @@ import {
   LogOut,
   Users,
   Settings,
+  BarChartHorizontal,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
@@ -73,6 +74,16 @@ export default function DashboardLayout({
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            {(currentUser.role === 'Team Lead' || currentUser.role === 'Super Admin') && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/dashboard/reports")}>
+                  <Link href="/dashboard/reports">
+                    <BarChartHorizontal />
+                    Reports
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive("/dashboard/holidays")}>
                 <Link href="/dashboard/holidays">
