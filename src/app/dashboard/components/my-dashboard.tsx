@@ -7,15 +7,42 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { currentUser, type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
+import { useMembers } from '../contexts/MembersContext';
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
+  const { teamMembers } = useMembers();
   
   const dailyHours = currentUser.contract.weeklyHours / 5;
+
+  const calculateDurationInWorkdays = React.useCallback((startDate: Date, endDate: Date, userId: string): number => {
+    let workdays = 0;
+    const user = teamMembers.find(u => u.id === userId);
+    if (!user) return 0;
+
+    for (let dt = new Date(startDate); dt <= new Date(endDate); dt = addDays(dt, 1)) {
+        const dayOfWeek = dt.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const isPublic = publicHolidays.some(h => isSameDay(new Date(h.date), dt));
+        if (isPublic) continue;
+
+        const isCustom = customHolidays.some(h => {
+            const applies = (h.appliesTo === 'all-members') ||
+                            (h.appliesTo === 'all-teams' && !!user.teamId) ||
+                            (h.appliesTo === user.teamId);
+            return applies && isSameDay(new Date(h.date), dt);
+        });
+        if (isCustom) continue;
+        
+        workdays++;
+    }
+    return workdays;
+  }, [publicHolidays, customHolidays, teamMembers]);
 
   const getProratedAllowance = React.useCallback((user: User) => {
     // Helper function to parse YYYY-MM-DD strings as local dates to avoid timezone issues.
@@ -44,7 +71,7 @@ export function MyDashboard() {
     
     const prorated = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
     
-    return Math.round(prorated * 2) / 2;
+    return prorated;
   }, [annualLeaveAllowance]);
 
   const userAllowance = getProratedAllowance(currentUser);
@@ -105,7 +132,7 @@ export function MyDashboard() {
     const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
 
     while (dayIterator <= today) {
-        const dayOfWeek = dayIterator.getDay();
+        const dayOfWeek = getDay(dayIterator);
         const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
         const isLeave = approvedLeaveDatesThisMonth.some(d => isSameDay(d, dayIterator));
 
@@ -118,20 +145,14 @@ export function MyDashboard() {
     const expectedHours = workDaysSoFar * dailyHours;
     const overtime = totalHours - expectedHours;
     
-    const getDurationInDays = (startDate: string, endDate: string) => {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return differenceInCalendarDays(end, start) + 1;
-    }
-    
     const takenDays = userHolidayRequests
       .filter(req => req.status === 'Approved')
-      .reduce((acc, req) => acc + getDurationInDays(req.startDate, req.endDate), 0);
+      .reduce((acc, req) => acc + calculateDurationInWorkdays(new Date(req.startDate), new Date(req.endDate), req.userId), 0);
 
     const remainingDays = userAllowance - takenDays;
 
     return { totalHours, expectedHours, overtime, takenDays, remainingDays };
-  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours]);
+  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays]);
 
 
   return (
@@ -178,7 +199,7 @@ export function MyDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{takenDays} Day{takenDays === 1 ? '' : 's'}</div>
             <p className="text-xs text-muted-foreground">
-              {remainingDays} days remaining
+              {remainingDays.toFixed(2)} days remaining
             </p>
           </CardContent>
         </Card>

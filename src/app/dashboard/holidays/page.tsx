@@ -194,7 +194,7 @@ export default function HolidaysPage() {
     
     const prorated = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
     
-    return Math.round(prorated * 2) / 2;
+    return prorated;
   }, [annualLeaveAllowance]);
 
   const userAllowance = getProratedAllowance(currentUser);
@@ -207,7 +207,8 @@ export default function HolidaysPage() {
   const remainingDays = userAllowance - takenDays;
 
   const getDurationText = (days: number) => {
-      return days === 1 ? '1 day' : `${days} days`;
+      const formattedDays = parseFloat(days.toFixed(2));
+      return formattedDays === 1 ? '1 day' : `${formattedDays} days`;
   }
   
   const handleSaveRequest = (data: { date: { from: Date; to: Date } }) => {
@@ -227,7 +228,7 @@ export default function HolidaysPage() {
             toast({
                 variant: 'destructive',
                 title: 'Insufficient Leave Allowance',
-                description: `You are requesting ${requestedDuration} days but only have ${remainingDays} days remaining.`,
+                description: `You are requesting ${requestedDuration} days but only have ${remainingDays.toFixed(2)} days remaining.`,
             });
             return;
         }

@@ -141,7 +141,7 @@ const adminUser: User = {
   associatedProjectIds: ['proj-1', 'proj-2', 'proj-3', 'proj-4'],
   contract: {
     startDate: "2020-01-01",
-    endDate: "2024-08-31",
+    endDate: "2025-08-31",
     weeklyHours: 40,
   },
 };
