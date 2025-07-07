@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { currentUser } from "@/lib/mock-data";
 import { PublicHolidaysTab } from "./components/public-holidays-tab";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CustomHolidaysTab } from "./components/custom-holidays-tab";
 
 export default function HolidaysSettingsPage() {
   if (currentUser.role !== 'Super Admin') {
@@ -36,15 +37,7 @@ export default function HolidaysSettingsPage() {
           <PublicHolidaysTab />
         </TabsContent>
         <TabsContent value="custom-holidays" className="mt-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Custom Holidays</CardTitle>
-                    <CardDescription>Manage organization-specific holidays.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>This feature is not yet implemented.</p>
-                </CardContent>
-            </Card>
+            <CustomHolidaysTab />
         </TabsContent>
       </Tabs>
     </div>

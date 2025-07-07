@@ -29,30 +29,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { teamMembers, timeEntries, currentUser, publicHolidays } from '@/lib/mock-data';
+import { teamMembers, timeEntries, currentUser, publicHolidays, customHolidays } from '@/lib/mock-data';
 import { IndividualReport } from './components/individual-report';
-
-const getWorkingDaysInMonth = (year: number, month: number) => {
-  const date = new Date(year, month, 1);
-  let workingDays = 0;
-  
-  const holidaysInMonth = publicHolidays
-    .filter(h => {
-      const holidayDate = new Date(h.date);
-      return holidayDate.getFullYear() === year && holidayDate.getMonth() === month;
-    })
-    .map(h => new Date(h.date).getDate());
-
-  while (date.getMonth() === month) {
-    const dayOfWeek = date.getDay();
-    const dayOfMonth = date.getDate();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidaysInMonth.includes(dayOfMonth)) {
-      workingDays++;
-    }
-    date.setDate(date.getDate() + 1);
-  }
-  return workingDays;
-};
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -69,8 +47,6 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
 
   const reportData = useMemo(() => {
-    const workingDays = getWorkingDaysInMonth(selectedYear, selectedMonth);
-
     const visibleMembers = teamMembers.filter(member => {
         if (currentUser.role === 'Super Admin') {
             return member.id !== currentUser.id;
@@ -82,16 +58,44 @@ export default function ReportsPage() {
     });
 
     return visibleMembers.map(member => {
-      const expectedHours = (member.contract.weeklyHours / 5) * workingDays;
-
       const dailyContractHours = member.contract.weeklyHours / 5;
-      const holidaysForUser = publicHolidays.filter(h => {
-          const holidayDate = new Date(h.date);
-          const dayOfWeek = holidayDate.getDay();
-          return holidayDate.getFullYear() === selectedYear && holidayDate.getMonth() === selectedMonth && dayOfWeek !== 0 && dayOfWeek !== 6;
+
+      // Calculate working days for this specific member
+      const date = new Date(selectedYear, selectedMonth, 1);
+      let workingDaysInMonthForMember = 0;
+      
+      const publicHolidaysInMonth = publicHolidays.filter(h => {
+          const hDate = new Date(h.date);
+          return hDate.getFullYear() === selectedYear && hDate.getMonth() === selectedMonth;
       });
 
-      const holidayHours = holidaysForUser.reduce((acc, holiday) => {
+      const customHolidaysInMonth = customHolidays.filter(h => {
+          const hDate = new Date(h.date);
+          const applies = (h.appliesTo === 'all-members') ||
+                          (h.appliesTo === 'all-teams' && !!member.teamId) ||
+                          (h.appliesTo === member.teamId);
+          return hDate.getFullYear() === selectedYear && hDate.getMonth() === selectedMonth && applies;
+      });
+
+      const allHolidaysForMemberDates = [...publicHolidaysInMonth, ...customHolidaysInMonth].map(h => new Date(h.date).toDateString());
+
+      while (date.getMonth() === selectedMonth) {
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !allHolidaysForMemberDates.includes(date.toDateString())) {
+            workingDaysInMonthForMember++;
+        }
+        date.setDate(date.getDate() + 1);
+      }
+      
+      const expectedHours = workingDaysInMonthForMember * dailyContractHours;
+
+      // Calculate holiday hours credit
+      const allHolidaysInMonthForMember = [...publicHolidaysInMonth, ...customHolidaysInMonth].filter(h => {
+          const hDate = new Date(h.date);
+          return hDate.getDay() !== 0 && hDate.getDay() !== 6;
+      });
+
+      const holidayHours = allHolidaysInMonthForMember.reduce((acc, holiday) => {
           if (holiday.type === 'Full Day') return acc + dailyContractHours;
           if (holiday.type === 'Half Day') return acc + (dailyContractHours / 2);
           return acc;

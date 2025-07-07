@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays } from '@/lib/mock-data';
+import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 
@@ -35,7 +35,7 @@ export function IndividualReport() {
     const viewableUsers = useMemo(() => {
         if (currentUser.role === 'Super Admin') return teamMembers;
         if (currentUser.role === 'Team Lead') {
-            const team = teamMembers.filter(m => m.role === 'Employee');
+            const team = teamMembers.filter(m => m.role === 'Employee' && m.reportsTo === currentUser.id);
             return [currentUser, ...team];
         }
         return [currentUser];
@@ -103,9 +103,10 @@ export function IndividualReport() {
   }, [selectedUser, selectedDate]);
 
   const monthlyData = useMemo(() => {
-    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [] };
+    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [] };
 
     const dailyTotals: Record<string, number> = {};
+    const dailyContractHours = selectedUser.contract.weeklyHours / 5;
 
     // 1. Calculate manually logged hours
     const userTimeEntries = timeEntries.filter(entry => {
@@ -121,7 +122,6 @@ export function IndividualReport() {
     });
 
     // 2. Calculate and add public holiday hours
-    const dailyContractHours = selectedUser.contract.weeklyHours / 5;
     const publicHolidaysInMonth = publicHolidays.filter(h => {
         const hDate = new Date(h.date);
         return isSameMonth(hDate, selectedDate) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
@@ -133,8 +133,24 @@ export function IndividualReport() {
         if (!dailyTotals[day]) dailyTotals[day] = 0;
         dailyTotals[day] += holidayCredit;
     });
+    
+    // 3. Calculate and add custom holiday hours
+    const customHolidaysInMonth = customHolidays.filter(h => {
+        const hDate = new Date(h.date);
+        const applies = (h.appliesTo === 'all-members') ||
+                        (h.appliesTo === 'all-teams' && !!selectedUser.teamId) ||
+                        (h.appliesTo === selectedUser.teamId);
+        return isSameMonth(hDate, selectedDate) && getDay(hDate) !== 0 && getDay(hDate) !== 6 && applies;
+    });
 
-    // 3. Get personal leave days for modifier
+    customHolidaysInMonth.forEach(holiday => {
+        const day = new Date(holiday.date).getDate();
+        const holidayCredit = holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
+        if (!dailyTotals[day]) dailyTotals[day] = 0;
+        dailyTotals[day] += holidayCredit;
+    });
+
+    // 4. Get personal leave days for modifier
     const personalLeaveDays = holidayRequests.filter(req => 
         req.userId === selectedUser.id && req.status === 'Approved'
     ).flatMap(req => {
@@ -150,8 +166,9 @@ export function IndividualReport() {
     });
     
     const publicHolidayDays = publicHolidaysInMonth.map(h => new Date(h.date));
+    const customHolidayDays = customHolidaysInMonth.map(h => new Date(h.date));
 
-    return { dailyTotals, personalLeaveDays, publicHolidayDays };
+    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays };
   }, [selectedUser, selectedDate]);
     
     const handleUserChange = (userId: string) => {
@@ -284,6 +301,7 @@ export function IndividualReport() {
                     saturday: (date) => getDay(date) === 6,
                     sunday: (date) => getDay(date) === 0,
                     holiday: monthlyData.publicHolidayDays,
+                    customHoliday: monthlyData.customHolidayDays,
                     personalLeave: monthlyData.personalLeaveDays,
                     logged: Object.keys(monthlyData.dailyTotals).filter(d => monthlyData.dailyTotals[d] > 0).map(day => {
                         return new Date(selectedDate.getFullYear(), selectedDate.getMonth(), parseInt(day))
@@ -293,6 +311,7 @@ export function IndividualReport() {
                 saturday: 'text-muted-foreground/50',
                 sunday: 'text-muted-foreground/50',
                 holiday: 'bg-green-200 dark:bg-green-800 rounded-md',
+                customHoliday: 'bg-orange-200 dark:bg-orange-800 rounded-md',
                 personalLeave: 'opacity-60 bg-blue-200 dark:bg-blue-800 rounded-md',
                 logged: 'border border-primary rounded-md'
                 }}

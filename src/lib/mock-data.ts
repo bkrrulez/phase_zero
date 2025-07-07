@@ -61,6 +61,15 @@ export type PublicHoliday = {
   type: "Full Day" | "Half Day";
 };
 
+export type CustomHoliday = {
+  id: string;
+  country: string;
+  name: string;
+  date: string; // ISO string
+  type: "Full Day" | "Half Day";
+  appliesTo: string; // 'all-teams', 'all-members', or a teamId
+};
+
 export const teams: Team[] = [
     { id: "team-1", name: "Alpha Team", projectIds: ['proj-1', 'proj-2', 'proj-3'] },
     { id: "team-2", name: "Bravo Team", projectIds: ['proj-4'] },
@@ -233,4 +242,9 @@ export const publicHolidays: PublicHoliday[] = [
     { id: 'ph-6', country: 'USA', name: 'Christmas Day', date: new Date(currentYear, 11, 25).toISOString(), type: 'Full Day' },
     { id: 'ph-7', country: 'UK', name: 'Good Friday', date: new Date(currentYear, 3, 18).toISOString(), type: 'Full Day' },
     { id: 'ph-8', country: 'UK', name: 'Boxing Day', date: new Date(currentYear, 11, 26).toISOString(), type: 'Full Day' },
+];
+
+export const customHolidays: CustomHoliday[] = [
+  { id: 'ch-1', country: 'Global', name: 'Company Anniversary', date: new Date(new Date().getFullYear(), 8, 15).toISOString(), type: 'Full Day', appliesTo: 'all-members'},
+  { id: 'ch-2', country: 'USA', name: 'Alpha Team Offsite', date: new Date(new Date().getFullYear(), 5, 20).toISOString(), type: 'Full Day', appliesTo: 'team-1'},
 ];

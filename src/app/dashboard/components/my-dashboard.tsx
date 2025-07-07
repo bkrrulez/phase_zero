@@ -6,7 +6,7 @@ import { Clock, PlusCircle, Users, BarChart as BarChartIcon } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, timeEntries as initialTimeEntries, TimeEntry, publicHolidays } from "@/lib/mock-data";
+import { currentUser, timeEntries as initialTimeEntries, TimeEntry, publicHolidays, customHolidays } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
 import { format, isSameDay } from "date-fns";
 import { LogTimeDialog, type LogTimeFormValues } from "./log-time-dialog";
@@ -37,10 +37,21 @@ export function MyDashboard() {
   const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
 
   const dailyHours = currentUser.contract.weeklyHours / 5;
-  const allHolidaysThisMonth = publicHolidays.filter(h => {
+
+  const allPublicHolidaysThisMonth = publicHolidays.filter(h => {
       const holidayDate = new Date(h.date);
       return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
   });
+
+  const allCustomHolidaysThisMonth = customHolidays.filter(h => {
+      const holidayDate = new Date(h.date);
+      const applies = (h.appliesTo === 'all-members') ||
+                      (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
+                      (h.appliesTo === currentUser.teamId);
+      return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6 && applies;
+  });
+
+  const allHolidaysThisMonth = [...allPublicHolidaysThisMonth, ...allCustomHolidaysThisMonth];
 
   const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
       return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
