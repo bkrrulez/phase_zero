@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -28,15 +29,24 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { teamMembers, timeEntries, currentUser } from '@/lib/mock-data';
+import { teamMembers, timeEntries, currentUser, publicHolidays } from '@/lib/mock-data';
 import { IndividualReport } from './components/individual-report';
 
 const getWorkingDaysInMonth = (year: number, month: number) => {
   const date = new Date(year, month, 1);
   let workingDays = 0;
+  
+  const holidaysInMonth = publicHolidays
+    .filter(h => {
+      const holidayDate = new Date(h.date);
+      return holidayDate.getFullYear() === year && holidayDate.getMonth() === month;
+    })
+    .map(h => new Date(h.date).getDate());
+
   while (date.getMonth() === month) {
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
+    const dayOfMonth = date.getDate();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidaysInMonth.includes(dayOfMonth)) {
       workingDays++;
     }
     date.setDate(date.getDate() + 1);
@@ -74,7 +84,20 @@ export default function ReportsPage() {
     return visibleMembers.map(member => {
       const expectedHours = (member.contract.weeklyHours / 5) * workingDays;
 
-      const loggedHours = timeEntries
+      const dailyContractHours = member.contract.weeklyHours / 5;
+      const holidaysForUser = publicHolidays.filter(h => {
+          const holidayDate = new Date(h.date);
+          const dayOfWeek = holidayDate.getDay();
+          return holidayDate.getFullYear() === selectedYear && holidayDate.getMonth() === selectedMonth && dayOfWeek !== 0 && dayOfWeek !== 6;
+      });
+
+      const holidayHours = holidaysForUser.reduce((acc, holiday) => {
+          if (holiday.type === 'Full Day') return acc + dailyContractHours;
+          if (holiday.type === 'Half Day') return acc + (dailyContractHours / 2);
+          return acc;
+      }, 0);
+      
+      const manualLoggedHours = timeEntries
         .filter(entry => {
           const entryDate = new Date(entry.date);
           return (
@@ -85,6 +108,7 @@ export default function ReportsPage() {
         })
         .reduce((acc, entry) => acc + entry.duration, 0);
 
+      const loggedHours = manualLoggedHours + holidayHours;
       const remainingHours = expectedHours - loggedHours;
 
       return {

@@ -7,7 +7,8 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, teamMembers, timeEntries } from "@/lib/mock-data";
+import { currentUser, teamMembers, timeEntries, publicHolidays } from "@/lib/mock-data";
+import { isSameDay } from "date-fns";
 
 export function TeamDashboard() {
   const teamPerformance = useMemo(() => {
@@ -20,13 +21,47 @@ export function TeamDashboard() {
         }
         return false;
     });
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const monthStart = new Date(currentYear, currentMonth, 1);
+
+    const allHolidaysThisMonth = publicHolidays.filter(h => {
+        const holidayDate = new Date(h.date);
+        return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
+    });
+
+    let workDaysSoFar = 0;
+    const dayIterator = new Date(monthStart);
+    const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
+
+    while (dayIterator <= today) {
+        const dayOfWeek = dayIterator.getDay();
+        const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
+
+        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
+            workDaysSoFar++;
+        }
+        dayIterator.setDate(dayIterator.getDate() + 1);
+    }
     
     return visibleMembers.map(member => {
-      const userTimeEntries = timeEntries.filter(entry => entry.userId === member.id);
-      const totalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
-      const workDaysSoFar = new Set(userTimeEntries.map(e => new Date(e.date).getDate())).size;
-      const expectedHours = (member.contract.weeklyHours / 5) * workDaysSoFar;
+      const userTimeEntries = timeEntries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entry.userId === member.id && entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+      });
+      const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
+      
+      const dailyHours = member.contract.weeklyHours / 5;
+      const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
+          return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
+      }, 0);
+
+      const totalHours = manualTotalHours + holidayHours;
+      const expectedHours = workDaysSoFar * dailyHours;
       const performance = totalHours - expectedHours;
+      
       return {
         ...member,
         totalHours,

@@ -6,9 +6,9 @@ import { Clock, PlusCircle, Users, BarChart as BarChartIcon } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, timeEntries as initialTimeEntries, TimeEntry } from "@/lib/mock-data";
+import { currentUser, timeEntries as initialTimeEntries, TimeEntry, publicHolidays } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { LogTimeDialog, type LogTimeFormValues } from "./log-time-dialog";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,12 +24,47 @@ export function MyDashboard() {
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = useState(false);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(initialTimeEntries);
 
-  const userTimeEntries = timeEntries.filter(entry => entry.userId === currentUser.id);
-  const totalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
-  const weeklyHours = currentUser.contract.weeklyHours;
-  const workDaysSoFar = new Set(userTimeEntries.map(e => new Date(e.date).getDate())).size;
-  const expectedHours = (weeklyHours / 5) * workDaysSoFar;
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const monthStart = new Date(currentYear, currentMonth, 1);
+
+  const userTimeEntries = timeEntries.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entry.userId === currentUser.id && entryDate.getFullYear() === currentYear && entryDate.getMonth() === currentMonth;
+  });
+
+  const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
+
+  const dailyHours = currentUser.contract.weeklyHours / 5;
+  const allHolidaysThisMonth = publicHolidays.filter(h => {
+      const holidayDate = new Date(h.date);
+      return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
+  });
+
+  const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
+      return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
+  }, 0);
+
+  const totalHours = manualTotalHours + holidayHours;
+
+  let workDaysSoFar = 0;
+  const dayIterator = new Date(monthStart);
+  const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
+
+  while (dayIterator <= today) {
+      const dayOfWeek = dayIterator.getDay();
+      const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
+
+      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
+          workDaysSoFar++;
+      }
+      dayIterator.setDate(dayIterator.getDate() + 1);
+  }
+
+  const expectedHours = workDaysSoFar * dailyHours;
   const overtime = totalHours - expectedHours;
+
 
   const handleLogTime = (data: LogTimeFormValues) => {
     const newEntry: TimeEntry = {
@@ -85,7 +120,7 @@ export function MyDashboard() {
                 {overtime >= 0 ? '+' : ''}{overtime.toFixed(2)}h
               </div>
               <p className="text-xs text-muted-foreground">
-                Based on {weeklyHours}h/week contract
+                Based on {currentUser.contract.weeklyHours}h/week contract
               </p>
             </CardContent>
           </Card>
