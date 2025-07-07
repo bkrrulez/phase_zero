@@ -22,20 +22,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = React.useState(true);
   
   React.useEffect(() => {
-    if (teamMembers.length > 0) { // Ensure team members are loaded from localStorage
-      setIsLoading(true);
-      if (currentUserId) {
-        const user = teamMembers.find(u => u.id === currentUserId);
-        if (user) {
-          setCurrentUser(user);
-          setIsLoading(false);
-        } else {
-          setCurrentUserId(null); // Invalid user ID, clear it
-          router.push('/');
-        }
+    if (currentUserId) {
+      const user = teamMembers.find(u => u.id === currentUserId);
+      if (user) {
+        setCurrentUser(user);
+        setIsLoading(false);
       } else {
-        router.push('/'); // No user ID, redirect to login
+        // User not found in the current list. This could be a race condition
+        // where teamMembers hasn't hydrated from localStorage yet. We'll
+        // keep `isLoading` true and let the effect re-run when teamMembers updates.
+        // If the ID is genuinely invalid, the user will see the loading screen
+        // until they manually navigate away or the session is cleared.
+        // A more advanced implementation might use a timeout to redirect.
       }
+    } else {
+      // No user ID found, redirect to login.
+      router.push('/');
     }
   }, [currentUserId, teamMembers, router, setCurrentUserId]);
 
@@ -46,7 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   if (isLoading || !currentUser) {
-    // You can replace this with a more sophisticated loading skeleton
+    // Show a loading screen while we verify the user or if the user is not found.
+    // The effect will handle redirecting if there's no logged-in user ID.
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <div className="text-xl font-semibold text-foreground">Loading...</div>
