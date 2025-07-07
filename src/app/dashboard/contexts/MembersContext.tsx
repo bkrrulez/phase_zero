@@ -14,7 +14,18 @@ interface MembersContextType {
 export const MembersContext = React.createContext<MembersContextType | undefined>(undefined);
 
 export function MembersProvider({ children }: { children: React.ReactNode }) {
-  const [teamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
+  const [rawTeamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialTeamMembers);
+
+  // This memoized value ensures that we always work with a list of unique members,
+  // preventing "duplicate key" errors in React, even if localStorage data is temporarily corrupted.
+  const teamMembers = React.useMemo(() => {
+    const uniqueMembers = new Map<string, User>();
+    rawTeamMembers.forEach(member => {
+      uniqueMembers.set(member.id, member);
+    });
+    return Array.from(uniqueMembers.values());
+  }, [rawTeamMembers]);
+
 
   const updateMember = (updatedUser: User) => {
     setTeamMembers(prevMembers =>
@@ -23,7 +34,14 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addMember = (newUser: User) => {
-    setTeamMembers(prev => [...prev, newUser]);
+    // Ensure we don't add a user if one with the same ID already exists.
+    setTeamMembers(prev => {
+        const userExists = prev.some(member => member.id === newUser.id);
+        if (userExists) {
+            return prev.map(member => member.id === newUser.id ? newUser : member);
+        }
+        return [...prev, newUser];
+    });
   };
 
   return (
