@@ -24,31 +24,18 @@ import { format } from "date-fns";
 
 // AUTH
 export async function login(email: string, password_input: string) {
-    // Special case for admin user from env vars
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    // All authentication is now handled by the database for all user roles.
+    const users = await query<{id: string, password: string}>('SELECT id, password FROM users WHERE email ILIKE $1', [email]);
 
-    if (email.toLowerCase() === adminEmail?.toLowerCase()) {
-        if (password_input === adminPassword) {
-            const users = await query<User>("SELECT * FROM users WHERE email ILIKE $1", [email]);
-            if (users.length > 0) {
-                return { success: true, userId: users[0].id };
-            }
-        } else {
-            return { success: false, error: 'Incorrect password for admin.' };
-        }
-    }
-    
-    // Regular user login
-    const users = await query<User>('SELECT * FROM users WHERE email ILIKE $1', [email]);
     if (users.length === 0) {
         return { success: false, error: "User not found." };
     }
     
     const user = users[0];
-    const dbPassword = await query<{password: string}>('SELECT password FROM users WHERE id = $1', [user.id]);
     
-    if (password_input === dbPassword[0].password) {
+    // In a real app, passwords should be hashed and compared securely.
+    // For this prototype, we are using plaintext passwords from the database.
+    if (password_input === user.password) {
         return { success: true, userId: user.id };
     } else {
         return { success: false, error: 'Invalid password.' };
