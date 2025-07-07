@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { currentUser, type User, type PublicHoliday, type CustomHoliday } from "@/lib/mock-data";
-import { format, differenceInCalendarDays, addDays, isSameDay } from "date-fns";
+import { format, differenceInCalendarDays, addDays, isSameDay, startOfYear, endOfYear, max, min } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
 import { useMembers } from '../contexts/MembersContext';
@@ -169,11 +169,25 @@ export default function HolidaysPage() {
 
   const getProratedAllowance = React.useCallback((user: User) => {
     const { startDate, endDate } = user.contract;
-    if (!endDate) return annualLeaveAllowance;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const contractDuration = differenceInCalendarDays(end, start) + 1;
-    const prorated = (annualLeaveAllowance / 365) * contractDuration;
+    const today = new Date();
+    const yearStart = startOfYear(today);
+    const yearEnd = endOfYear(today);
+    const daysInYear = differenceInCalendarDays(yearEnd, yearStart) + 1;
+
+    const contractStart = new Date(startDate);
+    const contractEnd = endDate ? new Date(endDate) : yearEnd;
+
+    const effectiveStartDate = max([yearStart, contractStart]);
+    const effectiveEndDate = min([yearEnd, contractEnd]);
+
+    if (effectiveStartDate > effectiveEndDate) {
+        return 0;
+    }
+
+    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveStartDate) + 1;
+    
+    const prorated = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+    
     return Math.round(prorated * 2) / 2;
   }, [annualLeaveAllowance]);
 

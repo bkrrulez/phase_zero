@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { currentUser, type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 
@@ -19,15 +19,26 @@ export function MyDashboard() {
 
   const getProratedAllowance = React.useCallback((user: User) => {
     const { startDate, endDate } = user.contract;
-    if (!endDate) {
-      return annualLeaveAllowance;
+    const today = new Date();
+    const yearStart = startOfYear(today);
+    const yearEnd = endOfYear(today);
+    const daysInYear = differenceInCalendarDays(yearEnd, yearStart) + 1;
+
+    const contractStart = new Date(startDate);
+    const contractEnd = endDate ? new Date(endDate) : yearEnd;
+
+    const effectiveStartDate = max([yearStart, contractStart]);
+    const effectiveEndDate = min([yearEnd, contractEnd]);
+
+    if (effectiveStartDate > effectiveEndDate) {
+        return 0;
     }
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const contractDuration = differenceInCalendarDays(end, start) + 1;
-    // Prorate based on a 365-day year.
-    const prorated = (annualLeaveAllowance / 365) * contractDuration;
-    return Math.round(prorated * 2) / 2; // Round to nearest 0.5
+
+    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveStartDate) + 1;
+    
+    const prorated = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+    
+    return Math.round(prorated * 2) / 2;
   }, [annualLeaveAllowance]);
 
   const userAllowance = getProratedAllowance(currentUser);
