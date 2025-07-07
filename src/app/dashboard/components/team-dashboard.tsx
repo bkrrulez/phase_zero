@@ -7,10 +7,12 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser, teamMembers, timeEntries, publicHolidays, customHolidays } from "@/lib/mock-data";
+import { currentUser, teamMembers, publicHolidays, customHolidays } from "@/lib/mock-data";
 import { isSameDay } from "date-fns";
+import { useTimeTracking } from "../contexts/TimeTrackingContext";
 
 export function TeamDashboard() {
+  const { timeEntries } = useTimeTracking();
   const teamPerformance = useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
         if (currentUser.role === 'Super Admin') {
@@ -80,7 +82,7 @@ export function TeamDashboard() {
         performance,
       }
     });
-  }, []);
+  }, [timeEntries]);
 
   const usersWithOvertime = teamPerformance
     .filter(u => u.performance > 0)

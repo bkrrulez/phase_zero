@@ -21,7 +21,7 @@ import {
   Shield,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,22 +56,7 @@ import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
-
-// --- Start: Context for sharing time tracking state ---
-interface TimeTrackingContextType {
-  timeEntries: TimeEntry[];
-}
-
-const TimeTrackingContext = createContext<TimeTrackingContextType | undefined>(undefined);
-
-export const useTimeTracking = () => {
-  const context = useContext(TimeTrackingContext);
-  if (!context) {
-    throw new Error("useTimeTracking must be used within a DashboardLayout");
-  }
-  return context;
-};
-// --- End: Context ---
+import { TimeTrackingContext } from "./contexts/TimeTrackingContext";
 
 const calculateDuration = (startTime: string, endTime: string): number => {
     const start = new Date(`1970-01-01T${startTime}`);

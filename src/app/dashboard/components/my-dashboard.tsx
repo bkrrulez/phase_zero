@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { currentUser, publicHolidays, customHolidays } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
 import { format, isSameDay } from "date-fns";
-import { useTimeTracking } from "@/app/dashboard/layout";
+import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
