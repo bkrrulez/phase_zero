@@ -122,14 +122,34 @@ export const teamMembers: User[] = [
 
 const today = new Date();
 export const timeEntries: TimeEntry[] = [
+  // Alex Smith (Team Lead) - slight overtime
   { id: "t-1", userId: "user-1", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - Feature Dev", duration: 8 },
   { id: "t-2", userId: "user-1", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "17:30", task: "Project B - Bugfixes", duration: 8.5 },
-  { id: "t-3", userId: "user-1", date: new Date(new Date().setDate(3)).toISOString(), startTime: "10:00", endTime: "16:00", task: "Team Meeting", duration: 6 },
+  { id: "t-3", userId: "user-1", date: new Date(new Date().setDate(3)).toISOString(), startTime: "10:00", endTime: "18:00", task: "Team Meeting", duration: 8 },
   { id: "t-4", userId: "user-1", date: new Date(new Date().setDate(4)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - Code Review", duration: 8 },
-  { id: "t-5", userId: "user-2", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:05", endTime: "17:00", task: "Documentation", duration: 7.9 },
-  { id: "t-6", userId: "user-2", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "16:45", task: "Project A - UI Design", duration: 7.75 },
-  { id: "t-7", userId: "user-3", date: new Date(new Date().setDate(1)).toISOString(), startTime: "13:00", endTime: "17:00", task: "Customer Support", duration: 4 },
+  
+  // Jane Doe (Employee) - significant overtime
+  { id: "t-5", userId: "user-2", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "18:00", task: "Documentation", duration: 9 },
+  { id: "t-6", userId: "user-2", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "18:30", task: "Project A - UI Design", duration: 9.5 },
+  { id: "t-8", userId: "user-2", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - UI Design", duration: 8 },
+  
+  // Peter Jones (Employee, part-time) - deficit
+  { id: "t-7", userId: "user-3", date: new Date(new Date().setDate(1)).toISOString(), startTime: "13:00", endTime: "16:00", task: "Customer Support", duration: 3 },
+  { id: "t-9", userId: "user-3", date: new Date(new Date().setDate(2)).toISOString(), startTime: "13:00", endTime: "17:00", task: "Customer Support", duration: 4 },
+  { id: "t-10", userId: "user-3", date: new Date(new Date().setDate(3)).toISOString(), startTime: "13:00", endTime: "15:00", task: "Customer Support", duration: 2 },
+  
+  // Susan Miller (Employee) - deficit
+  { id: "t-11", userId: "user-4", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "16:00", task: "Internal - HR Training", duration: 7 },
+  { id: "t-12", userId: "user-4", date: new Date(new Date().setDate(2)).toISOString(), startTime: "10:00", endTime: "17:00", task: "Client X - Communication", duration: 7 },
+  { id: "t-13", userId: "user-4", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Client X - Communication", duration: 8 },
+  
+  // Admin User
+  { id: "t-14", userId: "admin-1", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - System Check", duration: 8 },
+  { id: "t-15", userId: "admin-1", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - Payroll", duration: 8 },
+  { id: "t-16", userId: "admin-1", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - User Management", duration: 8 },
+
 ];
+
 
 export const holidayRequests: HolidayRequest[] = [
   { id: "h-1", userId: "user-1", startDate: new Date(today.getFullYear(), today.getMonth(), 15).toISOString(), endDate: new Date(today.getFullYear(), today.getMonth(), 15).toISOString(), status: "Approved" },
@@ -139,7 +159,7 @@ export const holidayRequests: HolidayRequest[] = [
 
 export const monthlyChartData = Array.from({ length: 12 }, (_, i) => {
     const day = i + 1;
-    const entry = timeEntries.find(e => new Date(e.date).getDate() === day && e.userId === 'user-1');
+    const entry = timeEntries.find(e => new Date(e.date).getDate() === day && e.userId === currentUser.id);
     return { date: day.toString(), hours: entry ? entry.duration : 0 };
 }).map(d => {
     if (d.date === "5" || d.date === "6") d.hours = 0; // weekend
@@ -166,4 +186,9 @@ export const tasks: Task[] = [
   { id: "task-5", name: "Documentation" },
   { id: "task-6", name: "Team Meeting" },
   { id: "task-7", name: "Client Communication" },
+  { id: "task-8", name: "Admin - System Check" },
+  { id: "task-9", name: "Admin - Payroll" },
+  { id: "task-10", name: "Admin - User Management" },
+  { id: "task-11", name: "Customer Support" },
+  { id: "task-12", name: "Internal - HR Training" },
 ];
