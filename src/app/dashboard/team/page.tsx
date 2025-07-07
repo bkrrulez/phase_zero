@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { teamMembers as initialTeamMembers, currentUser, type User } from "@/lib/mock-data";
-import { EditContractDialog } from "./components/edit-contract-dialog";
+import { EditMemberDialog } from "./components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "./components/add-member-dialog";
 
@@ -21,14 +21,14 @@ export default function TeamPage() {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     
-    const handleSaveContract = (updatedUser: User) => {
+    const handleSaveDetails = (updatedUser: User) => {
         setTeamMembers(prevMembers =>
             prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
         );
         setEditingUser(null);
         toast({
-            title: "Contract Updated",
-            description: `Successfully updated contract for ${updatedUser.name}.`,
+            title: "Member Details Updated",
+            description: `Successfully updated details for ${updatedUser.name}.`,
         });
     }
 
@@ -115,7 +115,7 @@ export default function TeamPage() {
                                             onClick={() => setEditingUser(member)}
                                             disabled={!canEditMember(member)}
                                           >
-                                            Edit Contract
+                                            View/Edit Details
                                           </DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
@@ -128,7 +128,7 @@ export default function TeamPage() {
         </Card>
       </div>
       {editingUser && (
-        <EditContractDialog 
+        <EditMemberDialog 
             user={editingUser}
             isOpen={!!editingUser}
             onOpenChange={(isOpen) => {
@@ -136,7 +136,8 @@ export default function TeamPage() {
                     setEditingUser(null);
                 }
             }}
-            onSave={handleSaveContract}
+            onSave={handleSaveDetails}
+            teamMembers={teamMembers}
         />
       )}
       <AddMemberDialog

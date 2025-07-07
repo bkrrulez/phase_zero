@@ -1,7 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -10,79 +14,291 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import type { User } from '@/lib/mock-data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { type User, projects } from '@/lib/mock-data';
 
-interface EditContractDialogProps {
-  user: User;
+const editMemberSchema = z.object({
+  name: z.string().min(1, 'Full name is required.'),
+  email: z.string().email('Invalid email address.'),
+  role: z.enum(['Employee', 'Team Lead', 'Super Admin']),
+  reportsTo: z.string().optional(),
+  startDate: z.string().min(1, 'Start date is required.'),
+  endDate: z.string().optional().nullable(),
+  weeklyHours: z.coerce.number().int().min(1, 'Weekly hours must be at least 1.'),
+  associatedProjectIds: z.array(z.string()).min(1, 'Please select at least one project.'),
+}).refine(data => data.role === 'Super Admin' || !!data.reportsTo, {
+    message: 'This field is required for Employees and Team Leads.',
+    path: ['reportsTo'],
+});
+
+
+type EditMemberFormValues = z.infer<typeof editMemberSchema>;
+
+interface EditMemberDialogProps {
+  user: User | null;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (updatedUser: User) => void;
+  onSave: (user: User) => void;
+  teamMembers: User[];
 }
 
-export function EditContractDialog({ user, isOpen, onOpenChange, onSave }: EditContractDialogProps) {
-  const [contract, setContract] = useState(user.contract);
+export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembers }: EditMemberDialogProps) {
+  const form = useForm<EditMemberFormValues>({
+    resolver: zodResolver(editMemberSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      role: 'Employee',
+      reportsTo: '',
+      startDate: '',
+      endDate: '',
+      weeklyHours: 40,
+      associatedProjectIds: [],
+    },
+  });
 
   useEffect(() => {
-    setContract(user.contract);
-  }, [user]);
+    if (user) {
+      form.reset({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        reportsTo: user.reportsTo || '',
+        startDate: user.contract.startDate,
+        endDate: user.contract.endDate || '',
+        weeklyHours: user.contract.weeklyHours,
+        associatedProjectIds: user.associatedProjectIds || [],
+      });
+    }
+  }, [user, form]);
 
-  const handleSave = () => {
-    onSave({ ...user, contract });
-  };
+
+  const roleWatcher = form.watch('role');
+
+  useEffect(() => {
+    if (roleWatcher === 'Super Admin') {
+      form.setValue('reportsTo', undefined);
+    }
+  }, [roleWatcher, form]);
+
+  const managers = teamMembers.filter(m => (m.role === 'Team Lead' || m.role === 'Super Admin') && m.id !== user?.id);
+
+  function onSubmit(data: EditMemberFormValues) {
+    if (!user) return;
+
+    const updatedUser: User = {
+      ...user,
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      reportsTo: data.reportsTo,
+      associatedProjectIds: data.associatedProjectIds,
+      contract: {
+        ...user.contract,
+        startDate: data.startDate,
+        endDate: data.endDate || null,
+        weeklyHours: data.weeklyHours,
+      },
+    };
+    onSave(updatedUser);
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit Contract for {user.name}</DialogTitle>
+          <DialogTitle>Edit Team Member</DialogTitle>
           <DialogDescription>
-            Update the contract details below. Click save when you're done.
+            View and edit the details for {user?.name}.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="weeklyHours" className="text-right">
-              Weekly Hours
-            </Label>
-            <Input
-              id="weeklyHours"
-              type="number"
-              value={contract.weeklyHours}
-              onChange={(e) => setContract({ ...contract, weeklyHours: parseInt(e.target.value, 10) || 0 })}
-              className="col-span-3"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startDate" className="text-right">
-              Start Date
-            </Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={contract.startDate}
-              onChange={(e) => setContract({ ...contract, startDate: e.target.value })}
-              className="col-span-3"
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="john.doe@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="endDate" className="text-right">
-              End Date
-            </Label>
-            <Input
-              id="endDate"
-              type="date"
-              value={contract.endDate ?? ''}
-              onChange={(e) => setContract({ ...contract, endDate: e.target.value || null })}
-              className="col-span-3"
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="Employee">Employee</SelectItem>
+                            <SelectItem value="Team Lead">Team Lead</SelectItem>
+                            <SelectItem value="Super Admin">Super Admin</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="reportsTo"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Reports To</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={roleWatcher === 'Super Admin'}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a manager" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {managers.map(manager => (
+                                <SelectItem key={manager.id} value={manager.id}>{manager.name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                 <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Contract Start Date</FormLabel>
+                        <FormControl>
+                            <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Contract End Date</FormLabel>
+                        <FormControl>
+                            <Input type="date" {...field} value={field.value || ''} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+             <FormField
+                control={form.control}
+                name="weeklyHours"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Weekly Contract Hours</FormLabel>
+                    <FormControl>
+                        <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
             />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="button" onClick={handleSave}>Save changes</Button>
-        </DialogFooter>
+            <FormField
+              control={form.control}
+              name="associatedProjectIds"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">Associated Projects</FormLabel>
+                    <FormDescription>
+                      Select the projects this team member will be working on.
+                    </FormDescription>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                  {projects.map((project) => (
+                    <FormField
+                      key={project.id}
+                      control={form.control}
+                      name="associatedProjectIds"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={project.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(project.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), project.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== project.id
+                                        )
+                                      )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {project.name}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
