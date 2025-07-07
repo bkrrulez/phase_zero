@@ -15,50 +15,50 @@ interface ChangePhotoDialogProps {
   onSave: (dataUrl: string) => void;
 }
 
-// Helper to get the cropped image data URL
-function getCroppedImg(
-  image: HTMLImageElement,
-  crop: Crop,
-) {
-  const canvas = document.createElement('canvas');
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
-  
-  const targetWidth = 256; // Target a 256x256 avatar
-  const targetHeight = 256;
-  
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    return '';
-  }
-
-  const cropX = crop.x * scaleX;
-  const cropY = crop.y * scaleY;
-
-  ctx.drawImage(
-    image,
-    cropX,
-    cropY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    targetWidth,
-    targetHeight
-  );
-
-  return canvas.toDataURL('image/jpeg');
-}
-
-
 export function ChangePhotoDialog({ isOpen, onOpenChange, onSave }: ChangePhotoDialogProps) {
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [scale, setScale] = useState(1);
   const imgRef = useRef<HTMLImageElement>(null);
+
+  // Helper to get the cropped image data URL
+  function getCroppedImg(
+    image: HTMLImageElement,
+    crop: Crop,
+  ) {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    const targetWidth = 256; // Target a 256x256 avatar
+    const targetHeight = 256;
+    
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      return '';
+    }
+
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
+
+    ctx.drawImage(
+      image,
+      cropX,
+      cropY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      targetWidth,
+      targetHeight
+    );
+
+    return canvas.toDataURL('image/jpeg');
+  }
+
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
