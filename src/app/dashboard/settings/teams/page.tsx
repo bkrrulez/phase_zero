@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -6,15 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { teamMembers as initialTeamMembers, teams as initialTeams, projects as allProjects, currentUser, type User, type Team } from '@/lib/mock-data';
+import { teams as initialTeams, projects as allProjects, currentUser, type User, type Team } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddTeamDialog, type TeamFormValues } from './components/add-team-dialog';
 import { EditTeamDialog } from './components/edit-team-dialog';
+import { useMembers } from '../../contexts/MembersContext';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
+    const { teamMembers, updateMember } = useMembers();
     const [teams, setTeams] = useState<Team[]>(initialTeams);
-    const [users, setUsers] = useState<User[]>(initialTeamMembers);
     
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [editingTeam, setEditingTeam] = useState<Team | null>(null);
@@ -23,8 +25,8 @@ export default function TeamsSettingsPage() {
 
     const teamDetails = useMemo(() => {
         return teams.map(team => {
-            const lead = users.find(u => u.teamId === team.id && u.role === 'Team Lead');
-            const members = users.filter(u => u.teamId === team.id && u.role === 'Employee');
+            const lead = teamMembers.find(u => u.teamId === team.id && u.role === 'Team Lead');
+            const members = teamMembers.filter(u => u.teamId === team.id && u.role === 'Employee');
             const projects = allProjects.filter(p => team.projectIds?.includes(p.id));
             return {
                 ...team,
@@ -33,7 +35,7 @@ export default function TeamsSettingsPage() {
                 projects,
             }
         });
-    }, [teams, users]);
+    }, [teams, teamMembers]);
 
     const handleAddTeam = (data: TeamFormValues) => {
         const finalLeadId = data.leadId === 'none' ? undefined : data.leadId;
@@ -45,13 +47,16 @@ export default function TeamsSettingsPage() {
 
         setTeams(prev => [...prev, newTeam]);
         
-        setUsers(prevUsers => {
-            return prevUsers.map(user => {
-                if (user.id === finalLeadId || data.memberIds?.includes(user.id)) {
-                    return { ...user, teamId: newTeam.id };
-                }
-                return user;
-            });
+        const userIdsToUpdate = [
+            ...(finalLeadId ? [finalLeadId] : []),
+            ...(data.memberIds || [])
+        ];
+
+        userIdsToUpdate.forEach(userId => {
+            const user = teamMembers.find(u => u.id === userId);
+            if (user) {
+                updateMember({ ...user, teamId: newTeam.id });
+            }
         });
 
         setIsAddDialogOpen(false);
@@ -70,22 +75,25 @@ export default function TeamsSettingsPage() {
             )
         );
 
-        setUsers(prevUsers => {
-            return prevUsers.map(user => {
-                // User is the new lead
-                if (user.id === finalLeadId) {
-                    return { ...user, teamId };
-                }
-                // User is a new member
-                if (data.memberIds?.includes(user.id)) {
-                    return { ...user, teamId };
-                }
-                // User was part of the team, but no longer is
-                if (user.teamId === teamId && user.id !== finalLeadId && !data.memberIds?.includes(user.id)) {
-                    return { ...user, teamId: undefined };
-                }
-                return user;
-            });
+        const currentTeamUsers = teamMembers.filter(u => u.teamId === teamId);
+        const newTeamUserIds = new Set([
+            ...(finalLeadId ? [finalLeadId] : []),
+            ...(data.memberIds || [])
+        ]);
+
+        newTeamUserIds.forEach(userId => {
+            const user = teamMembers.find(u => u.id === userId);
+            // Add user to team if they aren't already in it
+            if (user && user.teamId !== teamId) {
+                updateMember({ ...user, teamId: teamId });
+            }
+        });
+
+        currentTeamUsers.forEach(user => {
+            // Remove user from team if they are no longer selected and are a manageable role
+            if (!newTeamUserIds.has(user.id) && (user.role === 'Employee' || user.role === 'Team Lead')) {
+                updateMember({ ...user, teamId: undefined });
+            }
         });
 
         setEditingTeam(null);
@@ -173,7 +181,7 @@ export default function TeamsSettingsPage() {
                         isOpen={isAddDialogOpen}
                         onOpenChange={setIsAddDialogOpen}
                         onAddTeam={handleAddTeam}
-                        allUsers={users}
+                        allUsers={teamMembers}
                         allProjects={allProjects}
                     />
                     {editingTeam && (
@@ -182,7 +190,7 @@ export default function TeamsSettingsPage() {
                             onOpenChange={(isOpen) => !isOpen && setEditingTeam(null)}
                             onSaveTeam={handleSaveTeam}
                             team={editingTeam}
-                            allUsers={users}
+                            allUsers={teamMembers}
                             allProjects={allProjects}
                         />
                     )}
