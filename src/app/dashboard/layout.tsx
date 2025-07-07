@@ -249,7 +249,10 @@ function LayoutContent({ children }: { children: ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="p-4 sm:p-6 lg:p-8 flex-1">{children}</main>
+        <footer className="p-4 text-center text-xs text-muted-foreground">
+          Created by Bikramjit Chowdhury
+        </footer>
         <LogTimeDialog
           isOpen={isLogTimeDialogOpen}
           onOpenChange={setIsLogTimeDialogOpen}
