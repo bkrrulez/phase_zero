@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { teamMembers as initialTeamMembers, currentUser, type User } from "@/lib/mock-data";
+import { teamMembers as initialTeamMembers, currentUser, type User, teams } from "@/lib/mock-data";
 import { EditMemberDialog } from "./components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "./components/add-member-dialog";
@@ -101,6 +101,12 @@ export default function TeamPage() {
 
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
+    const getTeamName = (teamId?: string) => {
+        if (!teamId) return 'N/A';
+        const team = teams.find(t => t.id === teamId);
+        return team?.name ?? 'N/A';
+    };
+
   return (
     <>
       <div className="space-y-6">
@@ -126,6 +132,7 @@ export default function TeamPage() {
                       <TableRow>
                           <TableHead>Member</TableHead>
                           <TableHead className="hidden md:table-cell">Role</TableHead>
+                          <TableHead className="hidden md:table-cell">Team</TableHead>
                           <TableHead className="hidden md:table-cell text-right">Weekly Contract Hours</TableHead>
                           <TableHead className="hidden lg:table-cell">Contract Start</TableHead>
                           <TableHead className="hidden lg:table-cell">Contract End</TableHead>
@@ -150,6 +157,7 @@ export default function TeamPage() {
                               <TableCell className="hidden md:table-cell">
                                   <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                               </TableCell>
+                              <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
                               <TableCell className="hidden md:table-cell text-right font-mono">{member.contract.weeklyHours}h</TableCell>
                               <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
                               <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
@@ -185,7 +193,7 @@ export default function TeamPage() {
                       ))}
                       {visibleMembers.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={6} className="h-24 text-center">No members to display.</TableCell>
+                              <TableCell colSpan={7} className="h-24 text-center">No members to display.</TableCell>
                           </TableRow>
                       )}
                   </TableBody>
