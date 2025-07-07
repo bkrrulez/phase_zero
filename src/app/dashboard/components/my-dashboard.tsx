@@ -86,6 +86,7 @@ export function MyDashboard() {
       endTime: data.endTime,
       task: `${data.project} - ${data.task}`,
       duration: calculateDuration(data.startTime, data.endTime),
+      remarks: data.remarks,
     };
     setTimeEntries(prev => [newEntry, ...prev]);
     setIsLogTimeDialogOpen(false);

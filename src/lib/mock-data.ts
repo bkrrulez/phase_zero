@@ -23,6 +23,7 @@ export type TimeEntry = {
   endTime: string;
   task: string;
   duration: number; // in hours
+  remarks?: string;
 };
 
 export type HolidayRequest = {
@@ -161,20 +162,20 @@ export const teamMembers: User[] = [
 const today = new Date();
 export const timeEntries: TimeEntry[] = [
   // Alex Smith (Team Lead) - slight overtime
-  { id: "t-1", userId: "user-1", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - Feature Dev", duration: 8 },
+  { id: "t-1", userId: "user-1", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - Feature Dev", duration: 8, remarks: "Completed the main logic for the new feature." },
   { id: "t-2", userId: "user-1", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "17:30", task: "Project B - Bugfixes", duration: 8.5 },
-  { id: "t-3", userId: "user-1", date: new Date(new Date().setDate(3)).toISOString(), startTime: "10:00", endTime: "18:00", task: "Team Meeting", duration: 8 },
+  { id: "t-3", userId: "user-1", date: new Date(new Date().setDate(3)).toISOString(), startTime: "10:00", endTime: "18:00", task: "Team Meeting", duration: 8, remarks: "Weekly sync with the team." },
   { id: "t-4", userId: "user-1", date: new Date(new Date().setDate(4)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - Code Review", duration: 8 },
   
   // Jane Doe (Employee) - significant overtime
-  { id: "t-5", userId: "user-2", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "18:00", task: "Documentation", duration: 9 },
+  { id: "t-5", userId: "user-2", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "18:00", task: "Documentation", duration: 9, remarks: "Updated the API documentation." },
   { id: "t-6", userId: "user-2", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "18:30", task: "Project A - UI Design", duration: 9.5 },
-  { id: "t-8", userId: "user-2", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - UI Design", duration: 8 },
+  { id: "t-8", userId: "user-2", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Project A - UI Design", duration: 8, remarks: "Finalized the mockups." },
   
   // Peter Jones (Employee, part-time) - deficit
   { id: "t-7", userId: "user-3", date: new Date(new Date().setDate(1)).toISOString(), startTime: "13:00", endTime: "16:00", task: "Customer Support", duration: 3 },
   { id: "t-9", userId: "user-3", date: new Date(new Date().setDate(2)).toISOString(), startTime: "13:00", endTime: "17:00", task: "Customer Support", duration: 4 },
-  { id: "t-10", userId: "user-3", date: new Date(new Date().setDate(3)).toISOString(), startTime: "13:00", endTime: "15:00", task: "Customer Support", duration: 2 },
+  { id: "t-10", userId: "user-3", date: new Date(new Date().setDate(3)).toISOString(), startTime: "13:00", endTime: "15:00", task: "Customer Support", duration: 2, remarks: "Handled a few support tickets." },
   
   // Susan Miller (Employee) - deficit
   { id: "t-11", userId: "user-4", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "16:00", task: "Internal - HR Training", duration: 7 },
@@ -182,7 +183,7 @@ export const timeEntries: TimeEntry[] = [
   { id: "t-13", userId: "user-4", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Client X - Communication", duration: 8 },
   
   // Admin User
-  { id: "t-14", userId: "admin-1", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - System Check", duration: 8 },
+  { id: "t-14", userId: "admin-1", date: new Date(new Date().setDate(1)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - System Check", duration: 8, remarks: "All systems operational." },
   { id: "t-15", userId: "admin-1", date: new Date(new Date().setDate(2)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - Payroll", duration: 8 },
   { id: "t-16", userId: "admin-1", date: new Date(new Date().setDate(3)).toISOString(), startTime: "09:00", endTime: "17:00", task: "Admin - User Management", duration: 8 },
 

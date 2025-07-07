@@ -19,10 +19,11 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays } from '@/lib/mock-data';
+import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays, type TimeEntry } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import React from 'react';
+import { DayDetailsDialog } from './day-details-dialog';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -31,7 +32,11 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 interface ReportCalendarContextValue {
   selectedDate: Date;
-  monthlyData: { dailyTotals: Record<string, number> };
+  monthlyData: { 
+    dailyTotals: Record<string, number>;
+    dailyEntries: Record<string, TimeEntry[]>;
+  };
+  onDayClick: (date: Date) => void;
 }
 
 const ReportCalendarContext = React.createContext<ReportCalendarContextValue | null>(null);
@@ -43,7 +48,7 @@ const DayContent: React.FC<DayContentProps> = (props) => {
     return <div className="p-1">{props.date.getDate()}</div>;
   }
 
-  const { selectedDate, monthlyData } = context;
+  const { selectedDate, monthlyData, onDayClick } = context;
   const { date } = props;
   const dayOfMonth = date.getDate();
 
@@ -52,9 +57,19 @@ const DayContent: React.FC<DayContentProps> = (props) => {
   }
 
   const hours = monthlyData.dailyTotals[dayOfMonth];
+  const hasManualEntries = (monthlyData.dailyEntries[dayOfMonth] || []).length > 0;
   
+  const wrapperProps = {
+    className: "relative w-full h-full flex flex-col items-center justify-center text-center p-1",
+    ...(hasManualEntries && {
+        onClick: () => onDayClick(date),
+        role: 'button' as const,
+        className: "relative w-full h-full flex flex-col items-center justify-center text-center p-1 cursor-pointer hover:bg-accent/50 rounded-md"
+    })
+  };
+
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center text-center p-1">
+    <div {...wrapperProps}>
         <div>{dayOfMonth}</div>
         {hours !== undefined && hours > 0 && (
             <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
@@ -67,6 +82,10 @@ const DayContent: React.FC<DayContentProps> = (props) => {
 export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+    const [selectedDayEntries, setSelectedDayEntries] = useState<TimeEntry[]>([]);
+    const [selectedDayForDialog, setSelectedDayForDialog] = useState<Date>(new Date());
 
     const viewableUsers = useMemo(() => {
         if (currentUser.role === 'Super Admin') return teamMembers;
@@ -139,9 +158,10 @@ export function IndividualReport() {
   }, [selectedUser, selectedDate]);
 
   const monthlyData = useMemo(() => {
-    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [] };
+    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {} };
 
     const dailyTotals: Record<string, number> = {};
+    const dailyEntries: Record<string, TimeEntry[]> = {};
     const dailyContractHours = selectedUser.contract.weeklyHours / 5;
 
     // 1. Calculate manually logged hours
@@ -154,7 +174,9 @@ export function IndividualReport() {
     userTimeEntries.forEach(entry => {
         const day = new Date(entry.date).getDate();
         if (!dailyTotals[day]) dailyTotals[day] = 0;
+        if (!dailyEntries[day]) dailyEntries[day] = [];
         dailyTotals[day] += entry.duration;
+        dailyEntries[day].push(entry);
     });
 
     // 2. Calculate and add public holiday hours
@@ -204,7 +226,7 @@ export function IndividualReport() {
     const publicHolidayDays = publicHolidaysInMonth.map(h => new Date(h.date));
     const customHolidayDays = customHolidaysInMonth.map(h => new Date(h.date));
 
-    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays };
+    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries };
   }, [selectedUser, selectedDate]);
     
     const handleUserChange = (userId: string) => {
@@ -234,9 +256,21 @@ export function IndividualReport() {
         setSelectedDate(new Date(newYear, newMonth, 1));
     }
     
+    const handleDayClick = (date: Date) => {
+        const day = date.getDate();
+        const entries = monthlyData.dailyEntries[day] || [];
+        
+        if (entries.length > 0) {
+            setSelectedDayEntries(entries);
+            setSelectedDayForDialog(date);
+            setIsDetailsDialogOpen(true);
+        }
+    };
+
     const calendarContextValue = useMemo<ReportCalendarContextValue>(() => ({
         selectedDate,
         monthlyData,
+        onDayClick: handleDayClick,
     }), [selectedDate, monthlyData]);
 
   if (!selectedUser) {
@@ -355,6 +389,12 @@ export function IndividualReport() {
             </ReportCalendarContext.Provider>
         </CardContent>
       </Card>
+      <DayDetailsDialog 
+        isOpen={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        date={selectedDayForDialog}
+        entries={selectedDayEntries}
+      />
     </div>
   );
 }
