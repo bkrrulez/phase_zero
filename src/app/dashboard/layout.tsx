@@ -164,13 +164,15 @@ export default function DashboardLayout({
                             </Link>
                          </SidebarMenuButton>
                        </SidebarMenuItem>
-                       <SidebarMenuItem>
-                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/holidays")}>
-                            <Link href="/dashboard/settings/holidays">
-                                <CalendarDays /> Holidays
-                            </Link>
-                         </SidebarMenuButton>
-                       </SidebarMenuItem>
+                       {currentUser.role === 'Super Admin' && (
+                         <SidebarMenuItem>
+                           <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/holidays")}>
+                              <Link href="/dashboard/settings/holidays">
+                                  <CalendarDays /> Holidays
+                              </Link>
+                           </SidebarMenuButton>
+                         </SidebarMenuItem>
+                       )}
                        <SidebarMenuItem>
                          <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/push-messages")}>
                             <Link href="/dashboard/settings/push-messages">

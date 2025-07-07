@@ -53,6 +53,14 @@ export type Team = {
   projectIds?: string[];
 };
 
+export type PublicHoliday = {
+  id: string;
+  country: string;
+  name: string;
+  date: string; // ISO string for simplicity
+  type: "Full Day" | "Half Day";
+};
+
 export const teams: Team[] = [
     { id: "team-1", name: "Alpha Team", projectIds: ['proj-1', 'proj-2', 'proj-3'] },
     { id: "team-2", name: "Bravo Team", projectIds: ['proj-4'] },
@@ -212,4 +220,17 @@ export const tasks: Task[] = [
   { id: "task-10", name: "Admin - User Management", details: "Managing user accounts and permissions." },
   { id: "task-11", name: "Customer Support", details: "Providing support to customers." },
   { id: "task-12", name: "Internal - HR Training", details: "Participating in HR training sessions." },
+];
+
+const currentYear = new Date().getFullYear();
+
+export const publicHolidays: PublicHoliday[] = [
+    { id: 'ph-1', country: 'USA', name: 'New Year\'s Day', date: new Date(currentYear, 0, 1).toISOString(), type: 'Full Day' },
+    { id: 'ph-2', country: 'USA', name: 'Martin Luther King, Jr. Day', date: new Date(currentYear, 0, 15).toISOString(), type: 'Full Day' },
+    { id: 'ph-3', country: 'USA', name: 'Independence Day', date: new Date(currentYear, 6, 4).toISOString(), type: 'Full Day' },
+    { id: 'ph-4', country: 'USA', name: 'Labor Day', date: new Date(currentYear, 8, 2).toISOString(), type: 'Full Day' },
+    { id: 'ph-5', country: 'USA', name: 'Thanksgiving Day', date: new Date(currentYear, 10, 28).toISOString(), type: 'Full Day' },
+    { id: 'ph-6', country: 'USA', name: 'Christmas Day', date: new Date(currentYear, 11, 25).toISOString(), type: 'Full Day' },
+    { id: 'ph-7', country: 'UK', name: 'Good Friday', date: new Date(currentYear, 3, 18).toISOString(), type: 'Full Day' },
+    { id: 'ph-8', country: 'UK', name: 'Boxing Day', date: new Date(currentYear, 11, 26).toISOString(), type: 'Full Day' },
 ];
