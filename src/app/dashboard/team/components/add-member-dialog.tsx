@@ -103,7 +103,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
       email: data.email,
       role: data.role,
       reportsTo: data.reportsTo,
-      teamId: data.teamId,
+      teamId: (data.teamId && data.teamId !== 'none') ? data.teamId : undefined,
       avatar: 'https://placehold.co/100x100.png',
       associatedProjectIds: data.associatedProjectIds,
       contract: {
@@ -212,7 +212,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="">No Team</SelectItem>
+                            <SelectItem value="none">No Team</SelectItem>
                             {teams.map(team => (
                                 <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                             ))}

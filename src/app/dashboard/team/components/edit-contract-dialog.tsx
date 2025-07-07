@@ -121,7 +121,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
       email: data.email,
       role: data.role,
       reportsTo: data.reportsTo,
-      teamId: data.teamId,
+      teamId: (data.teamId && data.teamId !== 'none') ? data.teamId : undefined,
       associatedProjectIds: data.associatedProjectIds,
       contract: {
         ...user.contract,
@@ -229,7 +229,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="">No Team</SelectItem>
+                            <SelectItem value="none">No Team</SelectItem>
                             {teams.map(team => (
                                 <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                             ))}
