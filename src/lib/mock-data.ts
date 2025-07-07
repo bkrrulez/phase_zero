@@ -29,7 +29,7 @@ export type HolidayRequest = {
   status: "Pending" | "Approved" | "Rejected";
 };
 
-export const currentUser: User = {
+const alexSmithUser: User = {
   id: "user-1",
   name: "Alex Smith",
   email: "alex.smith@example.com",
@@ -42,8 +42,23 @@ export const currentUser: User = {
   },
 };
 
+const adminUser: User = {
+  id: "admin-1",
+  name: "Admin One",
+  email: "admin1@example.com",
+  role: "Super Admin",
+  avatar: "https://placehold.co/100x100.png",
+  contract: {
+    startDate: "2020-01-01",
+    endDate: null,
+    weeklyHours: 40,
+  },
+};
+
+export const currentUser: User = adminUser;
+
 export const teamMembers: User[] = [
-  currentUser,
+  alexSmithUser,
   {
     id: "user-2",
     name: "Jane Doe",
@@ -79,7 +94,8 @@ export const teamMembers: User[] = [
       endDate: null,
       weeklyHours: 40,
     },
-  }
+  },
+  adminUser
 ];
 
 const today = new Date();

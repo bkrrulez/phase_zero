@@ -57,7 +57,7 @@ export default function TeamPage() {
                                 </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
-                                <Badge variant={member.role === 'Team Lead' ? "default" : "secondary"}>{member.role}</Badge>
+                                <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">{member.contract.weeklyHours}h / week</TableCell>
                             <TableCell>{getLoggedHours(member.id)}h</TableCell>
