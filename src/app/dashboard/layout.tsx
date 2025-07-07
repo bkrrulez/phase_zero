@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -100,7 +101,7 @@ export default function DashboardLayout({
               <SidebarMenuButton asChild isActive={isActive("/dashboard/profile")}>
                 <Link href="/dashboard/profile">
                   <Settings />
-                  Profile & Settings
+                  Settings
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ export default function ProfilePage() {
   return (
     <form className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Profile & Settings</h1>
+        <h1 className="text-3xl font-bold font-headline">Profile</h1>
         <p className="text-muted-foreground">View and manage your personal and contract details.</p>
       </div>
       <Card>
