@@ -19,6 +19,7 @@ import {
   Building,
   PlusCircle,
   Shield,
+  ScrollText,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -68,6 +69,7 @@ import { TasksProvider } from "./contexts/TasksContext";
 import { HolidaysProvider } from "./contexts/HolidaysContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
 import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
+import { SystemLogProvider } from "./contexts/SystemLogContext";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -110,7 +112,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <LogoIcon className="w-8 h-8" />
-            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Tool</span></h1>
+            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Wise</span></h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -220,6 +222,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                                 </Link>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
+                           <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/system-logs")}>
+                                <Link href="/dashboard/settings/system-logs">
+                                    <ScrollText /> System Logs
+                                </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
                         </>
                       )}
                     </SidebarMenu>
@@ -307,22 +316,24 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <TimeTrackingProvider>
-      <HolidaysProvider>
-        <TasksProvider>
-          <ProjectsProvider>
-            <TeamsProvider>
-              <MembersProvider>
-                <AccessControlProvider>
-                  <PushMessagesProvider>
-                    <LayoutContent>{children}</LayoutContent>
-                  </PushMessagesProvider>
-                </AccessControlProvider>
-              </MembersProvider>
-            </TeamsProvider>
-          </ProjectsProvider>
-        </TasksProvider>
-      </HolidaysProvider>
-    </TimeTrackingProvider>
+    <SystemLogProvider>
+      <TimeTrackingProvider>
+        <HolidaysProvider>
+          <TasksProvider>
+            <ProjectsProvider>
+              <TeamsProvider>
+                <MembersProvider>
+                  <AccessControlProvider>
+                    <PushMessagesProvider>
+                      <LayoutContent>{children}</LayoutContent>
+                    </PushMessagesProvider>
+                  </AccessControlProvider>
+                </MembersProvider>
+              </TeamsProvider>
+            </ProjectsProvider>
+          </TasksProvider>
+        </HolidaysProvider>
+      </TimeTrackingProvider>
+    </SystemLogProvider>
   );
 }

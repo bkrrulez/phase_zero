@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import * as React from 'react';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,14 +13,16 @@ import { AddTaskDialog, type TaskFormValues } from './components/add-task-dialog
 import { EditTaskDialog } from './components/edit-task-dialog';
 import { DeleteTaskDialog } from './components/delete-task-dialog';
 import { useTasks } from '../../contexts/TasksContext';
+import { useSystemLog } from '../../contexts/SystemLogContext';
 
 export default function TasksSettingsPage() {
     const { toast } = useToast();
     const { tasks, addTask, updateTask, deleteTask } = useTasks();
+    const { logAction } = useSystemLog();
     
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
-    const [deletingTask, setDeletingTask] = useState<Task | null>(null);
+    const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+    const [editingTask, setEditingTask] = React.useState<Task | null>(null);
+    const [deletingTask, setDeletingTask] = React.useState<Task | null>(null);
 
     const canManageTasks = currentUser.role === 'Super Admin';
 
@@ -31,6 +33,7 @@ export default function TasksSettingsPage() {
             title: "Task Added",
             description: `The task "${data.name}" has been created.`,
         });
+        logAction(`User '${currentUser.name}' created a new task: '${data.name}'.`);
     };
 
     const handleSaveTask = (taskId: string, data: TaskFormValues) => {
@@ -40,9 +43,11 @@ export default function TasksSettingsPage() {
             title: "Task Updated",
             description: `The task "${data.name}" has been updated.`,
         });
+        logAction(`User '${currentUser.name}' updated task: '${data.name}'.`);
     }
 
     const handleDeleteTask = (taskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
         deleteTask(taskId);
         setDeletingTask(null);
         toast({
@@ -50,6 +55,9 @@ export default function TasksSettingsPage() {
             description: "The task has been successfully deleted.",
             variant: "destructive"
         });
+        if (task) {
+          logAction(`User '${currentUser.name}' deleted task: '${task.name}'.`);
+        }
     };
 
     return (

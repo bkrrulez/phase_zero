@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { useSystemLog } from './SystemLogContext';
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
@@ -26,6 +27,7 @@ const calculateDuration = (startTime: string, endTime: string): number => {
 export function TimeTrackingProvider({ children }: { children: React.ReactNode }) {
   const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', initialTimeEntries);
   const { toast } = useToast();
+  const { logAction } = useSystemLog();
 
   const logTime = (data: LogTimeFormValues): { success: boolean } => {
     const newEntry: TimeEntry = {
@@ -43,6 +45,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         title: "Time Logged Successfully",
         description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
     });
+    logAction(`User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`);
     return { success: true };
   };
   

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import * as React from 'react';
 import { format } from 'date-fns';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,8 @@ export default function AccessControlPage() {
   const { toast } = useToast();
   const { freezeRules, addFreezeRule, removeFreezeRule } = useAccessControl();
   const { teams } = useTeams();
-  const [isFreezeDialogOpen, setIsFreezeDialogOpen] = useState(false);
-  const [unfreezingRule, setUnfreezingRule] = useState<FreezeRule | null>(null);
+  const [isFreezeDialogOpen, setIsFreezeDialogOpen] = React.useState(false);
+  const [unfreezingRule, setUnfreezingRule] = React.useState<FreezeRule | null>(null);
 
   const canManage = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
@@ -38,22 +38,24 @@ export default function AccessControlPage() {
   };
 
   const handleFreeze = (data: FreezeFormSubmitData) => {
+    const teamName = getTeamName(data.teamId);
     const newRule: FreezeRule = {
       id: `freeze-${Date.now()}`,
       teamId: data.teamId,
       startDate: data.startDate.toISOString(),
       endDate: data.endDate.toISOString(),
     };
-    addFreezeRule(newRule);
+    addFreezeRule(newRule, teamName);
     setIsFreezeDialogOpen(false);
     toast({
       title: 'Calendar Frozen',
-      description: `Calendar has been frozen for ${getTeamName(data.teamId)}.`,
+      description: `Calendar has been frozen for ${teamName}.`,
     });
   };
 
-  const handleUnfreeze = (ruleId: string) => {
-    removeFreezeRule(ruleId);
+  const handleUnfreeze = (rule: FreezeRule) => {
+    const teamName = getTeamName(rule.teamId);
+    removeFreezeRule(rule, teamName);
     setUnfreezingRule(null);
     toast({
       title: 'Calendar Unfrozen',
@@ -146,7 +148,7 @@ export default function AccessControlPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleUnfreeze(unfreezingRule!.id)}>
+            <AlertDialogAction onClick={() => handleUnfreeze(unfreezingRule!)}>
               Confirm
             </AlertDialogAction>
           </AlertDialogFooter>

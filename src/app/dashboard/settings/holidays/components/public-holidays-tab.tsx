@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import * as React from 'react';
 import { format } from 'date-fns';
 import { MoreHorizontal, PlusCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type PublicHoliday } from '@/lib/mock-data';
+import { currentUser, type PublicHoliday } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditHolidayDialog, type HolidayFormValues } from './add-edit-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
 import { ImportHolidaysDialog } from './import-holidays-dialog';
+import { useSystemLog } from '@/app/dashboard/contexts/SystemLogContext';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
@@ -24,14 +25,15 @@ interface PublicHolidaysTabProps {
 
 export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabProps) {
     const { toast } = useToast();
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const { logAction } = useSystemLog();
+    const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
 
-    const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
-    const [editingHoliday, setEditingHoliday] = useState<PublicHoliday | null>(null);
-    const [deletingHoliday, setDeletingHoliday] = useState<PublicHoliday | null>(null);
-    const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+    const [isAddEditDialogOpen, setIsAddEditDialogOpen] = React.useState(false);
+    const [editingHoliday, setEditingHoliday] = React.useState<PublicHoliday | null>(null);
+    const [deletingHoliday, setDeletingHoliday] = React.useState<PublicHoliday | null>(null);
+    const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
 
-    const filteredHolidays = useMemo(() => {
+    const filteredHolidays = React.useMemo(() => {
         return holidays
             .filter(h => new Date(h.date).getFullYear() === selectedYear)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -48,6 +50,7 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
         setHolidays(prev => [...prev, newHoliday]);
         setIsAddEditDialogOpen(false);
         toast({ title: "Holiday Added", description: `"${data.name}" has been added.` });
+        logAction(`User '${currentUser.name}' added public holiday: '${data.name}'.`);
     };
 
     const handleEditHoliday = (holidayId: string, data: HolidayFormValues) => {
@@ -55,12 +58,17 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
         setEditingHoliday(null);
         setIsAddEditDialogOpen(false);
         toast({ title: "Holiday Updated", description: `"${data.name}" has been updated.` });
+        logAction(`User '${currentUser.name}' updated public holiday: '${data.name}'.`);
     };
 
     const handleDeleteHoliday = (holidayId: string) => {
+        const holiday = holidays.find(h => h.id === holidayId);
         setHolidays(prev => prev.filter(h => h.id !== holidayId));
         setDeletingHoliday(null);
         toast({ title: "Holiday Deleted", variant: "destructive" });
+        if (holiday) {
+          logAction(`User '${currentUser.name}' deleted public holiday: '${holiday.name}'.`);
+        }
     };
     
     const handleOpenAddDialog = () => {
@@ -112,6 +120,7 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
             title: 'Import Successful',
             description: `${holidaysForYear.length} holidays have been imported for ${selectedYear}.`
         });
+        logAction(`User '${currentUser.name}' imported ${holidaysForYear.length} public holidays for ${selectedYear}.`);
         setIsImportDialogOpen(false);
     };
 

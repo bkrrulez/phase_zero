@@ -4,24 +4,29 @@
 import * as React from 'react';
 import { freezeRules as initialFreezeRules, type FreezeRule } from "@/lib/mock-data";
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { useSystemLog } from './SystemLogContext';
+import { currentUser } from '@/lib/mock-data';
 
 interface AccessControlContextType {
   freezeRules: FreezeRule[];
-  addFreezeRule: (newRule: FreezeRule) => void;
-  removeFreezeRule: (ruleId: string) => void;
+  addFreezeRule: (newRule: FreezeRule, teamName: string) => void;
+  removeFreezeRule: (rule: FreezeRule, teamName: string) => void;
 }
 
 const AccessControlContext = React.createContext<AccessControlContextType | undefined>(undefined);
 
 export function AccessControlProvider({ children }: { children: React.ReactNode }) {
   const [freezeRules, setFreezeRules] = useLocalStorage<FreezeRule[]>('freezeRules', initialFreezeRules);
+  const { logAction } = useSystemLog();
 
-  const addFreezeRule = (newRule: FreezeRule) => {
+  const addFreezeRule = (newRule: FreezeRule, teamName: string) => {
     setFreezeRules(prev => [...prev, newRule]);
+    logAction(`User '${currentUser.name}' added a freeze rule for '${teamName}'.`);
   };
 
-  const removeFreezeRule = (ruleId: string) => {
-    setFreezeRules(prev => prev.filter(r => r.id !== ruleId));
+  const removeFreezeRule = (rule: FreezeRule, teamName: string) => {
+    setFreezeRules(prev => prev.filter(r => r.id !== rule.id));
+    logAction(`User '${currentUser.name}' removed a freeze rule for '${teamName}'.`);
   };
 
   return (

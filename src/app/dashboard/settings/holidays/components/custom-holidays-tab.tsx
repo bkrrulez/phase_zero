@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import * as React from 'react';
 import { format } from 'date-fns';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type CustomHoliday, type PublicHoliday } from '@/lib/mock-data';
+import { currentUser, type CustomHoliday, type PublicHoliday } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditCustomHolidayDialog, type CustomHolidayFormValues } from './add-edit-custom-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
 import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
+import { useSystemLog } from '@/app/dashboard/contexts/SystemLogContext';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
@@ -26,13 +27,14 @@ interface CustomHolidaysTabProps {
 export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: CustomHolidaysTabProps) {
     const { toast } = useToast();
     const { teams } = useTeams();
-    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const { logAction } = useSystemLog();
+    const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
 
-    const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
-    const [editingHoliday, setEditingHoliday] = useState<CustomHoliday | null>(null);
-    const [deletingHoliday, setDeletingHoliday] = useState<CustomHoliday | null>(null);
+    const [isAddEditDialogOpen, setIsAddEditDialogOpen] = React.useState(false);
+    const [editingHoliday, setEditingHoliday] = React.useState<CustomHoliday | null>(null);
+    const [deletingHoliday, setDeletingHoliday] = React.useState<CustomHoliday | null>(null);
 
-    const filteredHolidays = useMemo(() => {
+    const filteredHolidays = React.useMemo(() => {
         return holidays
             .filter(h => new Date(h.date).getFullYear() === selectedYear)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -56,6 +58,7 @@ export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: Cus
             // Edit
             setHolidays(prev => prev.map(h => h.id === editingHoliday.id ? { ...h, ...data, date: data.date.toISOString() } : h));
             toast({ title: "Holiday Updated", description: `"${data.name}" has been updated.` });
+            logAction(`User '${currentUser.name}' updated custom holiday: '${data.name}'.`);
         } else {
             // Add
             const newHoliday: CustomHoliday = {
@@ -65,15 +68,20 @@ export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: Cus
             };
             setHolidays(prev => [...prev, newHoliday]);
             toast({ title: "Holiday Added", description: `"${data.name}" has been added.` });
+            logAction(`User '${currentUser.name}' added custom holiday: '${data.name}'.`);
         }
         setIsAddEditDialogOpen(false);
         setEditingHoliday(null);
     };
 
     const handleDeleteHoliday = (holidayId: string) => {
+        const holiday = holidays.find(h => h.id === holidayId);
         setHolidays(prev => prev.filter(h => h.id !== holidayId));
         setDeletingHoliday(null);
         toast({ title: "Holiday Deleted", variant: "destructive" });
+        if (holiday) {
+          logAction(`User '${currentUser.name}' deleted custom holiday: '${holiday.name}'.`);
+        }
     };
     
     const handleOpenAddDialog = () => {

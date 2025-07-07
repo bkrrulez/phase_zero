@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from "react";
+import * as React from 'react';
 import { format } from "date-fns";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -19,17 +19,19 @@ import { ChangePasswordDialog } from "@/app/dashboard/team/components/change-pas
 import { sendPasswordChangeEmail } from "@/lib/mail";
 import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
+import { useSystemLog } from '../../contexts/SystemLogContext';
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
     const { teamMembers, updateMember, addMember } = useMembers();
     const { teams } = useTeams();
-    const [editingUser, setEditingUser] = useState<User | null>(null);
-    const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
-    const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);
-    const [isSavingPassword, setIsSavingPassword] = useState(false);
+    const { logAction } = useSystemLog();
+    const [editingUser, setEditingUser] = React.useState<User | null>(null);
+    const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
+    const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
+    const [isSavingPassword, setIsSavingPassword] = React.useState(false);
     
-    const visibleMembers = useMemo(() => {
+    const visibleMembers = React.useMemo(() => {
         if (currentUser.role === 'Super Admin') {
             return teamMembers;
         }
@@ -47,6 +49,7 @@ export default function MembersSettingsPage() {
             title: "Member Details Updated",
             description: `Successfully updated details for ${updatedUser.name}.`,
         });
+        logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
     }
 
     const handleAddMember = (newUser: User) => {
@@ -56,6 +59,7 @@ export default function MembersSettingsPage() {
             title: "Member Added",
             description: `${newUser.name} has been added to the team.`,
         });
+        logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
     };
 
     const handlePasswordChange = async (password: string) => {
@@ -68,6 +72,7 @@ export default function MembersSettingsPage() {
                 title: "Password Changed",
                 description: `Password for ${changingPasswordUser.name} has been changed and a notification email has been sent.`,
             });
+            logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
         } catch (error) {
             toast({
                 variant: 'destructive',

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import * as React from 'react';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,19 +14,21 @@ import { EditProjectDialog } from './components/edit-project-dialog';
 import { DeleteProjectDialog } from './components/delete-project-dialog';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useTasks } from '../../contexts/TasksContext';
+import { useSystemLog } from '../../contexts/SystemLogContext';
 
 export default function ProjectsSettingsPage() {
     const { toast } = useToast();
     const { projects, addProject, updateProject, deleteProject } = useProjects();
     const { tasks: allTasks } = useTasks();
+    const { logAction } = useSystemLog();
     
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [editingProject, setEditingProject] = useState<Project | null>(null);
-    const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+    const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+    const [editingProject, setEditingProject] = React.useState<Project | null>(null);
+    const [deletingProject, setDeletingProject] = React.useState<Project | null>(null);
 
     const canManageProjects = currentUser.role === 'Super Admin';
 
-    const projectDetails = useMemo(() => {
+    const projectDetails = React.useMemo(() => {
         return projects.map(project => {
             const tasks = allTasks.filter(t => project.taskIds?.includes(t.id));
             return {
@@ -48,6 +50,7 @@ export default function ProjectsSettingsPage() {
             title: "Project Added",
             description: `The project "${data.name}" has been created.`,
         });
+        logAction(`User '${currentUser.name}' created a new project: '${data.name}'.`);
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
@@ -57,9 +60,11 @@ export default function ProjectsSettingsPage() {
             title: "Project Updated",
             description: `The project "${data.name}" has been updated.`,
         });
+        logAction(`User '${currentUser.name}' updated project: '${data.name}'.`);
     }
 
     const handleDeleteProject = (projectId: string) => {
+        const project = projects.find(p => p.id === projectId);
         deleteProject(projectId);
         setDeletingProject(null);
         toast({
@@ -67,6 +72,9 @@ export default function ProjectsSettingsPage() {
             description: "The project has been successfully deleted.",
             variant: "destructive"
         });
+        if (project) {
+          logAction(`User '${currentUser.name}' deleted project: '${project.name}'.`);
+        }
     };
 
     return (

@@ -16,6 +16,7 @@ import { usePushMessages } from '../../contexts/PushMessagesContext';
 import { useTeams } from '../../contexts/TeamsContext';
 import { AddEditPushMessageDialog, type PushMessageFormValues } from './components/add-edit-push-message-dialog';
 import { DeletePushMessageDialog } from './components/delete-push-message-dialog';
+import { useSystemLog } from '../../contexts/SystemLogContext';
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -42,6 +43,7 @@ export default function PushMessagesSettingsPage() {
   const { toast } = useToast();
   const { pushMessages, addMessage, updateMessage, deleteMessage } = usePushMessages();
   const { teams } = useTeams();
+  const { logAction } = useSystemLog();
 
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [editingMessage, setEditingMessage] = React.useState<PushMessage | null>(null);
@@ -81,9 +83,11 @@ export default function PushMessagesSettingsPage() {
     if (editingMessage) {
       updateMessage(editingMessage.id, messageData);
       toast({ title: 'Message Updated' });
+      logAction(`User '${currentUser.name}' updated push message: "${data.context}".`);
     } else {
       addMessage(messageData);
       toast({ title: 'Message Added' });
+      logAction(`User '${currentUser.name}' added new push message: "${data.context}".`);
     }
     
     setIsDialogOpen(false);
@@ -91,9 +95,13 @@ export default function PushMessagesSettingsPage() {
   };
 
   const handleDeleteMessage = (messageId: string) => {
+    const message = pushMessages.find(m => m.id === messageId);
     deleteMessage(messageId);
     setDeletingMessage(null);
     toast({ title: 'Message Deleted', variant: 'destructive' });
+    if(message) {
+      logAction(`User '${currentUser.name}' deleted push message: "${message.context}".`);
+    }
   };
   
   const getReceiversText = (receivers: 'all-members' | 'all-teams' | string[]) => {

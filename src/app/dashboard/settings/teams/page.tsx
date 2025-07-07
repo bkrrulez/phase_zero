@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import * as React from 'react';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,19 +14,21 @@ import { EditTeamDialog } from './components/edit-team-dialog';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
 import { useProjects } from '../../contexts/ProjectsContext';
+import { useSystemLog } from '../../contexts/SystemLogContext';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
     const { teamMembers, updateMember } = useMembers();
     const { teams, setTeams } = useTeams();
     const { projects } = useProjects();
+    const { logAction } = useSystemLog();
     
-    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-    const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+    const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+    const [editingTeam, setEditingTeam] = React.useState<Team | null>(null);
 
     const canManageTeams = currentUser.role === 'Super Admin';
 
-    const teamDetails = useMemo(() => {
+    const teamDetails = React.useMemo(() => {
         return teams.map(team => {
             const lead = teamMembers.find(u => u.teamId === team.id && u.role === 'Team Lead');
             const members = teamMembers.filter(u => u.teamId === team.id && u.role === 'Employee');
@@ -67,6 +69,7 @@ export default function TeamsSettingsPage() {
             title: "Team Added",
             description: `The team "${data.name}" has been created.`,
         });
+        logAction(`User '${currentUser.name}' created a new team: '${data.name}'.`);
     };
 
     const handleSaveTeam = (teamId: string, data: TeamFormValues) => {
@@ -104,6 +107,7 @@ export default function TeamsSettingsPage() {
             title: "Team Updated",
             description: `The team "${data.name}" has been updated.`,
         });
+        logAction(`User '${currentUser.name}' updated team: '${data.name}'.`);
     }
 
     return (
