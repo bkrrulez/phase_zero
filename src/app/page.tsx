@@ -28,8 +28,10 @@ export default function LoginPage() {
     const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com';
     const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'password';
     
-    // Allow login with mock users or the admin account
-    const allUsers = initialData.teamMembers;
+    // Read the latest user data from localStorage, with initialData as a fallback
+    const usersJSON = window.localStorage.getItem('teamMembers');
+    const allUsers: User[] = usersJSON ? JSON.parse(usersJSON) : initialData.teamMembers;
+    
     const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
 
     let loginSuccessful = false;
