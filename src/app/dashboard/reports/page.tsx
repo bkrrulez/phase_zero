@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -174,7 +175,9 @@ export default function ReportsPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{member.name}</p>
+                        <Link href={`/dashboard/reports/${member.id}?month=${selectedMonth}&year=${selectedYear}`} className="font-medium hover:underline">
+                            {member.name}
+                        </Link>
                         <p className="text-sm text-muted-foreground hidden sm:table-cell">
                           {member.email}
                         </p>
