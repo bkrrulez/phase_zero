@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -181,7 +181,7 @@ export function IndividualReport() {
         setSelectedDate(new Date(newYear, newMonth, 1));
     }
 
-  const DayContent = (props: DayContentProps) => {
+  const DayContent = useCallback((props: DayContentProps) => {
     const { date } = props;
     const dayOfMonth = date.getDate();
 
@@ -199,7 +199,7 @@ export function IndividualReport() {
           )}
       </div>
     );
-  };
+  }, [selectedDate, monthlyData]);
 
   if (!selectedUser) {
     return (
