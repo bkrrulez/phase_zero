@@ -19,13 +19,14 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { timeEntries, type User, type TimeEntry } from '@/lib/mock-data';
+import type { User, TimeEntry } from '@/lib/types';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -87,6 +88,7 @@ export function IndividualReport() {
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { publicHolidays, customHolidays, holidayRequests } = useHolidays();
+    const { timeEntries } = useTimeTracking();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
     const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);

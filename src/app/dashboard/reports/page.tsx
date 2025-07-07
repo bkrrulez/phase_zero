@@ -29,11 +29,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { timeEntries } from '@/lib/mock-data';
 import { IndividualReport } from './components/individual-report';
 import { useMembers } from '../contexts/MembersContext';
 import { useHolidays } from '../contexts/HolidaysContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTimeTracking } from '../contexts/TimeTrackingContext';
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -47,6 +47,7 @@ export default function ReportsPage() {
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
   const { publicHolidays, customHolidays } = useHolidays();
+  const { timeEntries } = useTimeTracking();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
@@ -128,7 +129,7 @@ export default function ReportsPage() {
         remainingHours: remainingHours.toFixed(2),
       };
     });
-  }, [selectedYear, selectedMonth, teamMembers, publicHolidays, customHolidays, currentUser]);
+  }, [selectedYear, selectedMonth, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
