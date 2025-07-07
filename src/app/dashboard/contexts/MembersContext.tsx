@@ -3,48 +3,39 @@
 
 import * as React from 'react';
 import { type User } from "@/lib/types";
-import { addMember as addMemberAction, updateMember as updateMemberAction } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLog } from './SystemLogContext';
 import { useAuth } from './AuthContext';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { initialData } from '@/lib/mock-data';
 
 interface MembersContextType {
   teamMembers: User[];
-  updateMember: (updatedUser: User) => Promise<void>;
-  addMember: (newUser: User) => Promise<void>;
+  updateMember: (updatedUser: User) => void;
+  addMember: (newUser: User) => void;
 }
 
 export const MembersContext = React.createContext<MembersContextType | undefined>(undefined);
 
-export function MembersProvider({ children, initialMembers }: { children: React.ReactNode; initialMembers: User[] }) {
-  const [teamMembers, setTeamMembers] = React.useState<User[]>(initialMembers);
+export function MembersProvider({ children }: { children: React.ReactNode }) {
+  const [teamMembers, setTeamMembers] = useLocalStorage<User[]>('teamMembers', initialData.teamMembers);
   const { toast } = useToast();
   const { logAction } = useSystemLog();
   const { currentUser } = useAuth();
 
 
-  const updateMember = async (updatedUser: User) => {
-    try {
-      await updateMemberAction(updatedUser);
-      setTeamMembers(prevMembers =>
-          prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
-      );
-      toast({ title: "Member Updated", description: `Details for ${updatedUser.name} have been updated.` });
-      logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
-    } catch (error) {
-      toast({ variant: 'destructive', title: "Error", description: "Failed to update member."});
-    }
+  const updateMember = (updatedUser: User) => {
+    setTeamMembers(prevMembers =>
+        prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
+    );
+    toast({ title: "Member Updated", description: `Details for ${updatedUser.name} have been updated.` });
+    logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
   };
 
-  const addMember = async (newUser: User) => {
-    try {
-      const addedUser = await addMemberAction(newUser);
-      setTeamMembers(prev => [...prev, addedUser]);
-      toast({ title: "Member Added", description: `${newUser.name} has been added.` });
-      logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
-    } catch (error) {
-       toast({ variant: 'destructive', title: "Error", description: "Failed to add member."});
-    }
+  const addMember = (newUser: User) => {
+    setTeamMembers(prev => [...prev, newUser]);
+    toast({ title: "Member Added", description: `${newUser.name} has been added.` });
+    logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
   };
 
   return (

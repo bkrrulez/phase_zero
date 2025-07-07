@@ -71,7 +71,6 @@ import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesCo
 import { SystemLogProvider } from "./contexts/SystemLogContext";
 import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { initialData } from "@/lib/mock-data";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -324,17 +323,17 @@ function DataProviders({
   children: React.ReactNode;
 }) {
   return (
-    <SystemLogProvider initialLogs={initialData.systemLogs}>
-      <TeamsProvider initialTeams={initialData.teams}>
-        <ProjectsProvider initialProjects={initialData.projects}>
-          <TasksProvider initialTasks={initialData.tasks}>
-            <MembersProvider initialMembers={initialData.teamMembers}>
-              <NotificationsProvider initialNotifications={initialData.notifications}>
-                <PushMessagesProvider initialPushMessages={initialData.pushMessages} initialUserMessageStates={initialData.userMessageStates}>
+    <SystemLogProvider>
+      <TeamsProvider>
+        <ProjectsProvider>
+          <TasksProvider>
+            <MembersProvider>
+              <NotificationsProvider>
+                <PushMessagesProvider>
                   <AuthProvider>
-                    <HolidaysProvider initialPublicHolidays={initialData.publicHolidays} initialCustomHolidays={initialData.customHolidays} initialHolidayRequests={initialData.holidayRequests} initialAnnualLeaveAllowance={initialData.annualLeaveAllowance}>
-                      <TimeTrackingProvider initialTimeEntries={initialData.timeEntries}>
-                        <AccessControlProvider initialFreezeRules={initialData.freezeRules}>
+                    <HolidaysProvider>
+                      <TimeTrackingProvider>
+                        <AccessControlProvider>
                           <LayoutContent>{children}</LayoutContent>
                         </AccessControlProvider>
                       </TimeTrackingProvider>

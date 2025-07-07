@@ -3,6 +3,8 @@
 
 import * as React from 'react';
 import { type AppNotification } from '@/lib/types';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { initialData } from '@/lib/mock-data';
 
 type NotificationInput = Omit<AppNotification, 'id' | 'timestamp' | 'readBy'>;
 
@@ -15,8 +17,8 @@ interface NotificationsContextType {
 
 const NotificationsContext = React.createContext<NotificationsContextType | undefined>(undefined);
 
-export function NotificationsProvider({ children, initialNotifications }: { children: React.ReactNode, initialNotifications: AppNotification[] }) {
-  const [notifications, setNotifications] = React.useState<AppNotification[]>(initialNotifications);
+export function NotificationsProvider({ children }: { children: React.ReactNode }) {
+  const [notifications, setNotifications] = useLocalStorage<AppNotification[]>('notifications', initialData.notifications);
 
   const addNotification = (notification: NotificationInput) => {
     const newNotification: AppNotification = {

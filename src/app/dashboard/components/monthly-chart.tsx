@@ -1,9 +1,13 @@
+
 "use client";
 
+import * as React from "react";
 import { Bar, BarChart as RechartsBarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
-import { monthlyChartData } from "@/lib/mock-data";
+import { useTimeTracking } from "../contexts/TimeTrackingContext";
+import { useAuth } from "../contexts/AuthContext";
+import { getDate, getDaysInMonth, isSameMonth } from "date-fns";
 
 const chartConfig = {
   hours: {
@@ -13,6 +17,41 @@ const chartConfig = {
 };
 
 export function MonthlyHoursChart() {
+  const { timeEntries } = useTimeTracking();
+  const { currentUser } = useAuth();
+
+  const chartData = React.useMemo(() => {
+    if (!currentUser) return [];
+
+    const today = new Date();
+    const daysInMonth = getDaysInMonth(today);
+
+    // Create an array for each day of the current month, initialized to 0 hours.
+    const dailyTotals = Array.from({ length: daysInMonth }, (_, i) => ({
+        date: (i + 1).toString(),
+        hours: 0,
+    }));
+
+    // Get time entries for the current user for the current month
+    const userTimeEntries = timeEntries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entry.userId === currentUser.id && isSameMonth(entryDate, today);
+    });
+
+    // Aggregate hours for each day
+    userTimeEntries.forEach(entry => {
+        const dayOfMonth = getDate(new Date(entry.date));
+        if (dailyTotals[dayOfMonth - 1]) {
+          dailyTotals[dayOfMonth - 1].hours += entry.duration;
+        }
+    });
+    
+    // Format to 2 decimal places
+    return dailyTotals.map(d => ({...d, hours: parseFloat(d.hours.toFixed(2))}));
+
+  }, [timeEntries, currentUser]);
+
+
   return (
     <Card>
       <CardHeader>
@@ -21,7 +60,7 @@ export function MonthlyHoursChart() {
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[280px] w-full">
           <RechartsBarChart
-            data={monthlyChartData}
+            data={chartData}
             margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
             accessibilityLayer
           >
@@ -31,7 +70,6 @@ export function MonthlyHoursChart() {
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => `Day ${value}`}
             />
             <YAxis
               unit="h"

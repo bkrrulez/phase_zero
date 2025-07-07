@@ -7,6 +7,8 @@ import { useMembers } from './MembersContext';
 import { useNotifications } from './NotificationsContext';
 import { format } from 'date-fns';
 import { useAuth } from './AuthContext';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { initialData } from '@/lib/mock-data';
 
 interface HolidaysContextType {
   publicHolidays: PublicHoliday[];
@@ -24,29 +26,15 @@ interface HolidaysContextType {
 
 export const HolidaysContext = React.createContext<HolidaysContextType | undefined>(undefined);
 
-interface HolidaysProviderProps {
-  children: React.ReactNode;
-  initialPublicHolidays: PublicHoliday[];
-  initialCustomHolidays: CustomHoliday[];
-  initialHolidayRequests: HolidayRequest[];
-  initialAnnualLeaveAllowance: number;
-}
-
-export function HolidaysProvider({ 
-  children, 
-  initialPublicHolidays,
-  initialCustomHolidays,
-  initialHolidayRequests,
-  initialAnnualLeaveAllowance,
-}: HolidaysProviderProps) {
+export function HolidaysProvider({ children }: { children: React.ReactNode }) {
     const { logAction } = useSystemLog();
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { addNotification } = useNotifications();
-    const [publicHolidays, setPublicHolidays] = React.useState<PublicHoliday[]>(initialPublicHolidays);
-    const [customHolidays, setCustomHolidays] = React.useState<CustomHoliday[]>(initialCustomHolidays);
-    const [annualLeaveAllowance, _setAnnualLeaveAllowance] = React.useState<number>(initialAnnualLeaveAllowance);
-    const [holidayRequests, setHolidayRequests] = React.useState<HolidayRequest[]>(initialHolidayRequests);
+    const [publicHolidays, setPublicHolidays] = useLocalStorage<PublicHoliday[]>('publicHolidays', initialData.publicHolidays);
+    const [customHolidays, setCustomHolidays] = useLocalStorage<CustomHoliday[]>('customHolidays', initialData.customHolidays);
+    const [annualLeaveAllowance, _setAnnualLeaveAllowance] = useLocalStorage<number>('annualLeaveAllowance', initialData.annualLeaveAllowance);
+    const [holidayRequests, setHolidayRequests] = useLocalStorage<HolidayRequest[]>('holidayRequests', initialData.holidayRequests);
 
     const setAnnualLeaveAllowance = (allowance: number) => {
       _setAnnualLeaveAllowance(allowance);

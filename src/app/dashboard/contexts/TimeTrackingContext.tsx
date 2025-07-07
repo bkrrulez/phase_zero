@@ -8,7 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
 import { useSystemLog } from './SystemLogContext';
 import { useAuth } from './AuthContext';
-import { logTime as logTimeAction } from '../actions';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { initialData } from '@/lib/mock-data';
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
@@ -17,23 +18,37 @@ interface TimeTrackingContextType {
 
 export const TimeTrackingContext = React.createContext<TimeTrackingContextType | undefined>(undefined);
 
-export function TimeTrackingProvider({ children, initialTimeEntries }: { children: React.ReactNode, initialTimeEntries: TimeEntry[] }) {
-  const [timeEntries, setTimeEntries] = React.useState<TimeEntry[]>(initialTimeEntries);
+export function TimeTrackingProvider({ children }: { children: React.ReactNode }) {
+  const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', initialData.timeEntries);
   const { toast } = useToast();
   const { logAction } = useSystemLog();
   const { currentUser } = useAuth();
 
   const logTime = async (data: LogTimeFormValues): Promise<{ success: boolean }> => {
     try {
-      const newEntry = await logTimeAction({
+      const start = new Date(`1970-01-01T${data.startTime}`);
+      const end = new Date(`1970-01-01T${data.endTime}`);
+      const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+      if (duration < 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid Time',
+          description: 'End time cannot be earlier than start time.',
+        });
+        return { success: false };
+      }
+
+      const newEntry: TimeEntry = {
+        id: `te-${Date.now()}`,
         userId: currentUser.id,
         date: format(data.date, 'yyyy-MM-dd'),
         startTime: data.startTime,
         endTime: data.endTime,
-        project: data.project,
-        task: data.task,
+        task: `${data.project} - ${data.task}`,
+        duration: duration,
         remarks: data.remarks,
-      });
+      };
 
       setTimeEntries(prev => [newEntry, ...prev]);
       toast({

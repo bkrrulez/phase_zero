@@ -3,6 +3,8 @@
 
 import * as React from 'react';
 import { type LogEntry } from '@/lib/types';
+import useLocalStorage from '@/hooks/useLocalStorage';
+import { initialData } from '@/lib/mock-data';
 
 interface SystemLogContextType {
   logs: LogEntry[];
@@ -11,8 +13,8 @@ interface SystemLogContextType {
 
 const SystemLogContext = React.createContext<SystemLogContextType | undefined>(undefined);
 
-export function SystemLogProvider({ children, initialLogs }: { children: React.ReactNode, initialLogs: LogEntry[] }) {
-  const [logs, setLogs] = React.useState<LogEntry[]>(initialLogs);
+export function SystemLogProvider({ children }: { children: React.ReactNode }) {
+  const [logs, setLogs] = useLocalStorage<LogEntry[]>('systemLogs', initialData.systemLogs);
 
   const logAction = (message: string) => {
     const newLog: LogEntry = {
