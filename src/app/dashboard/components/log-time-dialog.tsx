@@ -17,7 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { projects, tasks, currentUser, freezeRules } from "@/lib/mock-data";
+import { projects, tasks, currentUser } from "@/lib/mock-data";
+import { useAccessControl } from "../contexts/AccessControlContext";
 
 const logTimeSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -51,6 +52,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
       remarks: '',
     }
   });
+  const { freezeRules } = useAccessControl();
 
   const availableProjects = projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
 

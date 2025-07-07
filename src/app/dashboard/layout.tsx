@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -55,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
 import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
 import { MembersProvider } from "./contexts/MembersContext";
+import { AccessControlProvider } from "./contexts/AccessControlContext";
 
 function LayoutContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -79,7 +81,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <LogoIcon className="w-8 h-8" />
-            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Tool</span></h1>
+            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Wise</span></h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -262,7 +264,9 @@ export default function DashboardLayout({
   return (
     <TimeTrackingProvider>
       <MembersProvider>
-        <LayoutContent>{children}</LayoutContent>
+        <AccessControlProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </AccessControlProvider>
       </MembersProvider>
     </TimeTrackingProvider>
   );

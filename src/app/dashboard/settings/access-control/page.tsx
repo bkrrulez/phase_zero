@@ -17,13 +17,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { freezeRules as initialFreezeRules, teams, currentUser, type FreezeRule } from '@/lib/mock-data';
+import { teams, currentUser, type FreezeRule } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { FreezeCalendarDialog, type FreezeFormSubmitData } from './components/freeze-calendar-dialog';
+import { useAccessControl } from '../../contexts/AccessControlContext';
 
 export default function AccessControlPage() {
   const { toast } = useToast();
-  const [freezeRules, setFreezeRules] = useState<FreezeRule[]>(initialFreezeRules);
+  const { freezeRules, addFreezeRule, removeFreezeRule } = useAccessControl();
   const [isFreezeDialogOpen, setIsFreezeDialogOpen] = useState(false);
   const [unfreezingRule, setUnfreezingRule] = useState<FreezeRule | null>(null);
 
@@ -41,7 +42,7 @@ export default function AccessControlPage() {
       startDate: data.startDate.toISOString(),
       endDate: data.endDate.toISOString(),
     };
-    setFreezeRules(prev => [...prev, newRule]);
+    addFreezeRule(newRule);
     setIsFreezeDialogOpen(false);
     toast({
       title: 'Calendar Frozen',
@@ -50,7 +51,7 @@ export default function AccessControlPage() {
   };
 
   const handleUnfreeze = (ruleId: string) => {
-    setFreezeRules(prev => prev.filter(r => r.id !== ruleId));
+    removeFreezeRule(ruleId);
     setUnfreezingRule(null);
     toast({
       title: 'Calendar Unfrozen',
