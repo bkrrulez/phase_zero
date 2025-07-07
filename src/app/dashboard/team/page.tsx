@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,13 +16,22 @@ export default function TeamPage() {
     const { toast } = useToast();
     const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [loggedHours, setLoggedHours] = useState<Record<string, string>>({});
 
-    const getLoggedHours = (userId: string) => {
-        return timeEntries
-            .filter(entry => entry.userId === userId && new Date(entry.date).getMonth() === new Date().getMonth())
-            .reduce((acc, entry) => acc + entry.duration, 0)
-            .toFixed(2);
-    }
+    useEffect(() => {
+        const getLoggedHoursForUser = (userId: string) => {
+            return timeEntries
+                .filter(entry => entry.userId === userId && new Date(entry.date).getMonth() === new Date().getMonth())
+                .reduce((acc, entry) => acc + entry.duration, 0)
+                .toFixed(2);
+        }
+
+        const hoursMap: Record<string, string> = {};
+        for (const member of teamMembers) {
+            hoursMap[member.id] = getLoggedHoursForUser(member.id);
+        }
+        setLoggedHours(hoursMap);
+    }, [teamMembers]);
 
     const handleSaveContract = (updatedUser: User) => {
         setTeamMembers(prevMembers =>
@@ -93,7 +102,7 @@ export default function TeamPage() {
                                   <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                               </TableCell>
                               <TableCell className="hidden lg:table-cell">{member.contract.weeklyHours}h / week</TableCell>
-                              <TableCell>{getLoggedHours(member.id)}h</TableCell>
+                              <TableCell>{loggedHours[member.id] ? `${loggedHours[member.id]}h` : '...'}</TableCell>
                               <TableCell>
                                   <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
