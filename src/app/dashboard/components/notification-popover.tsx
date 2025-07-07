@@ -6,8 +6,12 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { currentUser, type PushMessage } from '@/lib/mock-data';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { usePushMessages } from '../contexts/PushMessagesContext';
+import { useNotifications } from '../contexts/NotificationsContext';
+import { useHolidays } from '../contexts/HolidaysContext';
+import { Check, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface NotificationPopoverProps {
   onClose: () => void;
@@ -23,11 +27,12 @@ const getStatus = (startDate: string, endDate: string) => {
 };
 
 export function NotificationPopover({ onClose }: NotificationPopoverProps) {
+  const { toast } = useToast();
+  // Push Messages (Broadcast)
   const { pushMessages, userMessageStates, markMessageAsRead } = usePushMessages();
-  
-  const userReadIds = userMessageStates[currentUser.id]?.readMessageIds || [];
+  const pushMessageUserReadIds = userMessageStates[currentUser.id]?.readMessageIds || [];
 
-  const applicableMessages = React.useMemo(() => {
+  const applicablePushMessages = React.useMemo(() => {
     return pushMessages.filter((msg) => {
       if (msg.receivers === 'all-members') return true;
       if (msg.receivers === 'all-teams' && currentUser.teamId) return true;
@@ -37,55 +42,111 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
       return false;
     });
   }, [pushMessages]);
-
-  const activeMessages = applicableMessages.filter(msg => getStatus(msg.startDate, msg.endDate) === 'Active');
   
-  const expiredAndReadMessages = applicableMessages.filter(msg => {
+  const activePushMessages = applicablePushMessages.filter(msg => getStatus(msg.startDate, msg.endDate) === 'Active');
+  
+  const expiredAndReadPushMessages = applicablePushMessages.filter(msg => {
     const status = getStatus(msg.startDate, msg.endDate);
-    return status === 'Expired' && userReadIds.includes(msg.id);
+    return status === 'Expired' && pushMessageUserReadIds.includes(msg.id);
   });
-
-  const displayMessages = activeMessages.filter(msg => !expiredAndReadMessages.find(expired => expired.id === msg.id));
   
-  const handleDismiss = (messageId: string) => {
-      markMessageAsRead(currentUser.id, messageId);
-      const message = displayMessages.find(m => m.id === messageId);
-      if (message && getStatus(message.startDate, message.endDate) === 'Expired') {
-        // The list will re-render and this message will be gone
-      }
-      if (displayMessages.length <= 1) {
-          onClose();
-      }
-  };
+  const displayablePushMessages = activePushMessages.filter(msg => !expiredAndReadPushMessages.find(expired => expired.id === msg.id));
+  
+  // App Notifications (e.g., Holiday Requests)
+  const { notifications, markAsRead } = useNotifications();
+  const { approveRequest, rejectRequest } = useHolidays();
 
+  const userAppNotifications = React.useMemo(() => {
+      return notifications
+        .filter(n => n.recipientIds.includes(currentUser.id) && n.type === 'holidayRequest')
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [notifications]);
+
+  // Combined notifications
+  const allDisplayableItems = React.useMemo(() => {
+    const pushItems = displayablePushMessages.map(msg => ({
+        id: msg.id,
+        type: 'pushMessage',
+        timestamp: msg.startDate,
+        isRead: pushMessageUserReadIds.includes(msg.id),
+        ...msg,
+    }));
+    
+    const appItems = userAppNotifications.map(notif => ({
+        id: notif.id,
+        type: notif.type,
+        timestamp: notif.timestamp,
+        isRead: notif.readBy.includes(currentUser.id),
+        ...notif
+    }));
+
+    return [...pushItems, ...appItems].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [displayablePushMessages, userAppNotifications, pushMessageUserReadIds]);
+
+
+  const handleDismissPushMessage = (messageId: string) => {
+      markMessageAsRead(currentUser.id, messageId);
+  };
+  
+  const handleApprove = (notificationId: string, requestId: string) => {
+      approveRequest(requestId);
+      markAsRead(notificationId, currentUser.id);
+      toast({ title: "Request Approved", description: "The holiday request has been approved."});
+  }
+  
+  const handleReject = (notificationId: string, requestId: string) => {
+      rejectRequest(requestId);
+      markAsRead(notificationId, currentUser.id);
+      toast({ title: "Request Rejected", description: "The holiday request has been rejected.", variant: 'destructive'});
+  }
 
   return (
     <div className="flex flex-col">
       <div className="p-4 pb-2">
         <h4 className="font-medium">Notifications</h4>
       </div>
-      <ScrollArea className="max-h-80">
+      <ScrollArea className="max-h-96">
         <div className="p-4 pt-0">
-          {displayMessages.length > 0 ? (
-            displayMessages.map((msg, index) => {
-                const isRead = userReadIds.includes(msg.id);
-                return (
-                    <React.Fragment key={msg.id}>
-                      <div className="flex items-start gap-3 py-3">
-                        {!isRead && <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />}
-                        <div className="grid gap-1 flex-1">
-                          <p className="font-medium">{msg.context}</p>
-                          <p className="text-sm text-muted-foreground">{msg.messageBody}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(msg.startDate), { addSuffix: true })}
-                          </p>
+          {allDisplayableItems.length > 0 ? (
+            allDisplayableItems.map((item, index) => (
+              <React.Fragment key={`${item.type}-${item.id}`}>
+                {item.type === 'pushMessage' ? (
+                  <div className="flex items-start gap-3 py-3">
+                    {!item.isRead && <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />}
+                    <div className="grid gap-1 flex-1">
+                      <p className="font-medium">{item.context}</p>
+                      <p className="text-sm text-muted-foreground">{item.messageBody}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(item.startDate), { addSuffix: true })}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleDismissPushMessage(item.id)}>Dismiss</Button>
+                  </div>
+                ) : item.type === 'holidayRequest' ? (
+                  <div className="flex items-start gap-3 py-3">
+                    {!item.isRead && <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />}
+                    <div className="grid gap-1 flex-1">
+                      <p className="font-medium">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.body}</p>
+                       <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                        </p>
+                      {!item.isRead && (
+                        <div className="flex gap-2 pt-2">
+                            <Button size="sm" onClick={() => handleApprove(item.id, item.referenceId)}>
+                                <Check className="mr-2 h-4 w-4"/>Approve
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleReject(item.id, item.referenceId)}>
+                                <X className="mr-2 h-4 w-4"/>Reject
+                            </Button>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => handleDismiss(msg.id)}>Dismiss</Button>
-                      </div>
-                      {index < displayMessages.length - 1 && <Separator />}
-                    </React.Fragment>
-                )
-            })
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+                {index < allDisplayableItems.length - 1 && <Separator />}
+              </React.Fragment>
+            ))
           ) : (
             <div className="text-center text-sm text-muted-foreground py-8">
               You have no new notifications.

@@ -70,6 +70,7 @@ import { HolidaysProvider } from "./contexts/HolidaysContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
 import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
 import { SystemLogProvider } from "./contexts/SystemLogContext";
+import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -87,12 +88,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
   
   const { pushMessages, userMessageStates } = usePushMessages();
+  const { notifications } = useNotifications();
 
   React.useEffect(() => {
     setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
   }, [pathname]);
   
-  const activeUnreadCount = React.useMemo(() => {
+  const activeUnreadPushCount = React.useMemo(() => {
     const userReadIds = userMessageStates[currentUser.id]?.readMessageIds || [];
     return pushMessages.filter(msg => {
       const isApplicable = msg.receivers === 'all-members' || 
@@ -104,6 +106,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
              !userReadIds.includes(msg.id);
     }).length;
   }, [pushMessages, userMessageStates]);
+
+  const unreadRequestCount = React.useMemo(() => {
+    return notifications.filter(n => n.recipientIds.includes(currentUser.id) && !n.readBy.includes(currentUser.id)).length;
+  }, [notifications]);
+
+  const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
 
 
   return (
@@ -256,9 +264,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
-                  {activeUnreadCount > 0 && (
+                  {totalUnreadCount > 0 && (
                     <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                      {activeUnreadCount}
+                      {totalUnreadCount}
                     </span>
                   )}
                   <span className="sr-only">Notifications</span>
@@ -318,21 +326,23 @@ export default function DashboardLayout({
   return (
     <SystemLogProvider>
       <TimeTrackingProvider>
-        <HolidaysProvider>
-          <TasksProvider>
-            <ProjectsProvider>
-              <TeamsProvider>
-                <MembersProvider>
-                  <AccessControlProvider>
+        <TeamsProvider>
+          <ProjectsProvider>
+            <TasksProvider>
+              <MembersProvider>
+                <NotificationsProvider>
+                  <HolidaysProvider>
                     <PushMessagesProvider>
-                      <LayoutContent>{children}</LayoutContent>
+                      <AccessControlProvider>
+                          <LayoutContent>{children}</LayoutContent>
+                      </AccessControlProvider>
                     </PushMessagesProvider>
-                  </AccessControlProvider>
-                </MembersProvider>
-              </TeamsProvider>
-            </ProjectsProvider>
-          </TasksProvider>
-        </HolidaysProvider>
+                  </HolidaysProvider>
+                </NotificationsProvider>
+              </MembersProvider>
+            </TasksProvider>
+          </ProjectsProvider>
+        </TeamsProvider>
       </TimeTrackingProvider>
     </SystemLogProvider>
   );

@@ -1,84 +1,120 @@
 
 "use client";
 
+import * as React from 'react';
 import { Clock, Users, BarChart as BarChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser } from "@/lib/mock-data";
+import { currentUser, type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
-
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const monthStart = new Date(currentYear, currentMonth, 1);
-
-  const userTimeEntries = timeEntries.filter(entry => {
-      const entryDate = new Date(entry.date);
-      return entry.userId === currentUser.id && entryDate.getFullYear() === currentYear && entryDate.getMonth() === currentMonth;
-  });
-
-  const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
-
+  
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
-  const allPublicHolidaysThisMonth = publicHolidays.filter(h => {
-      const holidayDate = new Date(h.date);
-      return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
-  });
-
-  const allCustomHolidaysThisMonth = customHolidays.filter(h => {
-      const holidayDate = new Date(h.date);
-      const applies = (h.appliesTo === 'all-members') ||
-                      (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
-                      (h.appliesTo === currentUser.teamId);
-      return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6 && applies;
-  });
-
-  const allHolidaysThisMonth = [...allPublicHolidaysThisMonth, ...allCustomHolidaysThisMonth];
-
-  const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
-      return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
-  }, 0);
-
-  const totalHours = manualTotalHours + holidayHours;
-
-  let workDaysSoFar = 0;
-  const dayIterator = new Date(monthStart);
-  const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
-
-  while (dayIterator <= today) {
-      const dayOfWeek = dayIterator.getDay();
-      const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
-
-      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
-          workDaysSoFar++;
-      }
-      dayIterator.setDate(dayIterator.getDate() + 1);
-  }
-
-  const expectedHours = workDaysSoFar * dailyHours;
-  const overtime = totalHours - expectedHours;
-  
-  const userHolidayRequests = holidayRequests.filter(req => req.userId === currentUser.id);
-
-  const getDurationInDays = (startDate: string, endDate: string) => {
+  const getProratedAllowance = React.useCallback((user: User) => {
+    const { startDate, endDate } = user.contract;
+    if (!endDate) {
+      return annualLeaveAllowance;
+    }
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return differenceInCalendarDays(end, start) + 1;
-  }
-  
-  const takenDays = userHolidayRequests
-    .filter(req => req.status === 'Approved')
-    .reduce((acc, req) => acc + getDurationInDays(req.startDate, req.endDate), 0);
+    const contractDuration = differenceInCalendarDays(end, start) + 1;
+    // Prorate based on a 365-day year.
+    const prorated = (annualLeaveAllowance / 365) * contractDuration;
+    return Math.round(prorated * 2) / 2; // Round to nearest 0.5
+  }, [annualLeaveAllowance]);
 
-  const remainingDays = annualLeaveAllowance - takenDays;
+  const userAllowance = getProratedAllowance(currentUser);
+
+  const { totalHours, expectedHours, overtime, takenDays, remainingDays } = React.useMemo(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const monthStart = new Date(currentYear, currentMonth, 1);
+
+    const userTimeEntries = timeEntries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entry.userId === currentUser.id && entryDate.getFullYear() === currentYear && entryDate.getMonth() === currentMonth;
+    });
+
+    const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
+
+    const allPublicHolidaysThisMonth = publicHolidays.filter(h => {
+        const holidayDate = new Date(h.date);
+        return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
+    });
+
+    const allCustomHolidaysThisMonth = customHolidays.filter(h => {
+        const holidayDate = new Date(h.date);
+        const applies = (h.appliesTo === 'all-members') ||
+                        (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
+                        (h.appliesTo === currentUser.teamId);
+        return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6 && applies;
+    });
+
+    const allHolidaysThisMonth = [...allPublicHolidaysThisMonth, ...allCustomHolidaysThisMonth];
+
+    const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
+        return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
+    }, 0);
+
+    const userHolidayRequests = holidayRequests.filter(req => req.userId === currentUser.id);
+    const approvedLeaveDatesThisMonth: Date[] = userHolidayRequests
+      .filter(req => req.status === 'Approved')
+      .flatMap(req => {
+        const dates: Date[] = [];
+        for (let dt = new Date(req.startDate); dt <= new Date(req.endDate); dt = addDays(dt, 1)) {
+          if (dt.getFullYear() === currentYear && dt.getMonth() === currentMonth) {
+            dates.push(dt);
+          }
+        }
+        return dates;
+      });
+      
+    const approvedLeaveHours = approvedLeaveDatesThisMonth
+        .filter(d => d.getDay() !== 0 && d.getDay() !== 6) // Exclude weekends
+        .reduce((acc) => acc + dailyHours, 0);
+
+    const totalHours = manualTotalHours + holidayHours + approvedLeaveHours;
+
+    let workDaysSoFar = 0;
+    const dayIterator = new Date(monthStart);
+    const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
+
+    while (dayIterator <= today) {
+        const dayOfWeek = dayIterator.getDay();
+        const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
+        const isLeave = approvedLeaveDatesThisMonth.some(d => isSameDay(d, dayIterator));
+
+        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday && !isLeave) {
+            workDaysSoFar++;
+        }
+        dayIterator.setDate(dayIterator.getDate() + 1);
+    }
+
+    const expectedHours = workDaysSoFar * dailyHours;
+    const overtime = totalHours - expectedHours;
+    
+    const getDurationInDays = (startDate: string, endDate: string) => {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      return differenceInCalendarDays(end, start) + 1;
+    }
+    
+    const takenDays = userHolidayRequests
+      .filter(req => req.status === 'Approved')
+      .reduce((acc, req) => acc + getDurationInDays(req.startDate, req.endDate), 0);
+
+    const remainingDays = userAllowance - takenDays;
+
+    return { totalHours, expectedHours, overtime, takenDays, remainingDays };
+  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours]);
 
 
   return (
@@ -150,7 +186,7 @@ export function MyDashboard() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {userTimeEntries.slice(0, 5).map(entry => (
+                    {timeEntries.filter(e => e.userId === currentUser.id).slice(0, 5).map(entry => (
                     <TableRow key={entry.id}>
                         <TableCell>{format(new Date(entry.date), 'PP')}</TableCell>
                         <TableCell className="font-medium truncate max-w-[120px]">{entry.task}</TableCell>

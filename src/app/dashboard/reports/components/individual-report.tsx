@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { timeEntries, holidayRequests, currentUser, type User, type TimeEntry } from '@/lib/mock-data';
+import { timeEntries, currentUser, type User, type TimeEntry } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
@@ -84,7 +84,7 @@ export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { teamMembers } = useMembers();
-    const { publicHolidays, customHolidays } = useHolidays();
+    const { publicHolidays, customHolidays, holidayRequests } = useHolidays();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
     const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
@@ -211,7 +211,7 @@ export function IndividualReport() {
         dailyTotals[day] += holidayCredit;
     });
 
-    // 4. Get personal leave days for modifier
+    // 4. Calculate and add approved personal leave hours
     const personalLeaveDays = holidayRequests.filter(req => 
         req.userId === selectedUser.id && req.status === 'Approved'
     ).flatMap(req => {
@@ -221,6 +221,12 @@ export function IndividualReport() {
         for (let dt = start; dt <= end; dt = addDays(dt, 1)) {
             if (isSameMonth(dt, selectedDate)) {
                 dates.push(new Date(dt));
+                 // Add hours to daily total if it's a workday
+                if (getDay(dt) !== 0 && getDay(dt) !== 6) {
+                    const dayOfMonth = dt.getDate();
+                    if (!dailyTotals[dayOfMonth]) dailyTotals[dayOfMonth] = 0;
+                    dailyTotals[dayOfMonth] += dailyContractHours;
+                }
             }
         }
         return dates;
@@ -230,7 +236,7 @@ export function IndividualReport() {
     const customHolidayDays = customHolidaysInMonth.map(h => new Date(h.date));
 
     return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries };
-  }, [selectedUser, selectedDate, publicHolidays, customHolidays]);
+  }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries]);
     
     const handleUserChange = (userId: string) => {
         const currentTab = searchParams.get('tab') || 'individual-report';
@@ -371,7 +377,7 @@ export function IndividualReport() {
                   sunday: 'text-muted-foreground/50',
                   holiday: 'bg-green-200 dark:bg-green-800 rounded-md',
                   customHoliday: 'bg-orange-200 dark:bg-orange-800 rounded-md',
-                  personalLeave: 'opacity-60 bg-blue-200 dark:bg-blue-800 rounded-md',
+                  personalLeave: 'bg-yellow-200 dark:bg-yellow-800 rounded-md',
                   logged: 'border border-primary rounded-md'
                   }}
                   components={{

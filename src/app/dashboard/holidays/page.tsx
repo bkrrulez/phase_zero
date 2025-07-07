@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { currentUser } from "@/lib/mock-data";
+import { currentUser, type User } from "@/lib/mock-data";
 import { format, differenceInCalendarDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
@@ -28,6 +28,20 @@ export default function HolidaysPage() {
   const { annualLeaveAllowance, holidayRequests, addHolidayRequest } = useHolidays();
   const [isRequestDialogOpen, setIsRequestDialogOpen] = React.useState(false);
 
+  const getProratedAllowance = React.useCallback((user: User) => {
+    const { startDate, endDate } = user.contract;
+    if (!endDate) {
+        return annualLeaveAllowance;
+    }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const contractDuration = differenceInCalendarDays(end, start) + 1;
+    // Prorate based on a 365-day year.
+    const prorated = (annualLeaveAllowance / 365) * contractDuration;
+    return Math.round(prorated * 2) / 2; // Round to nearest 0.5
+  }, [annualLeaveAllowance]);
+
+  const userAllowance = getProratedAllowance(currentUser);
   const userHolidayRequests = holidayRequests.filter(req => req.userId === currentUser.id);
 
   const getDurationInDays = (startDate: string, endDate: string) => {
@@ -45,7 +59,7 @@ export default function HolidaysPage() {
     .filter(req => req.status === 'Approved')
     .reduce((acc, req) => acc + getDurationInDays(req.startDate, req.endDate), 0);
 
-  const remainingDays = annualLeaveAllowance - takenDays;
+  const remainingDays = userAllowance - takenDays;
 
   return (
     <>
@@ -63,10 +77,10 @@ export default function HolidaysPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Total Allowance</CardTitle>
-                    <CardDescription>Per year</CardDescription>
+                    <CardDescription>Based on your contract</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-3xl font-bold">{getDurationText(annualLeaveAllowance)}</p>
+                    <p className="text-3xl font-bold">{getDurationText(userAllowance)}</p>
                 </CardContent>
             </Card>
             <Card>

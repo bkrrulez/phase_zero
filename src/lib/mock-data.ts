@@ -91,8 +91,20 @@ export type UserMessageState = {
   readMessageIds: string[];
 };
 
-export type LogEntry = {
+export type AppNotification = {
   id: string;
+  type: 'holidayRequest';
+  recipientIds: string[];
+  readBy: string[]; // array of userIds who have read it
+  timestamp: string;
+  title: string;
+  body: string;
+  referenceId: string; // holidayRequest id
+};
+
+
+export type LogEntry = {
+  id:string;
   timestamp: string; // ISO string
   message: string;
 };
@@ -164,7 +176,7 @@ export const teamMembers: User[] = [
     associatedProjectIds: ['proj-2'],
     contract: {
       startDate: "2023-08-01",
-      endDate: "2024-08-01",
+      endDate: "2024-01-31", // 6 month contract
       weeklyHours: 20,
     },
   },
@@ -282,6 +294,8 @@ export let freezeRules: FreezeRule[] = [];
 export const pushMessages: PushMessage[] = [];
 
 export const userMessageStates: Record<string, UserMessageState> = {};
+
+export let notifications: AppNotification[] = [];
 
 export const systemLogs: LogEntry[] = [
     { id: 'log-0', timestamp: new Date().toISOString(), message: 'System initialized.'}
