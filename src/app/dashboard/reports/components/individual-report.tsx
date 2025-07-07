@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -22,11 +22,47 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
+import React from 'react';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
+
+interface ReportCalendarContextValue {
+  selectedDate: Date;
+  monthlyData: { dailyTotals: Record<string, number> };
+}
+
+const ReportCalendarContext = React.createContext<ReportCalendarContextValue | null>(null);
+
+const DayContent: React.FC<DayContentProps> = (props) => {
+  const context = React.useContext(ReportCalendarContext);
+
+  if (!context) {
+    return <div className="p-1">{props.date.getDate()}</div>;
+  }
+
+  const { selectedDate, monthlyData } = context;
+  const { date } = props;
+  const dayOfMonth = date.getDate();
+
+  if (!isSameMonth(date, selectedDate)) {
+    return <div className="p-1">{dayOfMonth}</div>;
+  }
+
+  const hours = monthlyData.dailyTotals[dayOfMonth];
+  
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-center text-center p-1">
+        <div>{dayOfMonth}</div>
+        {hours !== undefined && hours > 0 && (
+            <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
+        )}
+    </div>
+  );
+};
+
 
 export function IndividualReport() {
     const router = useRouter();
@@ -197,26 +233,11 @@ export function IndividualReport() {
 
         setSelectedDate(new Date(newYear, newMonth, 1));
     }
-
-  const DayContent = useCallback((props: DayContentProps) => {
-    const { date } = props;
-    const dayOfMonth = date.getDate();
-
-    if (!isSameMonth(date, selectedDate)) {
-        return <div className="p-1">{dayOfMonth}</div>;
-    }
-
-    const hours = monthlyData.dailyTotals[dayOfMonth];
     
-    return (
-      <div className="relative w-full h-full flex flex-col items-center justify-center text-center p-1">
-          <div>{dayOfMonth}</div>
-          {hours !== undefined && hours > 0 && (
-              <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
-          )}
-      </div>
-    );
-  }, [selectedDate, monthlyData]);
+    const calendarContextValue = useMemo<ReportCalendarContextValue>(() => ({
+        selectedDate,
+        monthlyData,
+    }), [selectedDate, monthlyData]);
 
   if (!selectedUser) {
     return (
@@ -291,45 +312,47 @@ export function IndividualReport() {
                     </SelectContent>
                 </Select>
             </div>
-            <Calendar
-                month={selectedDate}
-                onMonthChange={setSelectedDate}
-                weekStartsOn={1}
-                fromDate={new Date(selectedUser.contract.startDate)}
-                toDate={selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : new Date()}
-                modifiers={{ 
-                    saturday: (date) => getDay(date) === 6,
-                    sunday: (date) => getDay(date) === 0,
-                    holiday: monthlyData.publicHolidayDays,
-                    customHoliday: monthlyData.customHolidayDays,
-                    personalLeave: monthlyData.personalLeaveDays,
-                    logged: Object.keys(monthlyData.dailyTotals).filter(d => monthlyData.dailyTotals[d] > 0).map(day => {
-                        return new Date(selectedDate.getFullYear(), selectedDate.getMonth(), parseInt(day))
-                    })
-                }}
-                modifiersClassNames={{
-                saturday: 'text-muted-foreground/50',
-                sunday: 'text-muted-foreground/50',
-                holiday: 'bg-green-200 dark:bg-green-800 rounded-md',
-                customHoliday: 'bg-orange-200 dark:bg-orange-800 rounded-md',
-                personalLeave: 'opacity-60 bg-blue-200 dark:bg-blue-800 rounded-md',
-                logged: 'border border-primary rounded-md'
-                }}
-                components={{
-                DayContent,
-                }}
-                className="p-0"
-                classNames={{
-                    row: "flex w-full mt-2",
-                    cell: "flex-1 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                    head_row: "flex",
-                    head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
-                    day: "h-20 w-full text-base p-1",
-                    months: "w-full",
-                    month: "w-full space-y-4",
-                    caption_label: "text-lg font-bold"
-                }}
-            />
+            <ReportCalendarContext.Provider value={calendarContextValue}>
+              <Calendar
+                  month={selectedDate}
+                  onMonthChange={setSelectedDate}
+                  weekStartsOn={1}
+                  fromDate={new Date(selectedUser.contract.startDate)}
+                  toDate={selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : new Date()}
+                  modifiers={{ 
+                      saturday: (date) => getDay(date) === 6,
+                      sunday: (date) => getDay(date) === 0,
+                      holiday: monthlyData.publicHolidayDays,
+                      customHoliday: monthlyData.customHolidayDays,
+                      personalLeave: monthlyData.personalLeaveDays,
+                      logged: Object.keys(monthlyData.dailyTotals).filter(d => monthlyData.dailyTotals[parseInt(d)] > 0).map(day => {
+                          return new Date(selectedDate.getFullYear(), selectedDate.getMonth(), parseInt(day))
+                      })
+                  }}
+                  modifiersClassNames={{
+                  saturday: 'text-muted-foreground/50',
+                  sunday: 'text-muted-foreground/50',
+                  holiday: 'bg-green-200 dark:bg-green-800 rounded-md',
+                  customHoliday: 'bg-orange-200 dark:bg-orange-800 rounded-md',
+                  personalLeave: 'opacity-60 bg-blue-200 dark:bg-blue-800 rounded-md',
+                  logged: 'border border-primary rounded-md'
+                  }}
+                  components={{
+                  DayContent,
+                  }}
+                  className="p-0"
+                  classNames={{
+                      row: "flex w-full mt-2",
+                      cell: "flex-1 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      head_row: "flex",
+                      head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
+                      day: "h-20 w-full text-base p-1",
+                      months: "w-full",
+                      month: "w-full space-y-4",
+                      caption_label: "text-lg font-bold"
+                  }}
+              />
+            </ReportCalendarContext.Provider>
         </CardContent>
       </Card>
     </div>
