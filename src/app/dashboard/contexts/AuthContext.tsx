@@ -21,25 +21,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   
+  // This state will be false on the server and on the first client render,
+  // then true after the component mounts.
+  const [isMounted, setIsMounted] = React.useState(false);
+
   React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    // Only perform auth checks once the component has mounted on the client.
+    // This gives useLocalStorage hooks time to hydrate their state.
+    if (!isMounted) {
+      return;
+    }
+
     if (currentUserId) {
       const user = teamMembers.find(u => u.id === currentUserId);
       if (user) {
         setCurrentUser(user);
         setIsLoading(false);
-      } else {
-        // User not found in the current list. This could be a race condition
-        // where teamMembers hasn't hydrated from localStorage yet. We'll
-        // keep `isLoading` true and let the effect re-run when teamMembers updates.
-        // If the ID is genuinely invalid, the user will see the loading screen
-        // until they manually navigate away or the session is cleared.
-        // A more advanced implementation might use a timeout to redirect.
+      } else if (teamMembers.length > 0) {
+        // If team members are loaded but the user ID is invalid, log out.
+        setCurrentUserId(null); // This will trigger a re-render and the else block below
       }
+      // If teamMembers is empty, we wait, as it might still be loading.
     } else {
-      // No user ID found, redirect to login.
+      // If there's no user ID, redirect to login.
       router.push('/');
     }
-  }, [currentUserId, teamMembers, router, setCurrentUserId]);
+  }, [currentUserId, teamMembers, router, setCurrentUserId, isMounted]);
 
   const logout = () => {
     setCurrentUserId(null);
@@ -47,9 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/');
   };
 
-  if (isLoading || !currentUser) {
-    // Show a loading screen while we verify the user or if the user is not found.
-    // The effect will handle redirecting if there's no logged-in user ID.
+  // While loading or before mounting, or if the user is not found yet, show the loading screen.
+  if (isLoading || !isMounted || !currentUser) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <div className="text-xl font-semibold text-foreground">Loading...</div>
