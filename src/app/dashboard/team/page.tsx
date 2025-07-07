@@ -15,12 +15,16 @@ import { teamMembers as initialTeamMembers, currentUser, type User } from "@/lib
 import { EditMemberDialog } from "./components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "./components/add-member-dialog";
+import { ChangePasswordDialog } from "./components/change-password-dialog";
+import { sendPasswordChangeEmail } from "@/lib/mail";
 
 export default function TeamPage() {
     const { toast } = useToast();
     const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
+    const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);
+    const [isSavingPassword, setIsSavingPassword] = useState(false);
     
     const handleSaveDetails = (updatedUser: User) => {
         setTeamMembers(prevMembers =>
@@ -42,6 +46,29 @@ export default function TeamPage() {
         });
     };
 
+    const handlePasswordChange = async (password: string) => {
+        if (!changingPasswordUser) return;
+
+        setIsSavingPassword(true);
+        // In a real app, you would hash the password and save it to the database here.
+        try {
+            await sendPasswordChangeEmail({ to: changingPasswordUser.email, name: changingPasswordUser.name });
+            toast({
+                title: "Password Changed",
+                description: `Password for ${changingPasswordUser.name} has been changed and a notification email has been sent.`,
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "Could not send password change notification. Please check SMTP settings.",
+            });
+        } finally {
+            setIsSavingPassword(false);
+            setChangingPasswordUser(null);
+        }
+    };
+
     const canEditMember = (member: User) => {
         if (currentUser.id === member.id) return false;
         if (currentUser.role === 'Super Admin') {
@@ -50,6 +77,13 @@ export default function TeamPage() {
         if (currentUser.role === 'Team Lead') {
             return member.role === 'Employee';
         }
+        return false;
+    };
+    
+    const canChangePassword = (member: User) => {
+        if (currentUser.role === 'Super Admin') return true;
+        if (currentUser.id === member.id) return true;
+        if (currentUser.role === 'Team Lead' && member.reportsTo === currentUser.id) return true;
         return false;
     };
 
@@ -120,6 +154,12 @@ export default function TeamPage() {
                                           >
                                             View/Edit Details
                                           </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => setChangingPasswordUser(member)}
+                                            disabled={!canChangePassword(member)}
+                                          >
+                                            Change Password
+                                          </DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
                               </TableCell>
@@ -148,6 +188,15 @@ export default function TeamPage() {
         onOpenChange={setIsAddMemberDialogOpen}
         onAddMember={handleAddMember}
         teamMembers={teamMembers}
+      />
+      <ChangePasswordDialog
+        user={changingPasswordUser}
+        isOpen={!!changingPasswordUser}
+        onOpenChange={(isOpen) => {
+            if (!isOpen) setChangingPasswordUser(null);
+        }}
+        onSave={handlePasswordChange}
+        isSaving={isSavingPassword}
       />
     </>
   )
