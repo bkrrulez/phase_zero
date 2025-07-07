@@ -18,6 +18,7 @@ import {
   Send,
   Building,
   PlusCircle,
+  Shield,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, createContext, useContext } from "react";
@@ -206,6 +207,15 @@ export default function DashboardLayout({
                               </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
+                        {(currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead') && (
+                          <SidebarMenuItem>
+                            <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/access-control")}>
+                                <Link href="/dashboard/settings/access-control">
+                                    <Shield /> Access Control
+                                </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        )}
                         {currentUser.role === 'Super Admin' && (
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/holidays")}>

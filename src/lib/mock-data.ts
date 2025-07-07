@@ -71,6 +71,13 @@ export type CustomHoliday = {
   appliesTo: string; // 'all-teams', 'all-members', or a teamId
 };
 
+export type FreezeRule = {
+  id: string;
+  teamId: string; // 'all-teams' or a specific team id
+  startDate: string;
+  endDate: string;
+};
+
 export const teams: Team[] = [
     { id: "team-1", name: "Alpha Team", projectIds: ['proj-1', 'proj-2', 'proj-3'] },
     { id: "team-2", name: "Bravo Team", projectIds: ['proj-4'] },
@@ -234,7 +241,7 @@ export const tasks: Task[] = [
 
 const currentYear = new Date().getFullYear();
 
-export const publicHolidays: PublicHoliday[] = [
+export let publicHolidays: PublicHoliday[] = [
     { id: 'ph-1', country: 'USA', name: 'New Year\'s Day', date: new Date(currentYear, 0, 1).toISOString(), type: 'Full Day' },
     { id: 'ph-2', country: 'USA', name: 'Martin Luther King, Jr. Day', date: new Date(currentYear, 0, 15).toISOString(), type: 'Full Day' },
     { id: 'ph-3', country: 'USA', name: 'Independence Day', date: new Date(currentYear, 6, 4).toISOString(), type: 'Full Day' },
@@ -245,7 +252,9 @@ export const publicHolidays: PublicHoliday[] = [
     { id: 'ph-8', country: 'UK', name: 'Boxing Day', date: new Date(currentYear, 11, 26).toISOString(), type: 'Full Day' },
 ];
 
-export const customHolidays: CustomHoliday[] = [
+export let customHolidays: CustomHoliday[] = [
   { id: 'ch-1', country: 'Global', name: 'Company Anniversary', date: new Date(new Date().getFullYear(), 8, 15).toISOString(), type: 'Full Day', appliesTo: 'all-members'},
   { id: 'ch-2', country: 'USA', name: 'Alpha Team Offsite', date: new Date(new Date().getFullYear(), 5, 20).toISOString(), type: 'Full Day', appliesTo: 'team-1'},
 ];
+
+export let freezeRules: FreezeRule[] = [];

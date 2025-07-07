@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { projects, tasks, currentUser } from "@/lib/mock-data";
+import { projects, tasks, currentUser, freezeRules } from "@/lib/mock-data";
 
 const logTimeSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -53,6 +53,24 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
   });
 
   const availableProjects = projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
+
+  const isDateFrozen = (date: Date) => {
+    if (!currentUser.teamId) return false;
+
+    for (const rule of freezeRules) {
+      const ruleApplies = rule.teamId === 'all-teams' || rule.teamId === currentUser.teamId;
+      if (ruleApplies) {
+        const startDate = new Date(rule.startDate);
+        const endDate = new Date(rule.endDate);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        if (date >= startDate && date <= endDate) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   function onSubmit(data: LogTimeFormValues) {
     onLogTime(data);
@@ -101,7 +119,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
                         selected={field.value}
                         onSelect={field.onChange}
                         toDate={new Date()}
-                        disabled={(date) => date > new Date()}
+                        disabled={(date) => date > new Date() || isDateFrozen(date)}
                         initialFocus
                       />
                     </PopoverContent>
