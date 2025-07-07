@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import Link from "next/link";
@@ -25,6 +25,17 @@ export default function TeamPage() {
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = useState(false);
+    
+    const visibleMembers = useMemo(() => {
+        if (currentUser.role === 'Super Admin') {
+            return teamMembers;
+        }
+        if (currentUser.role === 'Team Lead') {
+            return teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
+        }
+        // Employee
+        return teamMembers.filter(member => member.id === currentUser.id);
+    }, [teamMembers]);
     
     const handleSaveDetails = (updatedUser: User) => {
         setTeamMembers(prevMembers =>
@@ -87,6 +98,8 @@ export default function TeamPage() {
         return false;
     };
 
+    const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
+
   return (
     <>
       <div className="space-y-6">
@@ -95,9 +108,11 @@ export default function TeamPage() {
             <h1 className="text-3xl font-bold font-headline">Team Overview</h1>
             <p className="text-muted-foreground">Manage your team members and view their progress.</p>
           </div>
-          <Button onClick={() => setIsAddMemberDialogOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Member
-          </Button>
+          {canAddMember && (
+            <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Member
+            </Button>
+          )}
         </div>
         <Card>
           <CardHeader>
@@ -116,7 +131,7 @@ export default function TeamPage() {
                       </TableRow>
                   </TableHeader>
                   <TableBody>
-                      {teamMembers.map(member => (
+                      {visibleMembers.map(member => (
                           <TableRow key={member.id}>
                               <TableCell>
                                   <div className="flex items-center gap-3">
@@ -165,6 +180,11 @@ export default function TeamPage() {
                               </TableCell>
                           </TableRow>
                       ))}
+                      {visibleMembers.length === 0 && (
+                          <TableRow>
+                              <TableCell colSpan={5} className="h-24 text-center">No members to display.</TableCell>
+                          </TableRow>
+                      )}
                   </TableBody>
               </Table>
           </CardContent>
