@@ -124,6 +124,7 @@ export default function MembersSettingsPage() {
                       <TableRow>
                           <TableHead>Member</TableHead>
                           <TableHead className="hidden md:table-cell">Role</TableHead>
+                          <TableHead className="hidden md:table-cell text-right">Weekly Hours</TableHead>
                           <TableHead className="hidden lg:table-cell">Contract Start</TableHead>
                           <TableHead className="hidden lg:table-cell">Contract End</TableHead>
                           <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -147,6 +148,7 @@ export default function MembersSettingsPage() {
                               <TableCell className="hidden md:table-cell">
                                   <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                               </TableCell>
+                              <TableCell className="hidden md:table-cell text-right font-mono">{member.contract.weeklyHours}h</TableCell>
                               <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
                               <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
                               <TableCell>
@@ -181,7 +183,7 @@ export default function MembersSettingsPage() {
                       ))}
                       {visibleMembers.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={5} className="h-24 text-center">No members to display.</TableCell>
+                              <TableCell colSpan={6} className="h-24 text-center">No members to display.</TableCell>
                           </TableRow>
                       )}
                   </TableBody>
