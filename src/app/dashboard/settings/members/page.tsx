@@ -124,7 +124,7 @@ export default function MembersSettingsPage() {
                       <TableRow>
                           <TableHead>Member</TableHead>
                           <TableHead className="hidden md:table-cell">Role</TableHead>
-                          <TableHead className="hidden md:table-cell text-right">Weekly Hours</TableHead>
+                          <TableHead className="hidden md:table-cell text-right">Weekly Contract Hours</TableHead>
                           <TableHead className="hidden lg:table-cell">Contract Start</TableHead>
                           <TableHead className="hidden lg:table-cell">Contract End</TableHead>
                           <TableHead><span className="sr-only">Actions</span></TableHead>
