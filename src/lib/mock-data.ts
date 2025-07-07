@@ -121,7 +121,7 @@ const currentYear = new Date().getFullYear();
 const adminUser: User = {
   id: "admin-1",
   name: "Admin One",
-  email: "admin1@example.com",
+  email: "admin@example.com",
   role: "Super Admin",
   avatar: "https://placehold.co/100x100.png",
   associatedProjectIds: ['proj-1', 'proj-2', 'proj-3', 'proj-4'],
@@ -176,7 +176,7 @@ export const teamMembers: User[] = [
     associatedProjectIds: ['proj-2'],
     contract: {
       startDate: `${currentYear - 1}-08-01`,
-      endDate: `${currentYear}-01-31`, // 6 month contract
+      endDate: `${new Date().getFullYear()}-01-31`,
       weeklyHours: 20,
     },
   },

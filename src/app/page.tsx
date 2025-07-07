@@ -23,9 +23,38 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+    // Special login check for the Super Admin
+    if (adminEmail && email.toLowerCase() === adminEmail.toLowerCase()) {
+      if (password === adminPassword) {
+        const user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (user) {
+          setCurrentUserId(user.id);
+          router.push('/dashboard');
+        } else {
+          // This case should not happen if the admin user is in mock-data.ts
+          toast({
+            variant: 'destructive',
+            title: 'Configuration Error',
+            description: 'Admin user not found in the database.',
+          });
+        }
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'Incorrect password for admin user.',
+        });
+      }
+      return; // Stop further execution
+    }
+
+    // Default behavior for other demo users (no password check)
     const user = teamMembers.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
-      // In a real app, you'd also check the password here.
       setCurrentUserId(user.id);
       router.push('/dashboard');
     } else {

@@ -23,9 +23,19 @@ npm install
 
 ### 2. Set Up Environment Variables
 
-This application uses `nodemailer` to send password change notifications via email. For this to work, you need to provide SMTP server credentials.
+This application uses environment variables for configuration. Create a new file named `.env.local` in the root of the project and add the following content.
 
-Create a new file named `.env.local` in the root of the project and add the following content. Replace the placeholder values with your actual SMTP credentials.
+**Admin User:**
+The system requires credentials for the initial Super Admin user. The default email is `admin@example.com`.
+
+```env
+# Admin User Credentials
+NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
+NEXT_PUBLIC_ADMIN_PASSWORD=password
+```
+
+**Email Notifications:**
+The application uses `nodemailer` to send password change notifications via email. For this to work, you need to provide SMTP server credentials.
 
 ```env
 # SMTP Configuration for Nodemailer
@@ -36,7 +46,7 @@ SMTP_PASSWORD=your-smtp-password
 SMTP_FROM="TimeTool <no-reply@yourdomain.com>"
 ```
 
-**Note:** The email sending feature will fail without these variables, but the rest of the application will still function.
+**Note:** The email sending feature will fail without the SMTP variables, but the rest of the application will still function.
 
 ### 3. Run the Development Server
 
