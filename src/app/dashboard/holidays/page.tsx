@@ -168,14 +168,20 @@ export default function HolidaysPage() {
   }, [publicHolidays, customHolidays, teamMembers]);
 
   const getProratedAllowance = React.useCallback((user: User) => {
+    // Helper function to parse YYYY-MM-DD strings as local dates to avoid timezone issues.
+    const parseDateStringAsLocal = (dateString: string): Date => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    };
+
     const { startDate, endDate } = user.contract;
     const today = new Date();
     const yearStart = startOfYear(today);
     const yearEnd = endOfYear(today);
     const daysInYear = differenceInCalendarDays(yearEnd, yearStart) + 1;
 
-    const contractStart = new Date(startDate);
-    const contractEnd = endDate ? new Date(endDate) : yearEnd;
+    const contractStart = parseDateStringAsLocal(startDate);
+    const contractEnd = endDate ? parseDateStringAsLocal(endDate) : yearEnd;
 
     const effectiveStartDate = max([yearStart, contractStart]);
     const effectiveEndDate = min([yearEnd, contractEnd]);
