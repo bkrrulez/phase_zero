@@ -6,6 +6,7 @@ export type User = {
   role: "Employee" | "Team Lead" | "Super Admin";
   avatar: string;
   reportsTo?: string; // User ID of manager
+  teamId?: string;
   associatedProjectIds?: string[];
   contract: {
     startDate: string;
@@ -42,6 +43,17 @@ export type Task = {
   name: string;
 };
 
+export type Team = {
+  id: string;
+  name: string;
+};
+
+export const teams: Team[] = [
+    { id: "team-1", name: "Alpha Team" },
+    { id: "team-2", name: "Bravo Team" },
+    { id: "team-3", name: "Client Services" },
+];
+
 const alexSmithUser: User = {
   id: "user-1",
   name: "Alex Smith",
@@ -49,6 +61,7 @@ const alexSmithUser: User = {
   role: "Team Lead",
   avatar: "https://placehold.co/100x100.png",
   reportsTo: 'admin-1',
+  teamId: 'team-1',
   associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
   contract: {
     startDate: "2022-01-01",
@@ -82,6 +95,7 @@ export const teamMembers: User[] = [
     role: "Employee",
     avatar: "https://placehold.co/100x100.png",
     reportsTo: 'user-1',
+    teamId: 'team-1',
     associatedProjectIds: ['proj-1', 'proj-4'],
     contract: {
       startDate: "2022-03-15",
@@ -96,6 +110,7 @@ export const teamMembers: User[] = [
     role: "Employee",
     avatar: "https://placehold.co/100x100.png",
     reportsTo: 'user-1',
+    teamId: 'team-1',
     associatedProjectIds: ['proj-2'],
     contract: {
       startDate: "2023-08-01",
@@ -110,6 +125,7 @@ export const teamMembers: User[] = [
     role: "Employee",
     avatar: "https://placehold.co/100x100.png",
     reportsTo: 'user-1',
+    teamId: 'team-1',
     associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
     contract: {
       startDate: "2021-11-20",

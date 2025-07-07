@@ -32,13 +32,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type User, projects } from '@/lib/mock-data';
+import { type User, projects, teams } from '@/lib/mock-data';
 
 const addMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
   role: z.enum(['Employee', 'Team Lead', 'Super Admin']),
   reportsTo: z.string().optional(),
+  teamId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required.'),
   endDate: z.string().optional().nullable(),
   weeklyHours: z.coerce.number().int().min(1, 'Weekly hours must be at least 1.'),
@@ -66,6 +67,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
       email: '',
       role: 'Employee',
       reportsTo: '',
+      teamId: '',
       startDate: '',
       endDate: '',
       weeklyHours: 40,
@@ -74,12 +76,23 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   });
 
   const roleWatcher = form.watch('role');
+  const reportsToWatcher = form.watch('reportsTo');
 
   useEffect(() => {
     if (roleWatcher === 'Super Admin') {
       form.setValue('reportsTo', undefined);
+      form.setValue('teamId', undefined);
     }
-  }, [roleWatcher, form]);
+    
+    if (roleWatcher === 'Employee' && reportsToWatcher) {
+        const manager = teamMembers.find(m => m.id === reportsToWatcher);
+        if (manager && manager.teamId) {
+            form.setValue('teamId', manager.teamId);
+        } else {
+            form.setValue('teamId', undefined);
+        }
+    }
+  }, [roleWatcher, reportsToWatcher, form, teamMembers]);
 
   const managers = teamMembers.filter(m => m.role === 'Team Lead' || m.role === 'Super Admin');
 
@@ -90,6 +103,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
       email: data.email,
       role: data.role,
       reportsTo: data.reportsTo,
+      teamId: data.teamId,
       avatar: 'https://placehold.co/100x100.png',
       associatedProjectIds: data.associatedProjectIds,
       contract: {
@@ -185,6 +199,29 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
                     )}
                 />
             </div>
+             <FormField
+                control={form.control}
+                name="teamId"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Team</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''} disabled={roleWatcher === 'Employee'}>
+                        <FormControl>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a team" />
+                        </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="">No Team</SelectItem>
+                            {teams.map(team => (
+                                <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
             <div className="grid grid-cols-2 gap-4">
                  <FormField
                     control={form.control}
