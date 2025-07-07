@@ -11,8 +11,15 @@ import {
   Users,
   Settings,
   BarChartHorizontal,
+  ChevronRight,
+  Briefcase,
+  ClipboardList,
+  CalendarDays,
+  Send,
+  Building
 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -36,8 +43,14 @@ import {
   SidebarTrigger,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { currentUser } from "@/lib/mock-data";
 import { LogoIcon } from "@/components/ui/logo-icon";
+import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
   children,
@@ -45,8 +58,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  
+  const isActive = (path: string) => {
+    if (path === '/dashboard') {
+      return pathname === '/dashboard';
+    }
+    return pathname.startsWith(path);
+  };
+  
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const isActive = (path: string) => pathname === path;
+  useEffect(() => {
+    setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
+  }, [pathname]);
+
 
   return (
     <SidebarProvider>
@@ -97,14 +122,65 @@ export default function DashboardLayout({
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={isActive("/dashboard/profile")}>
-                <Link href="/dashboard/profile">
-                  <Settings />
-                  Settings
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+             <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                <SidebarMenuItem>
+                    <CollapsibleTrigger className="w-full" asChild>
+                        <SidebarMenuButton className="justify-between w-full">
+                            <div className="flex items-center gap-2">
+                                <Settings />
+                                <span>Settings</span>
+                            </div>
+                            <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isSettingsOpen && "rotate-90")} />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                </SidebarMenuItem>
+                <CollapsibleContent>
+                    <SidebarMenu className="pl-6 py-2 space-y-1">
+                       <SidebarMenuItem>
+                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/members")}>
+                            <Link href="/dashboard/settings/members">
+                                <Users /> Members
+                            </Link>
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/teams")}>
+                            <Link href="/dashboard/settings/teams">
+                                <Building /> Teams
+                            </Link>
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/projects")}>
+                            <Link href="/dashboard/settings/projects">
+                                <Briefcase /> Projects
+                            </Link>
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/tasks")}>
+                            <Link href="/dashboard/settings/tasks">
+                                <ClipboardList /> Tasks
+                            </Link>
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/holidays")}>
+                            <Link href="/dashboard/settings/holidays">
+                                <CalendarDays /> Holidays
+                            </Link>
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                       <SidebarMenuItem>
+                         <SidebarMenuButton asChild isActive={isActive("/dashboard/settings/push-messages")}>
+                            <Link href="/dashboard/settings/push-messages">
+                                <Send /> Push Messages
+                            </Link>
+                         </SidebarMenuButton>
+                       </SidebarMenuItem>
+                    </SidebarMenu>
+                </CollapsibleContent>
+             </Collapsible>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                 <Link href="/">
