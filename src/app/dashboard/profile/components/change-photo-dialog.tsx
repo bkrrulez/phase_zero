@@ -15,49 +15,53 @@ interface ChangePhotoDialogProps {
   onSave: (dataUrl: string) => void;
 }
 
+// Helper to get the cropped image data URL
+function getCroppedImg(
+  image: HTMLImageElement,
+  crop: Crop,
+) {
+  const canvas = document.createElement('canvas');
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  
+  const targetWidth = 256; // Target a 256x256 avatar
+  const targetHeight = 256;
+  
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    return '';
+  }
+
+  const cropX = crop.x * scaleX;
+  const cropY = crop.y * scaleY;
+  const cropWidth = crop.width * scaleX;
+  const cropHeight = crop.height * scaleY;
+
+  ctx.drawImage(
+    image,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    targetWidth,
+    targetHeight
+  );
+
+  return canvas.toDataURL('image/jpeg');
+}
+
+
 export function ChangePhotoDialog({ isOpen, onOpenChange, onSave }: ChangePhotoDialogProps) {
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [scale, setScale] = useState(1);
   const imgRef = useRef<HTMLImageElement>(null);
-
-  // Helper to get the cropped image data URL
-  function getCroppedImg(
-    image: HTMLImageElement,
-    crop: Crop,
-  ) {
-    const canvas = document.createElement('canvas');
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    const targetWidth = 256; // Target a 256x256 avatar
-    const targetHeight = 256;
-    
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      return '';
-    }
-
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
-
-    ctx.drawImage(
-      image,
-      cropX,
-      cropY,
-      crop.width * scaleX,
-      crop.height * scaleY,
-      0,
-      0,
-      targetWidth,
-      targetHeight
-    );
-
-    return canvas.toDataURL('image/jpeg');
-  }
 
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,16 +79,17 @@ export function ChangePhotoDialog({ isOpen, onOpenChange, onSave }: ChangePhotoD
   const onImageLoad: ReactEventHandler<HTMLImageElement> = (e) => {
     const { width, height } = e.currentTarget;
     const initialCrop = centerCrop(
-      makeAspectCrop({ unit: '%', width: 90 }, 1, width, height),
+      makeAspectCrop({ unit: 'px', width: Math.min(width, height, 256) }, 1, width, height),
       width,
       height
     );
     setCrop(initialCrop);
+    setCompletedCrop(initialCrop);
   };
   
   const handleSave = () => {
-    if (imgRef.current && crop?.width && crop?.height) {
-      const croppedDataUrl = getCroppedImg(imgRef.current, crop);
+    if (imgRef.current && completedCrop?.width && completedCrop?.height) {
+      const croppedDataUrl = getCroppedImg(imgRef.current, completedCrop);
       onSave(croppedDataUrl);
       onOpenChange(false);
       setImgSrc(''); // Reset for next time
@@ -112,16 +117,17 @@ export function ChangePhotoDialog({ isOpen, onOpenChange, onSave }: ChangePhotoD
               <div className="flex justify-center bg-muted/50 rounded-md overflow-hidden p-4">
                 <ReactCrop
                   crop={crop}
-                  onChange={(_, percentCrop) => setCrop(percentCrop)}
+                  onChange={(c) => setCrop(c)}
+                  onComplete={(c) => setCompletedCrop(c)}
                   aspect={1}
                   minWidth={100}
+                  scale={scale}
                 >
                   <img
                     ref={imgRef}
                     src={imgSrc}
                     alt="Crop me"
                     onLoad={onImageLoad}
-                    style={{ transform: `scale(${scale})` }}
                     className="max-h-[40vh]"
                   />
                 </ReactCrop>
