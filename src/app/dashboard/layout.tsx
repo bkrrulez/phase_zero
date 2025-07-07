@@ -112,7 +112,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <LogoIcon className="w-8 h-8" />
-            <h1 className="text-xl font-bold font-headline text-primary">Time<span className="text-accent">Wise</span></h1>
+            <h1 className="text-xl font-bold font-headline text-primary">TimeTool</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>

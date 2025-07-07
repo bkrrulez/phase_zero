@@ -16,7 +16,7 @@ export default function LoginPage() {
             <div className="flex justify-center items-center mb-4">
               <LogoIcon className="w-10 h-10" />
             </div>
-            <CardTitle className="text-2xl font-bold font-headline text-primary">Time<span className="text-accent">Wise</span></CardTitle>
+            <CardTitle className="text-2xl font-bold font-headline text-primary">TimeTool</CardTitle>
             <CardDescription>Enter your credentials to access your dashboard</CardDescription>
           </CardHeader>
           <CardContent>

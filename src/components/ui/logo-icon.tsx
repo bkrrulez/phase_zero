@@ -6,7 +6,7 @@ export const LogoIcon = ({ className }: { className?: string }) => (
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        <title>TimeWise Logo</title>
+        <title>TimeTool Logo</title>
         <path
             d="M21 3 A 18 18 0 0 1 21 39"
             stroke="hsl(var(--primary))"
