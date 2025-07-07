@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { teamMembers, timeEntries, holidayRequests, currentUser, type User, publicHolidays, customHolidays, type TimeEntry } from '@/lib/mock-data';
 import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
-import React from 'react';
 import { DayDetailsDialog } from './day-details-dialog';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -83,11 +82,11 @@ export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-    const [selectedDayEntries, setSelectedDayEntries] = useState<TimeEntry[]>([]);
-    const [selectedDayForDialog, setSelectedDayForDialog] = useState<Date>(new Date());
+    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
+    const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
+    const [selectedDayForDialog, setSelectedDayForDialog] = React.useState<Date>(new Date());
 
-    const viewableUsers = useMemo(() => {
+    const viewableUsers = React.useMemo(() => {
         if (currentUser.role === 'Super Admin') return teamMembers;
         if (currentUser.role === 'Team Lead') {
             const team = teamMembers.filter(m => m.role === 'Employee' && m.reportsTo === currentUser.id);
@@ -98,16 +97,16 @@ export function IndividualReport() {
 
     const targetUserId = searchParams.get('userId') || currentUser.id;
     
-    const [selectedUser, setSelectedUser] = useState<User | undefined>(() => viewableUsers.find(u => u.id === targetUserId));
-    const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedUser, setSelectedUser] = React.useState<User | undefined>(() => viewableUsers.find(u => u.id === targetUserId));
+    const [selectedDate, setSelectedDate] = React.useState(new Date());
 
-    useEffect(() => {
+    React.useEffect(() => {
         const userFromParams = viewableUsers.find(u => u.id === targetUserId);
         const userToSelect = userFromParams || (viewableUsers.includes(currentUser) ? currentUser : viewableUsers[0]);
         setSelectedUser(userToSelect);
     }, [targetUserId, viewableUsers]);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (selectedUser) {
             const now = new Date();
             const year = selectedDate.getFullYear() || now.getFullYear();
@@ -125,7 +124,7 @@ export function IndividualReport() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUser]);
 
-  const availableYears = useMemo(() => {
+  const availableYears = React.useMemo(() => {
     if (!selectedUser) return [];
     const startYear = new Date(selectedUser.contract.startDate).getFullYear();
     const endYear = selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate).getFullYear() : new Date().getFullYear();
@@ -137,7 +136,7 @@ export function IndividualReport() {
     return yearsList;
   }, [selectedUser]);
 
-  const availableMonths = useMemo(() => {
+  const availableMonths = React.useMemo(() => {
       if (!selectedUser) return months;
 
       const contractStart = new Date(selectedUser.contract.startDate);
@@ -157,7 +156,7 @@ export function IndividualReport() {
       return months.filter(m => m.value >= startMonth && m.value <= endMonth);
   }, [selectedUser, selectedDate]);
 
-  const monthlyData = useMemo(() => {
+  const monthlyData = React.useMemo(() => {
     if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {} };
 
     const dailyTotals: Record<string, number> = {};
@@ -256,7 +255,7 @@ export function IndividualReport() {
         setSelectedDate(new Date(newYear, newMonth, 1));
     }
     
-    const handleDayClick = (date: Date) => {
+    const handleDayClick = React.useCallback((date: Date) => {
         const day = date.getDate();
         const entries = monthlyData.dailyEntries[day] || [];
         
@@ -265,13 +264,13 @@ export function IndividualReport() {
             setSelectedDayForDialog(date);
             setIsDetailsDialogOpen(true);
         }
-    };
+    }, [monthlyData.dailyEntries]);
 
-    const calendarContextValue = useMemo<ReportCalendarContextValue>(() => ({
+    const calendarContextValue = React.useMemo<ReportCalendarContextValue>(() => ({
         selectedDate,
         monthlyData,
         onDayClick: handleDayClick,
-    }), [selectedDate, monthlyData]);
+    }), [selectedDate, monthlyData, handleDayClick]);
 
   if (!selectedUser) {
     return (
