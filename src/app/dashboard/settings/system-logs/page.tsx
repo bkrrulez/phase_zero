@@ -29,6 +29,11 @@ export default function SystemLogsPage() {
   const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredLogs = React.useMemo(() => {
     return logs.filter(log => {
@@ -150,7 +155,7 @@ export default function SystemLogsPage() {
                     <TableBody>
                         {filteredLogs.length > 0 ? filteredLogs.map(log => (
                             <TableRow key={log.id}>
-                                <TableCell className="font-mono text-xs">{format(new Date(log.timestamp), 'PPpp')}</TableCell>
+                                <TableCell className="font-mono text-xs">{isClient ? format(new Date(log.timestamp), 'PPpp') : null}</TableCell>
                                 <TableCell>{log.message}</TableCell>
                             </TableRow>
                         )) : (
