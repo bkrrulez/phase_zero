@@ -46,11 +46,12 @@ export type Task = {
 export type Team = {
   id: string;
   name: string;
+  projectIds?: string[];
 };
 
 export const teams: Team[] = [
-    { id: "team-1", name: "Alpha Team" },
-    { id: "team-2", name: "Bravo Team" },
+    { id: "team-1", name: "Alpha Team", projectIds: ['proj-1', 'proj-2', 'proj-3'] },
+    { id: "team-2", name: "Bravo Team", projectIds: ['proj-4'] },
     { id: "team-3", name: "Client Services" },
 ];
 
@@ -208,3 +209,4 @@ export const tasks: Task[] = [
   { id: "task-11", name: "Customer Support" },
   { id: "task-12", name: "Internal - HR Training" },
 ];
+
