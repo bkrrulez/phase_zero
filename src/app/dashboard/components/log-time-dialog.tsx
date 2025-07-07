@@ -57,11 +57,11 @@ export function LogTimeDialog({ isOpen, onOpenChange, onLogTime }: LogTimeDialog
   const availableProjects = projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
 
   const isDateFrozen = (date: Date) => {
-    if (!currentUser.teamId) return false;
-
     for (const rule of freezeRules) {
-      const ruleApplies = rule.teamId === 'all-teams' || rule.teamId === currentUser.teamId;
-      if (ruleApplies) {
+      const ruleAppliesToAll = rule.teamId === 'all-teams';
+      const ruleAppliesToUserTeam = currentUser.teamId && rule.teamId === currentUser.teamId;
+
+      if (ruleAppliesToAll || ruleAppliesToUserTeam) {
         const startDate = new Date(rule.startDate);
         const endDate = new Date(rule.endDate);
         startDate.setHours(0, 0, 0, 0);
