@@ -83,15 +83,15 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                   <Label htmlFor="weekly-hours">Weekly Hours</Label>
-                  <Input id="weekly-hours" type="number" defaultValue={currentUser.contract.weeklyHours} disabled={currentUser.role !== 'Team Lead'} />
+                  <Input id="weekly-hours" type="number" defaultValue={currentUser.contract.weeklyHours} disabled={currentUser.role === 'Employee'} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="start-date">Employment Start Date</Label>
-                <Input id="start-date" type="date" defaultValue={currentUser.contract.startDate} disabled={currentUser.role !== 'Team Lead'} />
+                <Input id="start-date" type="date" defaultValue={currentUser.contract.startDate} disabled={currentUser.role === 'Employee'} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end-date">Employment End Date</Label>
-                <Input id="end-date" type="date" defaultValue={currentUser.contract.endDate ?? ''} disabled={currentUser.role !== 'Team Lead'} />
+                <Input id="end-date" type="date" defaultValue={currentUser.contract.endDate ?? ''} disabled={currentUser.role === 'Employee'} />
               </div>
             </div>
           </CardContent>
