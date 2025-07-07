@@ -11,11 +11,15 @@ import { useToast } from "@/hooks/use-toast";
 import { sendPasswordChangeEmail } from "@/lib/mail";
 import { ChangePasswordDialog } from "../team/components/change-password-dialog";
 import { useAuth } from "../contexts/AuthContext";
+import { useMembers } from "../contexts/MembersContext";
+import { ChangePhotoDialog } from "./components/change-photo-dialog";
 
 export default function ProfilePage() {
   const { toast } = useToast();
   const { currentUser } = useAuth();
+  const { updateMember } = useMembers();
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   const handlePasswordChange = async (password: string) => {
@@ -38,6 +42,16 @@ export default function ProfilePage() {
       setIsPasswordDialogOpen(false);
     }
   };
+  
+  const handlePhotoSave = (dataUrl: string) => {
+    if (currentUser) {
+      updateMember({ ...currentUser, avatar: dataUrl });
+      toast({
+        title: "Photo Updated",
+        description: "Your profile photo has been successfully updated.",
+      });
+    }
+  };
 
   return (
     <>
@@ -57,7 +71,7 @@ export default function ProfilePage() {
                       <AvatarImage src={currentUser.avatar} data-ai-hint="person avatar" />
                       <AvatarFallback>{currentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                   </Avatar>
-                  <Button variant="outline" type="button">Change Photo</Button>
+                  <Button variant="outline" type="button" onClick={() => setIsPhotoDialogOpen(true)}>Change Photo</Button>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -113,6 +127,11 @@ export default function ProfilePage() {
         onOpenChange={setIsPasswordDialogOpen}
         onSave={handlePasswordChange}
         isSaving={isSavingPassword}
+      />
+      <ChangePhotoDialog
+        isOpen={isPhotoDialogOpen}
+        onOpenChange={setIsPhotoDialogOpen}
+        onSave={handlePhotoSave}
       />
     </>
   )
