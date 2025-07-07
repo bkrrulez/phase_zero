@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Card,
@@ -16,13 +16,12 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { teamMembers, timeEntries, holidayRequests, type User } from '@/lib/mock-data';
-import { addDays, getDay, isSameMonth } from 'date-fns';
+import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { DayContentProps } from 'react-day-picker';
 
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
@@ -33,15 +32,58 @@ export default function UserReportPage({ params }: { params: { userId: string } 
   const initialMonth = searchParams.get('month');
   const initialYear = searchParams.get('year');
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date(
-      initialYear ? parseInt(initialYear) : new Date().getFullYear(),
-      initialMonth ? parseInt(initialMonth) : new Date().getMonth(),
-      1
-    )
-  );
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const user = useMemo(() => teamMembers.find(m => m.id === params.userId), [params.userId]);
+
+  useEffect(() => {
+    if (user) {
+      const now = new Date();
+      const year = initialYear ? parseInt(initialYear) : now.getFullYear();
+      const month = initialMonth ? parseInt(initialMonth) : now.getMonth();
+      let date = startOfMonth(new Date(year, month, 1));
+      
+      const contractStart = startOfMonth(new Date(user.contract.startDate));
+      const contractEnd = user.contract.endDate ? startOfMonth(new Date(user.contract.endDate)) : startOfMonth(now);
+
+      if (date < contractStart) date = contractStart;
+      if (date > contractEnd) date = contractEnd;
+      
+      setSelectedDate(date);
+    }
+  }, [user, initialMonth, initialYear]);
+
+  const availableYears = useMemo(() => {
+    if (!user) return [];
+    const startYear = new Date(user.contract.startDate).getFullYear();
+    const endYear = user.contract.endDate ? new Date(user.contract.endDate).getFullYear() : new Date().getFullYear();
+    
+    const yearsList = [];
+    for (let i = endYear; i >= startYear; i--) {
+        yearsList.push(i);
+    }
+    return yearsList;
+  }, [user]);
+
+  const availableMonths = useMemo(() => {
+      if (!user) return months;
+
+      const contractStart = new Date(user.contract.startDate);
+      const contractEnd = user.contract.endDate ? new Date(user.contract.endDate) : null;
+      const year = selectedDate.getFullYear();
+
+      let startMonth = 0;
+      if (year === contractStart.getFullYear()) {
+          startMonth = contractStart.getMonth();
+      }
+      
+      let endMonth = 11;
+      if (contractEnd && year === contractEnd.getFullYear()) {
+          endMonth = contractEnd.getMonth();
+      }
+
+      return months.filter(m => m.value >= startMonth && m.value <= endMonth);
+  }, [user, selectedDate]);
 
   const monthlyData = useMemo(() => {
     if (!user) return { loggedDays: {}, holidays: [] };
@@ -95,7 +137,22 @@ export default function UserReportPage({ params }: { params: { userId: string } 
   }
   
   const handleYearChange = (year: string) => {
-      setSelectedDate(new Date(parseInt(year), selectedDate.getMonth(), 1));
+      const newYear = parseInt(year);
+      let newMonth = selectedDate.getMonth();
+      
+      if (!user) return;
+      
+      const contractStart = new Date(user.contract.startDate);
+      if (newYear === contractStart.getFullYear() && newMonth < contractStart.getMonth()) {
+          newMonth = contractStart.getMonth();
+      }
+
+      const contractEnd = user.contract.endDate ? new Date(user.contract.endDate) : null;
+      if (contractEnd && newYear === contractEnd.getFullYear() && newMonth > contractEnd.getMonth()) {
+          newMonth = contractEnd.getMonth();
+      }
+
+      setSelectedDate(new Date(newYear, newMonth, 1));
   }
 
   const DayContent = (props: DayContentProps) => {
@@ -103,7 +160,7 @@ export default function UserReportPage({ params }: { params: { userId: string } 
     const dayOfMonth = date.getDate();
 
     if (!isSameMonth(date, selectedDate)) {
-        return <div>{dayOfMonth}</div>;
+        return <div className="p-1">{dayOfMonth}</div>;
     }
 
     const hours = monthlyData.loggedDays[dayOfMonth];
@@ -148,7 +205,7 @@ export default function UserReportPage({ params }: { params: { userId: string } 
                   <SelectValue placeholder="Select month" />
               </SelectTrigger>
               <SelectContent>
-                  {months.map(month => (
+                  {availableMonths.map(month => (
                       <SelectItem key={month.value} value={String(month.value)}>
                           {month.label}
                       </SelectItem>
@@ -163,7 +220,7 @@ export default function UserReportPage({ params }: { params: { userId: string } 
                   <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
-                  {years.map(year => (
+                  {availableYears.map(year => (
                       <SelectItem key={year} value={String(year)}>
                           {year}
                       </SelectItem>
@@ -177,6 +234,9 @@ export default function UserReportPage({ params }: { params: { userId: string } 
           <Calendar
             month={selectedDate}
             onMonthChange={setSelectedDate}
+            weekStartsOn={1}
+            fromDate={new Date(user.contract.startDate)}
+            toDate={user.contract.endDate ? new Date(user.contract.endDate) : undefined}
             modifiers={{ 
                 saturday: (date) => getDay(date) === 6,
                 sunday: (date) => getDay(date) === 0,
@@ -195,13 +255,14 @@ export default function UserReportPage({ params }: { params: { userId: string } 
               DayContent,
             }}
             classNames={{
-                day: "h-20 w-full text-base p-1",
-                cell: "p-0",
-                head_cell: "w-full",
-                row: "w-full flex mt-0",
-                months: "w-full",
-                month: "w-full space-y-2",
-                caption_label: "text-lg font-bold"
+              row: "flex w-full mt-2",
+              cell: "flex-1 p-0",
+              head_row: "flex w-full",
+              head_cell: "flex-1",
+              day: "h-20 w-full text-base p-1",
+              months: "w-full",
+              month: "w-full space-y-4",
+              caption_label: "text-lg font-bold"
             }}
           />
         </CardContent>
