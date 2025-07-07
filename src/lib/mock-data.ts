@@ -44,6 +44,7 @@ export type Project = {
 export type Task = {
   id: string;
   name: string;
+  details?: string;
 };
 
 export type Team = {
@@ -199,17 +200,16 @@ export const projects: Project[] = [
 ];
 
 export const tasks: Task[] = [
-  { id: "task-1", name: "Feature Development" },
-  { id: "task-2", name: "Bug Fixing" },
-  { id: "task-3", name: "UI/UX Design" },
-  { id: "task-4", "name": "Code Review" },
-  { id: "task-5", name: "Documentation" },
-  { id: "task-6", name: "Team Meeting" },
-  { id: "task-7", name: "Client Communication" },
-  { id: "task-8", name: "Admin - System Check" },
-  { id: "task-9", name: "Admin - Payroll" },
-  { id: "task-10", name: "Admin - User Management" },
-  { id: "task-11", name: "Customer Support" },
-  { id: "task-12", name: "Internal - HR Training" },
+  { id: "task-1", name: "Feature Development", details: "Developing new features for projects." },
+  { id: "task-2", name: "Bug Fixing", details: "Resolving bugs and issues reported." },
+  { id: "task-3", name: "UI/UX Design", details: "Designing user interfaces and experiences." },
+  { id: "task-4", name: "Code Review", details: "Reviewing pull requests and code quality." },
+  { id: "task-5", name: "Documentation", details: "Writing and updating project documentation." },
+  { id: "task-6", name: "Team Meeting", details: "Attending and participating in team meetings." },
+  { id: "task-7", name: "Client Communication", details: "Communicating with clients and stakeholders." },
+  { id: "task-8", name: "Admin - System Check", details: "Performing routine system checks." },
+  { id: "task-9", name: "Admin - Payroll", details: "Processing payroll for team members." },
+  { id: "task-10", name: "Admin - User Management", details: "Managing user accounts and permissions." },
+  { id: "task-11", name: "Customer Support", details: "Providing support to customers." },
+  { id: "task-12", name: "Internal - HR Training", details: "Participating in HR training sessions." },
 ];
-
