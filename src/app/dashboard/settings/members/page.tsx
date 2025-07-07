@@ -80,12 +80,13 @@ export default function MembersSettingsPage() {
     };
 
     const canEditMember = (member: User) => {
-        if (currentUser.id === member.id) return false;
         if (currentUser.role === 'Super Admin') {
-            return member.role !== 'Super Admin';
+            // A super admin can edit themselves, or any user who is not another super admin.
+            return currentUser.id === member.id || member.role !== 'Super Admin';
         }
         if (currentUser.role === 'Team Lead') {
-            return member.role === 'Employee';
+            // A team lead can only edit their direct reports (employees).
+            return member.reportsTo === currentUser.id && member.role === 'Employee';
         }
         return false;
     };
