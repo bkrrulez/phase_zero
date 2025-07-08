@@ -22,6 +22,11 @@ if (process.env.NODE_ENV === 'production') {
   if (!globalWithPool._pool) {
     globalWithPool._pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      // Add SSL configuration for development as well, as many dev environments
+      // now connect to cloud DBs that require it.
+      ssl: {
+        rejectUnauthorized: false,
+      },
     });
   }
   pool = globalWithPool._pool;
