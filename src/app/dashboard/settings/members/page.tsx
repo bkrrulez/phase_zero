@@ -34,14 +34,16 @@ export default function MembersSettingsPage() {
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
     
     const visibleMembers = React.useMemo(() => {
+        let members: User[];
         if (currentUser.role === 'Super Admin') {
-            return teamMembers;
+            members = teamMembers;
+        } else if (currentUser.role === 'Team Lead') {
+            members = teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
+        } else { // Employee
+            members = teamMembers.filter(member => member.id === currentUser.id);
         }
-        if (currentUser.role === 'Team Lead') {
-            return teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
-        }
-        // Employee
-        return teamMembers.filter(member => member.id === currentUser.id);
+        const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
+        return uniqueMembers;
     }, [teamMembers, currentUser]);
 
     const handleSaveDetails = (updatedUser: User) => {
