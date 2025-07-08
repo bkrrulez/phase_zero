@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type User, type HolidayRequest } from "@/lib/mock-data";
-import { format, differenceInCalendarDays, addDays, isSameDay, startOfYear, endOfYear, max, min } from "date-fns";
+import { format, differenceInCalendarDays, addDays, isSameDay, startOfYear, endOfYear, max, min, formatDistanceToNowStrict } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
 import { useMembers } from '../contexts/MembersContext';
@@ -40,24 +40,28 @@ const getStatusVariant = (status: "Pending" | "Approved" | "Rejected"): "seconda
     }
 };
 
-// This component is moved from team/components
 function TeamRequestsTab() {
   const { toast } = useToast();
   const { holidayRequests, approveRequest, rejectRequest } = useHolidays();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
 
-  const pendingRequests = React.useMemo(() => {
-    return holidayRequests.filter(req => {
-      if (req.status !== 'Pending') return false;
-      if (currentUser.role === 'Super Admin') return true;
-      if (currentUser.role === 'Team Lead') {
-        const member = teamMembers.find(m => m.id === req.userId);
-        return member?.reportsTo === currentUser.id;
-      }
-      return false;
-    });
+  const { pendingRequests, historyRequests } = React.useMemo(() => {
+    const all = holidayRequests.filter(req => {
+        if (currentUser.role === 'Super Admin') return true;
+        if (currentUser.role === 'Team Lead') {
+            const member = teamMembers.find(m => m.id === req.userId);
+            return member?.reportsTo === currentUser.id;
+        }
+        return false;
+    }).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    
+    const pending = all.filter(r => r.status === 'Pending');
+    const history = all.filter(r => r.status !== 'Pending');
+
+    return { pendingRequests: pending, historyRequests: history };
   }, [holidayRequests, teamMembers, currentUser]);
+
 
   const getMemberDetails = (userId: string) => {
     return teamMembers.find(m => m.id === userId);
@@ -80,69 +84,128 @@ function TeamRequestsTab() {
   };
 
   return (
-    <Card>
+     <Card>
       <CardHeader>
-        <CardTitle>Pending Holiday Requests</CardTitle>
-        <CardDescription>Review and approve or reject holiday requests from your team.</CardDescription>
+        <CardTitle>Team Holiday Requests</CardTitle>
+        <CardDescription>Review and manage holiday requests from your team.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Dates</TableHead>
-              <TableHead className="hidden sm:table-cell">Duration</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pendingRequests.length > 0 ? pendingRequests.map(req => {
-              const member = getMemberDetails(req.userId);
-              return (
-                <TableRow key={req.id}>
-                  <TableCell>
-                    {member ? (
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-9 h-9">
-                            <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar" />
-                            <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-medium">{member.name}</p>
-                            <p className="text-xs text-muted-foreground">{member.email}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      'Unknown User'
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {format(new Date(req.startDate), 'PP')} - {format(new Date(req.endDate), 'PP')}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {getDurationInDays(req.startDate, req.endDate)} days
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-2 justify-end">
-                        <Button size="sm" onClick={() => handleApprove(req.id)}>
-                            <Check className="mr-2 h-4 w-4" /> Approve
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
-                            <X className="mr-2 h-4 w-4" /> Reject
-                        </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            }) : (
-                <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                        No pending holiday requests.
-                    </TableCell>
-                </TableRow>
-            )}
-          </TableBody>
-        </Table>
+        <Tabs defaultValue="pending">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="history">History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="pending" className="mt-4">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Member</TableHead>
+                        <TableHead>Dates</TableHead>
+                        <TableHead className="hidden sm:table-cell">Duration</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {pendingRequests.length > 0 ? pendingRequests.map(req => {
+                        const member = getMemberDetails(req.userId);
+                        return (
+                            <TableRow key={req.id}>
+                            <TableCell>
+                                {member ? (
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="w-9 h-9">
+                                        <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar" />
+                                        <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-medium">{member.name}</p>
+                                        <p className="text-xs text-muted-foreground">{member.email}</p>
+                                    </div>
+                                </div>
+                                ) : (
+                                'Unknown User'
+                                )}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                                {format(new Date(req.startDate), 'PP')} - {format(new Date(req.endDate), 'PP')}
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">
+                                {getDurationInDays(req.startDate, req.endDate)} days
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <div className="flex gap-2 justify-end">
+                                    <Button size="sm" onClick={() => handleApprove(req.id)}>
+                                        <Check className="mr-2 h-4 w-4" /> Approve
+                                    </Button>
+                                    <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
+                                        <X className="mr-2 h-4 w-4" /> Reject
+                                    </Button>
+                                </div>
+                            </TableCell>
+                            </TableRow>
+                        );
+                        }) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    No pending holiday requests.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TabsContent>
+            <TabsContent value="history" className="mt-4">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Member</TableHead>
+                            <TableHead>Dates</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Action By</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {historyRequests.length > 0 ? historyRequests.map(req => {
+                            const member = getMemberDetails(req.userId);
+                            const approver = req.actionByUserId ? getMemberDetails(req.actionByUserId) : null;
+                            return (
+                                <TableRow key={req.id}>
+                                <TableCell>
+                                    {member ? (
+                                    <div className="flex items-center gap-3">
+                                        <p className="font-medium">{member.name}</p>
+                                    </div>
+                                    ) : (
+                                    'Unknown User'
+                                    )}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                    {format(new Date(req.startDate), 'PP')} - {format(new Date(req.endDate), 'PP')}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusVariant(req.status)} className={cn(getStatusVariant(req.status) === 'default' && 'bg-green-600')}>{req.status}</Badge>
+                                </TableCell>
+                                 <TableCell>
+                                     {approver ? (
+                                        <div className="flex flex-col">
+                                            <span>{approver.name}</span>
+                                            {req.actionTimestamp && <span className="text-xs text-muted-foreground">{formatDistanceToNowStrict(new Date(req.actionTimestamp))} ago</span>}
+                                        </div>
+                                     ) : 'N/A'}
+                                 </TableCell>
+                                </TableRow>
+                            )
+                        }) : (
+                             <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    No historical requests found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

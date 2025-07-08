@@ -32,6 +32,8 @@ export type HolidayRequest = {
   startDate: string;
   endDate: string;
   status: "Pending" | "Approved" | "Rejected";
+  actionByUserId?: string | null;
+  actionTimestamp?: string | null;
 };
 
 export type Project = {

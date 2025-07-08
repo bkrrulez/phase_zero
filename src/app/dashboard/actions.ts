@@ -2,6 +2,7 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { sendHolidayRequestUpdateEmail } from '@/lib/mail';
 import {
   type User,
   type TimeEntry,
@@ -65,6 +66,8 @@ const mapDbHolidayRequestToHolidayRequest = (row: any): HolidayRequest => ({
   startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
   endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
   status: row.status,
+  actionByUserId: row.action_by_user_id,
+  actionTimestamp: row.action_timestamp ? new Date(row.action_timestamp).toISOString() : null,
 });
 
 // ========== Users & Auth ==========
@@ -557,10 +560,62 @@ export async function addHolidayRequest(request: Omit<HolidayRequest, 'id'>): Pr
     return mapDbHolidayRequestToHolidayRequest(result.rows[0]);
 }
 
-export async function updateHolidayRequestStatus(requestId: string, status: 'Approved' | 'Rejected'): Promise<void> {
-    await db.query('UPDATE holiday_requests SET status = $1 WHERE id = $2', [status, requestId]);
-    revalidatePath('/dashboard/holidays');
+export async function updateHolidayRequestStatus(requestId: string, status: 'Approved' | 'Rejected', approverId: string): Promise<HolidayRequest | null> {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        
+        const updateResult = await client.query(
+            'UPDATE holiday_requests SET status = $1, action_by_user_id = $2, action_timestamp = NOW() WHERE id = $3 AND status = $4 RETURNING *',
+            [status, approverId, requestId, 'Pending']
+        );
+
+        if (updateResult.rows.length === 0) {
+            // Either request not found or it was not in 'Pending' state
+            await client.query('ROLLBACK');
+            return null;
+        }
+        
+        const updatedRequest = mapDbHolidayRequestToHolidayRequest(updateResult.rows[0]);
+
+        // Fetch users for email notification
+        const requesterResult = await client.query('SELECT * FROM users WHERE id = $1', [updatedRequest.userId]);
+        const approverResult = await client.query('SELECT * FROM users WHERE id = $1', [approverId]);
+
+        if (requesterResult.rows.length === 0 || approverResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return null; // Should not happen
+        }
+
+        const requester = mapDbUserToUser(requesterResult.rows[0]);
+        const approver = mapDbUserToUser(approverResult.rows[0]);
+        
+        let teamLead: User | null = null;
+        if (requester.reportsTo) {
+            const teamLeadResult = await client.query('SELECT * FROM users WHERE id = $1', [requester.reportsTo]);
+            if(teamLeadResult.rows.length > 0) {
+                teamLead = mapDbUserToUser(teamLeadResult.rows[0]);
+            }
+        }
+        
+        await sendHolidayRequestUpdateEmail({ request: updatedRequest, user: requester, approver, teamLead, status });
+
+        await client.query('COMMIT');
+        
+        revalidatePath('/dashboard/holidays');
+        revalidatePath('/dashboard'); // for notifications popover
+
+        return updatedRequest;
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error updating holiday request:', error);
+        return null;
+    } finally {
+        client.release();
+    }
 }
+
 
 export async function deleteHolidayRequest(requestId: string): Promise<void> {
     await db.query('DELETE FROM holiday_requests WHERE id = $1', [requestId]);

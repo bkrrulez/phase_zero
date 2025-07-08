@@ -113,22 +113,26 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
     
     const approveRequest = async (requestId: string) => {
         const request = holidayRequests.find(r => r.id === requestId);
-        if (!request) return;
-
-        await updateHolidayRequestStatus(requestId, 'Approved');
-        setHolidayRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Approved' } : req));
-        const user = teamMembers.find(u => u.id === request.userId);
-        await logAction(`Holiday request for '${user?.name || 'Unknown'}' approved by '${currentUser.name}'.`);
+        if (!request || request.status !== 'Pending') return;
+    
+        const updatedRequest = await updateHolidayRequestStatus(requestId, 'Approved', currentUser.id);
+        if (updatedRequest) {
+            setHolidayRequests(prev => prev.map(req => req.id === requestId ? updatedRequest : req));
+            const user = teamMembers.find(u => u.id === request.userId);
+            await logAction(`Holiday request for '${user?.name || 'Unknown'}' approved by '${currentUser.name}'.`);
+        }
     };
     
     const rejectRequest = async (requestId: string) => {
         const request = holidayRequests.find(r => r.id === requestId);
-        if (!request) return;
+        if (!request || request.status !== 'Pending') return;
 
-        await updateHolidayRequestStatus(requestId, 'Rejected');
-        setHolidayRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Rejected' } : req));
-        const user = teamMembers.find(u => u.id === request.userId);
-        await logAction(`Holiday request for '${user?.name || 'Unknown'}' rejected by '${currentUser.name}'.`);
+        const updatedRequest = await updateHolidayRequestStatus(requestId, 'Rejected', currentUser.id);
+        if (updatedRequest) {
+            setHolidayRequests(prev => prev.map(req => req.id === requestId ? updatedRequest : req));
+            const user = teamMembers.find(u => u.id === request.userId);
+            await logAction(`Holiday request for '${user?.name || 'Unknown'}' rejected by '${currentUser.name}'.`);
+        }
     };
 
     const withdrawRequest = async (requestId: string) => {
@@ -167,5 +171,3 @@ export const useHolidays = () => {
   }
   return context;
 };
-
-    

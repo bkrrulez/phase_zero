@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { type PushMessage } from '@/lib/mock-data';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { usePushMessages } from '../contexts/PushMessagesContext';
 import { useNotifications } from '../contexts/NotificationsContext';
 import { useHolidays } from '../contexts/HolidaysContext';
@@ -55,13 +56,20 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
   
   // App Notifications (e.g., Holiday Requests)
   const { notifications, markAsRead } = useNotifications();
-  const { approveRequest, rejectRequest } = useHolidays();
+  const { holidayRequests, approveRequest, rejectRequest } = useHolidays();
 
   const userAppNotifications = React.useMemo(() => {
       return notifications
-        .filter(n => n.recipientIds.includes(currentUser.id) && n.type === 'holidayRequest')
+        .filter(n => {
+            if (!n.recipientIds.includes(currentUser.id) || n.type !== 'holidayRequest') {
+                return false;
+            }
+            // Check if the associated holiday request is still pending.
+            const request = holidayRequests.find(r => r.id === n.referenceId);
+            return request ? request.status === 'Pending' : false;
+        })
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [notifications, currentUser]);
+  }, [notifications, currentUser, holidayRequests]);
 
   // Combined notifications
   const allDisplayableItems = React.useMemo(() => {

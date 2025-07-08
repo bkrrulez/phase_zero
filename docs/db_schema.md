@@ -80,6 +80,8 @@ Stores user requests for holidays.
 -   `start_date` (DATE, NOT NULL): The start date of the holiday.
 -   `end_date` (DATE, NOT NULL): The end date of the holiday.
 -   `status` (TEXT, NOT NULL): Status of the request ('Pending', 'Approved', 'Rejected').
+-   `action_by_user_id` (FK -> `users.id`, TEXT): The user who approved/rejected the request. Can be NULL.
+-   `action_timestamp` (TIMESTAMP WITH TIME ZONE): When the action was taken. Can be NULL.
 
 ---
 
