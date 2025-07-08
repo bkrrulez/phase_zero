@@ -7,16 +7,13 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { type User, type Project } from '@/lib/mock-data';
+import { type Project } from '@/lib/mock-data';
 
 const teamSchema = z.object({
   name: z.string().min(1, 'Team name is required.'),
-  leadId: z.string().optional(),
-  memberIds: z.array(z.string()).optional(),
   projectIds: z.array(z.string()).optional(),
 });
 
@@ -26,23 +23,17 @@ interface AddTeamDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onAddTeam: (data: TeamFormValues) => void;
-  allUsers: User[];
   allProjects: Project[];
 }
 
-export function AddTeamDialog({ isOpen, onOpenChange, onAddTeam, allUsers, allProjects }: AddTeamDialogProps) {
+export function AddTeamDialog({ isOpen, onOpenChange, onAddTeam, allProjects }: AddTeamDialogProps) {
   const form = useForm<TeamFormValues>({
     resolver: zodResolver(teamSchema),
     defaultValues: {
       name: '',
-      leadId: '',
-      memberIds: [],
       projectIds: [],
     },
   });
-
-  const availableLeads = allUsers.filter(u => u.role === 'Team Lead' && !u.teamId);
-  const availableMembers = allUsers.filter(u => u.role === 'Employee' && !u.teamId);
 
   function onSubmit(data: TeamFormValues) {
     onAddTeam(data);
@@ -55,7 +46,7 @@ export function AddTeamDialog({ isOpen, onOpenChange, onAddTeam, allUsers, allPr
         <DialogHeader>
           <DialogTitle>Add New Team</DialogTitle>
           <DialogDescription>
-            Fill in the details to create a new team.
+            Fill in the details to create a new team. Members can be assigned to this team from the Members settings page.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -76,70 +67,11 @@ export function AddTeamDialog({ isOpen, onOpenChange, onAddTeam, allUsers, allPr
 
             <FormField
               control={form.control}
-              name="leadId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Team Lead</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a team lead" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {availableLeads.map(lead => (
-                        <SelectItem key={lead.id} value={lead.id}>{lead.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="memberIds"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Team Members</FormLabel>
-                  <ScrollArea className="h-32 rounded-md border p-2">
-                    {availableMembers.map((member) => (
-                      <FormField
-                        key={member.id}
-                        control={form.control}
-                        name="memberIds"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-2">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value?.includes(member.id)}
-                                onCheckedChange={(checked) => {
-                                  return checked
-                                    ? field.onChange([...(field.value || []), member.id])
-                                    : field.onChange(field.value?.filter(id => id !== member.id));
-                                }}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-normal">{member.name}</FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                    {availableMembers.length === 0 && <p className='text-sm text-muted-foreground p-2'>No available members</p>}
-                  </ScrollArea>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="projectIds"
               render={() => (
                  <FormItem>
                   <FormLabel>Projects</FormLabel>
+                  <FormDescription>Select which projects this team will be associated with.</FormDescription>
                   <ScrollArea className="h-32 rounded-md border p-2">
                     {allProjects.map((project) => (
                       <FormField

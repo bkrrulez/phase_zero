@@ -19,7 +19,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
-    const { teamMembers, updateMember } = useMembers();
+    const { teamMembers } = useMembers();
     const { teams, setTeams } = useTeams();
     const { projects } = useProjects();
     const { logAction } = useSystemLog();
@@ -45,7 +45,6 @@ export default function TeamsSettingsPage() {
     }, [teams, teamMembers, projects]);
 
     const handleAddTeam = (data: TeamFormValues) => {
-        const finalLeadId = data.leadId === 'none' ? undefined : data.leadId;
         const newTeam: Team = {
             id: `team-${Date.now()}`,
             name: data.name,
@@ -54,18 +53,6 @@ export default function TeamsSettingsPage() {
 
         setTeams(prev => [...prev, newTeam]);
         
-        const userIdsToUpdate = [
-            ...(finalLeadId ? [finalLeadId] : []),
-            ...(data.memberIds || [])
-        ];
-
-        userIdsToUpdate.forEach(userId => {
-            const user = teamMembers.find(u => u.id === userId);
-            if (user) {
-                updateMember({ ...user, teamId: newTeam.id });
-            }
-        });
-
         setIsAddDialogOpen(false);
         toast({
             title: "Team Added",
@@ -75,34 +62,11 @@ export default function TeamsSettingsPage() {
     };
 
     const handleSaveTeam = (teamId: string, data: TeamFormValues) => {
-        const finalLeadId = data.leadId === 'none' ? undefined : data.leadId;
-        
         setTeams(prevTeams => 
             prevTeams.map(team => 
                 team.id === teamId ? { ...team, name: data.name, projectIds: data.projectIds } : team
             )
         );
-
-        const currentTeamUsers = teamMembers.filter(u => u.teamId === teamId);
-        const newTeamUserIds = new Set([
-            ...(finalLeadId ? [finalLeadId] : []),
-            ...(data.memberIds || [])
-        ]);
-
-        newTeamUserIds.forEach(userId => {
-            const user = teamMembers.find(u => u.id === userId);
-            // Add user to team if they aren't already in it
-            if (user && user.teamId !== teamId) {
-                updateMember({ ...user, teamId: teamId });
-            }
-        });
-
-        currentTeamUsers.forEach(user => {
-            // Remove user from team if they are no longer selected and are a manageable role
-            if (!newTeamUserIds.has(user.id) && (user.role === 'Employee' || user.role === 'Team Lead')) {
-                updateMember({ ...user, teamId: undefined });
-            }
-        });
 
         setEditingTeam(null);
         toast({
@@ -190,7 +154,6 @@ export default function TeamsSettingsPage() {
                         isOpen={isAddDialogOpen}
                         onOpenChange={setIsAddDialogOpen}
                         onAddTeam={handleAddTeam}
-                        allUsers={teamMembers}
                         allProjects={projects}
                     />
                     {editingTeam && (
@@ -199,7 +162,6 @@ export default function TeamsSettingsPage() {
                             onOpenChange={(isOpen) => !isOpen && setEditingTeam(null)}
                             onSaveTeam={handleSaveTeam}
                             team={editingTeam}
-                            allUsers={teamMembers}
                             allProjects={projects}
                         />
                     )}
