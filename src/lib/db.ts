@@ -22,12 +22,11 @@ if (process.env.NODE_ENV === 'production') {
   if (!globalWithPool._pool) {
     globalWithPool._pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      // The local postgres instance is not configured for SSL, so we should not use it here.
+      // Explicitly disable SSL for local development to prevent connection errors.
+      ssl: false,
     });
   }
   pool = globalWithPool._pool;
 }
 
 export const db = pool;
-
-    
