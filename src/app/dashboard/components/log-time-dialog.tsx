@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,8 +20,9 @@ import { cn } from "@/lib/utils";
 import { useAccessControl } from "../contexts/AccessControlContext";
 import { useProjects } from "../contexts/ProjectsContext";
 import { useTasks } from "../contexts/TasksContext";
-import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useAuth } from "../contexts/AuthContext";
+import type { TimeEntry } from "@/lib/types";
+import { useMembers } from "../contexts/MembersContext";
 
 const logTimeSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -40,11 +41,18 @@ export type LogTimeFormValues = z.infer<typeof logTimeSchema>;
 interface LogTimeDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  onSave: (data: LogTimeFormValues, entryId?: string) => Promise<{ success: boolean }>;
+  entryToEdit?: TimeEntry | null;
+  userId?: string; // The ID of the user whose time is being logged/edited
 }
 
-export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
-  const { logTime } = useTimeTracking();
+export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userId }: LogTimeDialogProps) {
   const { currentUser } = useAuth();
+  const { teamMembers } = useMembers();
+  const isEditMode = !!entryToEdit;
+  
+  const targetUser = teamMembers.find(m => m.id === (userId || currentUser.id));
+
   const form = useForm<LogTimeFormValues>({
     resolver: zodResolver(logTimeSchema),
     defaultValues: {
@@ -57,6 +65,31 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
     }
   });
 
+  useEffect(() => {
+    if (isEditMode && entryToEdit) {
+      const [project, ...taskParts] = entryToEdit.task.split(' - ');
+      const task = taskParts.join(' - ');
+      form.reset({
+        date: new Date(entryToEdit.date),
+        startTime: entryToEdit.startTime,
+        endTime: entryToEdit.endTime,
+        project: project.trim(),
+        task: task.trim(),
+        remarks: entryToEdit.remarks || '',
+      });
+    } else {
+      form.reset({
+        date: new Date(),
+        startTime: '',
+        endTime: '',
+        project: '',
+        task: '',
+        remarks: '',
+      });
+    }
+  }, [entryToEdit, isOpen, form, isEditMode]);
+
+
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [tempDate, setTempDate] = useState<Date>();
 
@@ -64,12 +97,12 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
   const { projects } = useProjects();
   const { tasks } = useTasks();
 
-  const availableProjects = projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
+  const availableProjects = projects.filter(p => targetUser?.associatedProjectIds?.includes(p.id));
 
   const isDateFrozen = (date: Date) => {
     for (const rule of freezeRules) {
       const ruleAppliesToAll = rule.teamId === 'all-teams';
-      const ruleAppliesToUserTeam = currentUser.teamId && rule.teamId === currentUser.teamId;
+      const ruleAppliesToUserTeam = targetUser?.teamId && rule.teamId === targetUser.teamId;
 
       if (ruleAppliesToAll || ruleAppliesToUserTeam) {
         const startDate = new Date(rule.startDate);
@@ -85,20 +118,21 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
   };
 
   async function onSubmit(data: LogTimeFormValues) {
-    const { success } = await logTime(data);
+    const { success } = await onSave(data, entryToEdit?.id);
     if(success) {
         onOpenChange(false);
-        form.reset();
     }
   }
+
+  if (!targetUser) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Log Time</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Time Entry' : 'Log Time'}</DialogTitle>
           <DialogDescription>
-            Fill in the details below to log your work time. Click save when you're done.
+            {isEditMode ? `Editing entry for ${targetUser.name}.` : "Fill in the details below to log your work time. Click save when you're done."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -142,7 +176,7 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
                         initialFocus
                       />
                        <div className="p-2 border-t flex justify-end">
-                            <Button size="sm" onClick={() => {
+                            <Button size="sm" type="button" onClick={() => {
                                 if (tempDate) {
                                     field.onChange(tempDate);
                                 }
@@ -189,7 +223,7 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Project</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a project" />
@@ -215,7 +249,7 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Task</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a task" />
@@ -246,7 +280,7 @@ export function LogTimeDialog({ isOpen, onOpenChange }: LogTimeDialogProps) {
             />
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit">Log Time</Button>
+                <Button type="submit">{isEditMode ? 'Save Changes' : 'Log Time'}</Button>
             </DialogFooter>
           </form>
         </Form>

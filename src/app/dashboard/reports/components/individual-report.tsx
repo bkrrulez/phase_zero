@@ -27,6 +27,8 @@ import { useMembers } from '../../contexts/MembersContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
+import { LogTimeDialog, type LogTimeFormValues } from '../../components/log-time-dialog';
+import { DeleteTimeEntryDialog } from './delete-time-entry-dialog';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -88,11 +90,13 @@ export function IndividualReport() {
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { publicHolidays, customHolidays, holidayRequests } = useHolidays();
-    const { timeEntries } = useTimeTracking();
+    const { timeEntries, updateTimeEntry, deleteTimeEntry } = useTimeTracking();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
     const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
     const [selectedDayForDialog, setSelectedDayForDialog] = React.useState<Date>(new Date());
+    const [editingEntry, setEditingEntry] = React.useState<TimeEntry | null>(null);
+    const [deletingEntry, setDeletingEntry] = React.useState<TimeEntry | null>(null);
 
     const viewableUsers = React.useMemo(() => {
         let members: User[];
@@ -246,6 +250,14 @@ export function IndividualReport() {
     return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries };
   }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries]);
     
+    const canEditEntries = React.useMemo(() => {
+        if (!selectedUser) return false;
+        if (currentUser.role === 'Super Admin') return true;
+        if (currentUser.id === selectedUser.id) return true;
+        if (currentUser.role === 'Team Lead' && selectedUser.reportsTo === currentUser.id) return true;
+        return false;
+    }, [currentUser, selectedUser]);
+    
     const handleUserChange = (userId: string) => {
         const currentTab = searchParams.get('tab') || 'individual-report';
         router.push(`/dashboard/reports?tab=${currentTab}&userId=${userId}`);
@@ -283,6 +295,19 @@ export function IndividualReport() {
             setIsDetailsDialogOpen(true);
         }
     }, [monthlyData.dailyEntries]);
+
+    const handleSaveEntry = async (data: LogTimeFormValues, entryId?: string) => {
+        if (!entryId || !selectedUser) return { success: false };
+        return updateTimeEntry(entryId, data, selectedUser.id);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deletingEntry) return;
+        await deleteTimeEntry(deletingEntry.id);
+        setDeletingEntry(null);
+        setIsDetailsDialogOpen(false); // Close details dialog after deletion
+    };
+
 
     const calendarContextValue = React.useMemo<ReportCalendarContextValue>(() => ({
         selectedDate,
@@ -411,7 +436,30 @@ export function IndividualReport() {
         onOpenChange={setIsDetailsDialogOpen}
         date={selectedDayForDialog}
         entries={selectedDayEntries}
+        canEdit={canEditEntries}
+        onEdit={(entry) => {
+            setIsDetailsDialogOpen(false);
+            setEditingEntry(entry);
+        }}
+        onDelete={(entry) => setDeletingEntry(entry)}
       />
+      {editingEntry && (
+        <LogTimeDialog
+          isOpen={!!editingEntry}
+          onOpenChange={() => setEditingEntry(null)}
+          onSave={handleSaveEntry}
+          entryToEdit={editingEntry}
+          userId={selectedUser.id}
+        />
+      )}
+      {deletingEntry && (
+        <DeleteTimeEntryDialog
+            isOpen={!!deletingEntry}
+            onOpenChange={() => setDeletingEntry(null)}
+            onConfirm={handleDeleteConfirm}
+            entry={deletingEntry}
+        />
+      )}
     </div>
   );
 }

@@ -8,11 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
 import { useSystemLog } from './SystemLogContext';
 import { useAuth } from './AuthContext';
-import { getTimeEntries, logTime as logTimeAction } from '../actions';
+import { getTimeEntries, logTime as logTimeAction, updateTimeEntry as updateTimeEntryAction, deleteTimeEntry as deleteTimeEntryAction } from '../actions';
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
-  logTime: (data: LogTimeFormValues) => Promise<{ success: boolean }>;
+  logTime: (data: LogTimeFormValues, userId: string) => Promise<{ success: boolean }>;
+  updateTimeEntry: (entryId: string, data: LogTimeFormValues, userId: string) => Promise<{ success: boolean }>;
+  deleteTimeEntry: (entryId: string) => Promise<{ success: boolean }>;
   isLoading: boolean;
 }
 
@@ -41,7 +43,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
     fetchEntries();
   }, [fetchEntries]);
 
-  const logTime = async (data: LogTimeFormValues): Promise<{ success: boolean }> => {
+  const logTime = async (data: LogTimeFormValues, userId: string): Promise<{ success: boolean }> => {
     try {
       const start = new Date(`1970-01-01T${data.startTime}`);
       const end = new Date(`1970-01-01T${data.endTime}`);
@@ -57,20 +59,19 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
       }
 
       const newEntryData = {
-        userId: currentUser.id,
+        userId: userId,
         date: format(data.date, 'yyyy-MM-dd'),
         startTime: data.startTime,
         endTime: data.endTime,
         projectId: data.project,
         taskId: data.task,
-        duration: duration,
         remarks: data.remarks,
       };
 
       const newEntry = await logTimeAction(newEntryData);
 
       if (newEntry) {
-        setTimeEntries(prev => [newEntry, ...prev]);
+        setTimeEntries(prev => [newEntry, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         toast({
             title: "Time Logged Successfully",
             description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
@@ -89,9 +90,65 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
       return { success: false };
     }
   };
+
+  const updateTimeEntry = async (entryId: string, data: LogTimeFormValues, userId: string): Promise<{ success: boolean }> => {
+    try {
+      const updatedEntryData = {
+        userId: userId,
+        date: format(data.date, 'yyyy-MM-dd'),
+        startTime: data.startTime,
+        endTime: data.endTime,
+        projectId: data.project,
+        taskId: data.task,
+        remarks: data.remarks,
+      };
+      
+      const updatedEntry = await updateTimeEntryAction(entryId, updatedEntryData);
+      
+      if (updatedEntry) {
+        setTimeEntries(prev => prev.map(e => e.id === entryId ? updatedEntry : e));
+        toast({
+            title: "Time Entry Updated",
+            description: `Entry for ${format(new Date(updatedEntry.date), 'PPP')} has been updated.`
+        });
+        await logAction(`User '${currentUser.name}' updated a time entry for user ID ${userId}.`);
+        return { success: true };
+      }
+      return { success: false };
+    } catch (error) {
+      console.error("Failed to update time entry:", error);
+      toast({
+        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update time entry.",
+      });
+      return { success: false };
+    }
+  };
+
+  const deleteTimeEntry = async (entryId: string): Promise<{ success: boolean }> => {
+    try {
+        await deleteTimeEntryAction(entryId);
+        setTimeEntries(prev => prev.filter(e => e.id !== entryId));
+        toast({
+            title: "Time Entry Deleted",
+            description: "The time entry has been successfully deleted."
+        });
+        await logAction(`User '${currentUser.name}' deleted time entry ${entryId}.`);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete time entry:", error);
+        toast({
+            variant: 'destructive',
+            title: "Error",
+            description: "Failed to delete time entry.",
+        });
+        return { success: false };
+    }
+  };
   
   return (
-    <TimeTrackingContext.Provider value={{ timeEntries, logTime, isLoading }}>
+    <TimeTrackingContext.Provider value={{ timeEntries, logTime, updateTimeEntry, deleteTimeEntry, isLoading }}>
         {children}
     </TimeTrackingContext.Provider>
   )
@@ -104,5 +161,3 @@ export const useTimeTracking = () => {
   }
   return context;
 };
-
-    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -57,9 +58,9 @@ import {
 } from "@/components/ui/collapsible";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
-import { LogTimeDialog } from "./components/log-time-dialog";
+import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
 import { NotificationPopover } from "./components/notification-popover";
-import { TimeTrackingProvider } from "./contexts/TimeTrackingContext";
+import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
 import { MembersProvider } from "./contexts/MembersContext";
 import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
@@ -83,6 +84,7 @@ const getStatus = (startDate: string, endDate: string) => {
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
+  const { logTime } = useTimeTracking();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
@@ -112,6 +114,18 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   }, [notifications, currentUser]);
 
   const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
+  
+  const handleLogTime = (data: LogTimeFormValues, entryId?: string) => {
+    // This dialog instance is only for CREATING new entries.
+    // The individual report page will have its own instance for editing.
+    if (entryId) {
+      // This should not happen from the main layout's "Log Time" button.
+      console.error("Attempted to edit an entry from the main log time dialog.");
+      return Promise.resolve({ success: false });
+    }
+    return logTime(data, currentUser.id);
+  };
+
 
   return (
     <SidebarProvider>
@@ -309,6 +323,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <LogTimeDialog
           isOpen={isLogTimeDialogOpen}
           onOpenChange={setIsLogTimeDialogOpen}
+          onSave={handleLogTime}
         />
       </SidebarInset>
     </SidebarProvider>

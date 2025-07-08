@@ -255,6 +255,58 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
     }
 }
 
+export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'id' | 'duration'> & { projectId: string; taskId: string }): Promise<TimeEntry | null> {
+  const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, remarks } = entry;
+  const client = await db.connect();
+  try {
+    const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
+    const taskResult = await client.query('SELECT id FROM tasks WHERE name = $1', [taskName]);
+
+    if (projectResult.rows.length === 0) throw new Error(`Project not found: ${projectName}`);
+    if (taskResult.rows.length === 0) throw new Error(`Task not found: ${taskName}`);
+
+    const projectId = projectResult.rows[0].id;
+    const taskId = taskResult.rows[0].id;
+
+    const start = new Date(`1970-01-01T${startTime}`);
+    const end = new Date(`1970-01-01T${endTime}`);
+    const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+    const result = await client.query(
+      `UPDATE time_entries 
+       SET project_id = $1, task_id = $2, date = $3, start_time = $4, end_time = $5, duration = $6, remarks = $7
+       WHERE id = $8 RETURNING *`,
+      [projectId, taskId, date, startTime, endTime, duration, remarks, entryId]
+    );
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/reports');
+
+    const updated = result.rows[0];
+    return {
+      id: updated.id,
+      userId: updated.user_id,
+      date: format(new Date(updated.date), 'yyyy-MM-dd'),
+      startTime: updated.start_time,
+      endTime: updated.end_time,
+      task: `${projectName} - ${taskName}`,
+      duration: Number(updated.duration),
+      remarks: updated.remarks,
+    };
+  } catch (error) {
+    console.error('Error updating time entry:', error);
+    return null;
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteTimeEntry(entryId: string): Promise<void> {
+    await db.query('DELETE FROM time_entries WHERE id = $1', [entryId]);
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/reports');
+}
+
+
 // ========== Projects ==========
 
 export async function getProjects(): Promise<Project[]> {
