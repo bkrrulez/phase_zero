@@ -95,12 +95,16 @@ export function IndividualReport() {
     const [selectedDayForDialog, setSelectedDayForDialog] = React.useState<Date>(new Date());
 
     const viewableUsers = React.useMemo(() => {
-        if (currentUser.role === 'Super Admin') return teamMembers;
-        if (currentUser.role === 'Team Lead') {
-            const team = teamMembers.filter(m => m.role === 'Employee' && m.reportsTo === currentUser.id);
-            return [currentUser, ...team];
+        let members: User[];
+        if (currentUser.role === 'Super Admin') {
+            members = teamMembers;
+        } else if (currentUser.role === 'Team Lead') {
+            const team = teamMembers.filter(m => m.reportsTo === currentUser.id);
+            members = [currentUser, ...team];
+        } else {
+            members = [currentUser];
         }
-        return [currentUser];
+        return Array.from(new Map(members.map(item => [item.id, item])).values());
     }, [teamMembers, currentUser]);
 
     const targetUserId = searchParams.get('userId') || currentUser.id;
