@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/mock-data";
 import { EditMemberDialog } from "@/app/dashboard/team/components/edit-contract-dialog";
@@ -21,10 +21,11 @@ import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { DeleteMemberDialog } from "./components/delete-member-dialog";
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
-    const { teamMembers, updateMember, addMember } = useMembers();
+    const { teamMembers, updateMember, addMember, deleteMember } = useMembers();
     const { teams } = useTeams();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
@@ -32,6 +33,7 @@ export default function MembersSettingsPage() {
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
+    const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
     
     const visibleMembers = React.useMemo(() => {
         let members: User[];
@@ -97,6 +99,18 @@ export default function MembersSettingsPage() {
         }
     };
 
+    const handleDeleteUser = () => {
+        if (!deletingUser) return;
+        deleteMember(deletingUser.id);
+        toast({
+            title: "User Deleted",
+            description: `Successfully deleted user ${deletingUser.name}.`,
+            variant: "destructive"
+        });
+        logAction(`User '${currentUser.name}' deleted user '${deletingUser.name}'.`);
+        setDeletingUser(null);
+    };
+
     const canEditMember = (member: User) => {
         if (currentUser.role === 'Super Admin') {
             // A super admin can edit themselves, or any user who is not another super admin.
@@ -114,6 +128,12 @@ export default function MembersSettingsPage() {
         if (currentUser.id === member.id) return true;
         if (currentUser.role === 'Team Lead' && member.reportsTo === currentUser.id) return true;
         return false;
+    };
+
+    const canDeleteMember = (member: User) => {
+        if (currentUser.role !== 'Super Admin') return false;
+        if (currentUser.id === member.id) return false;
+        return true;
     };
 
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
@@ -203,6 +223,14 @@ export default function MembersSettingsPage() {
                                           >
                                             Change Password
                                           </DropdownMenuItem>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={() => setDeletingUser(member)}
+                                            disabled={!canDeleteMember(member)}
+                                            className="text-destructive focus:text-destructive"
+                                          >
+                                            Delete User
+                                          </DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
                               </TableCell>
@@ -245,6 +273,12 @@ export default function MembersSettingsPage() {
         }}
         onSave={handlePasswordChange}
         isSaving={isSavingPassword}
+      />
+      <DeleteMemberDialog
+        isOpen={!!deletingUser}
+        onOpenChange={(isOpen) => !isOpen && setDeletingUser(null)}
+        onConfirm={handleDeleteUser}
+        member={deletingUser}
       />
     </>
   )

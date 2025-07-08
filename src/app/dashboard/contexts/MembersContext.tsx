@@ -3,12 +3,13 @@
 
 import * as React from 'react';
 import { type User } from "@/lib/types";
-import { getUsers, addUser as addUserAction, updateUser as updateUserAction } from '../actions';
+import { getUsers, addUser as addUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from '../actions';
 
 interface MembersContextType {
   teamMembers: User[];
   updateMember: (updatedUser: User) => Promise<void>;
   addMember: (newUser: Omit<User, 'id' | 'avatar'>) => Promise<void>;
+  deleteMember: (userId: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -49,8 +50,13 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteMember = async (userId: string) => {
+    await deleteUserAction(userId);
+    setTeamMembers(prev => prev.filter(m => m.id !== userId));
+  };
+
   return (
-    <MembersContext.Provider value={{ teamMembers, updateMember, addMember, isLoading }}>
+    <MembersContext.Provider value={{ teamMembers, updateMember, addMember, deleteMember, isLoading }}>
         {children}
     </MembersContext.Provider>
   );

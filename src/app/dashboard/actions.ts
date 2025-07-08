@@ -189,6 +189,38 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
     }
 }
 
+export async function deleteUser(userId: string): Promise<void> {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Set reports_to to NULL for users who reported to the deleted user
+        await client.query('UPDATE users SET reports_to = NULL WHERE reports_to = $1', [userId]);
+
+        // Delete associated records in other tables to maintain referential integrity
+        await client.query('DELETE FROM time_entries WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM holiday_requests WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM user_projects WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM notification_recipients WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM notification_read_by WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM push_message_read_by WHERE user_id = $1', [userId]);
+        
+        // Finally, delete the user from the users table
+        await client.query('DELETE FROM users WHERE id = $1', [userId]);
+        
+        await client.query('COMMIT');
+        
+        revalidatePath('/dashboard/settings/members');
+        revalidatePath('/dashboard/team');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error deleting user:', error);
+        throw new Error('Failed to delete user.');
+    } finally {
+        client.release();
+    }
+}
+
 // ========== Time Tracking ==========
 
 export async function getTimeEntries(): Promise<TimeEntry[]> {
