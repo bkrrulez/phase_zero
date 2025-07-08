@@ -97,7 +97,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
     }
   }, [roleWatcher, reportsToWatcher, form, teamMembers]);
 
-  const managers = teamMembers.filter(m => m.role === 'Team Lead' || m.role === 'Super Admin');
+  const managers = Array.from(new Map(teamMembers.filter(m => m.role === 'Team Lead' || m.role === 'Super Admin').map(item => [item.id, item])).values());
 
   function onSubmit(data: AddMemberFormValues) {
     const newUser: User = {

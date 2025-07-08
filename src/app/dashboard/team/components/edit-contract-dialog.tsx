@@ -114,7 +114,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
     }
   }, [roleWatcher, reportsToWatcher, form, teamMembers]);
 
-  const managers = teamMembers.filter(m => (m.role === 'Team Lead' || m.role === 'Super Admin') && m.id !== user?.id);
+  const managers = Array.from(new Map(teamMembers.filter(m => (m.role === 'Team Lead' || m.role === 'Super Admin') && m.id !== user?.id).map(item => [item.id, item])).values());
 
   function onSubmit(data: EditMemberFormValues) {
     if (!user) return;
