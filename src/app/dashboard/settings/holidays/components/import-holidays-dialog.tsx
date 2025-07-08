@@ -17,6 +17,29 @@ interface ImportHolidaysDialogProps {
   selectedYear: number;
 }
 
+const parseDateString = (dateStr: string): Date | null => {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+
+    // JavaScript's Date constructor month is 0-indexed.
+    // Use Date.UTC to prevent timezone conversion issues.
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    // Verify that the created date is valid and matches the input.
+    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+        return date;
+    }
+
+    return null;
+};
+
 export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedYear }: ImportHolidaysDialogProps) {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
@@ -64,8 +87,8 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedY
             if (!row.Country || !row.Holiday || !row.Date) {
               return null;
             }
-            const date = new Date(row.Date);
-            if (isNaN(date.getTime())) {
+            const date = parseDateString(row.Date);
+            if (!date) {
               return null; // Invalid date format in CSV row
             }
             return {
@@ -100,7 +123,7 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedY
         <DialogHeader>
           <DialogTitle>Import Public Holidays</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to bulk import holidays for {selectedYear}. The file must contain columns: Country, Holiday, Date, and Type.
+            Upload a CSV file to bulk import holidays for {selectedYear}. The file must contain columns: Country, Holiday, Date (in DD/MM/YYYY format), and Type.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
