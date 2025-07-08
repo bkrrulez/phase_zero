@@ -151,7 +151,7 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4"/> Import</Button>
+                            <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4 rotate-180"/> Import</Button>
                             <Button onClick={handleOpenAddDialog}><PlusCircle className="mr-2 h-4 w-4"/> Add Holiday</Button>
                         </div>
                     </div>
