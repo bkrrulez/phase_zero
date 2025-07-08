@@ -43,6 +43,14 @@ export default function MembersSettingsPage() {
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
         const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
+        
+        // Sort to bring current user to the top
+        uniqueMembers.sort((a, b) => {
+            if (a.id === currentUser.id) return -1;
+            if (b.id === currentUser.id) return 1;
+            return a.name.localeCompare(b.name); // Keep alphabetical sort for the rest
+        });
+
         return uniqueMembers;
     }, [teamMembers, currentUser]);
 
