@@ -22,8 +22,9 @@ if (process.env.NODE_ENV === 'production') {
   if (!globalWithPool._pool) {
     globalWithPool._pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      // Explicitly disable SSL for local development to prevent connection errors.
-      ssl: false,
+      ssl: {
+        rejectUnauthorized: false, // Use SSL but allow self-signed certificates for local dev
+      },
     });
   }
   pool = globalWithPool._pool;
