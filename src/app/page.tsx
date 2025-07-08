@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,10 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { useToast } from '@/hooks/use-toast';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { type User } from '@/lib/types';
-import { initialData } from '@/lib/mock-data';
 import { ForgotPasswordDialog } from './components/forgot-password-dialog';
+import { verifyUserCredentials } from './dashboard/actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,42 +18,36 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [, setCurrentUserId] = useLocalStorage<string | null>('currentUserId', null);
   const [isForgotDialogOpen, setIsForgotDialogOpen] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    try {
+        const user = await verifyUserCredentials(email, password);
 
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'password';
-    
-    // Read the latest user data from localStorage, with initialData as a fallback
-    const usersJSON = window.localStorage.getItem('teamMembers');
-    const allUsers: User[] = usersJSON ? JSON.parse(usersJSON) : initialData.teamMembers;
-    
-    const user = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    let loginSuccessful = false;
-    if (user) {
-      if (user.role === 'Super Admin' && password === adminPassword) {
-        loginSuccessful = true;
-      } else if (user.role !== 'Super Admin' && password === 'password') {
-        // All other mock users have the password 'password'
-        loginSuccessful = true;
-      }
-    }
-    
-    if (loginSuccessful && user) {
-        setCurrentUserId(user.id);
-        router.push('/dashboard');
-    } else {
+        if (user) {
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem('currentUserId', JSON.stringify(user.id));
+            }
+            router.push('/dashboard');
+        } else {
+            toast({
+              variant: 'destructive',
+              title: 'Login Failed',
+              description: 'Invalid email or password.',
+            });
+        }
+    } catch (error) {
+        console.error("Login error:", error);
         toast({
           variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid email or password.',
+          title: 'Login Error',
+          description: 'An unexpected error occurred. Please try again.',
         });
     }
+
 
     setIsLoading(false);
   };
@@ -109,3 +102,5 @@ export default function LoginPage() {
     </>
   );
 }
+
+    

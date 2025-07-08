@@ -3,34 +3,40 @@
 
 import * as React from 'react';
 import { type AppNotification } from '@/lib/types';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { initialData } from '@/lib/mock-data';
+import { getNotifications, addNotification as addNotificationAction, markNotificationAsRead } from '../actions';
 
 type NotificationInput = Omit<AppNotification, 'id' | 'timestamp' | 'readBy'>;
 
 interface NotificationsContextType {
   notifications: AppNotification[];
-  addNotification: (notification: NotificationInput) => void;
-  markAsRead: (notificationId: string, userId: string) => void;
-  markAllAsRead: (userId: string) => void;
+  addNotification: (notification: NotificationInput) => Promise<void>;
+  markAsRead: (notificationId: string, userId: string) => Promise<void>;
+  markAllAsRead: (userId: string) => Promise<void>;
 }
 
 const NotificationsContext = React.createContext<NotificationsContextType | undefined>(undefined);
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useLocalStorage<AppNotification[]>('notifications', initialData.notifications);
+  const [notifications, setNotifications] = React.useState<AppNotification[]>([]);
 
-  const addNotification = (notification: NotificationInput) => {
-    const newNotification: AppNotification = {
-      ...notification,
-      id: `notif-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      readBy: [],
-    };
-    setNotifications(prev => [newNotification, ...prev]);
+  const fetchNotifications = React.useCallback(async () => {
+    const notifs = await getNotifications();
+    setNotifications(notifs);
+  }, []);
+
+  React.useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const addNotification = async (notification: NotificationInput) => {
+    const newNotification = await addNotificationAction(notification);
+    if (newNotification) {
+      setNotifications(prev => [newNotification, ...prev]);
+    }
   };
 
-  const markAsRead = (notificationId: string, userId: string) => {
+  const markAsRead = async (notificationId: string, userId: string) => {
+    await markNotificationAsRead(notificationId, userId);
     setNotifications(prev => prev.map(notif => {
       if (notif.id === notificationId && !notif.readBy.includes(userId)) {
         return { ...notif, readBy: [...notif.readBy, userId] };
@@ -39,13 +45,13 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     }));
   };
 
-  const markAllAsRead = (userId: string) => {
-    setNotifications(prev => prev.map(notif => {
-      if (notif.recipientIds.includes(userId) && !notif.readBy.includes(userId)) {
-        return { ...notif, readBy: [...notif.readBy, userId] };
-      }
-      return notif;
-    }));
+  const markAllAsRead = async (userId: string) => {
+    // This action could be optimized on the backend, but for now we'll do it one by one
+    const userNotifications = notifications.filter(n => n.recipientIds.includes(userId) && !n.readBy.includes(userId));
+    for (const notif of userNotifications) {
+      await markNotificationAsRead(notif.id, userId);
+    }
+    fetchNotifications(); // Re-fetch to be sure
   };
 
   return (
@@ -62,3 +68,5 @@ export const useNotifications = () => {
   }
   return context;
 };
+
+    

@@ -7,8 +7,16 @@ import { useMembers } from './MembersContext';
 import { useNotifications } from './NotificationsContext';
 import { format } from 'date-fns';
 import { useAuth } from './AuthContext';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { initialData } from '@/lib/mock-data';
+import { 
+    getPublicHolidays,
+    getCustomHolidays,
+    getHolidayRequests,
+    getAnnualLeaveAllowance,
+    setAnnualLeaveAllowance as setAnnualLeaveAllowanceAction,
+    addHolidayRequest as addHolidayRequestAction,
+    updateHolidayRequestStatus,
+    deleteHolidayRequest
+} from '../actions';
 
 interface HolidaysContextType {
   publicHolidays: PublicHoliday[];
@@ -16,12 +24,13 @@ interface HolidaysContextType {
   customHolidays: CustomHoliday[];
   setCustomHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[]>>;
   annualLeaveAllowance: number;
-  setAnnualLeaveAllowance: (allowance: number) => void;
+  setAnnualLeaveAllowance: (allowance: number) => Promise<void>;
   holidayRequests: HolidayRequest[];
-  addHolidayRequest: (request: Omit<HolidayRequest, 'id' | 'userId' | 'status'>) => void;
-  approveRequest: (requestId: string) => void;
-  rejectRequest: (requestId: string) => void;
-  withdrawRequest: (requestId: string) => void;
+  addHolidayRequest: (request: Omit<HolidayRequest, 'id' | 'userId' | 'status'>) => Promise<void>;
+  approveRequest: (requestId: string) => Promise<void>;
+  rejectRequest: (requestId: string) => Promise<void>;
+  withdrawRequest: (requestId: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 export const HolidaysContext = React.createContext<HolidaysContextType | undefined>(undefined);
@@ -31,74 +40,105 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { addNotification } = useNotifications();
-    const [publicHolidays, setPublicHolidays] = useLocalStorage<PublicHoliday[]>('publicHolidays', initialData.publicHolidays);
-    const [customHolidays, setCustomHolidays] = useLocalStorage<CustomHoliday[]>('customHolidays', initialData.customHolidays);
-    const [annualLeaveAllowance, _setAnnualLeaveAllowance] = useLocalStorage<number>('annualLeaveAllowance', initialData.annualLeaveAllowance);
-    const [holidayRequests, setHolidayRequests] = useLocalStorage<HolidayRequest[]>('holidayRequests', initialData.holidayRequests);
+    const [publicHolidays, setPublicHolidays] = React.useState<PublicHoliday[]>([]);
+    const [customHolidays, setCustomHolidays] = React.useState<CustomHoliday[]>([]);
+    const [annualLeaveAllowance, _setAnnualLeaveAllowance] = React.useState<number>(25);
+    const [holidayRequests, setHolidayRequests] = React.useState<HolidayRequest[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
 
-    const setAnnualLeaveAllowance = (allowance: number) => {
+    const fetchData = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [publicH, customH, requests, allowance] = await Promise.all([
+                getPublicHolidays(),
+                getCustomHolidays(),
+                getHolidayRequests(),
+                getAnnualLeaveAllowance()
+            ]);
+            setPublicHolidays(publicH);
+            setCustomHolidays(customH);
+            setHolidayRequests(requests);
+            _setAnnualLeaveAllowance(allowance);
+        } catch (error) {
+            console.error("Failed to fetch holidays data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    React.useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const setAnnualLeaveAllowance = async (allowance: number) => {
+      await setAnnualLeaveAllowanceAction(allowance);
       _setAnnualLeaveAllowance(allowance);
-      logAction(`User '${currentUser.name}' updated annual leave allowance to ${allowance} days.`);
+      await logAction(`User '${currentUser.name}' updated annual leave allowance to ${allowance} days.`);
     };
 
-    const addHolidayRequest = (request: Omit<HolidayRequest, 'id' | 'userId' | 'status'>) => {
-        const newRequest: HolidayRequest = {
-            id: `hr-${Date.now()}`,
+    const addHolidayRequest = async (request: Omit<HolidayRequest, 'id' | 'userId' | 'status'>) => {
+        const newRequestData = {
             userId: currentUser.id,
-            status: 'Pending',
+            status: 'Pending' as const,
             ...request,
         };
-        setHolidayRequests(prev => [...prev, newRequest]);
-        logAction(`User '${currentUser.name}' submitted a holiday request from ${request.startDate} to ${request.endDate}.`);
+        const newRequest = await addHolidayRequestAction(newRequestData);
+        
+        if (newRequest) {
+            setHolidayRequests(prev => [...prev, newRequest]);
+            await logAction(`User '${currentUser.name}' submitted a holiday request from ${request.startDate} to ${request.endDate}.`);
 
-        const user = teamMembers.find(u => u.id === currentUser.id);
-        const recipients = new Set<string>();
-        if (user?.reportsTo) {
-            recipients.add(user.reportsTo);
-        }
-        teamMembers.forEach(member => {
-            if (member.role === 'Super Admin' && member.id !== currentUser.id) {
-                recipients.add(member.id);
+            const user = teamMembers.find(u => u.id === currentUser.id);
+            const recipients = new Set<string>();
+            if (user?.reportsTo) {
+                recipients.add(user.reportsTo);
             }
-        });
-
-        if (recipients.size > 0) {
-            addNotification({
-                recipientIds: Array.from(recipients),
-                title: 'New Holiday Request',
-                body: `${currentUser.name} requested leave from ${format(new Date(request.startDate), 'PP')} to ${format(new Date(request.endDate), 'PP')}.`,
-                referenceId: newRequest.id,
-                type: 'holidayRequest'
+            teamMembers.forEach(member => {
+                if (member.role === 'Super Admin' && member.id !== currentUser.id) {
+                    recipients.add(member.id);
+                }
             });
+
+            if (recipients.size > 0) {
+                await addNotification({
+                    recipientIds: Array.from(recipients),
+                    title: 'New Holiday Request',
+                    body: `${currentUser.name} requested leave from ${format(new Date(request.startDate), 'PP')} to ${format(new Date(request.endDate), 'PP')}.`,
+                    referenceId: newRequest.id,
+                    type: 'holidayRequest'
+                });
+            }
         }
     };
     
-    const approveRequest = (requestId: string) => {
+    const approveRequest = async (requestId: string) => {
         const request = holidayRequests.find(r => r.id === requestId);
         if (!request) return;
 
+        await updateHolidayRequestStatus(requestId, 'Approved');
         setHolidayRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Approved' } : req));
         const user = teamMembers.find(u => u.id === request.userId);
-        logAction(`Holiday request for '${user?.name || 'Unknown'}' approved by '${currentUser.name}'.`);
+        await logAction(`Holiday request for '${user?.name || 'Unknown'}' approved by '${currentUser.name}'.`);
     };
     
-    const rejectRequest = (requestId: string) => {
+    const rejectRequest = async (requestId: string) => {
         const request = holidayRequests.find(r => r.id === requestId);
         if (!request) return;
 
+        await updateHolidayRequestStatus(requestId, 'Rejected');
         setHolidayRequests(prev => prev.map(req => req.id === requestId ? { ...req, status: 'Rejected' } : req));
         const user = teamMembers.find(u => u.id === request.userId);
-        logAction(`Holiday request for '${user?.name || 'Unknown'}' rejected by '${currentUser.name}'.`);
+        await logAction(`Holiday request for '${user?.name || 'Unknown'}' rejected by '${currentUser.name}'.`);
     };
 
-    const withdrawRequest = (requestId: string) => {
+    const withdrawRequest = async (requestId: string) => {
         const request = holidayRequests.find(r => r.id === requestId);
-        if (request?.userId !== currentUser.id) return; // Ensure only the user can withdraw
+        if (request?.userId !== currentUser.id) return;
         
+        await deleteHolidayRequest(requestId);
         setHolidayRequests(prev => prev.filter(req => req.id !== requestId));
-        logAction(`User '${currentUser.name}' withdrew a holiday request.`);
+        await logAction(`User '${currentUser.name}' withdrew a holiday request.`);
     };
-
 
     return (
         <HolidaysContext.Provider value={{ 
@@ -113,6 +153,7 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
           approveRequest,
           rejectRequest,
           withdrawRequest,
+          isLoading
         }}>
             {children}
         </HolidaysContext.Provider>
@@ -126,3 +167,5 @@ export const useHolidays = () => {
   }
   return context;
 };
+
+    

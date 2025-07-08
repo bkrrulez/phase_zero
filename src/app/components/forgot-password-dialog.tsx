@@ -10,8 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { sendPasswordResetEmail } from '@/lib/mail';
-import { type User } from '@/lib/types';
-import { initialData } from '@/lib/mock-data';
+import { findUserByEmail } from '../dashboard/actions';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -35,10 +34,7 @@ export function ForgotPasswordDialog({ isOpen, onOpenChange }: ForgotPasswordDia
   async function onSubmit(data: ForgotPasswordFormValues) {
     setIsSending(true);
 
-    const usersJSON = window.localStorage.getItem('teamMembers');
-    const allUsers: User[] = usersJSON ? JSON.parse(usersJSON) : initialData.teamMembers;
-
-    const user = allUsers.find(u => u.email.toLowerCase() === data.email.toLowerCase());
+    const user = await findUserByEmail(data.email);
 
     if (!user) {
       toast({
@@ -59,6 +55,7 @@ export function ForgotPasswordDialog({ isOpen, onOpenChange }: ForgotPasswordDia
       onOpenChange(false);
       form.reset();
     } catch (error) {
+      console.error(error)
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -107,3 +104,5 @@ export function ForgotPasswordDialog({ isOpen, onOpenChange }: ForgotPasswordDia
     </Dialog>
   );
 }
+
+    

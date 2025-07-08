@@ -6,40 +6,61 @@ import {
   type PushMessage,
   type UserMessageState,
 } from '@/lib/types';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { initialData } from '@/lib/mock-data';
+import { 
+  getPushMessages, 
+  getUserMessageStates, 
+  addPushMessage,
+  updatePushMessage,
+  deletePushMessage as deletePushMessageAction,
+  markMessageAsRead as markMessageAsReadAction
+} from '../actions';
 
 interface PushMessagesContextType {
   pushMessages: PushMessage[];
-  addMessage: (newMessageData: Omit<PushMessage, 'id'>) => void;
-  updateMessage: (messageId: string, data: Omit<PushMessage, 'id'>) => void;
-  deleteMessage: (messageId: string) => void;
+  addMessage: (newMessageData: Omit<PushMessage, 'id'>) => Promise<void>;
+  updateMessage: (messageId: string, data: Omit<PushMessage, 'id'>) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
   userMessageStates: Record<string, UserMessageState>;
-  markMessageAsRead: (userId: string, messageId: string) => void;
+  markMessageAsRead: (userId: string, messageId: string) => Promise<void>;
 }
 
 const PushMessagesContext = React.createContext<PushMessagesContextType | undefined>(undefined);
 
 export function PushMessagesProvider({ children }: { children: React.ReactNode }) {
-  const [pushMessages, setPushMessages] = useLocalStorage<PushMessage[]>('pushMessages', initialData.pushMessages);
-  const [userMessageStates, setUserMessageStates] = useLocalStorage<Record<string, UserMessageState>>('userMessageStates', initialData.userMessageStates);
+  const [pushMessages, setPushMessages] = React.useState<PushMessage[]>([]);
+  const [userMessageStates, setUserMessageStates] = React.useState<Record<string, UserMessageState>>({});
 
-  const addMessage = (data: Omit<PushMessage, 'id'>) => {
-    const newMessage: PushMessage = { ...data, id: `msg-${Date.now()}` };
-    setPushMessages((prev) => [...prev, newMessage]);
+  const fetchData = React.useCallback(async () => {
+    const [messages, states] = await Promise.all([
+      getPushMessages(),
+      getUserMessageStates()
+    ]);
+    setPushMessages(messages);
+    setUserMessageStates(states);
+  }, []);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+
+  const addMessage = async (data: Omit<PushMessage, 'id'>) => {
+    await addPushMessage(data);
+    await fetchData();
   };
 
-  const updateMessage = (messageId: string, data: Omit<PushMessage, 'id'>) => {
-    setPushMessages((prev) =>
-      prev.map((msg) => (msg.id === messageId ? { id: messageId, ...data } : msg))
-    );
+  const updateMessage = async (messageId: string, data: Omit<PushMessage, 'id'>) => {
+    await updatePushMessage(messageId, data);
+    await fetchData();
   };
 
-  const deleteMessage = (messageId: string) => {
+  const deleteMessage = async (messageId: string) => {
+    await deletePushMessageAction(messageId);
     setPushMessages((prev) => prev.filter((msg) => msg.id !== messageId));
   };
 
-  const markMessageAsRead = (userId: string, messageId: string) => {
+  const markMessageAsRead = async (userId: string, messageId: string) => {
+    await markMessageAsReadAction(userId, messageId);
     setUserMessageStates((prev) => {
       const userState = prev[userId] || { readMessageIds: [] };
       if (!userState.readMessageIds.includes(messageId)) {
@@ -78,3 +99,5 @@ export const usePushMessages = () => {
   }
   return context;
 };
+
+    

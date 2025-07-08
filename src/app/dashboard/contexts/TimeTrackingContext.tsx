@@ -8,21 +8,38 @@ import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
 import { useSystemLog } from './SystemLogContext';
 import { useAuth } from './AuthContext';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { initialData } from '@/lib/mock-data';
+import { getTimeEntries, logTime as logTimeAction } from '../actions';
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
   logTime: (data: LogTimeFormValues) => Promise<{ success: boolean }>;
+  isLoading: boolean;
 }
 
 export const TimeTrackingContext = React.createContext<TimeTrackingContextType | undefined>(undefined);
 
 export function TimeTrackingProvider({ children }: { children: React.ReactNode }) {
-  const [timeEntries, setTimeEntries] = useLocalStorage<TimeEntry[]>('timeEntries', initialData.timeEntries);
+  const [timeEntries, setTimeEntries] = React.useState<TimeEntry[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const { toast } = useToast();
   const { logAction } = useSystemLog();
   const { currentUser } = useAuth();
+  
+  const fetchEntries = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const entries = await getTimeEntries();
+        setTimeEntries(entries);
+    } catch (error) {
+        console.error("Failed to fetch time entries", error);
+    } finally {
+        setIsLoading(false);
+    }
+  }, []);
+  
+  React.useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
   const logTime = async (data: LogTimeFormValues): Promise<{ success: boolean }> => {
     try {
@@ -39,24 +56,29 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         return { success: false };
       }
 
-      const newEntry: TimeEntry = {
-        id: `te-${Date.now()}`,
+      const newEntryData = {
         userId: currentUser.id,
         date: format(data.date, 'yyyy-MM-dd'),
         startTime: data.startTime,
         endTime: data.endTime,
-        task: `${data.project} - ${data.task}`,
+        projectId: data.project,
+        taskId: data.task,
         duration: duration,
         remarks: data.remarks,
       };
 
-      setTimeEntries(prev => [newEntry, ...prev]);
-      toast({
-          title: "Time Logged Successfully",
-          description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
-      });
-      logAction(`User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`);
-      return { success: true };
+      const newEntry = await logTimeAction(newEntryData);
+
+      if (newEntry) {
+        setTimeEntries(prev => [newEntry, ...prev]);
+        toast({
+            title: "Time Logged Successfully",
+            description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
+        });
+        await logAction(`User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`);
+        return { success: true };
+      }
+      return { success: false };
     } catch (error) {
       console.error("Failed to log time:", error);
       toast({
@@ -69,7 +91,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
   };
   
   return (
-    <TimeTrackingContext.Provider value={{ timeEntries, logTime }}>
+    <TimeTrackingContext.Provider value={{ timeEntries, logTime, isLoading }}>
         {children}
     </TimeTrackingContext.Provider>
   )
@@ -82,3 +104,5 @@ export const useTimeTracking = () => {
   }
   return context;
 };
+
+    

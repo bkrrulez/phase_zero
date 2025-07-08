@@ -5,30 +5,42 @@ import * as React from 'react';
 import { type FreezeRule } from "@/lib/types";
 import { useSystemLog } from './SystemLogContext';
 import { useAuth } from './AuthContext';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { initialData } from '@/lib/mock-data';
+import { getFreezeRules, addFreezeRule as addFreezeRuleAction, removeFreezeRule as removeFreezeRuleAction } from '../actions';
 
 interface AccessControlContextType {
   freezeRules: FreezeRule[];
-  addFreezeRule: (newRule: FreezeRule, teamName: string) => void;
-  removeFreezeRule: (rule: FreezeRule, teamName: string) => void;
+  addFreezeRule: (newRuleData: Omit<FreezeRule, 'id'>, teamName: string) => Promise<void>;
+  removeFreezeRule: (rule: FreezeRule, teamName: string) => Promise<void>;
 }
 
 const AccessControlContext = React.createContext<AccessControlContextType | undefined>(undefined);
 
 export function AccessControlProvider({ children }: { children: React.ReactNode }) {
-  const [freezeRules, setFreezeRules] = useLocalStorage<FreezeRule[]>('freezeRules', initialData.freezeRules);
+  const [freezeRules, setFreezeRules] = React.useState<FreezeRule[]>([]);
   const { logAction } = useSystemLog();
   const { currentUser } = useAuth();
 
-  const addFreezeRule = (newRule: FreezeRule, teamName: string) => {
-    setFreezeRules(prev => [...prev, newRule]);
-    logAction(`User '${currentUser.name}' added a freeze rule for '${teamName}'.`);
+  const fetchRules = React.useCallback(async () => {
+    const rules = await getFreezeRules();
+    setFreezeRules(rules);
+  }, []);
+
+  React.useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
+
+  const addFreezeRule = async (newRuleData: Omit<FreezeRule, 'id'>, teamName: string) => {
+    const newRule = await addFreezeRuleAction(newRuleData);
+    if (newRule) {
+        setFreezeRules(prev => [...prev, newRule]);
+        await logAction(`User '${currentUser.name}' added a freeze rule for '${teamName}'.`);
+    }
   };
 
-  const removeFreezeRule = (rule: FreezeRule, teamName: string) => {
+  const removeFreezeRule = async (rule: FreezeRule, teamName: string) => {
+    await removeFreezeRuleAction(rule.id);
     setFreezeRules(prev => prev.filter(r => r.id !== rule.id));
-    logAction(`User '${currentUser.name}' removed a freeze rule for '${teamName}'.`);
+    await logAction(`User '${currentUser.name}' removed a freeze rule for '${teamName}'.`);
   };
 
   return (
@@ -45,3 +57,5 @@ export const useAccessControl = () => {
   }
   return context;
 };
+
+    

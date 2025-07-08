@@ -2,7 +2,6 @@
 'use client';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { type User } from '@/lib/types';
 import { useMembers } from './MembersContext';
 
@@ -14,10 +13,44 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
+// A simple hook to read from localStorage, meant to be used on the client.
+function useLocalStorageValue(key: string, initialValue: string | null): [string | null, (value: string | null) => void] {
+    const [storedValue, setStoredValue] = React.useState<string | null>(() => {
+        if (typeof window === 'undefined') {
+            return initialValue;
+        }
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+            console.error(error);
+            return initialValue;
+        }
+    });
+
+    const setValue = (value: string | null) => {
+        try {
+            const valueToStore = value;
+            setStoredValue(valueToStore);
+            if (typeof window !== 'undefined') {
+                if (value === null) {
+                    window.localStorage.removeItem(key);
+                } else {
+                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                }
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+    return [storedValue, setValue];
+}
+
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { teamMembers } = useMembers();
-  const [currentUserId, setCurrentUserId] = useLocalStorage<string | null>('currentUserId', null);
+  const { teamMembers, isLoading: membersLoading } = useMembers();
+  const [currentUserId, setCurrentUserId] = useLocalStorageValue('currentUserId', null);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   
@@ -28,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    if (!isMounted) {
+    if (!isMounted || membersLoading) {
       return;
     }
 
@@ -44,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/');
     }
     setIsLoading(false);
-  }, [currentUserId, teamMembers, router, setCurrentUserId, isMounted]);
+  }, [currentUserId, teamMembers, router, setCurrentUserId, isMounted, membersLoading]);
 
   const logout = () => {
     setCurrentUserId(null);
@@ -74,3 +107,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+    
