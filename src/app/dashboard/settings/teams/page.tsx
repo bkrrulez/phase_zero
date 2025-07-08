@@ -20,7 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
     const { teamMembers } = useMembers();
-    const { teams, setTeams } = useTeams();
+    const { teams, addTeam, updateTeam } = useTeams();
     const { projects } = useProjects();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
@@ -45,14 +45,7 @@ export default function TeamsSettingsPage() {
     }, [teams, teamMembers, projects]);
 
     const handleAddTeam = (data: TeamFormValues) => {
-        const newTeam: Team = {
-            id: `team-${Date.now()}`,
-            name: data.name,
-            projectIds: data.projectIds,
-        };
-
-        setTeams(prev => [...prev, newTeam]);
-        
+        addTeam(data);
         setIsAddDialogOpen(false);
         toast({
             title: "Team Added",
@@ -62,12 +55,7 @@ export default function TeamsSettingsPage() {
     };
 
     const handleSaveTeam = (teamId: string, data: TeamFormValues) => {
-        setTeams(prevTeams => 
-            prevTeams.map(team => 
-                team.id === teamId ? { ...team, name: data.name, projectIds: data.projectIds } : team
-            )
-        );
-
+        updateTeam(teamId, data);
         setEditingTeam(null);
         toast({
             title: "Team Updated",
