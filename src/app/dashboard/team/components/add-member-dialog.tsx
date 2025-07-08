@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -35,6 +35,7 @@ import {
 import { type User } from '@/lib/mock-data';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useTeams } from '../../contexts/TeamsContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const addMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
@@ -70,6 +71,7 @@ interface AddMemberDialogProps {
 }
 
 export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers }: AddMemberDialogProps) {
+  const { currentUser } = useAuth();
   const { projects } = useProjects();
   const { teams } = useTeams();
   const form = useForm<AddMemberFormValues>({
@@ -90,7 +92,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   const roleWatcher = form.watch('role');
   const reportsToWatcher = form.watch('reportsTo');
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (roleWatcher === 'Super Admin') {
       form.setValue('reportsTo', undefined);
     }
@@ -104,6 +106,17 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
         }
     }
   }, [roleWatcher, reportsToWatcher, form, teamMembers]);
+  
+  const availableRoles = React.useMemo(() => {
+    if (!currentUser) return [];
+    if (currentUser.role === 'Super Admin') {
+        return ['Employee', 'Team Lead', 'Super Admin'];
+    }
+    if (currentUser.role === 'Team Lead') {
+        return ['Employee', 'Team Lead'];
+    }
+    return [];
+  }, [currentUser]);
 
   const managers = Array.from(new Map(teamMembers.filter(m => m.role === 'Team Lead' || m.role === 'Super Admin').map(item => [item.id, item])).values());
 
@@ -178,9 +191,9 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="Employee">Employee</SelectItem>
-                            <SelectItem value="Team Lead">Team Lead</SelectItem>
-                            <SelectItem value="Super Admin">Super Admin</SelectItem>
+                          {availableRoles.map(role => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
                         </SelectContent>
                     </Select>
                     <FormMessage />
