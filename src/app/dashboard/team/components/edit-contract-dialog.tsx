@@ -49,6 +49,14 @@ const editMemberSchema = z.object({
 }).refine(data => data.role === 'Super Admin' || !!data.reportsTo, {
     message: 'This field is required for Employees and Team Leads.',
     path: ['reportsTo'],
+}).refine(data => {
+    if (data.role === 'Employee' || data.role === 'Team Lead') {
+        return !!data.teamId && data.teamId !== 'none';
+    }
+    return true;
+}, {
+    message: 'A team must be assigned for this role.',
+    path: ['teamId'],
 });
 
 
