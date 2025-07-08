@@ -195,7 +195,7 @@ export default function ReportsPage() {
                     </CardDescription>
                     <div className="flex gap-2">
                         <Button variant="outline" onClick={handleExport}>
-                          <FileDown className="mr-2 h-4 w-4" />
+                          <FileDown className="mr-2 h-4 w-4 rotate-180" />
                           Export
                         </Button>
                         <Select
