@@ -70,10 +70,28 @@ const mapDbHolidayRequestToHolidayRequest = (row: any): HolidayRequest => ({
 // ========== Users & Auth ==========
 
 export async function verifyUserCredentials(email: string, password_input: string): Promise<User | null> {
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+
+    // Special case for Super Admin login via environment variables
+    if (email === adminEmail) {
+        if (password_input === adminPassword) {
+            const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+            if (result.rows.length > 0) {
+                return mapDbUserToUser(result.rows[0]);
+            }
+            return null; 
+        } else {
+            return null; // Incorrect password for admin
+        }
+    }
+
+    // Standard user login
     const result = await db.query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password_input]);
     if (result.rows.length > 0) {
         return mapDbUserToUser(result.rows[0]);
     }
+    
     return null;
 }
 
