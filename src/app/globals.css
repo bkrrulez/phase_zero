@@ -76,9 +76,7 @@
     --sidebar-border: 221 44% 20%;
     --sidebar-ring: 221 44% 71%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -88,6 +86,13 @@
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif;
+  }
+
+  /* Fix for squeezed calendar icons in date/time inputs in a flex/grid container */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    min-width: 0;
   }
 }
 
