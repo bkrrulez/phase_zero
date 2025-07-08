@@ -1,3 +1,4 @@
+
 import type { InitialData } from './types';
 
 export const initialData: InitialData = {
@@ -56,7 +57,7 @@ export const initialData: InitialData = {
       role: 'Employee',
       avatar: 'https://placehold.co/100x100.png',
       reportsTo: 'user-lead',
-      teamId: 'team-design',
+      teamId: 'team-eng',
       associatedProjectIds: ['proj-1'],
       contract: { startDate: '2023-07-01', endDate: '2024-12-31', weeklyHours: 32 },
     },
