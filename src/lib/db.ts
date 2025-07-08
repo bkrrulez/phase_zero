@@ -22,11 +22,7 @@ if (process.env.NODE_ENV === 'production') {
   if (!globalWithPool._pool) {
     globalWithPool._pool = new Pool({
       connectionString: process.env.DATABASE_URL,
-      // Add SSL configuration for development as well, as many dev environments
-      // now connect to cloud DBs that require it.
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      // The local postgres instance is not configured for SSL, so we should not use it here.
     });
   }
   pool = globalWithPool._pool;
