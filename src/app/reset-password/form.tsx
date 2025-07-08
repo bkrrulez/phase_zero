@@ -31,6 +31,14 @@ export function ResetPasswordForm() {
     const [isSuccess, setIsSuccess] = useState(false);
 
     const email = searchParams.get('email');
+
+    const form = useForm<ResetPasswordFormValues>({
+        resolver: zodResolver(resetPasswordSchema),
+        defaultValues: {
+            password: '',
+            confirmPassword: '',
+        },
+    });
     
     useEffect(() => {
         if (!email) {
