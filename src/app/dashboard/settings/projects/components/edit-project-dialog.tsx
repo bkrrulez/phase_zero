@@ -70,7 +70,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pl-1 pr-4">
             <FormField
               control={form.control}
               name="name"
