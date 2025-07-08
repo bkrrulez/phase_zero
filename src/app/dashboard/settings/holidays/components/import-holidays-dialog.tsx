@@ -59,12 +59,23 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedY
             return;
         }
         
-        const parsedHolidays: Omit<PublicHoliday, 'id'>[] = data.map(row => ({
-            country: row.Country,
-            name: row.Holiday,
-            date: new Date(row.Date).toISOString(),
-            type: row.Type === 'Half Day' ? 'Half Day' : 'Full Day',
-        })).filter(h => h.country && h.name && h.date && !isNaN(new Date(h.date).getTime()));
+        const parsedHolidays: Omit<PublicHoliday, 'id'>[] = data
+          .map(row => {
+            if (!row.Country || !row.Holiday || !row.Date) {
+              return null;
+            }
+            const date = new Date(row.Date);
+            if (isNaN(date.getTime())) {
+              return null; // Invalid date format in CSV row
+            }
+            return {
+              country: row.Country,
+              name: row.Holiday,
+              date: date.toISOString(),
+              type: row.Type === 'Half Day' ? 'Half Day' : 'Full Day',
+            };
+          })
+          .filter((h): h is Omit<PublicHoliday, 'id'> => h !== null);
         
         onImport(parsedHolidays);
         handleClose();
