@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -88,18 +87,21 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
 
   const handleDismissPushMessage = (messageId: string) => {
       markMessageAsRead(currentUser.id, messageId);
+      onClose();
   };
   
   const handleApprove = (notificationId: string, requestId: string) => {
       approveRequest(requestId);
       markAsRead(notificationId, currentUser.id);
       toast({ title: "Request Approved", description: "The holiday request has been approved."});
+      onClose();
   }
   
   const handleReject = (notificationId: string, requestId: string) => {
       rejectRequest(requestId);
       markAsRead(notificationId, currentUser.id);
       toast({ title: "Request Rejected", description: "The holiday request has been rejected.", variant: 'destructive'});
+      onClose();
   }
 
   return (
