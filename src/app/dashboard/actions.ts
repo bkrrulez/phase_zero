@@ -221,6 +221,43 @@ export async function deleteUser(userId: string): Promise<void> {
     }
 }
 
+export async function resetUserPassword(email: string, newPassword: string): Promise<{user: User, teamLead: User | null} | null> {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        
+        const userResult = await client.query('UPDATE users SET password = $1 WHERE email = $2 RETURNING *', [newPassword, email]);
+        
+        if (userResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return null; // User not found
+        }
+        
+        const updatedDbUser = userResult.rows[0];
+        const updatedUser = mapDbUserToUser(updatedDbUser);
+
+        let teamLead: User | null = null;
+        if (updatedUser.reportsTo) {
+            const teamLeadResult = await client.query('SELECT * FROM users WHERE id = $1', [updatedUser.reportsTo]);
+            if (teamLeadResult.rows.length > 0) {
+                teamLead = mapDbUserToUser(teamLeadResult.rows[0]);
+            }
+        }
+        
+        await client.query('COMMIT');
+        
+        return { user: updatedUser, teamLead };
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error resetting user password:', error);
+        return null;
+    } finally {
+        client.release();
+    }
+}
+
+
 // ========== Time Tracking ==========
 
 export async function getTimeEntries(): Promise<TimeEntry[]> {

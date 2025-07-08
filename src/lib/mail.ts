@@ -2,6 +2,7 @@
 'use server';
 
 import nodemailer from 'nodemailer';
+import { type User } from './types';
 
 type SendPasswordChangeEmailParams = {
   to: string;
@@ -52,8 +53,7 @@ type SendPasswordResetEmailParams = {
 };
 
 export async function sendPasswordResetEmail({ to, name }: SendPasswordResetEmailParams) {
-    // In a real app, you would generate a unique token and construct a real URL
-    const RESET_LINK_PLACEHOLDER = 'http://localhost:3000/reset-password?token=dummy-token';
+    const resetLink = `http://localhost:3000/reset-password?email=${encodeURIComponent(to)}`;
 
     const smtpConfig = {
         host: process.env.SMTP_HOST,
@@ -75,8 +75,7 @@ export async function sendPasswordResetEmail({ to, name }: SendPasswordResetEmai
             <h1>Password Reset Request</h1>
             <p>Hello ${name},</p>
             <p>We received a request to reset your password for your TimeTool account. Click the link below to set a new password:</p>
-            <p><a href="${RESET_LINK_PLACEHOLDER}" target="_blank">Reset Your Password</a></p>
-            <p>This link is for demonstration purposes and does not lead to a real page.</p>
+            <p><a href="${resetLink}" target="_blank">Reset Your Password</a></p>
             <p>If you did not make this request, you can safely ignore this email.</p>
             <p>Thanks,</p>
             <p>The TimeTool Team</p>
@@ -89,6 +88,52 @@ export async function sendPasswordResetEmail({ to, name }: SendPasswordResetEmai
         return { success: true };
     } catch (error) {
         console.error('Failed to send password reset email:', error);
+        throw new Error('Failed to send email.');
+    }
+}
+
+type SendPasswordResetConfirmationEmailParams = {
+    user: User;
+    teamLead?: User | null;
+}
+
+export async function sendPasswordResetConfirmationEmail({ user, teamLead }: SendPasswordResetConfirmationEmailParams) {
+    const smtpConfig = {
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT),
+        secure: Number(process.env.SMTP_PORT) === 465,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+        },
+    };
+    const transporter = nodemailer.createTransport(smtpConfig);
+
+    const recipients = [user.email];
+    if (teamLead?.email) {
+        recipients.push(teamLead.email);
+    }
+
+    const mailOptions = {
+        from: process.env.SMTP_FROM,
+        to: recipients.join(','),
+        subject: 'Password Reset Successful for TimeTool',
+        html: `
+            <h1>Password Reset Confirmation</h1>
+            <p>Hello,</p>
+            <p>This is a confirmation that the password for the account associated with <b>${user.email}</b> has been successfully reset.</p>
+            <p>If you did not make this change, please contact your administrator immediately.</p>
+            <p>Thanks,</p>
+            <p>The TimeTool Team</p>
+        `,
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Password reset confirmation email sent to:', recipients.join(','));
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to send password reset confirmation email:', error);
         throw new Error('Failed to send email.');
     }
 }
