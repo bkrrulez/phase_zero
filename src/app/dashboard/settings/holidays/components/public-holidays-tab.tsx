@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -38,31 +37,31 @@ export function PublicHolidaysTab() {
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [publicHolidays, selectedYear]);
 
-    const handleAddHoliday = (data: HolidayFormValues) => {
+    const handleAddHoliday = async (data: HolidayFormValues) => {
         const newHolidayData = {
             country: data.country,
             name: data.name,
             date: format(data.date, 'yyyy-MM-dd'),
             type: data.type,
         };
-        addPublicHoliday(newHolidayData);
+        await addPublicHoliday(newHolidayData);
         setIsAddEditDialogOpen(false);
         toast({ title: "Holiday Added", description: `"${data.name}" has been added.` });
-        logAction(`User '${currentUser.name}' added public holiday: '${data.name}'.`);
+        await logAction(`User '${currentUser.name}' added public holiday: '${data.name}'.`);
     };
 
-    const handleEditHoliday = (holidayId: string, data: HolidayFormValues) => {
+    const handleEditHoliday = async (holidayId: string, data: HolidayFormValues) => {
         const updatedHolidayData = {
             country: data.country,
             name: data.name,
             date: format(data.date, 'yyyy-MM-dd'),
             type: data.type,
         }
-        updatePublicHoliday(holidayId, updatedHolidayData);
+        await updatePublicHoliday(holidayId, updatedHolidayData);
         setEditingHoliday(null);
         setIsAddEditDialogOpen(false);
         toast({ title: "Holiday Updated", description: `"${data.name}" has been updated.` });
-        logAction(`User '${currentUser.name}' updated public holiday: '${data.name}'.`);
+        await logAction(`User '${currentUser.name}' updated public holiday: '${data.name}'.`);
     };
 
     const handleDeleteHoliday = (holidayId: string) => {
@@ -85,7 +84,7 @@ export function PublicHolidaysTab() {
         setIsAddEditDialogOpen(true);
     }
     
-    const handleImport = (importedHolidays: Omit<PublicHoliday, 'id'>[]) => {
+    const handleImport = async (importedHolidays: Omit<PublicHoliday, 'id'>[]) => {
         const holidaysForYear = importedHolidays.filter(h => new Date(h.date).getFullYear() === selectedYear);
 
         if (holidaysForYear.length !== importedHolidays.length) {
@@ -105,23 +104,30 @@ export function PublicHolidaysTab() {
             return;
         }
 
-        holidaysForYear.forEach(newHoliday => {
+        let successfulImports = 0;
+        for (const newHoliday of holidaysForYear) {
             const newHolidayData = { ...newHoliday, date: format(new Date(newHoliday.date), 'yyyy-MM-dd')};
             const existingHoliday = publicHolidays.find(h => new Date(h.date).toDateString() === new Date(newHoliday.date).toDateString() && h.country === newHoliday.country);
             
-            if (existingHoliday) {
-                updatePublicHoliday(existingHoliday.id, newHolidayData);
-            } else {
-                addPublicHoliday(newHolidayData);
+            try {
+                if (existingHoliday) {
+                    await updatePublicHoliday(existingHoliday.id, newHolidayData);
+                } else {
+                    await addPublicHoliday(newHolidayData);
+                }
+                successfulImports++;
+            } catch (error) {
+                console.error("Failed to import holiday:", newHoliday.name, error);
             }
-        });
-
+        }
 
         toast({
-            title: 'Import Successful',
-            description: `${holidaysForYear.length} holidays have been imported for ${selectedYear}.`
+            title: 'Import Complete',
+            description: `${successfulImports} of ${holidaysForYear.length} holidays have been imported for ${selectedYear}.`
         });
-        logAction(`User '${currentUser.name}' imported ${holidaysForYear.length} public holidays for ${selectedYear}.`);
+        if(successfulImports > 0) {
+          await logAction(`User '${currentUser.name}' imported ${successfulImports} public holidays for ${selectedYear}.`);
+        }
         setIsImportDialogOpen(false);
     };
 

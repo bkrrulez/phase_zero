@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -44,7 +43,7 @@ export function CustomHolidaysTab() {
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }, [customHolidays, selectedYear]);
 
-    const handleSaveHoliday = (data: CustomHolidayFormValues) => {
+    const handleSaveHoliday = async (data: CustomHolidayFormValues) => {
         const holidayDateStr = new Date(data.date).toDateString();
         const isPublicHoliday = publicHolidays.some(ph => new Date(ph.date).toDateString() === holidayDateStr);
 
@@ -63,13 +62,13 @@ export function CustomHolidaysTab() {
         };
 
         if (editingHoliday) {
-            updateCustomHoliday(editingHoliday.id, holidayData);
+            await updateCustomHoliday(editingHoliday.id, holidayData);
             toast({ title: "Holiday Updated", description: `"${data.name}" has been updated.` });
-            logAction(`User '${currentUser.name}' updated custom holiday: '${data.name}'.`);
+            await logAction(`User '${currentUser.name}' updated custom holiday: '${data.name}'.`);
         } else {
-            addCustomHoliday(holidayData);
+            await addCustomHoliday(holidayData);
             toast({ title: "Holiday Added", description: `"${data.name}" has been added.` });
-            logAction(`User '${currentUser.name}' added custom holiday: '${data.name}'.`);
+            await logAction(`User '${currentUser.name}' added custom holiday: '${data.name}'.`);
         }
         setIsAddEditDialogOpen(false);
         setEditingHoliday(null);
