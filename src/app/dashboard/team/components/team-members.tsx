@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -19,12 +18,14 @@ import { sendPasswordChangeEmail } from "@/lib/mail";
 import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useSystemLog } from '../../contexts/SystemLogContext';
 
 export function TeamMembers() {
     const { toast } = useToast();
     const { teamMembers, updateMember } = useMembers();
     const { teams } = useTeams();
     const { currentUser } = useAuth();
+    const { logAction } = useSystemLog();
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
@@ -39,6 +40,14 @@ export function TeamMembers() {
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
         const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
+        
+        // Sort to bring current user to the top
+        uniqueMembers.sort((a, b) => {
+            if (a.id === currentUser.id) return -1;
+            if (b.id === currentUser.id) return 1;
+            return a.name.localeCompare(b.name); // Keep alphabetical sort for the rest
+        });
+        
         return uniqueMembers;
     }, [teamMembers, currentUser]);
     
@@ -49,6 +58,7 @@ export function TeamMembers() {
             title: "Member Details Updated",
             description: `Successfully updated details for ${updatedUser.name}.`,
         });
+        logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
     }
 
     const handlePasswordChange = async (password: string) => {
@@ -61,6 +71,7 @@ export function TeamMembers() {
                 title: "Password Changed",
                 description: `Password for ${changingPasswordUser.name} has been changed and a notification email has been sent.`,
             });
+            logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
         } catch (error) {
             toast({
                 variant: 'destructive',

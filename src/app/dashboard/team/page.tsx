@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -10,11 +9,13 @@ import { useMembers } from "../contexts/MembersContext";
 import { TeamMembers } from './components/team-members';
 import { AddMemberDialog } from './components/add-member-dialog';
 import { useAuth } from '../contexts/AuthContext';
+import { useSystemLog } from '../contexts/SystemLogContext';
 
 export default function TeamPage() {
     const { toast } = useToast();
     const { teamMembers, addMember } = useMembers();
     const { currentUser } = useAuth();
+    const { logAction } = useSystemLog();
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
@@ -26,6 +27,7 @@ export default function TeamPage() {
             title: "Member Added",
             description: `${newUser.name} has been added to the team.`,
         });
+        logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
     };
 
     return (
