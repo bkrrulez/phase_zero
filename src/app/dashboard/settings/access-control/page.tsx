@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type FreezeRule } from '@/lib/mock-data';
+import { type FreezeRule } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { FreezeCalendarDialog, type FreezeFormSubmitData } from './components/freeze-calendar-dialog';
 import { useAccessControl } from '../../contexts/AccessControlContext';
@@ -41,17 +41,18 @@ export default function AccessControlPage() {
 
   const handleFreeze = (data: FreezeFormSubmitData) => {
     const teamName = getTeamName(data.teamId);
-    const newRule: FreezeRule = {
-      id: `freeze-${Date.now()}`,
-      teamId: data.teamId,
-      startDate: data.startDate.toISOString(),
-      endDate: data.endDate.toISOString(),
+    
+    const newRuleData: Omit<FreezeRule, 'id'> = {
+        teamId: data.teamId,
+        startDate: format(data.startDate, 'yyyy-MM-dd'),
+        endDate: format(data.endDate, 'yyyy-MM-dd'),
     };
-    addFreezeRule(newRule, teamName);
+
+    addFreezeRule(newRuleData, teamName);
     setIsFreezeDialogOpen(false);
     toast({
-      title: 'Calendar Frozen',
-      description: `Calendar has been frozen for ${teamName}.`,
+        title: 'Calendar Frozen',
+        description: `Calendar has been frozen for ${teamName}.`,
     });
   };
 
