@@ -1,4 +1,3 @@
-
 'use server';
 
 import nodemailer from 'nodemailer';
@@ -55,7 +54,8 @@ type SendPasswordResetEmailParams = {
 };
 
 export async function sendPasswordResetEmail({ to, name }: SendPasswordResetEmailParams) {
-    const resetLink = `http://localhost:3000/reset-password?email=${encodeURIComponent(to)}`;
+    const domain = process.env.DOMAIN ? `https://${process.env.DOMAIN}` : 'http://localhost:3000';
+    const resetLink = `${domain}/reset-password?email=${encodeURIComponent(to)}`;
 
     const smtpConfig = {
         host: process.env.SMTP_HOST,
