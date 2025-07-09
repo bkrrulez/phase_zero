@@ -9,23 +9,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type CustomHoliday, type PublicHoliday } from '@/lib/mock-data';
+import { type CustomHoliday } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditCustomHolidayDialog, type CustomHolidayFormValues } from './add-edit-custom-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
 import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
 import { useSystemLog } from '@/app/dashboard/contexts/SystemLogContext';
 import { useAuth } from '@/app/dashboard/contexts/AuthContext';
+import { useHolidays } from '@/app/dashboard/contexts/HolidaysContext';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
-interface CustomHolidaysTabProps {
-    holidays: CustomHoliday[];
-    setHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[] | ((prev: CustomHoliday[]) => CustomHoliday[])>>;
-    publicHolidays: PublicHoliday[];
-}
-
-export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: CustomHolidaysTabProps) {
+export function CustomHolidaysTab() {
+    const { 
+        publicHolidays, 
+        customHolidays, 
+        addCustomHoliday, 
+        updateCustomHoliday, 
+        deleteCustomHoliday 
+    } = useHolidays();
     const { toast } = useToast();
     const { teams } = useTeams();
     const { logAction } = useSystemLog();
@@ -37,10 +39,10 @@ export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: Cus
     const [deletingHoliday, setDeletingHoliday] = React.useState<CustomHoliday | null>(null);
 
     const filteredHolidays = React.useMemo(() => {
-        return holidays
+        return customHolidays
             .filter(h => new Date(h.date).getFullYear() === selectedYear)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [holidays, selectedYear]);
+    }, [customHolidays, selectedYear]);
 
     const handleSaveHoliday = (data: CustomHolidayFormValues) => {
         const holidayDateStr = new Date(data.date).toDateString();
@@ -54,21 +56,18 @@ export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: Cus
             });
             return;
         }
-
+        
+        const holidayData = {
+            ...data,
+            date: format(data.date, 'yyyy-MM-dd'),
+        };
 
         if (editingHoliday) {
-            // Edit
-            setHolidays(prev => prev.map(h => h.id === editingHoliday.id ? { ...h, ...data, date: data.date.toISOString() } : h));
+            updateCustomHoliday(editingHoliday.id, holidayData);
             toast({ title: "Holiday Updated", description: `"${data.name}" has been updated.` });
             logAction(`User '${currentUser.name}' updated custom holiday: '${data.name}'.`);
         } else {
-            // Add
-            const newHoliday: CustomHoliday = {
-                id: `ch-${Date.now()}`,
-                ...data,
-                date: data.date.toISOString(),
-            };
-            setHolidays(prev => [...prev, newHoliday]);
+            addCustomHoliday(holidayData);
             toast({ title: "Holiday Added", description: `"${data.name}" has been added.` });
             logAction(`User '${currentUser.name}' added custom holiday: '${data.name}'.`);
         }
@@ -77,8 +76,8 @@ export function CustomHolidaysTab({ holidays, setHolidays, publicHolidays }: Cus
     };
 
     const handleDeleteHoliday = (holidayId: string) => {
-        const holiday = holidays.find(h => h.id === holidayId);
-        setHolidays(prev => prev.filter(h => h.id !== holidayId));
+        const holiday = customHolidays.find(h => h.id === holidayId);
+        deleteCustomHoliday(holidayId);
         setDeletingHoliday(null);
         toast({ title: "Holiday Deleted", variant: "destructive" });
         if (holiday) {

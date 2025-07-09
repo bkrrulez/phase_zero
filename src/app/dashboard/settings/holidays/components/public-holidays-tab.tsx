@@ -9,22 +9,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { type PublicHoliday } from '@/lib/mock-data';
+import { type PublicHoliday } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { AddEditHolidayDialog, type HolidayFormValues } from './add-edit-holiday-dialog';
 import { DeleteHolidayDialog } from './delete-holiday-dialog';
 import { ImportHolidaysDialog } from './import-holidays-dialog';
 import { useSystemLog } from '@/app/dashboard/contexts/SystemLogContext';
 import { useAuth } from '@/app/dashboard/contexts/AuthContext';
+import { useHolidays } from '@/app/dashboard/contexts/HolidaysContext';
 
 const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + 5 - i);
 
-interface PublicHolidaysTabProps {
-    holidays: PublicHoliday[];
-    setHolidays: React.Dispatch<React.SetStateAction<PublicHoliday[] | ((prev: PublicHoliday[]) => PublicHoliday[])>>;
-}
-
-export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabProps) {
+export function PublicHolidaysTab() {
+    const { publicHolidays, addPublicHoliday, updatePublicHoliday, deletePublicHoliday } = useHolidays();
     const { toast } = useToast();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
@@ -36,27 +33,32 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
     const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
 
     const filteredHolidays = React.useMemo(() => {
-        return holidays
+        return publicHolidays
             .filter(h => new Date(h.date).getFullYear() === selectedYear)
             .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [holidays, selectedYear]);
+    }, [publicHolidays, selectedYear]);
 
     const handleAddHoliday = (data: HolidayFormValues) => {
-        const newHoliday: PublicHoliday = {
-            id: `ph-${Date.now()}`,
+        const newHolidayData = {
             country: data.country,
             name: data.name,
-            date: data.date.toISOString(),
+            date: format(data.date, 'yyyy-MM-dd'),
             type: data.type,
         };
-        setHolidays(prev => [...prev, newHoliday]);
+        addPublicHoliday(newHolidayData);
         setIsAddEditDialogOpen(false);
         toast({ title: "Holiday Added", description: `"${data.name}" has been added.` });
         logAction(`User '${currentUser.name}' added public holiday: '${data.name}'.`);
     };
 
     const handleEditHoliday = (holidayId: string, data: HolidayFormValues) => {
-        setHolidays(prev => prev.map(h => h.id === holidayId ? { ...h, ...data, date: data.date.toISOString() } : h));
+        const updatedHolidayData = {
+            country: data.country,
+            name: data.name,
+            date: format(data.date, 'yyyy-MM-dd'),
+            type: data.type,
+        }
+        updatePublicHoliday(holidayId, updatedHolidayData);
         setEditingHoliday(null);
         setIsAddEditDialogOpen(false);
         toast({ title: "Holiday Updated", description: `"${data.name}" has been updated.` });
@@ -64,8 +66,8 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
     };
 
     const handleDeleteHoliday = (holidayId: string) => {
-        const holiday = holidays.find(h => h.id === holidayId);
-        setHolidays(prev => prev.filter(h => h.id !== holidayId));
+        const holiday = publicHolidays.find(h => h.id === holidayId);
+        deletePublicHoliday(holidayId);
         setDeletingHoliday(null);
         toast({ title: "Holiday Deleted", variant: "destructive" });
         if (holiday) {
@@ -103,20 +105,17 @@ export function PublicHolidaysTab({ holidays, setHolidays }: PublicHolidaysTabPr
             return;
         }
 
-        setHolidays(prev => {
-            const updatedHolidays = [...prev];
-            holidaysForYear.forEach(newHoliday => {
-                const existingIndex = updatedHolidays.findIndex(h => new Date(h.date).toDateString() === new Date(newHoliday.date).toDateString() && h.country === newHoliday.country);
-                if (existingIndex !== -1) {
-                    // Overwrite existing holiday
-                    updatedHolidays[existingIndex] = { ...updatedHolidays[existingIndex], name: newHoliday.name, type: newHoliday.type };
-                } else {
-                    // Append new holiday
-                    updatedHolidays.push({ ...newHoliday, id: `ph-${Date.now()}-${Math.random()}` });
-                }
-            });
-            return updatedHolidays;
+        holidaysForYear.forEach(newHoliday => {
+            const newHolidayData = { ...newHoliday, date: format(new Date(newHoliday.date), 'yyyy-MM-dd')};
+            const existingHoliday = publicHolidays.find(h => new Date(h.date).toDateString() === new Date(newHoliday.date).toDateString() && h.country === newHoliday.country);
+            
+            if (existingHoliday) {
+                updatePublicHoliday(existingHoliday.id, newHolidayData);
+            } else {
+                addPublicHoliday(newHolidayData);
+            }
         });
+
 
         toast({
             title: 'Import Successful',

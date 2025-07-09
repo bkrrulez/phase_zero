@@ -529,9 +529,65 @@ export async function getPublicHolidays(): Promise<PublicHoliday[]> {
     return result.rows.map(row => ({ ...row, date: format(new Date(row.date), 'yyyy-MM-dd')}));
 }
 
+export async function addPublicHoliday(holidayData: Omit<PublicHoliday, 'id'>): Promise<PublicHoliday | null> {
+    const { country, name, date, type } = holidayData;
+    const id = `ph-${Date.now()}`;
+    const result = await db.query(
+        'INSERT INTO public_holidays (id, country, name, date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [id, country, name, date, type]
+    );
+    revalidatePath('/dashboard/settings/holidays');
+    const newHoliday = result.rows[0];
+    return { ...newHoliday, date: format(new Date(newHoliday.date), 'yyyy-MM-dd') };
+}
+
+export async function updatePublicHoliday(holidayId: string, data: Omit<PublicHoliday, 'id'>): Promise<PublicHoliday | null> {
+    const { country, name, date, type } = data;
+    const result = await db.query(
+        'UPDATE public_holidays SET country = $1, name = $2, date = $3, type = $4 WHERE id = $5 RETURNING *',
+        [country, name, date, type, holidayId]
+    );
+    revalidatePath('/dashboard/settings/holidays');
+    const updatedHoliday = result.rows[0];
+    return { ...updatedHoliday, date: format(new Date(updatedHoliday.date), 'yyyy-MM-dd') };
+}
+
+export async function deletePublicHoliday(holidayId: string): Promise<void> {
+    await db.query('DELETE FROM public_holidays WHERE id = $1', [holidayId]);
+    revalidatePath('/dashboard/settings/holidays');
+}
+
 export async function getCustomHolidays(): Promise<CustomHoliday[]> {
     const result = await db.query('SELECT * FROM custom_holidays ORDER BY date');
-    return result.rows.map(row => ({ ...row, date: format(new Date(row.date), 'yyyy-MM-dd')}));
+    return result.rows.map(row => ({ ...row, date: format(new Date(row.date), 'yyyy-MM-dd'), appliesTo: row.applies_to}));
+}
+
+export async function addCustomHoliday(holidayData: Omit<CustomHoliday, 'id'>): Promise<CustomHoliday | null> {
+    const { country, name, date, type, appliesTo } = holidayData;
+    const id = `ch-${Date.now()}`;
+    const result = await db.query(
+        'INSERT INTO custom_holidays (id, country, name, date, type, applies_to) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [id, country, name, date, type, appliesTo]
+    );
+    revalidatePath('/dashboard/settings/holidays');
+    const newHoliday = result.rows[0];
+    return { ...newHoliday, appliesTo: newHoliday.applies_to, date: format(new Date(newHoliday.date), 'yyyy-MM-dd') };
+}
+
+export async function updateCustomHoliday(holidayId: string, data: Omit<CustomHoliday, 'id'>): Promise<CustomHoliday | null> {
+    const { country, name, date, type, appliesTo } = data;
+    const result = await db.query(
+        'UPDATE custom_holidays SET country = $1, name = $2, date = $3, type = $4, applies_to = $5 WHERE id = $6 RETURNING *',
+        [country, name, date, type, appliesTo, holidayId]
+    );
+    revalidatePath('/dashboard/settings/holidays');
+    const updatedHoliday = result.rows[0];
+    return { ...updatedHoliday, appliesTo: updatedHoliday.applies_to, date: format(new Date(updatedHoliday.date), 'yyyy-MM-dd') };
+}
+
+export async function deleteCustomHoliday(holidayId: string): Promise<void> {
+    await db.query('DELETE FROM custom_holidays WHERE id = $1', [holidayId]);
+    revalidatePath('/dashboard/settings/holidays');
 }
 
 export async function getHolidayRequests(): Promise<HolidayRequest[]> {

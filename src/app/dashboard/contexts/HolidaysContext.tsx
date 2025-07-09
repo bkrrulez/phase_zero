@@ -9,7 +9,13 @@ import { format } from 'date-fns';
 import { useAuth } from './AuthContext';
 import { 
     getPublicHolidays,
+    addPublicHoliday as addPublicHolidayAction,
+    updatePublicHoliday as updatePublicHolidayAction,
+    deletePublicHoliday as deletePublicHolidayAction,
     getCustomHolidays,
+    addCustomHoliday as addCustomHolidayAction,
+    updateCustomHoliday as updateCustomHolidayAction,
+    deleteCustomHoliday as deleteCustomHolidayAction,
     getHolidayRequests,
     getAnnualLeaveAllowance,
     setAnnualLeaveAllowance as setAnnualLeaveAllowanceAction,
@@ -20,9 +26,13 @@ import {
 
 interface HolidaysContextType {
   publicHolidays: PublicHoliday[];
-  setPublicHolidays: React.Dispatch<React.SetStateAction<PublicHoliday[]>>;
+  addPublicHoliday: (holiday: Omit<PublicHoliday, 'id'>) => Promise<void>;
+  updatePublicHoliday: (holidayId: string, holiday: Omit<PublicHoliday, 'id'>) => Promise<void>;
+  deletePublicHoliday: (holidayId: string) => Promise<void>;
   customHolidays: CustomHoliday[];
-  setCustomHolidays: React.Dispatch<React.SetStateAction<CustomHoliday[]>>;
+  addCustomHoliday: (holiday: Omit<CustomHoliday, 'id'>) => Promise<void>;
+  updateCustomHoliday: (holidayId: string, holiday: Omit<CustomHoliday, 'id'>) => Promise<void>;
+  deleteCustomHoliday: (holidayId: string) => Promise<void>;
   annualLeaveAllowance: number;
   setAnnualLeaveAllowance: (allowance: number) => Promise<void>;
   holidayRequests: HolidayRequest[];
@@ -136,7 +146,7 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
     };
 
     const withdrawRequest = async (requestId: string) => {
-        const request = holidayRequests.find(r => r.id === requestId);
+        const request = holidayRequests.find(r => r.id === currentUser.id);
         if (request?.userId !== currentUser.id) return;
         
         await deleteHolidayRequest(requestId);
@@ -144,12 +154,50 @@ export function HolidaysProvider({ children }: { children: React.ReactNode }) {
         await logAction(`User '${currentUser.name}' withdrew a holiday request.`);
     };
 
+    const addPublicHoliday = async (holidayData: Omit<PublicHoliday, 'id'>) => {
+        const newHoliday = await addPublicHolidayAction(holidayData);
+        if (newHoliday) {
+            setPublicHolidays(prev => [...prev, newHoliday]);
+        }
+    };
+    const updatePublicHoliday = async (holidayId: string, holidayData: Omit<PublicHoliday, 'id'>) => {
+        const updatedHoliday = await updatePublicHolidayAction(holidayId, holidayData);
+        if (updatedHoliday) {
+            setPublicHolidays(prev => prev.map(h => h.id === holidayId ? updatedHoliday : h));
+        }
+    };
+    const deletePublicHoliday = async (holidayId: string) => {
+        await deletePublicHolidayAction(holidayId);
+        setPublicHolidays(prev => prev.filter(h => h.id !== holidayId));
+    };
+
+    const addCustomHoliday = async (holidayData: Omit<CustomHoliday, 'id'>) => {
+        const newHoliday = await addCustomHolidayAction(holidayData);
+        if (newHoliday) {
+            setCustomHolidays(prev => [...prev, newHoliday]);
+        }
+    };
+    const updateCustomHoliday = async (holidayId: string, holidayData: Omit<CustomHoliday, 'id'>) => {
+        const updatedHoliday = await updateCustomHolidayAction(holidayId, holidayData);
+        if (updatedHoliday) {
+            setCustomHolidays(prev => prev.map(h => h.id === holidayId ? updatedHoliday : h));
+        }
+    };
+    const deleteCustomHoliday = async (holidayId: string) => {
+        await deleteCustomHolidayAction(holidayId);
+        setCustomHolidays(prev => prev.filter(h => h.id !== holidayId));
+    };
+
     return (
         <HolidaysContext.Provider value={{ 
           publicHolidays, 
-          setPublicHolidays, 
+          addPublicHoliday,
+          updatePublicHoliday,
+          deletePublicHoliday,
           customHolidays, 
-          setCustomHolidays,
+          addCustomHoliday,
+          updateCustomHoliday,
+          deleteCustomHoliday,
           annualLeaveAllowance,
           setAnnualLeaveAllowance,
           holidayRequests,

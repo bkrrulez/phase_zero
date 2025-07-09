@@ -6,12 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PublicHolidaysTab } from "./components/public-holidays-tab";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomHolidaysTab } from "./components/custom-holidays-tab";
-import { useHolidays } from "../../contexts/HolidaysContext";
 import { AnnualLeavesTab } from './components/annual-leaves-tab';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function HolidaysSettingsPage() {
-  const { publicHolidays, setPublicHolidays, customHolidays, setCustomHolidays } = useHolidays();
   const { currentUser } = useAuth();
 
   if (currentUser.role !== 'Super Admin') {
@@ -41,10 +39,10 @@ export default function HolidaysSettingsPage() {
           <TabsTrigger value="annual-leaves">Annual Leaves</TabsTrigger>
         </TabsList>
         <TabsContent value="public-holidays" className="mt-4">
-          <PublicHolidaysTab holidays={publicHolidays} setHolidays={setPublicHolidays} />
+          <PublicHolidaysTab />
         </TabsContent>
         <TabsContent value="custom-holidays" className="mt-4">
-            <CustomHolidaysTab publicHolidays={publicHolidays} holidays={customHolidays} setHolidays={setCustomHolidays} />
+            <CustomHolidaysTab />
         </TabsContent>
         <TabsContent value="annual-leaves" className="mt-4">
           <AnnualLeavesTab />
