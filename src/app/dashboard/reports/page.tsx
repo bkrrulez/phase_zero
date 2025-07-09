@@ -4,9 +4,9 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { unparse } from 'papaparse';
+import * as XLSX from 'xlsx';
 import { FileDown } from 'lucide-react';
-import { addDays } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -40,6 +40,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTimeTracking } from '../contexts/TimeTrackingContext';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useProjects } from '../contexts/ProjectsContext';
+import { useTasks } from '../contexts/TasksContext';
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -54,6 +56,8 @@ export default function ReportsPage() {
   const { currentUser } = useAuth();
   const { publicHolidays, customHolidays } = useHolidays();
   const { timeEntries } = useTimeTracking();
+  const { projects } = useProjects();
+  const { tasks } = useTasks();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
   const [periodType, setPeriodType] = React.useState<'monthly' | 'yearly'>('monthly');
@@ -63,10 +67,10 @@ export default function ReportsPage() {
   const reportData = React.useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
         if (currentUser.role === 'Super Admin') {
-            return member.id !== currentUser.id;
+            return true;
         }
         if (currentUser.role === 'Team Lead') {
-            return member.role === 'Employee';
+            return member.reportsTo === currentUser.id;
         }
         return false;
     });
@@ -211,31 +215,107 @@ export default function ReportsPage() {
   const handleExport = () => {
     if (reportData.length === 0) return;
 
-    const csvData = reportData.map(member => ({
-        'Member': member.name,
-        'Email': member.email,
-        'Role': member.role,
-        'Expected Hours': member.expectedHours,
-        'Logged Hours': member.loggedHours,
-        'Remaining Hours': member.remainingHours,
-    }));
+    // Define date range for filtering time entries
+    const periodStart = periodType === 'monthly'
+      ? startOfMonth(new Date(selectedYear, selectedMonth))
+      : startOfYear(new Date(selectedYear, 0, 1));
+    const periodEnd = periodType === 'monthly'
+      ? endOfMonth(new Date(selectedYear, selectedMonth))
+      : endOfYear(new Date(selectedYear, 11, 31));
 
-    const csv = unparse(csvData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
+    // -- Sheet 1: Total Time --
+    const title = periodType === 'monthly'
+      ? `Report for ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
+      : `Report for ${selectedYear}`;
     
+    const totalTimeData = [
+      [title], // Header row
+      [], // Empty row for spacing
+      ['Member', 'Role', 'Expected', 'Logged', 'Remaining'],
+      ...reportData.map(member => [
+        member.name,
+        member.role,
+        member.expectedHours,
+        member.loggedHours,
+        member.remainingHours,
+      ]),
+    ];
+    const totalTimeSheet = XLSX.utils.aoa_to_sheet(totalTimeData);
+
+    // Filter relevant time entries once
+    const visibleMemberIds = reportData.map(m => m.id);
+    const relevantTimeEntries = timeEntries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return visibleMemberIds.includes(entry.userId) && isWithinInterval(entryDate, { start: periodStart, end: periodEnd });
+    });
+
+    // -- Sheet 2: Project Level Report --
+    const projectReport: { [key: string]: number } = {};
+    relevantTimeEntries.forEach(entry => {
+        const projectTask = entry.task.split(' - ');
+        const projectName = projectTask[0];
+        const key = `${entry.userId}__${projectName}`;
+        if (!projectReport[key]) projectReport[key] = 0;
+        projectReport[key] += entry.duration;
+    });
+
+    const projectData = [
+      ['Project level report'],
+      [],
+      ['Member', 'Role', 'Logged Hours', 'Project'],
+      ...Object.keys(projectReport).map(key => {
+        const [userId, projectName] = key.split('__');
+        const member = teamMembers.find(m => m.id === userId);
+        return [
+          member?.name || 'Unknown',
+          member?.role || 'Unknown',
+          projectReport[key].toFixed(2),
+          projectName,
+        ];
+      }),
+    ];
+    const projectSheet = XLSX.utils.aoa_to_sheet(projectData);
+
+    // -- Sheet 3: Task Level Report --
+    const taskReport: { [key: string]: number } = {};
+    relevantTimeEntries.forEach(entry => {
+        const projectTask = entry.task.split(' - ');
+        const taskName = projectTask.slice(1).join(' - ');
+        const key = `${entry.userId}__${taskName}`;
+        if (!taskReport[key]) taskReport[key] = 0;
+        taskReport[key] += entry.duration;
+    });
+
+    const taskData = [
+        ['Task level report'],
+        [],
+        ['Member', 'Role', 'Logged Hours', 'Task'],
+        ...Object.keys(taskReport).map(key => {
+            const [userId, taskName] = key.split('__');
+            const member = teamMembers.find(m => m.id === userId);
+            return [
+                member?.name || 'Unknown',
+                member?.role || 'Unknown',
+                taskReport[key].toFixed(2),
+                taskName,
+            ];
+        })
+    ];
+    const taskSheet = XLSX.utils.aoa_to_sheet(taskData);
+
+    // Create workbook and export
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, totalTimeSheet, 'Total Time');
+    XLSX.utils.book_append_sheet(wb, projectSheet, 'Project level report');
+    XLSX.utils.book_append_sheet(wb, taskSheet, 'Task level report');
+
     const filename = periodType === 'monthly'
-      ? `team_report_${months.find(m => m.value === selectedMonth)?.label}_${selectedYear}.csv`
-      : `team_report_${selectedYear}.csv`;
-      
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      ? `team_report_${months.find(m => m.value === selectedMonth)?.label}_${selectedYear}.xlsx`
+      : `team_report_${selectedYear}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
   };
+
 
   if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin') {
       return (
@@ -315,9 +395,9 @@ export default function ReportsPage() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                             <Button variant="outline" size="icon" onClick={handleExport}>
+                             <Button variant="outline" onClick={handleExport}>
                               <FileDown className="h-4 w-4" />
-                              <span className="sr-only">Export</span>
+                              Export
                             </Button>
                         </div>
                     </div>
