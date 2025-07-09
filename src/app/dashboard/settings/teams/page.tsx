@@ -11,6 +11,7 @@ import { type User, type Team } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { AddTeamDialog, type TeamFormValues } from './components/add-team-dialog';
 import { EditTeamDialog } from './components/edit-team-dialog';
+import { DeleteTeamDialog } from './components/delete-team-dialog';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
 import { useProjects } from '../../contexts/ProjectsContext';
@@ -20,13 +21,14 @@ import { useAuth } from '../../contexts/AuthContext';
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
     const { teamMembers } = useMembers();
-    const { teams, addTeam, updateTeam } = useTeams();
+    const { teams, addTeam, updateTeam, deleteTeam } = useTeams();
     const { projects } = useProjects();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingTeam, setEditingTeam] = React.useState<Team | null>(null);
+    const [deletingTeam, setDeletingTeam] = React.useState<Team | null>(null);
 
     const canManageTeams = currentUser.role === 'Super Admin';
 
@@ -62,6 +64,18 @@ export default function TeamsSettingsPage() {
             description: `The team "${data.name}" has been updated.`,
         });
         logAction(`User '${currentUser.name}' updated team: '${data.name}'.`);
+    }
+
+    const handleDeleteTeam = () => {
+        if (!deletingTeam) return;
+        deleteTeam(deletingTeam.id);
+        toast({
+            title: "Team Deleted",
+            description: `The team "${deletingTeam.name}" has been deleted. Members have been unassigned.`,
+            variant: "destructive"
+        });
+        logAction(`User '${currentUser.name}' deleted team: '${deletingTeam.name}'.`);
+        setDeletingTeam(null);
     }
 
     return (
@@ -117,7 +131,10 @@ export default function TeamsSettingsPage() {
                                                         <DropdownMenuItem onClick={() => setEditingTeam(team)}>
                                                             Edit
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive">
+                                                        <DropdownMenuItem 
+                                                            onClick={() => setDeletingTeam(team)}
+                                                            className="text-destructive focus:text-destructive"
+                                                        >
                                                             Delete
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -153,6 +170,12 @@ export default function TeamsSettingsPage() {
                             allProjects={projects}
                         />
                     )}
+                    <DeleteTeamDialog 
+                        isOpen={!!deletingTeam}
+                        onOpenChange={(isOpen) => !isOpen && setDeletingTeam(null)}
+                        onConfirm={handleDeleteTeam}
+                        team={deletingTeam}
+                    />
                 </>
             )}
         </>

@@ -2,12 +2,13 @@
 'use client';
 import * as React from 'react';
 import { type Team } from "@/lib/types";
-import { getTeams, addTeam as addTeamAction, updateTeam as updateTeamAction } from '../actions';
+import { getTeams, addTeam as addTeamAction, updateTeam as updateTeamAction, deleteTeam as deleteTeamAction } from '../actions';
 
 interface TeamsContextType {
   teams: Team[];
   addTeam: (teamData: Omit<Team, 'id'>) => Promise<void>;
   updateTeam: (teamId: string, teamData: Omit<Team, 'id'>) => Promise<void>;
+  deleteTeam: (teamId: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -43,9 +44,14 @@ export function TeamsProvider({ children }: { children: React.ReactNode }) {
     await fetchTeams();
   };
 
+  const deleteTeam = async (teamId: string) => {
+    await deleteTeamAction(teamId);
+    await fetchTeams();
+  }
+
 
   return (
-    <TeamsContext.Provider value={{ teams, addTeam, updateTeam, isLoading }}>
+    <TeamsContext.Provider value={{ teams, addTeam, updateTeam, deleteTeam, isLoading }}>
         {children}
     </TeamsContext.Provider>
   );
@@ -58,5 +64,3 @@ export const useTeams = () => {
   }
   return context;
 };
-
-    

@@ -522,6 +522,36 @@ export async function updateTeam(teamId: string, teamData: Omit<Team, 'id'>): Pr
     }
 }
 
+export async function deleteTeam(teamId: string): Promise<void> {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Unassign users from the team
+        await client.query('UPDATE users SET team_id = NULL WHERE team_id = $1', [teamId]);
+        
+        // Delete team's project associations
+        await client.query('DELETE FROM team_projects WHERE team_id = $1', [teamId]);
+        
+        // Delete push message associations
+        await client.query('DELETE FROM push_message_teams WHERE team_id = $1', [teamId]);
+
+        // Delete the team itself
+        await client.query('DELETE FROM teams WHERE id = $1', [teamId]);
+
+        await client.query('COMMIT');
+        
+        revalidatePath('/dashboard/settings/teams');
+        revalidatePath('/dashboard/settings/members');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error deleting team:', error);
+        throw new Error('Failed to delete team.');
+    } finally {
+        client.release();
+    }
+}
+
 // ========== Holidays ==========
 
 export async function getPublicHolidays(): Promise<PublicHoliday[]> {
