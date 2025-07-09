@@ -1,6 +1,6 @@
 # TimeTool by Firebase Studio
 
-This is a Next.js application built with Firebase Studio. It's a time tracking and management tool designed for teams.
+This is a Next.js application built for time tracking and managing small teams.
 
 To get started, take a look at src/app/page.tsx.
 
