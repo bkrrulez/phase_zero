@@ -20,7 +20,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { User, TimeEntry } from '@/lib/types';
-import { addDays, getDay, isSameMonth, startOfMonth } from 'date-fns';
+import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, differenceInCalendarDays, endOfYear, max, min, startOfYear } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
@@ -40,6 +40,10 @@ interface ReportCalendarContextValue {
   monthlyData: { 
     dailyTotals: Record<string, number>;
     dailyEntries: Record<string, TimeEntry[]>;
+    dailyExpected: Record<string, number>;
+    personalLeaveDays: Date[];
+    publicHolidayDays: Date[];
+    customHolidayDays: Date[];
   };
   onDayClick: (date: Date) => void;
 }
@@ -62,8 +66,12 @@ const DayContent: React.FC<DayContentProps> = (props) => {
   }
 
   const hours = monthlyData.dailyTotals[dayOfMonth];
+  const expectedHours = monthlyData.dailyExpected[dayOfMonth];
   const hasManualEntries = (monthlyData.dailyEntries[dayOfMonth] || []).length > 0;
   
+  const isWeekend = getDay(date) === 0 || getDay(date) === 6;
+  const isLeaveOrHoliday = [...monthlyData.personalLeaveDays, ...monthlyData.publicHolidayDays, ...monthlyData.customHolidayDays].some(d => d.toDateString() === date.toDateString());
+
   const wrapperProps = {
     className: "relative w-full h-full flex flex-col items-center justify-center text-center p-1",
     ...(hasManualEntries && {
@@ -79,6 +87,11 @@ const DayContent: React.FC<DayContentProps> = (props) => {
         {hours !== undefined && hours > 0 && (
             <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
         )}
+        {!isWeekend && !isLeaveOrHoliday && expectedHours > 0 && (
+          <span className="absolute bottom-1 text-xs font-semibold text-orange-400">
+            {expectedHours.toFixed(1)}h
+          </span>
+        )}
     </div>
   );
 };
@@ -89,7 +102,7 @@ export function IndividualReport() {
     const searchParams = useSearchParams();
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
-    const { publicHolidays, customHolidays, holidayRequests } = useHolidays();
+    const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
     const { timeEntries, updateTimeEntry, deleteTimeEntry } = useTimeTracking();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
@@ -173,11 +186,37 @@ export function IndividualReport() {
   }, [selectedUser, selectedDate]);
 
   const monthlyData = React.useMemo(() => {
-    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {} };
+    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {}, dailyExpected: {} };
 
     const dailyTotals: Record<string, number> = {};
     const dailyEntries: Record<string, TimeEntry[]> = {};
+    const dailyExpected: Record<string, number> = {};
     const dailyContractHours = selectedUser.contract.weeklyHours / 5;
+    
+    // Calculate prorated daily leave hours
+    const yearStartForProrata = startOfYear(selectedDate);
+    const yearEndForProrata = endOfYear(selectedDate);
+    const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
+    
+    const contractStartDate = new Date(selectedUser.contract.startDate);
+    const contractEndDate = selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : yearEndForProrata;
+
+    const prorataContractStart = max([yearStartForProrata, contractStartDate]);
+    const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
+    const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
+    const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+    const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
+    const dailyLeaveHours = totalYearlyLeaveHours > 0 ? totalYearlyLeaveHours / daysInYear : 0;
+    const dailyExpectedHours = dailyContractHours - dailyLeaveHours;
+    
+    for (let d = new Date(startOfMonth(selectedDate)); d <= new Date(startOfMonth(selectedDate)); d = addDays(d, 1)) {
+        if (!isSameMonth(d, selectedDate)) break;
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          dailyExpected[d.getDate()] = dailyExpectedHours;
+        }
+    }
+
 
     // 1. Calculate manually logged hours
     const userTimeEntries = timeEntries.filter(entry => {
@@ -202,7 +241,7 @@ export function IndividualReport() {
 
     publicHolidaysInMonth.forEach(holiday => {
         const day = new Date(holiday.date).getDate();
-        const holidayCredit = holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
+        const holidayCredit = holiday.type === 'Full Day' ? dailyExpectedHours : dailyExpectedHours / 2;
         if (!dailyTotals[day]) dailyTotals[day] = 0;
         dailyTotals[day] += holidayCredit;
     });
@@ -218,7 +257,7 @@ export function IndividualReport() {
 
     customHolidaysInMonth.forEach(holiday => {
         const day = new Date(holiday.date).getDate();
-        const holidayCredit = holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
+        const holidayCredit = holiday.type === 'Full Day' ? dailyExpectedHours : dailyExpectedHours / 2;
         if (!dailyTotals[day]) dailyTotals[day] = 0;
         dailyTotals[day] += holidayCredit;
     });
@@ -237,7 +276,7 @@ export function IndividualReport() {
                 if (getDay(dt) !== 0 && getDay(dt) !== 6) {
                     const dayOfMonth = dt.getDate();
                     if (!dailyTotals[dayOfMonth]) dailyTotals[dayOfMonth] = 0;
-                    dailyTotals[dayOfMonth] += dailyContractHours;
+                    dailyTotals[dayOfMonth] += dailyExpectedHours;
                 }
             }
         }
@@ -247,8 +286,8 @@ export function IndividualReport() {
     const publicHolidayDays = publicHolidaysInMonth.map(h => new Date(h.date));
     const customHolidayDays = customHolidaysInMonth.map(h => new Date(h.date));
 
-    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries };
-  }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries]);
+    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries, dailyExpected };
+  }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries, annualLeaveAllowance]);
     
     const canEditEntries = React.useMemo(() => {
         if (!selectedUser) return false;
