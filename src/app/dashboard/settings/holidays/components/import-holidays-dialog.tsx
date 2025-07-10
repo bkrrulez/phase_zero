@@ -11,12 +11,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { type PublicHoliday } from '@/lib/mock-data';
 
-interface ImportHolidaysDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onImport: (holidays: Omit<PublicHoliday, 'id'>[]) => void;
-}
-
 const parseDateString = (dateInput: string | number | Date): Date | null => {
     if (!dateInput) return null;
 
@@ -25,7 +19,9 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
     }
     
     if (typeof dateInput === 'number') {
-        return XLSX.SSF.parse_date_code(dateInput);
+        const date = XLSX.SSF.parse_date_code(dateInput);
+        // The result from parse_date_code is a struct {y,m,d,...}. The month 'm' is 1-based.
+        return new Date(Date.UTC(date.y, date.m - 1, date.d));
     }
 
     if (typeof dateInput === 'string') {
@@ -39,8 +35,8 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
                 // We assume DD/MM/YYYY format. The year should be reasonable.
                 if (year > 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
                     const date = new Date(Date.UTC(year, month - 1, day));
-                    // Final check to ensure date is valid (e.g. not 31st Feb)
-                    if (date.getUTCMonth() === month - 1) {
+                    // Final check to ensure date is valid (e.g. not 31st Feb) and components match
+                    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
                         return date;
                     }
                 }
@@ -141,7 +137,7 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport }: ImportH
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet);
+                const json = XLSX.utils.sheet_to_json(worksheet, { raw: false }); // Use raw: false to get formatted text
                 processData(json);
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Failed to parse the XLSX file.' });
