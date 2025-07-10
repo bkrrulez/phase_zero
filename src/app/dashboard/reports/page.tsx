@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { FileUp } from 'lucide-react';
-import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -103,21 +103,28 @@ export default function ReportsPage() {
             return { ...member, assignedHours: '0.00', leaveHours: '0.00', expectedHours: '0.00', loggedHours: '0.00', remainingHours: '0.00' };
         }
 
-        const allPublicHolidaysForUser = publicHolidays.filter(h => isWithinInterval(new Date(h.date), { start: effectiveStart, end: effectiveEnd }));
+        const allPublicHolidaysForUser = publicHolidays.filter(h => {
+            const hDate = new Date(h.date);
+            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
+        });
+
         const allCustomHolidaysForUser = customHolidays.filter(h => {
             const hDate = new Date(h.date);
             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && applies;
+            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6 && applies;
         });
-        const allHolidaysForMemberDates = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser].map(h => new Date(h.date).toDateString());
+        
+        const holidayCount = allPublicHolidaysForUser.length + allCustomHolidaysForUser.length;
 
         let workingDaysInPeriod = 0;
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
-            if (d.getDay() !== 0 && d.getDay() !== 6 && !allHolidaysForMemberDates.includes(d.toDateString())) {
+            if (d.getDay() !== 0 && d.getDay() !== 6) {
                 workingDaysInPeriod++;
             }
         }
-        const assignedHours = workingDaysInPeriod * dailyContractHours;
+
+        const assignedWorkDays = workingDaysInPeriod - holidayCount;
+        const assignedHours = assignedWorkDays * dailyContractHours;
         
         // Calculate Leave Hours
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
@@ -139,7 +146,7 @@ export default function ReportsPage() {
 
         const expectedHours = assignedHours - leaveHours;
 
-        const holidaysInPeriod = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser].filter(h => new Date(h.date).getDay() !== 0 && new Date(h.date).getDay() !== 6);
+        const holidaysInPeriod = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser];
         const holidayHours = holidaysInPeriod.reduce((acc, holiday) => acc + (holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2), 0);
         const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
         const loggedHours = manualLoggedHours + holidayHours;
@@ -387,4 +394,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
