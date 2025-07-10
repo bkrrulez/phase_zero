@@ -55,13 +55,17 @@ const getWeeksForMonth = (year: number, month: number) => {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
 
-    let weekStart = firstDayOfMonth;
+    let current = firstDayOfMonth;
+    while (current.getDay() !== 1) { // Find the first Monday
+      current = addDays(current, -1);
+    }
+    
+    // Adjust start date to be the actual start of the first week of the month, even if it's in the previous month
+    let weekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
+
 
     while (weekStart <= lastDayOfMonth) {
         let weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        if (weekEnd > lastDayOfMonth) {
-            weekEnd = lastDayOfMonth;
-        }
         weeks.push({ start: weekStart, end: weekEnd });
         weekStart = addDays(weekEnd, 1);
     }
@@ -343,24 +347,24 @@ export default function ReportsPage() {
                             <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">Yearly</Label></div>
                         </RadioGroup>
                         <div className="flex items-center gap-2">
-                            {periodType !== 'yearly' && (
-                                <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(Number(value))}>
-                                    <SelectTrigger className="w-[130px]"><SelectValue placeholder="Select month" /></SelectTrigger>
-                                    <SelectContent>{months.map(month => (<SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>))}</SelectContent>
-                                </Select>
-                            )}
                              {periodType === 'weekly' && (
                                 <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
                                     <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         {weeksInMonth.map((week, index) => (
                                             <SelectItem key={index} value={String(index)}>
-                                                Week {index + 1} ({getDate(week.start)}-{getDate(week.end)})
+                                                W{index + 1} ({getDate(week.start)}-{getDate(week.end)})
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                              )}
+                            {periodType !== 'yearly' && (
+                                <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(Number(value))}>
+                                    <SelectTrigger className="w-[130px]"><SelectValue placeholder="Select month" /></SelectTrigger>
+                                    <SelectContent>{months.map(month => (<SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>))}</SelectContent>
+                                </Select>
+                            )}
                             <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
                                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="Select year" /></SelectTrigger>
                                 <SelectContent>{years.map(year => (<SelectItem key={year} value={String(year)}>{year}</SelectItem>))}</SelectContent>
@@ -466,5 +470,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
