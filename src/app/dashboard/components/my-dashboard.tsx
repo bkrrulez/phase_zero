@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -47,7 +47,6 @@ export function MyDashboard() {
   }, [publicHolidays, customHolidays, teamMembers]);
 
   const getProratedAllowance = React.useCallback((user: User) => {
-    // Helper function to parse YYYY-MM-DD strings as local dates to avoid timezone issues.
     const parseDateStringAsLocal = (dateString: string): Date => {
         const [year, month, day] = dateString.split('-').map(Number);
         return new Date(year, month - 1, day);
@@ -80,81 +79,78 @@ export function MyDashboard() {
 
   const { totalHours, expectedHours, overtime, takenDays, remainingDays } = React.useMemo(() => {
     const today = new Date();
-    const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
-    const monthStart = new Date(currentYear, currentMonth, 1);
+    const currentMonth = today.getMonth();
+    const monthStart = startOfMonth(today);
 
+    // Calculate Assigned Hours
+    let workingDaysInMonth = 0;
+    for (let d = new Date(monthStart); d <= endOfYear(monthStart); d = addDays(d, 1)) {
+        if (d.getMonth() !== currentMonth) break;
+        if (d.getDay() !== 0 && d.getDay() !== 6) {
+            const isPublic = publicHolidays.some(h => isSameDay(new Date(h.date), d));
+            const isCustom = customHolidays.some(h => {
+                const applies = (h.appliesTo === 'all-members') ||
+                                (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
+                                (h.appliesTo === currentUser.teamId);
+                return applies && isSameDay(new Date(h.date), d);
+            });
+            if (!isPublic && !isCustom) {
+                workingDaysInMonth++;
+            }
+        }
+    }
+    const assignedHours = workingDaysInMonth * dailyHours;
+
+    // Calculate Leave Hours
+    const proratedAllowanceDays = getProratedAllowance(currentUser);
+    const totalYearlyLeaveHours = proratedAllowanceDays * dailyHours;
+    const daysInCurrentMonth = getDaysInMonth(today);
+    const daysInYear = differenceInCalendarDays(endOfYear(today), startOfYear(today)) + 1;
+    const leaveHours = (totalYearlyLeaveHours * daysInCurrentMonth) / daysInYear;
+
+    // Calculate Expected Hours
+    const expectedHours = assignedHours - leaveHours;
+    
+    // Calculate Logged Hours
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
-        return entry.userId === currentUser.id && entryDate.getFullYear() === currentYear && entryDate.getMonth() === currentMonth;
+        return entry.userId === currentUser.id && isSameMonth(entryDate, today);
     });
-
     const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
+    const totalHours = manualTotalHours; // Holiday hours are now part of assigned hours/leave hours, not logged hours.
 
-    const allPublicHolidaysThisMonth = publicHolidays.filter(h => {
-        const holidayDate = new Date(h.date);
-        return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
-    });
-
-    const allCustomHolidaysThisMonth = customHolidays.filter(h => {
-        const holidayDate = new Date(h.date);
-        const applies = (h.appliesTo === 'all-members') ||
-                        (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
-                        (h.appliesTo === currentUser.teamId);
-        return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6 && applies;
-    });
-
-    const allHolidaysThisMonth = [...allPublicHolidaysThisMonth, ...allCustomHolidaysThisMonth];
-
-    const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
-        return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
-    }, 0);
-
-    const userHolidayRequests = holidayRequests.filter(req => req.userId === currentUser.id);
-    const approvedLeaveDatesThisMonth: Date[] = userHolidayRequests
-      .filter(req => req.status === 'Approved')
-      .flatMap(req => {
-        const dates: Date[] = [];
-        for (let dt = new Date(req.startDate); dt <= new Date(req.endDate); dt = addDays(dt, 1)) {
-          if (dt.getFullYear() === currentYear && dt.getMonth() === currentMonth) {
-            dates.push(dt);
-          }
-        }
-        return dates;
-      });
-      
-    const approvedLeaveHours = approvedLeaveDatesThisMonth
-        .filter(d => d.getDay() !== 0 && d.getDay() !== 6) // Exclude weekends
-        .reduce((acc) => acc + dailyHours, 0);
-
-    const totalHours = manualTotalHours + holidayHours + approvedLeaveHours;
-
+    // Calculate Overtime
     let workDaysSoFar = 0;
     const dayIterator = new Date(monthStart);
-    const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
 
     while (dayIterator <= today) {
-        const dayOfWeek = getDay(dayIterator);
-        const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
-        const isLeave = approvedLeaveDatesThisMonth.some(d => isSameDay(d, dayIterator));
-
-        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday && !isLeave) {
-            workDaysSoFar++;
+        if (dayIterator.getMonth() === currentMonth) {
+            const dayOfWeek = getDay(dayIterator);
+            const isHoliday = publicHolidays.some(h => isSameDay(new Date(h.date), dayIterator)) || customHolidays.some(h => {
+                const applies = (h.appliesTo === 'all-members') ||
+                                (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
+                                (h.appliesTo === currentUser.teamId);
+                return applies && isSameDay(new Date(h.date), dayIterator);
+            });
+            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
+                workDaysSoFar++;
+            }
         }
         dayIterator.setDate(dayIterator.getDate() + 1);
     }
+    const expectedHoursSoFar = (workDaysSoFar * dailyHours) - (leaveHours * (today.getDate() / daysInCurrentMonth));
+    const overtime = totalHours - expectedHoursSoFar;
 
-    const expectedHours = workDaysSoFar * dailyHours;
-    const overtime = totalHours - expectedHours;
-    
-    const takenDays = userHolidayRequests
-      .filter(req => req.status === 'Approved')
+    // Calculate Holiday Days
+    const takenDays = holidayRequests
+      .filter(req => req.userId === currentUser.id && req.status === 'Approved')
       .reduce((acc, req) => acc + calculateDurationInWorkdays(new Date(req.startDate), new Date(req.endDate), req.userId), 0);
 
     const remainingDays = userAllowance - takenDays;
 
     return { totalHours, expectedHours, overtime, takenDays, remainingDays };
-  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays, currentUser]);
+  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays, currentUser, getProratedAllowance]);
 
 
   return (

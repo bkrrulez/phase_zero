@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { isSameDay } from "date-fns";
+import { isSameDay, startOfMonth, getDay } from "date-fns";
 import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useMembers } from "../contexts/MembersContext";
 import { useHolidays } from "../contexts/HolidaysContext";
@@ -67,6 +67,8 @@ export function TeamDashboard() {
           dayIterator.setDate(dayIterator.getDate() + 1);
       }
 
+      const expectedHours = workDaysSoFar * dailyHours;
+
       const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
         return entry.userId === member.id && entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
@@ -78,7 +80,6 @@ export function TeamDashboard() {
       }, 0);
 
       const totalHours = manualTotalHours + holidayHours;
-      const expectedHours = workDaysSoFar * dailyHours;
       const performance = totalHours - expectedHours;
       
       return {
