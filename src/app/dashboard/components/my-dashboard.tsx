@@ -7,17 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
+  const { isHolidaysNavVisible } = useSettings();
   
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
@@ -115,7 +117,7 @@ export function MyDashboard() {
     // Calculate Logged Hours
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
-        return entry.userId === currentUser.id && isSameDay(entryDate, today);
+        return entry.userId === currentUser.id && isSameMonth(entryDate, today);
     });
     const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
     const totalHours = manualTotalHours; // Holiday hours are now part of assigned hours/leave hours, not logged hours.
@@ -172,7 +174,7 @@ export function MyDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className={cn("grid gap-4 md:grid-cols-2", isHolidaysNavVisible ? "lg:grid-cols-3" : "lg:grid-cols-2")}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Hours this month</CardTitle>
@@ -199,18 +201,20 @@ export function MyDashboard() {
             </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Holidays Taken</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{takenDays} Day{takenDays === 1 ? '' : 's'}</div>
-            <p className="text-xs text-muted-foreground">
-              {remainingDays.toFixed(2)} days remaining
-            </p>
-          </CardContent>
-        </Card>
+        {isHolidaysNavVisible && (
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Holidays Taken</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{takenDays} Day{takenDays === 1 ? '' : 's'}</div>
+                    <p className="text-xs text-muted-foreground">
+                    {remainingDays.toFixed(2)} days remaining
+                    </p>
+                </CardContent>
+            </Card>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
