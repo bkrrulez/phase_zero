@@ -103,27 +103,24 @@ export default function ReportsPage() {
             return { ...member, assignedHours: '0.00', leaveHours: '0.00', expectedHours: '0.00', loggedHours: '0.00', remainingHours: '0.00' };
         }
 
-        const allPublicHolidaysForUser = publicHolidays.filter(h => {
-            const hDate = new Date(h.date);
-            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
-        });
-
-        const allCustomHolidaysForUser = customHolidays.filter(h => {
-            const hDate = new Date(h.date);
-            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6 && applies;
-        });
-        
-        const holidayCount = allPublicHolidaysForUser.length + allCustomHolidaysForUser.length;
-
-        let workingDaysInPeriod = 0;
+        let assignedWorkDays = 0;
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
-            if (d.getDay() !== 0 && d.getDay() !== 6) {
-                workingDaysInPeriod++;
-            }
-        }
+            const dayOfWeek = getDay(d);
+            if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
 
-        const assignedWorkDays = workingDaysInPeriod - holidayCount;
+            const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+            if(isPublic) continue; // Skip public holidays
+
+            const isCustom = customHolidays.some(h => {
+                const hDate = new Date(h.date);
+                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+                return hDate.toDateString() === d.toDateString() && applies;
+            });
+            if(isCustom) continue; // Skip custom holidays
+
+            assignedWorkDays++;
+        }
+        
         const assignedHours = assignedWorkDays * dailyContractHours;
         
         // Calculate Leave Hours
@@ -145,6 +142,17 @@ export default function ReportsPage() {
         }
 
         const expectedHours = assignedHours - leaveHours;
+
+        const allPublicHolidaysForUser = publicHolidays.filter(h => {
+            const hDate = new Date(h.date);
+            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
+        });
+
+        const allCustomHolidaysForUser = customHolidays.filter(h => {
+            const hDate = new Date(h.date);
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6 && applies;
+        });
 
         const holidaysInPeriod = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser];
         const holidayHours = holidaysInPeriod.reduce((acc, holiday) => acc + (holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2), 0);
