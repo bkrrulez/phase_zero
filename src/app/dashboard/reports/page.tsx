@@ -151,17 +151,18 @@ export default function ReportsPage() {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-            const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+            const publicHolidayForDay = publicHolidays.find(h => new Date(h.date).toDateString() === d.toDateString());
             const customHolidayForDay = customHolidays.find(h => {
                 const hDate = new Date(h.date);
                 const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
                 return hDate.toDateString() === d.toDateString() && applies;
             });
+            
+            const holiday = publicHolidayForDay || customHolidayForDay;
 
-            if (isPublicHoliday || customHolidayForDay) {
-                const holidayType = isPublicHoliday ? publicHolidays.find(h => new Date(h.date).toDateString() === d.toDateString())!.type : customHolidayForDay!.type;
-                holidayHours += holidayType === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
-                continue; // Holidays don't count as assigned workdays
+            if (holiday) {
+                holidayHours += holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
+                continue; // Holidays don't count as assigned workdays, credit goes to logged time
             }
 
             assignedWorkDays++;
@@ -190,6 +191,7 @@ export default function ReportsPage() {
 
         const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
         const loggedHours = manualLoggedHours + holidayHours;
+        const remainingHours = expectedHours - loggedHours;
         
         return { 
             ...member, 
@@ -197,7 +199,7 @@ export default function ReportsPage() {
             leaveHours: leaveHours.toFixed(2),
             expectedHours: expectedHours.toFixed(2), 
             loggedHours: loggedHours.toFixed(2), 
-            remainingHours: (expectedHours - loggedHours).toFixed(2) 
+            remainingHours: remainingHours.toFixed(2)
         };
     });
 
