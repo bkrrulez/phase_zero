@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { FileUp } from 'lucide-react';
-import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -144,53 +144,55 @@ export default function ReportsPage() {
         }
 
         let workingDaysInPeriod = 0;
-        let holidayHoursInPeriod = 0;
-        let manualLoggedHoursInPeriod = 0;
 
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
             const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+            if (isPublicHoliday) continue;
+
             const isCustomHoliday = customHolidays.some(h => {
                 const hDate = new Date(h.date);
                 const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
                 return hDate.toDateString() === d.toDateString() && applies;
             });
+            if (isCustomHoliday) continue;
             
-            if (isPublicHoliday || isCustomHoliday) {
-                continue;
-            }
-
             workingDaysInPeriod++;
         }
         
         const assignedHours = workingDaysInPeriod * dailyContractHours;
         
+        // --- Dynamic Yearly Working Day Calculation ---
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
         const prorataContractStart = max([yearStartForProrata, contractStartDate]);
         const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
-        const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
-        const proratedAllowanceDays = (annualLeaveAllowance / 365) * contractDurationInYear;
-        const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-
+        
         let totalWorkingDaysInYear = 0;
-        if(contractDurationInYear > 0) {
+        if(prorataContractStart <= prorataContractEnd) {
             for (let d = new Date(prorataContractStart); d <= prorataContractEnd; d = addDays(d, 1)) {
                 const dayOfWeek = getDay(d);
                 if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-                const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-                if (isPublicHoliday) continue;
-                const isCustomHoliday = customHolidays.some(h => {
+
+                const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString() && new Date(h.date).getFullYear() === selectedYear);
+                if (isPublic) continue;
+
+                const isCustom = customHolidays.some(h => {
                     const hDate = new Date(h.date);
+                    if (hDate.getFullYear() !== selectedYear) return false;
                     const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
                     return hDate.toDateString() === d.toDateString() && applies;
                 });
-                if (isCustomHoliday) continue;
+                if (isCustom) continue;
+                
                 totalWorkingDaysInYear++;
             }
         }
+        
+        const proratedAllowanceDays = (annualLeaveAllowance / (isLeapYear(selectedYear) ? 366 : 365)) * (differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1);
+        const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
         
         const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
         const leaveHours = dailyLeaveCredit * workingDaysInPeriod;
@@ -344,7 +346,7 @@ export default function ReportsPage() {
                         <div className="flex items-center gap-2">
                              {periodType === 'weekly' && (
                                 <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
-                                    <SelectTrigger className="w-full sm:w-[120px]">
+                                    <SelectTrigger className="w-full sm:w-[130px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
