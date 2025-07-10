@@ -23,6 +23,7 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
     // 1. Handle if it's already a valid Date object (from XLSX)
     if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
         const d = dateInput;
+        // Normalize to UTC to avoid timezone issues during parsing
         return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     }
     
@@ -34,21 +35,16 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
         }
     }
 
-    // 3. Handle string format DD/MM/YYYY, allowing for single or double digits
+    // 3. Handle string format D/M/YYYY or DD/MM/YYYY
     if (typeof dateInput === 'string') {
-        let parts = dateInput.split('/');
+        const parts = dateInput.split('/');
         if (parts.length === 3) {
-            // Pad day and month with leading zero if necessary
-            let day = parts[0].length === 1 ? '0' + parts[0] : parts[0];
-            let month = parts[1].length === 1 ? '0' + parts[1] : parts[1];
-            let year = parts[2];
+            const dayNum = parseInt(parts[0], 10);
+            const monthNum = parseInt(parts[1], 10);
+            const yearNum = parseInt(parts[2], 10);
 
-            const dayNum = parseInt(day, 10);
-            const monthNum = parseInt(month, 10);
-            const yearNum = parseInt(year, 10);
-
-            // Basic validation
             if (!isNaN(dayNum) && !isNaN(monthNum) && !isNaN(yearNum) && yearNum > 1900 && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
+                // Create a UTC date to prevent timezone shifts from changing the date
                 const date = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
                 // Final check to prevent invalid dates like 31st Feb being rolled over
                 if (date.getUTCFullYear() === yearNum && date.getUTCMonth() === monthNum - 1 && date.getUTCDate() === dayNum) {
