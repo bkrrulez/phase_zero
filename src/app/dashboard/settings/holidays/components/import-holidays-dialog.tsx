@@ -20,22 +20,21 @@ interface ImportHolidaysDialogProps {
 const parseDateString = (dateInput: string | number | Date): Date | null => {
     if (!dateInput) return null;
 
-    // Highest priority: If it's already a valid Date object (often from XLSX)
+    // 1. Handle if it's already a valid Date object (from XLSX)
     if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
-        // Adjust for potential timezone offset by creating a UTC date
         const d = dateInput;
         return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     }
     
-    // Second priority: Handle Excel's numeric date format
+    // 2. Handle Excel's numeric date format
     if (typeof dateInput === 'number') {
         const date = XLSX.SSF.parse_date_code(dateInput);
-        if (date.y && date.m && date.d) {
-            return new Date(Date.UTC(date.y, date.m - 1, date.d));
+        if (date && date.y && date.m && date.d) {
+             return new Date(Date.UTC(date.y, date.m - 1, date.d));
         }
     }
 
-    // Third priority: Handle string format DD/MM/YYYY (from CSVs)
+    // 3. Handle string format DD/MM/YYYY, allowing for single or double digits
     if (typeof dateInput === 'string') {
         const parts = dateInput.split('/');
         if (parts.length === 3) {
@@ -43,9 +42,10 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
             const month = parseInt(parts[1], 10);
             const year = parseInt(parts[2], 10);
 
+            // Basic validation
             if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
                 const date = new Date(Date.UTC(year, month - 1, day));
-                // Final check to ensure date components match, preventing things like 31st Feb
+                // Final check to prevent invalid dates like 31st Feb being rolled over
                 if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
                     return date;
                 }
@@ -53,7 +53,7 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
         }
     }
 
-    return null; // Return null if format is not DD/MM/YYYY or invalid
+    return null; // Return null if format is not valid
 };
 
 
