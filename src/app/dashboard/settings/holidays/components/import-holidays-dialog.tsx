@@ -20,27 +20,15 @@ interface ImportHolidaysDialogProps {
 const parseDateString = (dateInput: string | number | Date): Date | null => {
     if (!dateInput) return null;
 
-    if (dateInput instanceof Date) {
-        // If it's already a Date object, it's valid.
+    if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
         return dateInput;
     }
     
     if (typeof dateInput === 'number') {
-        // Handle Excel's serial date number format.
-        // The 'xlsx' library with `cellDates: true` should handle this,
-        // but this is a robust fallback.
         return XLSX.SSF.parse_date_code(dateInput);
     }
 
     if (typeof dateInput === 'string') {
-        // Attempt to parse various string formats
-        const isoDate = new Date(dateInput);
-        if (!isNaN(isoDate.getTime())) {
-            // Check if it's a valid ISO-like string (e.g., "YYYY-MM-DD")
-            return isoDate;
-        }
-
-        // Handle DD/MM/YYYY or MM/DD/YYYY
         const parts = dateInput.split('/');
         if (parts.length === 3) {
             const day = parseInt(parts[0], 10);
@@ -48,21 +36,19 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
             const year = parseInt(parts[2], 10);
 
             if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-                 // Try DD/MM/YYYY first
-                const ddmmyyyy = new Date(Date.UTC(year, month - 1, day));
-                if (ddmmyyyy.getUTCMonth() === month - 1) {
-                    return ddmmyyyy;
+                // We assume DD/MM/YYYY format. The year should be reasonable.
+                if (year > 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    const date = new Date(Date.UTC(year, month - 1, day));
+                    // Final check to ensure date is valid (e.g. not 31st Feb)
+                    if (date.getUTCMonth() === month - 1) {
+                        return date;
+                    }
                 }
-                // Fallback to MM/DD/YYYY
-                 const mmddyyyy = new Date(Date.UTC(year, day - 1, month));
-                 if (mmddyyyy.getUTCMonth() === day - 1) {
-                    return mmddyyyy;
-                 }
             }
         }
     }
 
-    return null;
+    return null; // Return null if format is not DD/MM/YYYY or invalid
 };
 
 
@@ -90,14 +76,20 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport }: ImportH
     }
 
     const parsedHolidays: Omit<PublicHoliday, 'id'>[] = data
-      .map(row => {
+      .map((row, index) => {
         if (!row.Country || !row.Holiday || !row.Date) {
+          console.warn(`Skipping row ${index + 2}: Missing required data.`);
           return null;
         }
         const date = parseDateString(row.Date);
         if (!date) {
-          console.warn('Skipping row due to invalid date:', row);
-          return null; // Invalid date format in CSV row
+          console.warn(`Skipping row ${index + 2}: Invalid date format for "${row.Date}". Expected DD/MM/YYYY.`);
+          toast({
+            variant: 'destructive',
+            title: 'Invalid Date Format',
+            description: `Row ${index + 2} has an invalid date: "${row.Date}". Please use DD/MM/YYYY.`
+          })
+          return null;
         }
         return {
           country: row.Country,
@@ -171,12 +163,12 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport }: ImportH
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Import Public Holidays</DialogTitle>
           <DialogDescription>
-            Upload a CSV or XLSX file to bulk import holidays. The file must contain columns: Country, Holiday, Date, and Type.
+            Upload a CSV or XLSX file. The file must contain columns: Country, Holiday, Date (in DD/MM/YYYY format), and Type.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
