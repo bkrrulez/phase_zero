@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { FileUp } from 'lucide-react';
-import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -55,7 +55,7 @@ export default function ReportsPage() {
   const searchParams = useSearchParams();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
-  const { publicHolidays, customHolidays } = useHolidays();
+  const { publicHolidays, customHolidays, annualLeaveAllowance } = useHolidays();
   const { timeEntries } = useTimeTracking();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
@@ -88,70 +88,70 @@ export default function ReportsPage() {
     const consolidatedData = visibleMembers.map(member => {
         const dailyContractHours = member.contract.weeklyHours / 5;
 
-        if (periodType === 'yearly') {
-            const yearStart = new Date(selectedYear, 0, 1);
-            const yearEnd = new Date(selectedYear, 11, 31);
-            const parseDateStringAsLocal = (dateString: string): Date => {
-                const [year, month, day] = dateString.split('-').map(Number);
-                return new Date(year, month - 1, day);
-            };
+        const parseDateStringAsLocal = (dateString: string): Date => {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        };
+        
+        const contractStartDate = parseDateStringAsLocal(member.contract.startDate);
+        const contractEndDate = member.contract.endDate ? parseDateStringAsLocal(member.contract.endDate) : periodEnd;
+        
+        const effectiveStart = max([periodStart, contractStartDate]);
+        const effectiveEnd = min([periodEnd, contractEndDate]);
 
-            const contractStartDate = parseDateStringAsLocal(member.contract.startDate);
-            const contractEndDate = member.contract.endDate ? parseDateStringAsLocal(member.contract.endDate) : yearEnd;
-            const effectiveStart = contractStartDate > yearStart ? contractStartDate : yearStart;
-            const effectiveEnd = contractEndDate < yearEnd ? contractEndDate : yearEnd;
-            
-            if (effectiveStart > effectiveEnd) {
-                return { ...member, expectedHours: '0.00', loggedHours: '0.00', remainingHours: '0.00' };
-            }
-
-            const allPublicHolidaysForUser = publicHolidays.filter(h => new Date(h.date).getFullYear() === selectedYear);
-            const allCustomHolidaysForUser = customHolidays.filter(h => {
-                const hDate = new Date(h.date);
-                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                return hDate.getFullYear() === selectedYear && applies;
-            });
-            const allHolidaysForMemberDates = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser].map(h => new Date(h.date).toDateString());
-
-            let workingDaysInPeriod = 0;
-            for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
-                if (d.getDay() !== 0 && d.getDay() !== 6 && !allHolidaysForMemberDates.includes(d.toDateString())) {
-                    workingDaysInPeriod++;
-                }
-            }
-            const expectedHours = workingDaysInPeriod * dailyContractHours;
-
-            const holidaysInPeriod = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser].filter(h => {
-                const hDate = new Date(h.date);
-                return hDate >= effectiveStart && hDate <= effectiveEnd && hDate.getDay() !== 0 && hDate.getDay() !== 6;
-            });
-            const holidayHours = holidaysInPeriod.reduce((acc, holiday) => acc + (holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2), 0);
-            const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
-            const loggedHours = manualLoggedHours + holidayHours;
-
-            return { ...member, expectedHours: expectedHours.toFixed(2), loggedHours: loggedHours.toFixed(2), remainingHours: (expectedHours - loggedHours).toFixed(2) };
-        } else { // Monthly
-            let workingDaysInMonthForMember = 0;
-            const publicHolidaysInMonth = publicHolidays.filter(h => isWithinInterval(new Date(h.date), { start: periodStart, end: periodEnd }));
-            const customHolidaysInMonth = customHolidays.filter(h => {
-                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                return isWithinInterval(new Date(h.date), { start: periodStart, end: periodEnd }) && applies;
-            });
-            const allHolidaysForMemberDates = [...publicHolidaysInMonth, ...customHolidaysInMonth].map(h => new Date(h.date).toDateString());
-            
-            for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
-                if (d.getDay() !== 0 && d.getDay() !== 6 && !allHolidaysForMemberDates.includes(d.toDateString())) {
-                    workingDaysInMonthForMember++;
-                }
-            }
-            const expectedHours = workingDaysInMonthForMember * dailyContractHours;
-            const allHolidaysInMonthForMember = [...publicHolidaysInMonth, ...customHolidaysInMonth].filter(h => new Date(h.date).getDay() !== 0 && new Date(h.date).getDay() !== 6);
-            const holidayHours = allHolidaysInMonthForMember.reduce((acc, holiday) => acc + (holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2), 0);
-            const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
-            const loggedHours = manualLoggedHours + holidayHours;
-
-            return { ...member, expectedHours: expectedHours.toFixed(2), loggedHours: loggedHours.toFixed(2), remainingHours: (expectedHours - loggedHours).toFixed(2) };
+        if (effectiveStart > effectiveEnd) {
+            return { ...member, assignedHours: '0.00', leaveHours: '0.00', expectedHours: '0.00', loggedHours: '0.00', remainingHours: '0.00' };
         }
+
+        const allPublicHolidaysForUser = publicHolidays.filter(h => isWithinInterval(new Date(h.date), { start: effectiveStart, end: effectiveEnd }));
+        const allCustomHolidaysForUser = customHolidays.filter(h => {
+            const hDate = new Date(h.date);
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && applies;
+        });
+        const allHolidaysForMemberDates = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser].map(h => new Date(h.date).toDateString());
+
+        let workingDaysInPeriod = 0;
+        for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
+            if (d.getDay() !== 0 && d.getDay() !== 6 && !allHolidaysForMemberDates.includes(d.toDateString())) {
+                workingDaysInPeriod++;
+            }
+        }
+        const assignedHours = workingDaysInPeriod * dailyContractHours;
+        
+        // Calculate Leave Hours
+        const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
+        const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
+        const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
+        const prorataContractStart = max([yearStartForProrata, contractStartDate]);
+        const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
+        const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
+        const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+        const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
+        
+        let leaveHours = 0;
+        if (periodType === 'yearly') {
+            leaveHours = totalYearlyLeaveHours;
+        } else { // monthly
+            const daysInSelectedMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
+            leaveHours = (totalYearlyLeaveHours * daysInSelectedMonth) / daysInYear;
+        }
+
+        const expectedHours = assignedHours - leaveHours;
+
+        const holidaysInPeriod = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser].filter(h => new Date(h.date).getDay() !== 0 && new Date(h.date).getDay() !== 6);
+        const holidayHours = holidaysInPeriod.reduce((acc, holiday) => acc + (holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2), 0);
+        const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
+        const loggedHours = manualLoggedHours + holidayHours;
+        
+        return { 
+            ...member, 
+            assignedHours: assignedHours.toFixed(2),
+            leaveHours: leaveHours.toFixed(2),
+            expectedHours: expectedHours.toFixed(2), 
+            loggedHours: loggedHours.toFixed(2), 
+            remainingHours: (expectedHours - loggedHours).toFixed(2) 
+        };
     });
 
     // Project Level Report
@@ -188,7 +188,7 @@ export default function ReportsPage() {
     }).sort((a,b) => a.member.name.localeCompare(b.member.name));
 
     return { consolidatedData, projectReport, taskReport };
-  }, [selectedYear, selectedMonth, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType]);
+  }, [selectedYear, selectedMonth, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
@@ -203,9 +203,9 @@ export default function ReportsPage() {
       : `Report for ${selectedYear}`;
     
     const totalTimeData = [
-      [title], [], ['Member', 'Role', 'Expected', 'Logged', 'Remaining'],
+      [title], [], ['Member', 'Role', 'Assigned Hours', 'Leave Hours', 'Expected', 'Logged', 'Remaining'],
       ...reports.consolidatedData.map(member => [
-        member.name, member.role, member.expectedHours, member.loggedHours, member.remainingHours,
+        member.name, member.role, member.assignedHours, member.leaveHours, member.expectedHours, member.loggedHours, member.remainingHours,
       ]),
     ];
     const totalTimeSheet = XLSX.utils.aoa_to_sheet(totalTimeData);
@@ -307,6 +307,8 @@ export default function ReportsPage() {
                         <TableRow>
                           <TableHead>Member</TableHead>
                           <TableHead className="hidden md:table-cell">Role</TableHead>
+                          <TableHead className="text-right">Assigned Hours</TableHead>
+                          <TableHead className="text-right">Leave Hours</TableHead>
                           <TableHead className="text-right">Expected</TableHead>
                           <TableHead className="text-right">Logged</TableHead>
                           <TableHead className="text-right">Remaining</TableHead>
@@ -322,12 +324,14 @@ export default function ReportsPage() {
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge></TableCell>
+                            <TableCell className="text-right font-mono">{member.assignedHours}h</TableCell>
+                            <TableCell className="text-right font-mono">{member.leaveHours}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours}h</TableCell>
                             <TableCell className={`text-right font-mono ${parseFloat(member.remainingHours) < 0 ? 'text-destructive' : ''}`}>{member.remainingHours}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={5} className="text-center h-24">No team members to display.</TableCell></TableRow>)}
+                        {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={7} className="text-center h-24">No team members to display.</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}
@@ -383,3 +387,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
