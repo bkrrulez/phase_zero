@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -71,7 +71,7 @@ export function MyDashboard() {
         return 0;
     }
 
-    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveEndDate) + 1;
+    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveStartDate) + 1;
     
     const prorated = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
     
@@ -82,26 +82,28 @@ export function MyDashboard() {
 
   const { totalHours, expectedHours, overtime, takenDays, remainingDays } = React.useMemo(() => {
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
     const monthStart = startOfMonth(today);
+    const monthEnd = endOfMonth(today);
 
     // Calculate Assigned Hours
     let workingDaysInMonth = 0;
-    for (let d = new Date(monthStart); d <= endOfYear(monthStart); d = addDays(d, 1)) {
-        if (d.getMonth() !== currentMonth) break;
-        if (d.getDay() !== 0 && d.getDay() !== 6) {
-            const isPublic = publicHolidays.some(h => isSameDay(new Date(h.date), d));
-            const isCustom = customHolidays.some(h => {
-                const applies = (h.appliesTo === 'all-members') ||
-                                (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
-                                (h.appliesTo === currentUser.teamId);
-                return applies && isSameDay(new Date(h.date), d);
-            });
-            if (!isPublic && !isCustom) {
-                workingDaysInMonth++;
-            }
-        }
+    for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+        if (isPublic) continue;
+
+        const isCustom = customHolidays.some(h => {
+            const hDate = new Date(h.date);
+            const applies = (h.appliesTo === 'all-members') ||
+                            (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
+                            (h.appliesTo === currentUser.teamId);
+            return hDate.toDateString() === d.toDateString() && applies;
+        });
+        if (isCustom) continue;
+        
+        workingDaysInMonth++;
     }
     const assignedHours = workingDaysInMonth * dailyHours;
 
@@ -128,13 +130,14 @@ export function MyDashboard() {
     const dayIterator = new Date(monthStart);
 
     while (dayIterator <= today) {
-        if (dayIterator.getMonth() === currentMonth) {
+        if (isSameMonth(dayIterator, today)) {
             const dayOfWeek = getDay(dayIterator);
-            const isHoliday = publicHolidays.some(h => isSameDay(new Date(h.date), dayIterator)) || customHolidays.some(h => {
+            const isHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === dayIterator.toDateString()) || customHolidays.some(h => {
+                const hDate = new Date(h.date);
                 const applies = (h.appliesTo === 'all-members') ||
                                 (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
                                 (h.appliesTo === currentUser.teamId);
-                return applies && isSameDay(new Date(h.date), dayIterator);
+                return hDate.toDateString() === dayIterator.toDateString() && applies;
             });
             if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
                 workDaysSoFar++;
