@@ -145,25 +145,20 @@ export default function ReportsPage() {
         }
 
         let assignedWorkDays = 0;
-        let holidayHours = 0;
 
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-            const publicHolidayForDay = publicHolidays.find(h => new Date(h.date).toDateString() === d.toDateString());
-            const customHolidayForDay = customHolidays.find(h => {
+            const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+            if (isPublicHoliday) continue;
+
+            const isCustomHoliday = customHolidays.some(h => {
                 const hDate = new Date(h.date);
                 const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
                 return hDate.toDateString() === d.toDateString() && applies;
             });
-            
-            const holiday = publicHolidayForDay || customHolidayForDay;
-
-            if (holiday) {
-                holidayHours += holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
-                continue;
-            }
+            if (isCustomHoliday) continue;
 
             assignedWorkDays++;
         }
@@ -178,19 +173,10 @@ export default function ReportsPage() {
         const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
         const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
         const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-        
-        let leaveHours = 0;
-        if (periodType === 'yearly') {
-            leaveHours = totalYearlyLeaveHours;
-        } else {
-            const daysInPeriod = differenceInCalendarDays(effectiveEnd, effectiveStart) + 1;
-            leaveHours = (totalYearlyLeaveHours / daysInYear) * daysInPeriod;
-        }
+        const leaveHours = (totalYearlyLeaveHours / daysInYear) * assignedWorkDays;
 
         const expectedHours = assignedHours - leaveHours;
-
-        const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
-        const loggedHours = manualLoggedHours + holidayHours;
+        const loggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
         const remainingHours = expectedHours - loggedHours;
         
         return { 
