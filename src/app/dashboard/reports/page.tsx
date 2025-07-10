@@ -162,7 +162,7 @@ export default function ReportsPage() {
 
             if (holiday) {
                 holidayHours += holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
-                continue; // Holidays don't count as assigned workdays, credit goes to logged time
+                continue;
             }
 
             assignedWorkDays++;
@@ -338,7 +338,7 @@ export default function ReportsPage() {
                         <div className="flex items-center gap-2">
                              {periodType === 'weekly' && (
                                 <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
-                                    <SelectTrigger className="w-[120px]">
+                                    <SelectTrigger className="w-full sm:w-[120px]">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
