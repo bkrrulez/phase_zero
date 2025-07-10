@@ -73,25 +73,25 @@ const DayContent: React.FC<DayContentProps> = (props) => {
   const isLeaveOrHoliday = [...monthlyData.personalLeaveDays, ...monthlyData.publicHolidayDays, ...monthlyData.customHolidayDays].some(d => d.toDateString() === date.toDateString());
 
   const wrapperProps = {
-    className: "relative w-full h-full flex flex-col items-center justify-center text-center p-1",
+    className: "relative w-full h-full flex flex-col items-center justify-between text-center p-1",
     ...(hasManualEntries && {
         onClick: () => onDayClick(date),
         role: 'button' as const,
-        className: "relative w-full h-full flex flex-col items-center justify-center text-center p-1 cursor-pointer hover:bg-accent/50 rounded-md"
+        className: "relative w-full h-full flex flex-col items-center justify-between text-center p-1 cursor-pointer hover:bg-accent/50 rounded-md"
     })
   };
 
   return (
     <div {...wrapperProps}>
-        <div>{dayOfMonth}</div>
-        {hours !== undefined && hours > 0 && (
+        <div className="self-start">{dayOfMonth}</div>
+        {hours !== undefined && hours > 0 ? (
             <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
-        )}
-        {!isWeekend && !isLeaveOrHoliday && expectedHours > 0 && (
-          <span className="absolute bottom-1 text-[10px] font-semibold text-orange-400">
+        ) : <span />}
+        {!isWeekend && !isLeaveOrHoliday && expectedHours > 0 ? (
+          <span className="text-[10px] font-semibold text-orange-400">
             Expected {expectedHours.toFixed(1)}h
           </span>
-        )}
+        ) : <span className="h-[15px]" />}
     </div>
   );
 };
@@ -205,16 +205,23 @@ export function IndividualReport() {
     const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
     const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
     const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-    const dailyLeaveHours = totalYearlyLeaveHours > 0 ? totalYearlyLeaveHours / daysInYear : 0;
+    const dailyLeaveHours = totalYearlyLeaveHours > 0 ? totalYearlyLeaveHours / contractDurationInYear : 0; // Distribute over contract days in year
     const dailyExpectedHours = dailyContractHours - dailyLeaveHours;
     
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
     for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
-        if (!isSameMonth(d, selectedDate)) continue; // Should not happen with this loop but good practice
         const dayOfWeek = getDay(d);
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          dailyExpected[d.getDate()] = dailyExpectedHours;
+          const isHolidayOrLeave = holidayRequests.some(req => req.userId === selectedUser.id && req.status === 'Approved' && isWithinInterval(d, {start: new Date(req.startDate), end: new Date(req.endDate)})) ||
+                                   publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString()) ||
+                                   customHolidays.some(h => {
+                                      const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!selectedUser.teamId) || (h.appliesTo === selectedUser.teamId);
+                                      return new Date(h.date).toDateString() === d.toDateString() && applies;
+                                   });
+          if (!isHolidayOrLeave) {
+            dailyExpected[d.getDate()] = dailyExpectedHours;
+          }
         }
     }
 
@@ -456,7 +463,7 @@ export function IndividualReport() {
                       cell: "flex-1 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
                       head_row: "flex",
                       head_cell: "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
-                      day: "h-20 w-full text-base p-1",
+                      day: "h-20 w-full text-base p-0",
                       months: "w-full",
                       month: "w-full space-y-4",
                       caption_label: "text-lg font-bold"
