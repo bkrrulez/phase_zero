@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { FileUp } from 'lucide-react';
-import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -50,6 +50,24 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
 
+const getWeeksForMonth = (year: number, month: number) => {
+    const weeks = [];
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+
+    let weekStart = firstDayOfMonth;
+
+    while (weekStart <= lastDayOfMonth) {
+        let weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        if (weekEnd > lastDayOfMonth) {
+            weekEnd = lastDayOfMonth;
+        }
+        weeks.push({ start: weekStart, end: weekEnd });
+        weekStart = addDays(weekEnd, 1);
+    }
+    return weeks;
+};
+
 export default function ReportsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -59,10 +77,24 @@ export default function ReportsPage() {
   const { timeEntries } = useTimeTracking();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
-  const [periodType, setPeriodType] = React.useState<'monthly' | 'yearly'>('monthly');
+  const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
   const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task'>('consolidated');
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
+  const [selectedWeekIndex, setSelectedWeekIndex] = React.useState<number>(0);
+
+  const weeksInMonth = React.useMemo(() => getWeeksForMonth(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
+  
+  React.useEffect(() => {
+    const today = new Date();
+    if(getYear(today) === selectedYear && getMonth(today) === selectedMonth) {
+      const currentWeekIndex = weeksInMonth.findIndex(w => isWithinInterval(today, {start: w.start, end: w.end}));
+      setSelectedWeekIndex(currentWeekIndex >= 0 ? currentWeekIndex : 0);
+    } else {
+      setSelectedWeekIndex(0);
+    }
+  }, [selectedYear, selectedMonth, weeksInMonth]);
+
 
   const reports = React.useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
@@ -71,12 +103,21 @@ export default function ReportsPage() {
         return false;
     });
 
-    const periodStart = periodType === 'monthly'
-      ? startOfMonth(new Date(selectedYear, selectedMonth))
-      : startOfYear(new Date(selectedYear, 0, 1));
-    const periodEnd = periodType === 'monthly'
-      ? endOfMonth(new Date(selectedYear, selectedMonth))
-      : endOfYear(new Date(selectedYear, 11, 31));
+    let periodStart: Date;
+    let periodEnd: Date;
+
+    if (periodType === 'weekly') {
+        const week = weeksInMonth[selectedWeekIndex];
+        periodStart = week ? week.start : startOfMonth(new Date(selectedYear, selectedMonth));
+        periodEnd = week ? week.end : endOfMonth(new Date(selectedYear, selectedMonth));
+    } else if (periodType === 'monthly') {
+        periodStart = startOfMonth(new Date(selectedYear, selectedMonth));
+        periodEnd = endOfMonth(new Date(selectedYear, selectedMonth));
+    } else { // yearly
+        periodStart = startOfYear(new Date(selectedYear, 0, 1));
+        periodEnd = endOfYear(new Date(selectedYear, 11, 31));
+    }
+    
 
     const visibleMemberIds = visibleMembers.map(m => m.id);
     const filteredTimeEntries = timeEntries.filter(entry => {
@@ -136,9 +177,9 @@ export default function ReportsPage() {
         let leaveHours = 0;
         if (periodType === 'yearly') {
             leaveHours = totalYearlyLeaveHours;
-        } else { // monthly
-            const daysInSelectedMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
-            leaveHours = (totalYearlyLeaveHours * daysInSelectedMonth) / daysInYear;
+        } else { // weekly or monthly
+            const daysInPeriod = differenceInCalendarDays(effectiveEnd, effectiveStart) + 1;
+            leaveHours = (totalYearlyLeaveHours / daysInYear) * daysInPeriod;
         }
 
         const expectedHours = assignedHours - leaveHours;
@@ -203,19 +244,31 @@ export default function ReportsPage() {
     }).sort((a,b) => a.member.name.localeCompare(b.member.name));
 
     return { consolidatedData, projectReport, taskReport };
-  }, [selectedYear, selectedMonth, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance]);
+  }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
+  };
+
+  const getReportTitle = () => {
+    if (periodType === 'yearly') {
+        return `Report for the year ${selectedYear}`;
+    }
+    if (periodType === 'monthly') {
+        return `Report for ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
+    }
+    if (periodType === 'weekly' && weeksInMonth[selectedWeekIndex]) {
+        const week = weeksInMonth[selectedWeekIndex];
+        return `Report for Week ${selectedWeekIndex + 1} (${getDate(week.start)} - ${getDate(week.end)} ${months[selectedMonth].label} ${selectedYear})`;
+    }
+    return 'Report';
   };
 
   const handleExport = () => {
     if (reports.consolidatedData.length === 0) return;
 
     // -- Sheet 1: Total Time --
-    const title = periodType === 'monthly'
-      ? `Report for ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
-      : `Report for ${selectedYear}`;
+    const title = getReportTitle();
     
     const totalTimeData = [
       [title], [], ['Member', 'Role', 'Assigned Hours', 'Leave Hours', 'Expected', 'Logged', 'Remaining'],
@@ -248,7 +301,7 @@ export default function ReportsPage() {
     XLSX.utils.book_append_sheet(wb, totalTimeSheet, 'Total Time');
     XLSX.utils.book_append_sheet(wb, projectSheet, 'Project Level Report');
     XLSX.utils.book_append_sheet(wb, taskSheet, 'Task Level Report');
-    XLSX.writeFile(wb, periodType === 'monthly' ? `team_report_${months.find(m => m.value === selectedMonth)?.label}_${selectedYear}.xlsx` : `team_report_${selectedYear}.xlsx`);
+    XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
 
@@ -281,22 +334,33 @@ export default function ReportsPage() {
                   <CardTitle>Team Hours Summary</CardTitle>
                   <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                     <CardDescription>
-                      {periodType === 'monthly'
-                        ? `Report for ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`
-                        : `Report for the year ${selectedYear}`}
+                      {getReportTitle()}
                     </CardDescription>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as 'monthly' | 'yearly')} className="flex items-center">
+                        <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as any)} className="flex items-center">
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="weekly" id="weekly" /><Label htmlFor="weekly">Weekly</Label></div>
                             <div className="flex items-center space-x-2"><RadioGroupItem value="monthly" id="monthly" /><Label htmlFor="monthly">Monthly</Label></div>
                             <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">Yearly</Label></div>
                         </RadioGroup>
                         <div className="flex items-center gap-2">
-                            {periodType === 'monthly' && (
+                            {periodType !== 'yearly' && (
                                 <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(Number(value))}>
                                     <SelectTrigger className="w-[130px]"><SelectValue placeholder="Select month" /></SelectTrigger>
                                     <SelectContent>{months.map(month => (<SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>))}</SelectContent>
                                 </Select>
                             )}
+                             {periodType === 'weekly' && (
+                                <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
+                                    <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {weeksInMonth.map((week, index) => (
+                                            <SelectItem key={index} value={String(index)}>
+                                                Week {index + 1} ({getDate(week.start)}-{getDate(week.end)})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                             )}
                             <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
                                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="Select year" /></SelectTrigger>
                                 <SelectContent>{years.map(year => (<SelectItem key={year} value={String(year)}>{year}</SelectItem>))}</SelectContent>
@@ -402,3 +466,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
