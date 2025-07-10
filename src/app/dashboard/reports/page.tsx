@@ -128,19 +128,19 @@ export default function ReportsPage() {
     const consolidatedData = visibleMembers.map(member => {
         const dailyContractHours = member.contract.weeklyHours / 5;
 
-        // --- Calculate total working days in the year for this user ---
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
         
-        let totalWorkingDaysInYear = 0;
         const userHolidaysForYear = publicHolidays
-          .filter(h => getYear(parseISO(h.date)) === selectedYear)
-          .concat(customHolidays.filter(h => {
-              if (getYear(parseISO(h.date)) !== selectedYear) return false;
-              const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-              return applies;
-          }));
+            .filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
+            .concat(customHolidays.filter(h => {
+                if (getYear(parseISO(h.date)) !== selectedYear) return false;
+                if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+                return applies;
+            }));
 
+        let totalWorkingDaysInYear = 0;
         for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
@@ -149,7 +149,6 @@ export default function ReportsPage() {
             totalWorkingDaysInYear++;
         }
 
-        // --- Calculate for the selected period ---
         let workingDaysInPeriod = 0;
         for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
@@ -160,11 +159,9 @@ export default function ReportsPage() {
         }
         
         const assignedHours = workingDaysInPeriod * dailyContractHours;
-        
         const totalYearlyLeaveHours = annualLeaveAllowance * dailyContractHours;
         const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
         const leaveHours = dailyLeaveCredit * workingDaysInPeriod;
-        
         const expectedHours = assignedHours - leaveHours;
         const loggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
         const remainingHours = expectedHours - loggedHours;
