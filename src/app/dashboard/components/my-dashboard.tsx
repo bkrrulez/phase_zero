@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from 'react';
-import { Clock, Users, BarChart as BarChartIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Clock, Users, BarChart as BarChartIcon, CalendarHeart } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isSameMonth } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -68,7 +68,7 @@ export function MyDashboard() {
         return 0;
     }
 
-    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveStartDate) + 1;
+    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveEndDate) + 1;
     
     const prorated = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
     
@@ -115,7 +115,7 @@ export function MyDashboard() {
     // Calculate Logged Hours
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
-        return entry.userId === currentUser.id && isSameMonth(entryDate, today);
+        return entry.userId === currentUser.id && isSameDay(entryDate, today);
     });
     const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
     const totalHours = manualTotalHours; // Holiday hours are now part of assigned hours/leave hours, not logged hours.
@@ -151,6 +151,16 @@ export function MyDashboard() {
 
     return { totalHours, expectedHours, overtime, takenDays, remainingDays };
   }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays, currentUser, getProratedAllowance]);
+
+  const upcomingHolidays = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return publicHolidays
+      .map(h => ({...h, dateObj: parseISO(h.date)}))
+      .filter(h => h.dateObj >= today)
+      .sort((a,b) => a.dateObj.getTime() - b.dateObj.getTime())
+      .slice(0,3);
+  }, [publicHolidays]);
 
 
   return (
@@ -207,7 +217,7 @@ export function MyDashboard() {
         <div className="lg:col-span-3">
             <MonthlyHoursChart />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 flex flex-col gap-6">
             <Card>
             <CardHeader>
                 <CardTitle>Recent Time Entries</CardTitle>
@@ -229,9 +239,39 @@ export function MyDashboard() {
                         <TableCell className="text-right">{entry.duration.toFixed(2)}h</TableCell>
                     </TableRow>
                     ))}
+                     {timeEntries.filter(e => e.userId === currentUser.id).length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="h-24 text-center">No recent entries.</TableCell>
+                        </TableRow>
+                     )}
                 </TableBody>
                 </Table>
             </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarHeart className="h-5 w-5" />
+                  Upcoming Public Holidays
+                </CardTitle>
+                <CardDescription>The next 3 upcoming public holidays.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {upcomingHolidays.length > 0 ? (
+                    upcomingHolidays.map(holiday => (
+                      <div key={holiday.id} className="flex justify-between items-center">
+                        <p className="font-medium">{holiday.name}</p>
+                        <p className="text-sm text-muted-foreground">{format(holiday.dateObj, 'PP')}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No upcoming public holidays.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
             </Card>
         </div>
       </div>
