@@ -63,7 +63,10 @@ const getWeeksForMonth = (year: number, month: number) => {
         
         weeks.push({ start: weekStart, end: weekEnd });
         
-        current = addDays(weekEnd, 1);
+        current = addDays(current, 1);
+        if (getDay(current) !== 1) { // Ensure next iteration starts on a Monday
+            current = startOfWeek(current, { weekStartsOn: 1 });
+        }
     }
     return weeks;
 };
@@ -144,27 +147,28 @@ export default function ReportsPage() {
         }
 
         let workingDaysInPeriod = 0;
+        
+        const userHolidaysInPeriod = publicHolidays
+            .filter(h => new Date(h.date).getFullYear() === selectedYear)
+            .concat(customHolidays.filter(h => {
+                const hDate = new Date(h.date);
+                if (hDate.getFullYear() !== selectedYear) return false;
+                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+                return applies;
+            }));
 
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-            const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-            if (isPublicHoliday) continue;
-
-            const isCustomHoliday = customHolidays.some(h => {
-                const hDate = new Date(h.date);
-                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                return hDate.toDateString() === d.toDateString() && applies;
-            });
-            if (isCustomHoliday) continue;
+            
+            const isHoliday = userHolidaysInPeriod.some(h => new Date(h.date).toDateString() === d.toDateString());
+            if (isHoliday) continue;
             
             workingDaysInPeriod++;
         }
         
         const assignedHours = workingDaysInPeriod * dailyContractHours;
         
-        // --- Dynamic Yearly Working Day Calculation ---
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
         const prorataContractStart = max([yearStartForProrata, contractStartDate]);
@@ -172,20 +176,20 @@ export default function ReportsPage() {
         
         let totalWorkingDaysInYear = 0;
         if(prorataContractStart <= prorataContractEnd) {
+             const userHolidaysForYear = publicHolidays
+                .filter(h => new Date(h.date).getFullYear() === selectedYear)
+                .concat(customHolidays.filter(h => {
+                    if (new Date(h.date).getFullYear() !== selectedYear) return false;
+                    const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+                    return applies;
+                }));
+
             for (let d = new Date(prorataContractStart); d <= prorataContractEnd; d = addDays(d, 1)) {
                 const dayOfWeek = getDay(d);
                 if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-                const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString() && new Date(h.date).getFullYear() === selectedYear);
-                if (isPublic) continue;
-
-                const isCustom = customHolidays.some(h => {
-                    const hDate = new Date(h.date);
-                    if (hDate.getFullYear() !== selectedYear) return false;
-                    const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                    return hDate.toDateString() === d.toDateString() && applies;
-                });
-                if (isCustom) continue;
+                const isHoliday = userHolidaysForYear.some(h => new Date(h.date).toDateString() === d.toDateString());
+                if (isHoliday) continue;
                 
                 totalWorkingDaysInYear++;
             }
