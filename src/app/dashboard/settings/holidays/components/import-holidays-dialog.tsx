@@ -36,17 +36,22 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
 
     // 3. Handle string format DD/MM/YYYY, allowing for single or double digits
     if (typeof dateInput === 'string') {
-        const parts = dateInput.split('/');
+        let parts = dateInput.split('/');
         if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10);
-            const year = parseInt(parts[2], 10);
+            // Pad day and month with leading zero if necessary
+            let day = parts[0].length === 1 ? '0' + parts[0] : parts[0];
+            let month = parts[1].length === 1 ? '0' + parts[1] : parts[1];
+            let year = parts[2];
+
+            const dayNum = parseInt(day, 10);
+            const monthNum = parseInt(month, 10);
+            const yearNum = parseInt(year, 10);
 
             // Basic validation
-            if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-                const date = new Date(Date.UTC(year, month - 1, day));
+            if (!isNaN(dayNum) && !isNaN(monthNum) && !isNaN(yearNum) && yearNum > 1900 && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
+                const date = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
                 // Final check to prevent invalid dates like 31st Feb being rolled over
-                if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+                if (date.getUTCFullYear() === yearNum && date.getUTCMonth() === monthNum - 1 && date.getUTCDate() === dayNum) {
                     return date;
                 }
             }
