@@ -55,16 +55,15 @@ const getWeeksForMonth = (year: number, month: number) => {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
 
-    let weekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
+    let current = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
 
-    while (weekStart <= lastDayOfMonth) {
-        let weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-
-        const actualStart = max([weekStart, firstDayOfMonth]);
-        const actualEnd = min([weekEnd, lastDayOfMonth]);
-
-        weeks.push({ start: actualStart, end: actualEnd });
-        weekStart = addDays(weekEnd, 1);
+    while (current <= lastDayOfMonth) {
+        const weekStart = max([current, firstDayOfMonth]);
+        const weekEnd = min([endOfWeek(current, { weekStartsOn: 1 }), lastDayOfMonth]);
+        
+        weeks.push({ start: weekStart, end: weekEnd });
+        
+        current = addDays(weekEnd, 1);
     }
     return weeks;
 };
@@ -146,19 +145,24 @@ export default function ReportsPage() {
         }
 
         let assignedWorkDays = 0;
+        let holidayHours = 0;
+
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-            const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-            if(isPublic) continue;
-
-            const isCustom = customHolidays.some(h => {
+            const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+            const customHolidayForDay = customHolidays.find(h => {
                 const hDate = new Date(h.date);
                 const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
                 return hDate.toDateString() === d.toDateString() && applies;
             });
-            if(isCustom) continue;
+
+            if (isPublicHoliday || customHolidayForDay) {
+                const holidayType = isPublicHoliday ? publicHolidays.find(h => new Date(h.date).toDateString() === d.toDateString())!.type : customHolidayForDay!.type;
+                holidayHours += holidayType === 'Full Day' ? dailyContractHours : dailyContractHours / 2;
+                continue; // Holidays don't count as assigned workdays
+            }
 
             assignedWorkDays++;
         }
@@ -184,19 +188,6 @@ export default function ReportsPage() {
 
         const expectedHours = assignedHours - leaveHours;
 
-        const allPublicHolidaysForUser = publicHolidays.filter(h => {
-            const hDate = new Date(h.date);
-            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
-        });
-
-        const allCustomHolidaysForUser = customHolidays.filter(h => {
-            const hDate = new Date(h.date);
-            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-            return isWithinInterval(hDate, { start: effectiveStart, end: effectiveEnd }) && getDay(hDate) !== 0 && getDay(hDate) !== 6 && applies;
-        });
-
-        const holidaysInPeriod = [...allPublicHolidaysForUser, ...allCustomHolidaysForUser];
-        const holidayHours = holidaysInPeriod.reduce((acc, holiday) => acc + (holiday.type === 'Full Day' ? dailyContractHours : dailyContractHours / 2), 0);
         const manualLoggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
         const loggedHours = manualLoggedHours + holidayHours;
         
@@ -259,7 +250,7 @@ export default function ReportsPage() {
     }
     if (periodType === 'weekly' && weeksInMonth[selectedWeekIndex]) {
         const week = weeksInMonth[selectedWeekIndex];
-        return `Report for Week ${selectedWeekIndex + 1} (${getDate(week.start)}-${getDate(week.end)} ${months[selectedMonth].label} ${selectedYear})`;
+        return `Report for W${selectedWeekIndex + 1} (${getDate(week.start)}-${getDate(week.end)}) ${months[selectedMonth].label} ${selectedYear}`;
     }
     return 'Report';
   };
