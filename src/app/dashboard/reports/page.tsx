@@ -144,7 +144,7 @@ export default function ReportsPage() {
             return { ...member, assignedHours: '0.00', leaveHours: '0.00', expectedHours: '0.00', loggedHours: '0.00', remainingHours: '0.00' };
         }
 
-        let assignedWorkDays = 0;
+        let workingDaysInPeriod = 0;
 
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
@@ -160,20 +160,36 @@ export default function ReportsPage() {
             });
             if (isCustomHoliday) continue;
 
-            assignedWorkDays++;
+            workingDaysInPeriod++;
         }
         
-        const assignedHours = assignedWorkDays * dailyContractHours;
+        const assignedHours = workingDaysInPeriod * dailyContractHours;
         
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
-        const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
         const prorataContractStart = max([yearStartForProrata, contractStartDate]);
         const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
         const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
-        const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+        const proratedAllowanceDays = (annualLeaveAllowance / 365) * contractDurationInYear;
         const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-        const leaveHours = (totalYearlyLeaveHours / daysInYear) * assignedWorkDays;
+
+        let totalWorkingDaysInYear = 0;
+        for (let d = new Date(prorataContractStart); d <= prorataContractEnd; d = addDays(d, 1)) {
+             const dayOfWeek = getDay(d);
+            if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+            const isPublicHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+            if (isPublicHoliday) continue;
+            const isCustomHoliday = customHolidays.some(h => {
+                const hDate = new Date(h.date);
+                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+                return hDate.toDateString() === d.toDateString() && applies;
+            });
+            if (isCustomHoliday) continue;
+            totalWorkingDaysInYear++;
+        }
+        
+        const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
+        const leaveHours = dailyLeaveCredit * workingDaysInPeriod;
 
         const expectedHours = assignedHours - leaveHours;
         const loggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
