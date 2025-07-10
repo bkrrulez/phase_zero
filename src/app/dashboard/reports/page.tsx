@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx';
 import { FileUp } from 'lucide-react';
-import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay } from 'date-fns';
 import {
   Card,
   CardContent,
@@ -63,10 +63,7 @@ const getWeeksForMonth = (year: number, month: number) => {
         
         weeks.push({ start: weekStart, end: weekEnd });
         
-        current = addDays(current, 1);
-        if (getDay(current) !== 1) { // Ensure next iteration starts on a Monday
-            current = startOfWeek(current, { weekStartsOn: 1 });
-        }
+        current = addDays(current, 7);
     }
     return weeks;
 };
@@ -101,103 +98,70 @@ export default function ReportsPage() {
 
   const reports = React.useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
-        if (currentUser.role === 'Super Admin') return true;
-        if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id;
-        return false;
+      if (currentUser.role === 'Super Admin') return true;
+      if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id;
+      return false;
     });
 
     let periodStart: Date;
     let periodEnd: Date;
 
     if (periodType === 'weekly') {
-        const week = weeksInMonth[selectedWeekIndex];
-        periodStart = week ? startOfDay(week.start) : startOfMonth(new Date(selectedYear, selectedMonth));
-        periodEnd = week ? endOfDay(week.end) : endOfMonth(new Date(selectedYear, selectedMonth));
+      const week = weeksInMonth[selectedWeekIndex];
+      periodStart = week ? startOfDay(week.start) : startOfMonth(new Date(selectedYear, selectedMonth));
+      periodEnd = week ? endOfDay(week.end) : endOfMonth(new Date(selectedYear, selectedMonth));
     } else if (periodType === 'monthly') {
-        periodStart = startOfMonth(new Date(selectedYear, selectedMonth));
-        periodEnd = endOfMonth(new Date(selectedYear, selectedMonth));
+      periodStart = startOfMonth(new Date(selectedYear, selectedMonth));
+      periodEnd = endOfMonth(new Date(selectedYear, selectedMonth));
     } else { // yearly
-        periodStart = startOfYear(new Date(selectedYear, 0, 1));
-        periodEnd = endOfYear(new Date(selectedYear, 11, 31));
+      periodStart = startOfYear(new Date(selectedYear, 0, 1));
+      periodEnd = endOfYear(new Date(selectedYear, 11, 31));
     }
     
     const visibleMemberIds = visibleMembers.map(m => m.id);
     const filteredTimeEntries = timeEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
-        return visibleMemberIds.includes(entry.userId) && isWithinInterval(entryDate, { start: periodStart, end: periodEnd });
+      const entryDate = parseISO(entry.date);
+      return visibleMemberIds.includes(entry.userId) && isWithinInterval(entryDate, { start: periodStart, end: periodEnd });
     });
     
     // Consolidated Report
     const consolidatedData = visibleMembers.map(member => {
         const dailyContractHours = member.contract.weeklyHours / 5;
 
-        const parseDateStringAsLocal = (dateString: string): Date => {
-            const [year, month, day] = dateString.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        };
+        // --- Calculate total working days in the year for this user ---
+        const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
+        const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
         
-        const contractStartDate = parseDateStringAsLocal(member.contract.startDate);
-        const contractEndDate = member.contract.endDate ? parseDateStringAsLocal(member.contract.endDate) : periodEnd;
-        
-        const effectiveStart = max([periodStart, contractStartDate]);
-        const effectiveEnd = min([periodEnd, contractEndDate]);
+        let totalWorkingDaysInYear = 0;
+        const userHolidaysForYear = publicHolidays
+          .filter(h => getYear(parseISO(h.date)) === selectedYear)
+          .concat(customHolidays.filter(h => {
+              if (getYear(parseISO(h.date)) !== selectedYear) return false;
+              const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+              return applies;
+          }));
 
-        if (effectiveStart > effectiveEnd) {
-            return { ...member, assignedHours: '0.00', leaveHours: '0.00', expectedHours: '0.00', loggedHours: '0.00', remainingHours: '0.00' };
-        }
-
-        let workingDaysInPeriod = 0;
-        
-        const userHolidaysInPeriod = publicHolidays
-            .filter(h => new Date(h.date).getFullYear() === selectedYear)
-            .concat(customHolidays.filter(h => {
-                const hDate = new Date(h.date);
-                if (hDate.getFullYear() !== selectedYear) return false;
-                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                return applies;
-            }));
-
-        for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
+        for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-            
-            const isHoliday = userHolidaysInPeriod.some(h => new Date(h.date).toDateString() === d.toDateString());
+            const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
             if (isHoliday) continue;
-            
+            totalWorkingDaysInYear++;
+        }
+
+        // --- Calculate for the selected period ---
+        let workingDaysInPeriod = 0;
+        for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
+            const dayOfWeek = getDay(d);
+            if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+            const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+            if (isHoliday) continue;
             workingDaysInPeriod++;
         }
         
         const assignedHours = workingDaysInPeriod * dailyContractHours;
         
-        const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
-        const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
-        const prorataContractStart = max([yearStartForProrata, contractStartDate]);
-        const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
-        
-        let totalWorkingDaysInYear = 0;
-        if(prorataContractStart <= prorataContractEnd) {
-             const userHolidaysForYear = publicHolidays
-                .filter(h => new Date(h.date).getFullYear() === selectedYear)
-                .concat(customHolidays.filter(h => {
-                    if (new Date(h.date).getFullYear() !== selectedYear) return false;
-                    const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                    return applies;
-                }));
-
-            for (let d = new Date(prorataContractStart); d <= prorataContractEnd; d = addDays(d, 1)) {
-                const dayOfWeek = getDay(d);
-                if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-                const isHoliday = userHolidaysForYear.some(h => new Date(h.date).toDateString() === d.toDateString());
-                if (isHoliday) continue;
-                
-                totalWorkingDaysInYear++;
-            }
-        }
-        
-        const proratedAllowanceDays = (annualLeaveAllowance / (isLeapYear(selectedYear) ? 366 : 365)) * (differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1);
-        const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-        
+        const totalYearlyLeaveHours = annualLeaveAllowance * dailyContractHours;
         const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
         const leaveHours = dailyLeaveCredit * workingDaysInPeriod;
         
