@@ -55,18 +55,16 @@ const getWeeksForMonth = (year: number, month: number) => {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
 
-    let current = firstDayOfMonth;
-    while (current.getDay() !== 1) { // Find the first Monday
-      current = addDays(current, -1);
-    }
-    
-    // Adjust start date to be the actual start of the first week of the month, even if it's in the previous month
     let weekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
-
 
     while (weekStart <= lastDayOfMonth) {
         let weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        weeks.push({ start: weekStart, end: weekEnd });
+
+        // Clamp the start and end dates to be within the current month
+        const actualStart = max([weekStart, firstDayOfMonth]);
+        const actualEnd = min([weekEnd, lastDayOfMonth]);
+
+        weeks.push({ start: actualStart, end: actualEnd });
         weekStart = addDays(weekEnd, 1);
     }
     return weeks;
