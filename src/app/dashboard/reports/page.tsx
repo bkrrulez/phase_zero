@@ -60,7 +60,6 @@ const getWeeksForMonth = (year: number, month: number) => {
     while (weekStart <= lastDayOfMonth) {
         let weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
 
-        // Clamp the start and end dates to be within the current month
         const actualStart = max([weekStart, firstDayOfMonth]);
         const actualEnd = min([weekEnd, lastDayOfMonth]);
 
@@ -110,8 +109,8 @@ export default function ReportsPage() {
 
     if (periodType === 'weekly') {
         const week = weeksInMonth[selectedWeekIndex];
-        periodStart = week ? week.start : startOfMonth(new Date(selectedYear, selectedMonth));
-        periodEnd = week ? week.end : endOfMonth(new Date(selectedYear, selectedMonth));
+        periodStart = week ? startOfDay(week.start) : startOfMonth(new Date(selectedYear, selectedMonth));
+        periodEnd = week ? endOfDay(week.end) : endOfMonth(new Date(selectedYear, selectedMonth));
     } else if (periodType === 'monthly') {
         periodStart = startOfMonth(new Date(selectedYear, selectedMonth));
         periodEnd = endOfMonth(new Date(selectedYear, selectedMonth));
@@ -149,24 +148,23 @@ export default function ReportsPage() {
         let assignedWorkDays = 0;
         for (let d = new Date(effectiveStart); d <= effectiveEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
-            if (dayOfWeek === 0 || dayOfWeek === 6) continue; // Skip weekends
+            if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
             const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-            if(isPublic) continue; // Skip public holidays
+            if(isPublic) continue;
 
             const isCustom = customHolidays.some(h => {
                 const hDate = new Date(h.date);
                 const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
                 return hDate.toDateString() === d.toDateString() && applies;
             });
-            if(isCustom) continue; // Skip custom holidays
+            if(isCustom) continue;
 
             assignedWorkDays++;
         }
         
         const assignedHours = assignedWorkDays * dailyContractHours;
         
-        // Calculate Leave Hours
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
         const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
@@ -179,7 +177,7 @@ export default function ReportsPage() {
         let leaveHours = 0;
         if (periodType === 'yearly') {
             leaveHours = totalYearlyLeaveHours;
-        } else { // weekly or monthly
+        } else {
             const daysInPeriod = differenceInCalendarDays(effectiveEnd, effectiveStart) + 1;
             leaveHours = (totalYearlyLeaveHours / daysInYear) * daysInPeriod;
         }
@@ -261,7 +259,7 @@ export default function ReportsPage() {
     }
     if (periodType === 'weekly' && weeksInMonth[selectedWeekIndex]) {
         const week = weeksInMonth[selectedWeekIndex];
-        return `Report for Week ${selectedWeekIndex + 1} (${getDate(week.start)} - ${getDate(week.end)} ${months[selectedMonth].label} ${selectedYear})`;
+        return `Report for Week ${selectedWeekIndex + 1} (${getDate(week.start)}-${getDate(week.end)} ${months[selectedMonth].label} ${selectedYear})`;
     }
     return 'Report';
   };
@@ -347,7 +345,9 @@ export default function ReportsPage() {
                         <div className="flex items-center gap-2">
                              {periodType === 'weekly' && (
                                 <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
-                                    <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="w-[120px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
                                     <SelectContent>
                                         {weeksInMonth.map((week, index) => (
                                             <SelectItem key={index} value={String(index)}>
