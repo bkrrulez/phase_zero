@@ -85,27 +85,17 @@ export function PublicHolidaysTab() {
     }
     
     const handleImport = async (importedHolidays: Omit<PublicHoliday, 'id'>[]) => {
-        const holidaysForYear = importedHolidays.filter(h => new Date(h.date).getFullYear() === selectedYear);
-
-        if (holidaysForYear.length !== importedHolidays.length) {
+        if (importedHolidays.length === 0) {
             toast({
-                variant: 'destructive',
-                title: 'Import Error',
-                description: 'Some holidays were for a different year and have been ignored.'
-            });
-        }
-        
-        if (holidaysForYear.length === 0) {
-            toast({
-                title: 'No Holidays Imported',
-                description: 'The file contained no valid holidays for the selected year.'
+                title: 'No Valid Holidays Found',
+                description: 'The file contained no valid holidays to import.'
             });
             setIsImportDialogOpen(false);
             return;
         }
 
         let successfulImports = 0;
-        for (const newHoliday of holidaysForYear) {
+        for (const newHoliday of importedHolidays) {
             const newHolidayData = { ...newHoliday, date: format(new Date(newHoliday.date), 'yyyy-MM-dd')};
             const existingHoliday = publicHolidays.find(h => new Date(h.date).toDateString() === new Date(newHoliday.date).toDateString() && h.country === newHoliday.country);
             
@@ -123,10 +113,10 @@ export function PublicHolidaysTab() {
 
         toast({
             title: 'Import Complete',
-            description: `${successfulImports} of ${holidaysForYear.length} holidays have been imported for ${selectedYear}.`
+            description: `${successfulImports} of ${importedHolidays.length} holidays have been imported/updated.`
         });
         if(successfulImports > 0) {
-          await logAction(`User '${currentUser.name}' imported ${successfulImports} public holidays for ${selectedYear}.`);
+          await logAction(`User '${currentUser.name}' imported ${successfulImports} public holidays.`);
         }
         setIsImportDialogOpen(false);
     };
@@ -225,7 +215,6 @@ export function PublicHolidaysTab() {
                 isOpen={isImportDialogOpen}
                 onOpenChange={setIsImportDialogOpen}
                 onImport={handleImport}
-                selectedYear={selectedYear}
             />
         </>
     )

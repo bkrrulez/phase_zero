@@ -37,16 +37,14 @@ export default function HolidaysSettingsPage() {
           <h1 className="text-3xl font-bold font-headline">Holidays Settings</h1>
           <p className="text-muted-foreground">Manage public and custom holidays for your organization.</p>
         </div>
-        {currentUser.role === 'Super Admin' && (
-          <div className="flex items-center space-x-2">
-              <Switch 
-                  id="display-holidays" 
-                  checked={isHolidaysNavVisible}
-                  onCheckedChange={setIsHolidaysNavVisible}
-              />
-              <Label htmlFor="display-holidays">Display Holidays</Label>
-          </div>
-        )}
+        <div className="flex items-center space-x-2">
+            <Switch 
+                id="display-holidays" 
+                checked={isHolidaysNavVisible}
+                onCheckedChange={setIsHolidaysNavVisible}
+            />
+            <Label htmlFor="display-holidays">Display Holidays</Label>
+        </div>
       </div>
       <Tabs defaultValue="public-holidays">
         <TabsList className="grid grid-cols-3 md:w-[600px]">

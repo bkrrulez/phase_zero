@@ -15,33 +15,58 @@ interface ImportHolidaysDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onImport: (holidays: Omit<PublicHoliday, 'id'>[]) => void;
-  selectedYear: number;
 }
 
-const parseDateString = (dateStr: string): Date | null => {
-    if (!dateStr || typeof dateStr !== 'string') return null;
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return null;
+const parseDateString = (dateInput: string | number | Date): Date | null => {
+    if (!dateInput) return null;
 
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
+    if (dateInput instanceof Date) {
+        // If it's already a Date object, it's valid.
+        return dateInput;
+    }
+    
+    if (typeof dateInput === 'number') {
+        // Handle Excel's serial date number format.
+        // The 'xlsx' library with `cellDates: true` should handle this,
+        // but this is a robust fallback.
+        return XLSX.SSF.parse_date_code(dateInput);
+    }
 
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    if (typeof dateInput === 'string') {
+        // Attempt to parse various string formats
+        const isoDate = new Date(dateInput);
+        if (!isNaN(isoDate.getTime())) {
+            // Check if it's a valid ISO-like string (e.g., "YYYY-MM-DD")
+            return isoDate;
+        }
 
-    // JavaScript's Date constructor month is 0-indexed.
-    // Use Date.UTC to prevent timezone conversion issues.
-    const date = new Date(Date.UTC(year, month - 1, day));
+        // Handle DD/MM/YYYY or MM/DD/YYYY
+        const parts = dateInput.split('/');
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            const year = parseInt(parts[2], 10);
 
-    // Verify that the created date is valid and matches the input.
-    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
-        return date;
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                 // Try DD/MM/YYYY first
+                const ddmmyyyy = new Date(Date.UTC(year, month - 1, day));
+                if (ddmmyyyy.getUTCMonth() === month - 1) {
+                    return ddmmyyyy;
+                }
+                // Fallback to MM/DD/YYYY
+                 const mmddyyyy = new Date(Date.UTC(year, day - 1, month));
+                 if (mmddyyyy.getUTCMonth() === day - 1) {
+                    return mmddyyyy;
+                 }
+            }
+        }
     }
 
     return null;
 };
 
-export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedYear }: ImportHolidaysDialogProps) {
+
+export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport }: ImportHolidaysDialogProps) {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
@@ -71,6 +96,7 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedY
         }
         const date = parseDateString(row.Date);
         if (!date) {
+          console.warn('Skipping row due to invalid date:', row);
           return null; // Invalid date format in CSV row
         }
         return {
@@ -120,13 +146,10 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedY
         reader.onload = (event) => {
             try {
                 const data = event.target?.result;
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, {
-                    raw: false, // This ensures dates are parsed as strings
-                    dateNF: 'dd/mm/yyyy' // Set the expected date format
-                });
+                const json = XLSX.utils.sheet_to_json(worksheet);
                 processData(json);
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Failed to parse the XLSX file.' });
@@ -153,7 +176,7 @@ export function ImportHolidaysDialog({ isOpen, onOpenChange, onImport, selectedY
         <DialogHeader>
           <DialogTitle>Import Public Holidays</DialogTitle>
           <DialogDescription>
-            Upload a CSV or XLSX file to bulk import holidays for {selectedYear}. The file must contain columns: Country, Holiday, Date (in DD/MM/YYYY format), and Type.
+            Upload a CSV or XLSX file to bulk import holidays. The file must contain columns: Country, Holiday, Date, and Type.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
