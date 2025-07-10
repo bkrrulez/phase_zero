@@ -13,6 +13,7 @@ import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { cn } from '@/lib/utils';
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
