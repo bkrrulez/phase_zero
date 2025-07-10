@@ -20,7 +20,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { User, TimeEntry } from '@/lib/types';
-import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, differenceInCalendarDays, endOfYear, max, min, startOfYear } from 'date-fns';
+import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, differenceInCalendarDays, endOfYear, max, min, startOfYear, endOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
@@ -88,8 +88,8 @@ const DayContent: React.FC<DayContentProps> = (props) => {
             <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
         )}
         {!isWeekend && !isLeaveOrHoliday && expectedHours > 0 && (
-          <span className="absolute bottom-1 text-xs font-semibold text-orange-400">
-            {expectedHours.toFixed(1)}h
+          <span className="absolute bottom-1 text-[10px] font-semibold text-orange-400">
+            Expected {expectedHours.toFixed(1)}h
           </span>
         )}
     </div>
@@ -193,7 +193,6 @@ export function IndividualReport() {
     const dailyExpected: Record<string, number> = {};
     const dailyContractHours = selectedUser.contract.weeklyHours / 5;
     
-    // Calculate prorated daily leave hours
     const yearStartForProrata = startOfYear(selectedDate);
     const yearEndForProrata = endOfYear(selectedDate);
     const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
@@ -209,16 +208,16 @@ export function IndividualReport() {
     const dailyLeaveHours = totalYearlyLeaveHours > 0 ? totalYearlyLeaveHours / daysInYear : 0;
     const dailyExpectedHours = dailyContractHours - dailyLeaveHours;
     
-    for (let d = new Date(startOfMonth(selectedDate)); d <= new Date(startOfMonth(selectedDate)); d = addDays(d, 1)) {
-        if (!isSameMonth(d, selectedDate)) break;
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
+        if (!isSameMonth(d, selectedDate)) continue; // Should not happen with this loop but good practice
         const dayOfWeek = getDay(d);
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
           dailyExpected[d.getDate()] = dailyExpectedHours;
         }
     }
 
-
-    // 1. Calculate manually logged hours
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
         return entry.userId === selectedUser.id &&
@@ -233,7 +232,6 @@ export function IndividualReport() {
         dailyEntries[day].push(entry);
     });
 
-    // 2. Calculate and add public holiday hours
     const publicHolidaysInMonth = publicHolidays.filter(h => {
         const hDate = new Date(h.date);
         return isSameMonth(hDate, selectedDate) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
@@ -246,7 +244,6 @@ export function IndividualReport() {
         dailyTotals[day] += holidayCredit;
     });
     
-    // 3. Calculate and add custom holiday hours
     const customHolidaysInMonth = customHolidays.filter(h => {
         const hDate = new Date(h.date);
         const applies = (h.appliesTo === 'all-members') ||
@@ -262,7 +259,6 @@ export function IndividualReport() {
         dailyTotals[day] += holidayCredit;
     });
 
-    // 4. Calculate and add approved personal leave hours
     const personalLeaveDays = holidayRequests.filter(req => 
         req.userId === selectedUser.id && req.status === 'Approved'
     ).flatMap(req => {
@@ -272,7 +268,6 @@ export function IndividualReport() {
         for (let dt = start; dt <= end; dt = addDays(dt, 1)) {
             if (isSameMonth(dt, selectedDate)) {
                 dates.push(new Date(dt));
-                 // Add hours to daily total if it's a workday
                 if (getDay(dt) !== 0 && getDay(dt) !== 6) {
                     const dayOfMonth = dt.getDate();
                     if (!dailyTotals[dayOfMonth]) dailyTotals[dayOfMonth] = 0;
