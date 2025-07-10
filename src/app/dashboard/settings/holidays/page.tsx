@@ -8,9 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CustomHolidaysTab } from "./components/custom-holidays-tab";
 import { AnnualLeavesTab } from './components/annual-leaves-tab';
 import { useAuth } from '../../contexts/AuthContext';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { useSettings } from '../../contexts/SettingsContext';
 
 export default function HolidaysSettingsPage() {
   const { currentUser } = useAuth();
+  const { isHolidaysNavVisible, setIsHolidaysNavVisible } = useSettings();
 
   if (currentUser.role !== 'Super Admin') {
     return (
@@ -28,9 +32,19 @@ export default function HolidaysSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Holidays Settings</h1>
-        <p className="text-muted-foreground">Manage public and custom holidays for your organization.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Holidays Settings</h1>
+          <p className="text-muted-foreground">Manage public and custom holidays for your organization.</p>
+        </div>
+        <div className="flex items-center space-x-2">
+            <Switch 
+                id="display-holidays" 
+                checked={isHolidaysNavVisible}
+                onCheckedChange={setIsHolidaysNavVisible}
+            />
+            <Label htmlFor="display-holidays">Display Holidays</Label>
+        </div>
       </div>
       <Tabs defaultValue="public-holidays">
         <TabsList className="grid grid-cols-3 md:w-[600px]">

@@ -71,6 +71,7 @@ import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesCo
 import { SystemLogProvider } from "./contexts/SystemLogContext";
 import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { SettingsProvider, useSettings } from "./contexts/SettingsContext";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -85,6 +86,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
   const { logTime } = useTimeTracking();
+  const { isHolidaysNavVisible } = useSettings();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
@@ -166,14 +168,16 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/holidays")}>
-                <Link href="/dashboard/holidays">
-                  <CalendarIcon />
-                  Holidays
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {isHolidaysNavVisible && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/holidays")}>
+                  <Link href="/dashboard/holidays">
+                    <CalendarIcon />
+                    Holidays
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
@@ -345,13 +349,15 @@ function DataProviders({
               <NotificationsProvider>
                 <PushMessagesProvider>
                   <AuthProvider>
-                    <HolidaysProvider>
-                      <TimeTrackingProvider>
-                        <AccessControlProvider>
-                          <LayoutContent>{children}</LayoutContent>
-                        </AccessControlProvider>
-                      </TimeTrackingProvider>
-                    </HolidaysProvider>
+                    <SettingsProvider>
+                      <HolidaysProvider>
+                        <TimeTrackingProvider>
+                          <AccessControlProvider>
+                            <LayoutContent>{children}</LayoutContent>
+                          </AccessControlProvider>
+                        </TimeTrackingProvider>
+                      </HolidaysProvider>
+                    </SettingsProvider>
                   </AuthProvider>
                 </PushMessagesProvider>
               </NotificationsProvider>
