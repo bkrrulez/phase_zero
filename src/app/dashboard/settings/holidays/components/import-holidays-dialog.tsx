@@ -43,10 +43,15 @@ const parseDateString = (dateInput: string | number | Date): Date | null => {
             const monthNum = parseInt(parts[1], 10);
             const yearNum = parseInt(parts[2], 10);
 
-            if (!isNaN(dayNum) && !isNaN(monthNum) && !isNaN(yearNum) && yearNum > 1900 && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
+            // Final validation of the parsed numbers
+            if (!isNaN(dayNum) && !isNaN(monthNum) && !isNaN(yearNum) &&
+                yearNum > 1900 && yearNum < 3000 &&
+                monthNum >= 1 && monthNum <= 12 &&
+                dayNum >= 1 && dayNum <= 31) 
+            {
                 // Create a UTC date to prevent timezone shifts from changing the date
                 const date = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
-                // Final check to prevent invalid dates like 31st Feb being rolled over
+                // Final check to prevent invalid dates like 31st Feb being rolled over by JS Date object
                 if (date.getUTCFullYear() === yearNum && date.getUTCMonth() === monthNum - 1 && date.getUTCDate() === dayNum) {
                     return date;
                 }
