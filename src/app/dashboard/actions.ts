@@ -154,7 +154,7 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar'>): Promise
 }
 
 export async function updateUser(updatedUser: User): Promise<User | null> {
-    const { id, name, email, role, reportsTo, teamId, associatedProjectIds, contract } = updatedUser;
+    const { id, name, email, role, reportsTo, teamId, associatedProjectIds, contract, avatar } = updatedUser;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -162,9 +162,10 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         const res = await client.query(
             `UPDATE users SET
                 name = $1, email = $2, role = $3, reports_to = $4, team_id = $5,
-                contract_start_date = $6, contract_end_date = $7, contract_weekly_hours = $8
-             WHERE id = $9 RETURNING *`,
-            [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, id]
+                contract_start_date = $6, contract_end_date = $7, contract_weekly_hours = $8,
+                avatar = $9
+             WHERE id = $10 RETURNING *`,
+            [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, avatar, id]
         );
 
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [id]);
