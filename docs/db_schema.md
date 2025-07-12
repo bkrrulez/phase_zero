@@ -118,6 +118,13 @@ Stores rules for freezing time entry calendars.
 -   `end_date` (DATE, NOT NULL): The end date of the freeze period.
 -   `recurring_day` (INTEGER): Day of the week for recurring rules (0=Sun, 1=Mon...). NULL for static rules.
 
+### `system_settings`
+
+Stores global key-value settings for the application.
+
+- `key` (PK, TEXT, NOT NULL): The unique key for the setting (e.g., 'isHolidaysNavVisible').
+- `value` (TEXT, NOT NULL): The value of the setting (e.g., 'true').
+
 ### `system_logs`
 
 Stores a read-only ledger of system activities.

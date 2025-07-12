@@ -12,10 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HolidaysSettingsPage() {
   const { currentUser } = useAuth();
-  const { isHolidaysNavVisible, setIsHolidaysNavVisible } = useSettings();
+  const { isHolidaysNavVisible, setIsHolidaysNavVisible, isLoading } = useSettings();
   const { t } = useLanguage();
 
   if (currentUser.role !== 'Super Admin') {
@@ -40,12 +41,18 @@ export default function HolidaysSettingsPage() {
           <p className="text-muted-foreground">{t('holidaysSettingsDesc')}</p>
         </div>
         <div className="flex items-center space-x-2">
-            <Switch 
-                id="display-holidays" 
-                checked={isHolidaysNavVisible}
-                onCheckedChange={setIsHolidaysNavVisible}
-            />
-            <Label htmlFor="display-holidays">{t('displayHolidays')}</Label>
+            {isLoading ? (
+                <Skeleton className="h-6 w-24" />
+            ) : (
+                <>
+                    <Switch 
+                        id="display-holidays" 
+                        checked={isHolidaysNavVisible}
+                        onCheckedChange={setIsHolidaysNavVisible}
+                    />
+                    <Label htmlFor="display-holidays">{t('displayHolidays')}</Label>
+                </>
+            )}
         </div>
       </div>
       <Tabs defaultValue="public-holidays">

@@ -934,3 +934,30 @@ export async function addSystemLog(message: string): Promise<LogEntry | null> {
         message: result.rows[0].message
     };
 }
+
+// ========== Global Settings ==========
+export async function getIsHolidaysNavVisible(): Promise<boolean> {
+    try {
+        const result = await db.query(`SELECT value FROM system_settings WHERE key = 'isHolidaysNavVisible'`);
+        if (result.rows.length > 0) {
+            return result.rows[0].value === 'true';
+        }
+        return true; // Default to true if not found
+    } catch (error) {
+        console.error("Failed to get 'isHolidaysNavVisible' setting, defaulting to true:", error);
+        return true;
+    }
+}
+
+export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
+    try {
+        await db.query(
+            `INSERT INTO system_settings (key, value) VALUES ('isHolidaysNavVisible', $1)
+             ON CONFLICT (key) DO UPDATE SET value = $1`,
+            [String(isVisible)]
+        );
+        revalidatePath('/dashboard', 'layout');
+    } catch (error) {
+        console.error("Failed to set 'isHolidaysNavVisible' setting:", error);
+    }
+}
