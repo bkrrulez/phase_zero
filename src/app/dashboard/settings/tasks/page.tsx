@@ -15,12 +15,14 @@ import { DeleteTaskDialog } from './components/delete-task-dialog';
 import { useTasks } from '../../contexts/TasksContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function TasksSettingsPage() {
     const { toast } = useToast();
     const { tasks, addTask, updateTask, deleteTask } = useTasks();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
+    const { t } = useLanguage();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingTask, setEditingTask] = React.useState<Task | null>(null);
@@ -32,8 +34,8 @@ export default function TasksSettingsPage() {
         addTask(data);
         setIsAddDialogOpen(false);
         toast({
-            title: "Task Added",
-            description: `The task "${data.name}" has been created.`,
+            title: t('taskAdded'),
+            description: t('taskAddedDesc', { name: data.name }),
         });
         logAction(`User '${currentUser.name}' created a new task: '${data.name}'.`);
     };
@@ -42,8 +44,8 @@ export default function TasksSettingsPage() {
         updateTask(taskId, data);
         setEditingTask(null);
         toast({
-            title: "Task Updated",
-            description: `The task "${data.name}" has been updated.`,
+            title: t('taskUpdated'),
+            description: t('taskUpdatedDesc', { name: data.name }),
         });
         logAction(`User '${currentUser.name}' updated task: '${data.name}'.`);
     }
@@ -53,8 +55,8 @@ export default function TasksSettingsPage() {
         deleteTask(taskId);
         setDeletingTask(null);
         toast({
-            title: "Task Deleted",
-            description: "The task has been successfully deleted.",
+            title: t('taskDeleted'),
+            description: t('taskDeletedDesc'),
             variant: "destructive"
         });
         if (task) {
@@ -67,27 +69,27 @@ export default function TasksSettingsPage() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">Tasks</h1>
-                        <p className="text-muted-foreground">Manage tasks that can be logged against time entries.</p>
+                        <h1 className="text-3xl font-bold font-headline">{t('tasks')}</h1>
+                        <p className="text-muted-foreground">{t('tasksSubtitle')}</p>
                     </div>
                     {canManageTasks && (
                         <Button onClick={() => setIsAddDialogOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('addTask')}
                         </Button>
                     )}
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>All Tasks</CardTitle>
-                        <CardDescription>A list of all tasks in the organization.</CardDescription>
+                        <CardTitle>{t('allTasks')}</CardTitle>
+                        <CardDescription>{t('allTasksDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Task</TableHead>
-                                    <TableHead>Details</TableHead>
-                                    {canManageTasks && <TableHead><span className="sr-only">Actions</span></TableHead>}
+                                    <TableHead>{t('task')}</TableHead>
+                                    <TableHead>{t('details')}</TableHead>
+                                    {canManageTasks && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -103,19 +105,19 @@ export default function TasksSettingsPage() {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button aria-haspopup="true" size="icon" variant="ghost">
                                                             <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Toggle menu</span>
+                                                            <span className="sr-only">{t('toggleMenu')}</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => setEditingTask(task)}>
-                                                            Edit
+                                                            {t('edit')}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem 
                                                             onClick={() => setDeletingTask(task)}
                                                             className="text-destructive focus:text-destructive"
                                                         >
-                                                            Delete
+                                                            {t('delete')}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -125,7 +127,7 @@ export default function TasksSettingsPage() {
                                 ))}
                                 {tasks.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="h-24 text-center">No tasks created yet.</TableCell>
+                                        <TableCell colSpan={3} className="h-24 text-center">{t('noTasksCreated')}</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

@@ -13,6 +13,7 @@ import { DayDetailsDialog } from "../reports/components/day-details-dialog";
 import { LogTimeDialog, type LogTimeFormValues } from "./log-time-dialog";
 import { DeleteTimeEntryDialog } from "../reports/components/delete-time-entry-dialog";
 import { useMembers } from "../contexts/MembersContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 
 const chartConfig = {
@@ -26,6 +27,7 @@ export function MonthlyHoursChart() {
   const { timeEntries, updateTimeEntry, deleteTimeEntry } = useTimeTracking();
   const { currentUser } = useAuth();
   const { teamMembers } = useMembers();
+  const { t } = useLanguage();
 
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
   const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
@@ -97,8 +99,8 @@ export function MonthlyHoursChart() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Hours</CardTitle>
-          <CardDescription>Double-click a bar to view or edit entries for that day.</CardDescription>
+          <CardTitle>{t('monthlyHours')}</CardTitle>
+          <CardDescription>{t('monthlyHoursDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-[280px] w-full">

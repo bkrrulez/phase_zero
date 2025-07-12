@@ -17,6 +17,7 @@ import { useTeams } from '../../contexts/TeamsContext';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
@@ -25,6 +26,7 @@ export default function TeamsSettingsPage() {
     const { projects } = useProjects();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
+    const { t } = useLanguage();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingTeam, setEditingTeam] = React.useState<Team | null>(null);
@@ -50,8 +52,8 @@ export default function TeamsSettingsPage() {
         addTeam(data);
         setIsAddDialogOpen(false);
         toast({
-            title: "Team Added",
-            description: `The team "${data.name}" has been created.`,
+            title: t('teamAdded'),
+            description: t('teamAddedDesc', { name: data.name }),
         });
         logAction(`User '${currentUser.name}' created a new team: '${data.name}'.`);
     };
@@ -60,8 +62,8 @@ export default function TeamsSettingsPage() {
         updateTeam(teamId, data);
         setEditingTeam(null);
         toast({
-            title: "Team Updated",
-            description: `The team "${data.name}" has been updated.`,
+            title: t('teamUpdated'),
+            description: t('teamUpdatedDesc', { name: data.name }),
         });
         logAction(`User '${currentUser.name}' updated team: '${data.name}'.`);
     }
@@ -70,8 +72,8 @@ export default function TeamsSettingsPage() {
         if (!deletingTeam) return;
         deleteTeam(deletingTeam.id);
         toast({
-            title: "Team Deleted",
-            description: `The team "${deletingTeam.name}" has been deleted. Members have been unassigned.`,
+            title: t('teamDeleted'),
+            description: t('teamDeletedDesc', { name: deletingTeam.name }),
             variant: "destructive"
         });
         logAction(`User '${currentUser.name}' deleted team: '${deletingTeam.name}'.`);
@@ -83,29 +85,29 @@ export default function TeamsSettingsPage() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">Teams</h1>
-                        <p className="text-muted-foreground">Manage teams, their members, and projects.</p>
+                        <h1 className="text-3xl font-bold font-headline">{t('teams')}</h1>
+                        <p className="text-muted-foreground">{t('teamsSubtitle')}</p>
                     </div>
                     {canManageTeams && (
                         <Button onClick={() => setIsAddDialogOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Team
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('addTeam')}
                         </Button>
                     )}
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>All Teams</CardTitle>
-                        <CardDescription>A list of all teams in the organization.</CardDescription>
+                        <CardTitle>{t('allTeams')}</CardTitle>
+                        <CardDescription>{t('allTeamsDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Team</TableHead>
-                                    <TableHead>Team Lead</TableHead>
-                                    <TableHead>Team Members</TableHead>
-                                    <TableHead>Projects</TableHead>
-                                    {canManageTeams && <TableHead><span className="sr-only">Actions</span></TableHead>}
+                                    <TableHead>{t('team')}</TableHead>
+                                    <TableHead>{t('teamLead')}</TableHead>
+                                    <TableHead>{t('teamMembers')}</TableHead>
+                                    <TableHead>{t('projects')}</TableHead>
+                                    {canManageTeams && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -123,19 +125,19 @@ export default function TeamsSettingsPage() {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button aria-haspopup="true" size="icon" variant="ghost">
                                                             <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Toggle menu</span>
+                                                            <span className="sr-only">{t('toggleMenu')}</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => setEditingTeam(team)}>
-                                                            Edit
+                                                            {t('edit')}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem 
                                                             onClick={() => setDeletingTeam(team)}
                                                             className="text-destructive focus:text-destructive"
                                                         >
-                                                            Delete
+                                                            {t('delete')}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -145,7 +147,7 @@ export default function TeamsSettingsPage() {
                                 ))}
                                 {teamDetails.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">No teams created yet.</TableCell>
+                                        <TableCell colSpan={5} className="h-24 text-center">{t('noTeamsCreated')}</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

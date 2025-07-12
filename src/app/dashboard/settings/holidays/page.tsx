@@ -11,20 +11,22 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function HolidaysSettingsPage() {
   const { currentUser } = useAuth();
   const { isHolidaysNavVisible, setIsHolidaysNavVisible } = useSettings();
+  const { t } = useLanguage();
 
   if (currentUser.role !== 'Super Admin') {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Access Denied</CardTitle>
-                <CardDescription>You do not have permission to view this page.</CardDescription>
+                <CardTitle>{t('accessDenied')}</CardTitle>
+                <CardDescription>{t('noPermissionPage')}</CardDescription>
             </CardHeader>
             <CardContent>
-                <p>Please contact your administrator if you believe this is an error.</p>
+                <p>{t('contactAdmin')}</p>
             </CardContent>
         </Card>
     )
@@ -34,8 +36,8 @@ export default function HolidaysSettingsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Holidays Settings</h1>
-          <p className="text-muted-foreground">Manage public and custom holidays for your organization.</p>
+          <h1 className="text-3xl font-bold font-headline">{t('holidaysSettings')}</h1>
+          <p className="text-muted-foreground">{t('holidaysSettingsDesc')}</p>
         </div>
         <div className="flex items-center space-x-2">
             <Switch 
@@ -43,14 +45,14 @@ export default function HolidaysSettingsPage() {
                 checked={isHolidaysNavVisible}
                 onCheckedChange={setIsHolidaysNavVisible}
             />
-            <Label htmlFor="display-holidays">Display Holidays</Label>
+            <Label htmlFor="display-holidays">{t('displayHolidays')}</Label>
         </div>
       </div>
       <Tabs defaultValue="public-holidays">
         <TabsList className="grid grid-cols-3 md:w-[600px]">
-          <TabsTrigger value="public-holidays">Public Holidays</TabsTrigger>
-          <TabsTrigger value="custom-holidays">Custom Holidays</TabsTrigger>
-          <TabsTrigger value="annual-leaves">Annual Leaves</TabsTrigger>
+          <TabsTrigger value="public-holidays">{t('publicHolidaysTab')}</TabsTrigger>
+          <TabsTrigger value="custom-holidays">{t('customHolidaysTab')}</TabsTrigger>
+          <TabsTrigger value="annual-leaves">{t('annualLeavesTab')}</TabsTrigger>
         </TabsList>
         <TabsContent value="public-holidays" className="mt-4">
           <PublicHolidaysTab />

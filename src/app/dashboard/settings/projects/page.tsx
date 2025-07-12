@@ -16,6 +16,7 @@ import { useProjects } from '../../contexts/ProjectsContext';
 import { useTasks } from '../../contexts/TasksContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function ProjectsSettingsPage() {
     const { toast } = useToast();
@@ -23,6 +24,7 @@ export default function ProjectsSettingsPage() {
     const { tasks: allTasks } = useTasks();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
+    const { t } = useLanguage();
     
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingProject, setEditingProject] = React.useState<Project | null>(null);
@@ -49,8 +51,8 @@ export default function ProjectsSettingsPage() {
         addProject(data);
         setIsAddDialogOpen(false);
         toast({
-            title: "Project Added",
-            description: `The project "${data.name}" has been created.`,
+            title: t('projectAdded'),
+            description: t('projectAddedDesc', { name: data.name }),
         });
         logAction(`User '${currentUser.name}' created a new project: '${data.name}'.`);
     };
@@ -59,8 +61,8 @@ export default function ProjectsSettingsPage() {
         updateProject(projectId, data);
         setEditingProject(null);
         toast({
-            title: "Project Updated",
-            description: `The project "${data.name}" has been updated.`,
+            title: t('projectUpdated'),
+            description: t('projectUpdatedDesc', { name: data.name }),
         });
         logAction(`User '${currentUser.name}' updated project: '${data.name}'.`);
     }
@@ -70,8 +72,8 @@ export default function ProjectsSettingsPage() {
         deleteProject(projectId);
         setDeletingProject(null);
         toast({
-            title: "Project Deleted",
-            description: "The project has been successfully deleted.",
+            title: t('projectDeleted'),
+            description: t('projectDeletedDesc'),
             variant: "destructive"
         });
         if (project) {
@@ -84,29 +86,29 @@ export default function ProjectsSettingsPage() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">Projects</h1>
-                        <p className="text-muted-foreground">Manage projects, their tasks, and budget.</p>
+                        <h1 className="text-3xl font-bold font-headline">{t('projects')}</h1>
+                        <p className="text-muted-foreground">{t('projectsSubtitle')}</p>
                     </div>
                     {canManageProjects && (
                         <Button onClick={() => setIsAddDialogOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Project
+                            <PlusCircle className="mr-2 h-4 w-4" /> {t('addProject')}
                         </Button>
                     )}
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>All Projects</CardTitle>
-                        <CardDescription>A list of all projects in the organization.</CardDescription>
+                        <CardTitle>{t('allProjects')}</CardTitle>
+                        <CardDescription>{t('allProjectsDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[200px]">Project</TableHead>
-                                    <TableHead>Tasks</TableHead>
-                                    <TableHead>Budget</TableHead>
-                                    <TableHead>Details</TableHead>
-                                    {canManageProjects && <TableHead><span className="sr-only">Actions</span></TableHead>}
+                                    <TableHead className="w-[200px]">{t('project')}</TableHead>
+                                    <TableHead>{t('tasks')}</TableHead>
+                                    <TableHead>{t('budget')}</TableHead>
+                                    <TableHead>{t('details')}</TableHead>
+                                    {canManageProjects && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -126,19 +128,19 @@ export default function ProjectsSettingsPage() {
                                                     <DropdownMenuTrigger asChild>
                                                         <Button aria-haspopup="true" size="icon" variant="ghost">
                                                             <MoreHorizontal className="h-4 w-4" />
-                                                            <span className="sr-only">Toggle menu</span>
+                                                            <span className="sr-only">{t('toggleMenu')}</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                                                         <DropdownMenuItem onClick={() => setEditingProject(project)}>
-                                                            Edit
+                                                            {t('edit')}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem 
                                                             onClick={() => setDeletingProject(project)}
                                                             className="text-destructive focus:text-destructive"
                                                         >
-                                                            Delete
+                                                            {t('delete')}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -148,7 +150,7 @@ export default function ProjectsSettingsPage() {
                                 ))}
                                 {projectDetails.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">No projects created yet.</TableCell>
+                                        <TableCell colSpan={5} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

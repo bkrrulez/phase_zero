@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -26,6 +27,7 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 export default function SystemLogsPage() {
   const { logs } = useSystemLog();
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const [filterType, setFilterType] = React.useState<'month' | 'range'>('month');
   const [selectedMonth, setSelectedMonth] = React.useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
@@ -57,11 +59,11 @@ export default function SystemLogsPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>You do not have permission to view this page.</CardDescription>
+          <CardTitle>{t('accessDenied')}</CardTitle>
+          <CardDescription>{t('noPermissionPage')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p>Please contact your administrator if you believe this is an error.</p>
+          <p>{t('contactAdmin')}</p>
         </CardContent>
       </Card>
     );
@@ -71,16 +73,16 @@ export default function SystemLogsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline">System Logs</h1>
-          <p className="text-muted-foreground">View a read-only ledger of all system activities.</p>
+          <h1 className="text-3xl font-bold font-headline">{t('systemLogs')}</h1>
+          <p className="text-muted-foreground">{t('systemLogsSubtitle')}</p>
         </div>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Log Viewer</CardTitle>
+          <CardTitle>{t('logViewer')}</CardTitle>
           <div className="flex flex-col sm:flex-row gap-2 justify-between">
             <CardDescription>
-                Filter logs by month or a custom date range. Logs are immutable.
+                {t('logViewerDesc')}
             </CardDescription>
              <div className="flex gap-2">
                 <Select value={filterType} onValueChange={(v) => setFilterType(v as 'month' | 'range')}>
@@ -88,8 +90,8 @@ export default function SystemLogsPage() {
                         <SelectValue/>
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="month">By Month</SelectItem>
-                        <SelectItem value="range">By Range</SelectItem>
+                        <SelectItem value="month">{t('byMonth')}</SelectItem>
+                        <SelectItem value="range">{t('byRange')}</SelectItem>
                     </SelectContent>
                 </Select>
 
@@ -125,7 +127,7 @@ export default function SystemLogsPage() {
                                 format(dateRange.from, "LLL dd, y")
                             )
                             ) : (
-                            <span>Pick a date range</span>
+                            <span>{t('pickDateRange')}</span>
                             )}
                         </Button>
                         </PopoverTrigger>
@@ -149,8 +151,8 @@ export default function SystemLogsPage() {
                 <Table>
                     <TableHeader className="sticky top-0 bg-card">
                         <TableRow>
-                            <TableHead className="w-[200px]">Timestamp</TableHead>
-                            <TableHead>Log Entry</TableHead>
+                            <TableHead className="w-[200px]">{t('timestamp')}</TableHead>
+                            <TableHead>{t('logEntry')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -161,7 +163,7 @@ export default function SystemLogsPage() {
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={2} className="h-24 text-center">No logs found for the selected period.</TableCell>
+                                <TableCell colSpan={2} className="h-24 text-center">{t('noLogsFound')}</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
