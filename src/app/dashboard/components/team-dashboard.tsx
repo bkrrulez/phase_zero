@@ -12,12 +12,14 @@ import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useMembers } from "../contexts/MembersContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function TeamDashboard() {
   const { timeEntries } = useTimeTracking();
   const { teamMembers } = useMembers();
   const { publicHolidays, customHolidays, annualLeaveAllowance } = useHolidays();
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
 
   const teamPerformance = useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
@@ -129,14 +131,14 @@ export function TeamDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Team Dashboard</h1>
-        <p className="text-muted-foreground">An overview of your team's performance this month.</p>
+        <h1 className="text-3xl font-bold font-headline">{t('teamDashboardTitle')}</h1>
+        <p className="text-muted-foreground">{t('teamDashboardSubtitle')}</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
             <CardHeader>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>Number of active members</CardDescription>
+                <CardTitle>{t('teamMembersTitle')}</CardTitle>
+                <CardDescription>{t('teamMembersDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <p className="text-3xl font-bold">{teamPerformance.length}</p>
@@ -144,8 +146,8 @@ export function TeamDashboard() {
         </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Total Hours Logged</CardTitle>
-                <CardDescription>Across the whole team this month</CardDescription>
+                <CardTitle>{t('totalHoursLoggedTitle')}</CardTitle>
+                <CardDescription>{t('totalHoursLoggedDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <p className="text-3xl font-bold">{totalTeamHours.toFixed(2)}h</p>
@@ -153,8 +155,8 @@ export function TeamDashboard() {
         </Card>
          <Card>
             <CardHeader>
-                <CardTitle>Total Expected Hours</CardTitle>
-                <CardDescription>Across the whole team this month</CardDescription>
+                <CardTitle>{t('totalExpectedHoursTitle')}</CardTitle>
+                <CardDescription>{t('totalExpectedHoursDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <p className="text-3xl font-bold">{totalExpectedHours.toFixed(2)}h</p>
@@ -162,8 +164,8 @@ export function TeamDashboard() {
         </Card>
         <Card>
             <CardHeader>
-                <CardTitle>Team Performance</CardTitle>
-                <CardDescription>Overall overtime/deficit</CardDescription>
+                <CardTitle>{t('teamPerformanceTitle')}</CardTitle>
+                <CardDescription>{t('teamPerformanceDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <p className={`text-3xl font-bold ${(totalTeamHours - totalExpectedHours) < 0 ? 'text-destructive' : ''}`}>
@@ -178,16 +180,16 @@ export function TeamDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowUp className="w-5 h-5 text-green-600" /> Users with Overtime
+              <ArrowUp className="w-5 h-5 text-green-600" /> {t('usersWithOvertimeTitle')}
             </CardTitle>
-            <CardDescription>Team members who have logged more hours than expected.</CardDescription>
+            <CardDescription>{t('usersWithOvertimeDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Member</TableHead>
-                        <TableHead className="text-right">Overtime</TableHead>
+                        <TableHead>{t('member')}</TableHead>
+                        <TableHead className="text-right">{t('overtime')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -209,7 +211,7 @@ export function TeamDashboard() {
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={2} className="h-24 text-center">No users with overtime.</TableCell>
+                            <TableCell colSpan={2} className="h-24 text-center">{t('noUsersWithOvertime')}</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -220,16 +222,16 @@ export function TeamDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowDown className="w-5 h-5 text-destructive" /> Users with Deficit
+              <ArrowDown className="w-5 h-5 text-destructive" /> {t('usersWithDeficitTitle')}
             </CardTitle>
-            <CardDescription>Team members who have logged fewer hours than expected.</CardDescription>
+            <CardDescription>{t('usersWithDeficitDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Member</TableHead>
-                        <TableHead className="text-right">Deficit</TableHead>
+                        <TableHead>{t('member')}</TableHead>
+                        <TableHead className="text-right">{t('deficit')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -251,7 +253,7 @@ export function TeamDashboard() {
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={2} className="h-24 text-center">No users with a deficit.</TableCell>
+                            <TableCell colSpan={2} className="h-24 text-center">{t('noUsersWithDeficit')}</TableCell>
                         </TableRow>
                     )}
                 </TableBody>

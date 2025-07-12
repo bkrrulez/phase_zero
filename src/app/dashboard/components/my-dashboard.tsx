@@ -14,6 +14,7 @@ import { useMembers } from '../contexts/MembersContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function MyDashboard() {
   const { timeEntries } = useTimeTracking();
@@ -21,6 +22,7 @@ export function MyDashboard() {
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
   const { isHolidaysNavVisible } = useSettings();
+  const { t } = useLanguage();
   
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
@@ -173,27 +175,27 @@ export function MyDashboard() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Welcome, {currentUser.name}!</h1>
-          <p className="text-muted-foreground">Here's your time tracking summary for this month.</p>
+          <h1 className="text-3xl font-bold font-headline">{t('welcome', { name: currentUser.name })}</h1>
+          <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
         </div>
       </div>
 
       <div className={cn("grid gap-4 md:grid-cols-2", isHolidaysNavVisible ? "lg:grid-cols-3" : "lg:grid-cols-2")}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hours this month</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('hoursThisMonth')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalHours.toFixed(2)}h</div>
             <p className="text-xs text-muted-foreground">
-              out of {(expectedHours).toFixed(2)}h expected
+              {t('outOfExpected', { hours: expectedHours.toFixed(2) })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overtime</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('overtime')}</CardTitle>
             <BarChartIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -201,20 +203,20 @@ export function MyDashboard() {
               {overtime >= 0 ? '+' : ''}{overtime.toFixed(2)}h
             </div>
             <p className="text-xs text-muted-foreground">
-              Based on {currentUser.contract.weeklyHours}h/week contract
+              {t('basedOnContract', { hours: currentUser.contract.weeklyHours })}
             </p>
           </CardContent>
         </Card>
         {isHolidaysNavVisible && (
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Holidays Taken</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('holidaysTaken')}</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{takenDays} Day{takenDays === 1 ? '' : 's'}</div>
+                    <div className="text-2xl font-bold">{t('daysCount', { count: takenDays })}</div>
                     <p className="text-xs text-muted-foreground">
-                    {remainingDays.toFixed(2)} days remaining
+                    {t('daysRemaining', { count: remainingDays.toFixed(2) })}
                     </p>
                 </CardContent>
             </Card>
@@ -228,15 +230,15 @@ export function MyDashboard() {
         <div className="lg:col-span-2 flex flex-col gap-6">
             <Card>
             <CardHeader>
-                <CardTitle>Recent Time Entries</CardTitle>
+                <CardTitle>{t('recentTimeEntries')}</CardTitle>
             </CardHeader>
             <CardContent>
                 <Table>
                 <TableHeader>
                     <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Task</TableHead>
-                    <TableHead className="text-right">Duration</TableHead>
+                    <TableHead>{t('date')}</TableHead>
+                    <TableHead>{t('task')}</TableHead>
+                    <TableHead className="text-right">{t('duration')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -249,7 +251,7 @@ export function MyDashboard() {
                     ))}
                      {timeEntries.filter(e => e.userId === currentUser.id).length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center">No recent entries.</TableCell>
+                            <TableCell colSpan={3} className="h-24 text-center">{t('noRecentEntries')}</TableCell>
                         </TableRow>
                      )}
                 </TableBody>
@@ -260,9 +262,9 @@ export function MyDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CalendarHeart className="h-5 w-5" />
-                  Upcoming Public Holidays
+                  {t('upcomingPublicHolidays')}
                 </CardTitle>
-                <CardDescription>The next 3 upcoming public holidays.</CardDescription>
+                <CardDescription>{t('upcomingPublicHolidaysDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -275,7 +277,7 @@ export function MyDashboard() {
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      No upcoming public holidays.
+                      {t('noUpcomingPublicHolidays')}
                     </p>
                   )}
                 </div>

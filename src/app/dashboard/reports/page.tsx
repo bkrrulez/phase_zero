@@ -43,6 +43,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useProjects } from '../contexts/ProjectsContext';
 import { useTasks } from '../contexts/TasksContext';
 import { type User } from '@/lib/types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -75,6 +76,7 @@ export default function ReportsPage() {
   const { currentUser } = useAuth();
   const { publicHolidays, customHolidays, annualLeaveAllowance } = useHolidays();
   const { timeEntries } = useTimeTracking();
+  const { t } = useLanguage();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
   const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
@@ -218,16 +220,16 @@ export default function ReportsPage() {
 
   const getReportTitle = () => {
     if (periodType === 'yearly') {
-        return `Report for the year ${selectedYear}`;
+        return t('reportForYear', { year: selectedYear });
     }
     if (periodType === 'monthly') {
-        return `Report for ${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`;
+        return t('reportForMonth', { month: months.find(m => m.value === selectedMonth)?.label, year: selectedYear });
     }
     if (periodType === 'weekly' && weeksInMonth[selectedWeekIndex]) {
         const week = weeksInMonth[selectedWeekIndex];
-        return `Report for W${selectedWeekIndex + 1} (${getDate(week.start)}-${getDate(week.end)}) ${months[selectedMonth].label} ${selectedYear}`;
+        return t('reportForWeek', { week: selectedWeekIndex + 1, start: getDate(week.start), end: getDate(week.end), month: months[selectedMonth].label, year: selectedYear });
     }
-    return 'Report';
+    return t('reports');
   };
 
   const handleExport = () => {
@@ -237,7 +239,7 @@ export default function ReportsPage() {
     const title = getReportTitle();
     
     const totalTimeData = [
-      [title], [], ['Member', 'Role', 'Assigned Hours', 'Leave Hours', 'Expected', 'Logged', 'Remaining'],
+      [title], [], [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')],
       ...reports.consolidatedData.map(member => [
         member.name, member.role, member.assignedHours, member.leaveHours, member.expectedHours, member.loggedHours, member.remainingHours,
       ]),
@@ -246,7 +248,7 @@ export default function ReportsPage() {
 
     // -- Sheet 2: Project Level Report --
     const projectData = [
-      ['Project level report'], [], ['Member', 'Role', 'Project', 'Logged Hours'],
+      [t('projectLevelReport')], [], [t('member'), t('role'), t('project'), t('loggedHours')],
       ...reports.projectReport.map(item => [
         item.member.name, item.member.role, item.projectName, item.loggedHours
       ]),
@@ -255,7 +257,7 @@ export default function ReportsPage() {
 
     // -- Sheet 3: Task Level Report --
     const taskData = [
-        ['Task level report'], [], ['Member', 'Role', 'Task', 'Logged Hours'],
+        [t('taskLevelReport')], [], [t('member'), t('role'), t('task'), t('loggedHours')],
         ...reports.taskReport.map(item => [
             item.member.name, item.member.role, item.taskName, item.loggedHours
         ])
@@ -264,9 +266,9 @@ export default function ReportsPage() {
 
     // Create workbook and export
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, totalTimeSheet, 'Total Time');
-    XLSX.utils.book_append_sheet(wb, projectSheet, 'Project Level Report');
-    XLSX.utils.book_append_sheet(wb, taskSheet, 'Task Level Report');
+    XLSX.utils.book_append_sheet(wb, totalTimeSheet, t('totalTime'));
+    XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
+    XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
     XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
@@ -274,8 +276,8 @@ export default function ReportsPage() {
   if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin') {
       return (
         <div className="space-y-6">
-           <h1 className="text-3xl font-bold font-headline">My Report</h1>
-           <p className="text-muted-foreground">Monthly overview of your logged hours and holidays.</p>
+           <h1 className="text-3xl font-bold font-headline">{t('myReport')}</h1>
+           <p className="text-muted-foreground">{t('myReportDesc')}</p>
            <IndividualReport />
         </div>
       )
@@ -285,28 +287,28 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Reports</h1>
-          <p className="text-muted-foreground">View team and individual performance.</p>
+          <h1 className="text-3xl font-bold font-headline">{t('reports')}</h1>
+          <p className="text-muted-foreground">{t('reportsSubtitle')}</p>
         </div>
       </div>
       <Tabs value={tab} onValueChange={onTabChange}>
             <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-                <TabsTrigger value="team-report">Team Report</TabsTrigger>
-                <TabsTrigger value="individual-report">Individual Report</TabsTrigger>
+                <TabsTrigger value="team-report">{t('teamReport')}</TabsTrigger>
+                <TabsTrigger value="individual-report">{t('individualReport')}</TabsTrigger>
             </TabsList>
             <TabsContent value="team-report" className="mt-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Team Hours Summary</CardTitle>
+                  <CardTitle>{t('teamHoursSummary')}</CardTitle>
                   <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                     <CardDescription>
                       {getReportTitle()}
                     </CardDescription>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as any)} className="flex items-center">
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="weekly" id="weekly" /><Label htmlFor="weekly">Weekly</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="monthly" id="monthly" /><Label htmlFor="monthly">Monthly</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">Yearly</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="weekly" id="weekly" /><Label htmlFor="weekly">{t('weekly')}</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="monthly" id="monthly" /><Label htmlFor="monthly">{t('monthly')}</Label></div>
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">{t('yearly')}</Label></div>
                         </RadioGroup>
                         <div className="flex items-center gap-2">
                              {periodType === 'weekly' && (
@@ -338,12 +340,12 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center justify-between mt-4 pt-4 border-t">
                      <RadioGroup value={reportView} onValueChange={(v) => setReportView(v as any)} className="flex items-center gap-4">
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">Consolidated</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">Project Level</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">Task Level</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">{t('consolidated')}</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">{t('projectLevel')}</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">{t('taskLevel')}</Label></div>
                     </RadioGroup>
                      <Button variant="outline" onClick={handleExport}>
-                        <FileUp className="mr-2 h-4 w-4" /> Export
+                        <FileUp className="mr-2 h-4 w-4" /> {t('export')}
                     </Button>
                   </div>
                 </CardHeader>
@@ -352,13 +354,13 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Member</TableHead>
-                          <TableHead className="hidden md:table-cell">Role</TableHead>
-                          <TableHead className="text-right">Assigned Hours</TableHead>
-                          <TableHead className="text-right">Leave Hours</TableHead>
-                          <TableHead className="text-right">Expected</TableHead>
-                          <TableHead className="text-right">Logged</TableHead>
-                          <TableHead className="text-right">Remaining</TableHead>
+                          <TableHead>{t('member')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
+                          <TableHead className="text-right">{t('assignedHours')}</TableHead>
+                          <TableHead className="text-right">{t('leaveHours')}</TableHead>
+                          <TableHead className="text-right">{t('expected')}</TableHead>
+                          <TableHead className="text-right">{t('logged')}</TableHead>
+                          <TableHead className="text-right">{t('remaining')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -378,13 +380,13 @@ export default function ReportsPage() {
                             <TableCell className={`text-right font-mono ${parseFloat(member.remainingHours) < 0 ? 'text-destructive' : ''}`}>{member.remainingHours}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={7} className="text-center h-24">No team members to display.</TableCell></TableRow>)}
+                        {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={7} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}
                   {reportView === 'project' && (
                     <Table>
-                      <TableHeader><TableRow><TableHead>Member</TableHead><TableHead className="hidden md:table-cell">Role</TableHead><TableHead>Project</TableHead><TableHead className="text-right">Logged Hours</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead>{t('project')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {reports.projectReport.map(item => (
                           <TableRow key={item.key}>
@@ -399,13 +401,13 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{item.loggedHours}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.projectReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">No project hours logged for this period.</TableCell></TableRow>)}
+                        {reports.projectReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noProjectHours')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}
                    {reportView === 'task' && (
                     <Table>
-                      <TableHeader><TableRow><TableHead>Member</TableHead><TableHead className="hidden md:table-cell">Role</TableHead><TableHead>Task</TableHead><TableHead className="text-right">Logged Hours</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead>{t('task')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {reports.taskReport.map(item => (
                           <TableRow key={item.key}>
@@ -420,7 +422,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{item.loggedHours}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">No task hours logged for this period.</TableCell></TableRow>)}
+                        {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noTaskHours')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}

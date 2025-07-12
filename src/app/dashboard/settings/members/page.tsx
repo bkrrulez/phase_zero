@@ -24,6 +24,7 @@ import { useTeams } from "../../contexts/TeamsContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { DeleteMemberDialog } from "./components/delete-member-dialog";
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
@@ -31,6 +32,7 @@ export default function MembersSettingsPage() {
     const { teams } = useTeams();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
+    const { t } = useLanguage();
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
@@ -61,8 +63,8 @@ export default function MembersSettingsPage() {
         updateMember(updatedUser);
         setEditingUser(null);
         toast({
-            title: "Member Details Updated",
-            description: `Successfully updated details for ${updatedUser.name}.`,
+            title: t('memberDetailsUpdated'),
+            description: t('memberDetailsUpdatedDesc', { name: updatedUser.name }),
         });
         logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
     }
@@ -71,8 +73,8 @@ export default function MembersSettingsPage() {
         addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({
-            title: "Member Added",
-            description: `${newUser.name} has been added to the team.`,
+            title: t('memberAdded'),
+            description: t('memberAddedDesc', { name: newUser.name }),
         });
         logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
     };
@@ -84,15 +86,15 @@ export default function MembersSettingsPage() {
         try {
             await sendPasswordChangeEmail({ to: changingPasswordUser.email, name: changingPasswordUser.name });
             toast({
-                title: "Password Changed",
-                description: `Password for ${changingPasswordUser.name} has been changed and a notification email has been sent.`,
+                title: t('passwordChanged'),
+                description: t('passwordChangedDesc', { name: changingPasswordUser.name }),
             });
             logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
         } catch (error) {
             toast({
                 variant: 'destructive',
-                title: "Error",
-                description: "Could not send password change notification. Please check SMTP settings.",
+                title: t('error'),
+                description: t('smtpError'),
             });
         } finally {
             setIsSavingPassword(false);
@@ -104,8 +106,8 @@ export default function MembersSettingsPage() {
         if (!deletingUser) return;
         deleteMember(deletingUser.id);
         toast({
-            title: "User Deleted",
-            description: `Successfully deleted user ${deletingUser.name}.`,
+            title: t('userDeleted'),
+            description: t('userDeletedDesc', { name: deletingUser.name }),
             variant: "destructive"
         });
         logAction(`User '${currentUser.name}' deleted user '${deletingUser.name}'.`);
@@ -147,13 +149,13 @@ export default function MembersSettingsPage() {
         if (visibleMembers.length === 0) return;
     
         const dataForExport = visibleMembers.map(member => ({
-            'Member': member.name,
-            'Email': member.email,
-            'Role': member.role,
-            'Team': getTeamName(member.teamId),
-            'Weekly Contract Hours': member.contract.weeklyHours,
-            'Contract Start': format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
-            'Contract End': member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
+            [t('member')]: member.name,
+            [t('email')]: member.email,
+            [t('role')]: member.role,
+            [t('team')]: getTeamName(member.teamId),
+            [t('weeklyHours')]: member.contract.weeklyHours,
+            [t('contractStart')]: format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
+            [t('contractEnd')]: member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
         }));
     
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
@@ -168,36 +170,36 @@ export default function MembersSettingsPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <h1 className="text-3xl font-bold font-headline">All Members</h1>
-            <p className="text-muted-foreground">Manage all members in the system.</p>
+            <h1 className="text-3xl font-bold font-headline">{t('allMembers')}</h1>
+            <p className="text-muted-foreground">{t('allMembersSubtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleExport}>
-                <FileUp className="mr-2 h-4 w-4" /> Export
+                <FileUp className="mr-2 h-4 w-4" /> {t('export')}
             </Button>
             {canAddMember && (
                 <Button onClick={() => setIsAddMemberDialogOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Member
+                    <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
                 </Button>
             )}
           </div>
         </div>
         <Card>
           <CardHeader>
-              <CardTitle>All Members</CardTitle>
-              <CardDescription>A list of all members you have permission to view.</CardDescription>
+              <CardTitle>{t('allMembers')}</CardTitle>
+              <CardDescription>{t('allMembersDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
               <Table>
                   <TableHeader>
                       <TableRow>
-                          <TableHead>Member</TableHead>
-                          <TableHead className="hidden md:table-cell">Role</TableHead>
-                          <TableHead className="hidden md:table-cell">Team</TableHead>
-                          <TableHead className="hidden md:table-cell text-right">Weekly Contract Hours</TableHead>
-                          <TableHead className="hidden lg:table-cell">Contract Start</TableHead>
-                          <TableHead className="hidden lg:table-cell">Contract End</TableHead>
-                          <TableHead><span className="sr-only">Actions</span></TableHead>
+                          <TableHead>{t('member')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
+                          <TableHead className="hidden md:table-cell text-right">{t('weeklyHours')}</TableHead>
+                          <TableHead className="hidden lg:table-cell">{t('contractStart')}</TableHead>
+                          <TableHead className="hidden lg:table-cell">{t('contractEnd')}</TableHead>
+                          <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -231,21 +233,21 @@ export default function MembersSettingsPage() {
                                           </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                                           <DropdownMenuItem asChild>
-                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>View Report</Link>
+                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>{t('viewReport')}</Link>
                                           </DropdownMenuItem>
                                           <DropdownMenuItem 
                                             onClick={() => setEditingUser(member)}
                                             disabled={!canEditMember(member)}
                                           >
-                                            View/Edit Details
+                                            {t('viewEditDetails')}
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             onClick={() => setChangingPasswordUser(member)}
                                             disabled={!canChangePassword(member)}
                                           >
-                                            Change Password
+                                            {t('changePassword')}
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
@@ -253,7 +255,7 @@ export default function MembersSettingsPage() {
                                             disabled={!canDeleteMember(member)}
                                             className="text-destructive focus:text-destructive"
                                           >
-                                            Delete User
+                                            {t('deleteUser')}
                                           </DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
@@ -262,7 +264,7 @@ export default function MembersSettingsPage() {
                       ))}
                       {visibleMembers.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={7} className="h-24 text-center">No members to display.</TableCell>
+                              <TableCell colSpan={7} className="h-24 text-center">{t('noMembers')}</TableCell>
                           </TableRow>
                       )}
                   </TableBody>
