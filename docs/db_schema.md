@@ -204,3 +204,16 @@ Tracks which users have read a specific notification.
 
 -   `notification_id` (PK, FK -> `app_notifications.id`, TEXT, NOT NULL)
 -   `user_id` (PK, FK -> `users.id`, TEXT, NOT NULL)
+---
+
+## Manual Migrations
+
+Run these commands manually if your database schema is out of sync.
+
+### Add `recurring_day` to `freeze_rules`
+
+This command adds the column required for recurring freeze rules. The `IF NOT EXISTS` clause prevents errors if the column has already been added.
+
+```sql
+ALTER TABLE freeze_rules ADD COLUMN IF NOT EXISTS recurring_day INTEGER;
+```
