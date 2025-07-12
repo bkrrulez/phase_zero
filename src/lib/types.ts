@@ -78,6 +78,7 @@ export type FreezeRule = {
   teamId: string; // 'all-teams' or a specific team id
   startDate: string;
   endDate: string;
+  recurringDay?: number | null; // e.g., 0 for Sunday, 1 for Monday
 };
 
 export type PushMessage = {

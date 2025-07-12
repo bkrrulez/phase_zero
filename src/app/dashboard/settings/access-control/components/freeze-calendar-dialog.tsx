@@ -21,7 +21,16 @@ import { useAuth } from '@/app/dashboard/contexts/AuthContext';
 
 const freezeSchema = z.object({
   teamId: z.string().min(1, 'Please select a team.'),
-  timePeriod: z.enum(['month', 'tillDate', 'customRange']),
+  timePeriod: z.enum(['month', 'tillDate', 'customRange', 'tillDayOfWeek']),
+  freezeDayOfWeek: z.string().optional(),
+}).refine(data => {
+    if (data.timePeriod === 'tillDayOfWeek') {
+        return !!data.freezeDayOfWeek;
+    }
+    return true;
+}, {
+    message: "Please select a day of the week.",
+    path: ["freezeDayOfWeek"],
 });
 
 export type FreezeFormValues = z.infer<typeof freezeSchema>;
@@ -29,6 +38,7 @@ export type FreezeFormSubmitData = {
   teamId: string;
   startDate: Date;
   endDate: Date;
+  recurringDay?: number;
 };
 
 interface FreezeCalendarDialogProps {
@@ -43,6 +53,15 @@ const allMonths = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
+const daysOfWeek = [
+    { value: '1', label: 'Monday' },
+    { value: '2', label: 'Tuesday' },
+    { value: '3', label: 'Wednesday' },
+    { value: '4', label: 'Thursday' },
+    { value: '5', label: 'Friday' },
+    { value: '6', label: 'Saturday' },
+    { value: '0', label: 'Sunday' },
+]
 
 export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCalendarDialogProps) {
   const { toast } = useToast();
@@ -97,9 +116,10 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
     form.trigger().then(isValid => {
       if (!isValid) return;
 
-      const { teamId, timePeriod } = form.getValues();
+      const { teamId, timePeriod, freezeDayOfWeek } = form.getValues();
       let startDate: Date | undefined;
       let endDate: Date | undefined;
+      let recurringDay: number | undefined;
 
       if (timePeriod === 'month') {
         const date = new Date(selectedYear, selectedMonth, 1);
@@ -111,18 +131,22 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
       } else if (timePeriod === 'customRange') {
         startDate = dateRange?.from;
         endDate = dateRange?.to;
+      } else if (timePeriod === 'tillDayOfWeek' && freezeDayOfWeek) {
+        startDate = new Date(2000, 0, 1); // A date far in the past
+        endDate = new Date(); // Temporary, will be calculated on check
+        recurringDay = parseInt(freezeDayOfWeek, 10);
       }
 
       if (!startDate || !endDate) {
         toast({ variant: 'destructive', title: 'Invalid Date', description: 'Please select a valid date or range.' });
         return;
       }
-      if (startDate > endDate) {
+      if (startDate > endDate && timePeriod !== 'tillDayOfWeek') {
         toast({ variant: 'destructive', title: 'Invalid Range', description: 'Start date must be earlier than end date.' });
         return;
       }
       
-      onSave({ teamId, startDate, endDate });
+      onSave({ teamId, startDate, endDate, recurringDay });
       form.reset({ teamId: '', timePeriod: 'month' });
     });
   };
@@ -175,6 +199,7 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
                       <SelectItem value="month">Month</SelectItem>
                       <SelectItem value="tillDate">Till Date</SelectItem>
                       <SelectItem value="customRange">Custom Range</SelectItem>
+                      <SelectItem value="tillDayOfWeek">Till Day of Week - Recurring</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -267,6 +292,31 @@ export function FreezeCalendarDialog({ isOpen, onOpenChange, onSave }: FreezeCal
                     </div>
                 </PopoverContent>
               </Popover>
+            )}
+
+            {timePeriodWatcher === 'tillDayOfWeek' && (
+                <FormField
+                  control={form.control}
+                  name="freezeDayOfWeek"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Freeze Until Last</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a day of the week" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {daysOfWeek.map(day => (
+                            <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             )}
           </div>
           <DialogFooter className="pt-4">

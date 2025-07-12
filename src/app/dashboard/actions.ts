@@ -718,15 +718,16 @@ export async function getFreezeRules(): Promise<FreezeRule[]> {
         teamId: row.team_id,
         startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
         endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
+        recurringDay: row.recurring_day
     }));
 }
 
 export async function addFreezeRule(newRuleData: Omit<FreezeRule, 'id'>): Promise<FreezeRule | null> {
-    const { teamId, startDate, endDate } = newRuleData;
+    const { teamId, startDate, endDate, recurringDay } = newRuleData;
     const id = `freeze-${Date.now()}`;
     const result = await db.query(
-        'INSERT INTO freeze_rules (id, team_id, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING *',
-        [id, teamId, startDate, endDate]
+        'INSERT INTO freeze_rules (id, team_id, start_date, end_date, recurring_day) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [id, teamId, startDate, endDate, recurringDay]
     );
     revalidatePath('/dashboard/settings/access-control');
     return {
@@ -734,6 +735,7 @@ export async function addFreezeRule(newRuleData: Omit<FreezeRule, 'id'>): Promis
         teamId: result.rows[0].team_id,
         startDate: format(new Date(result.rows[0].start_date), 'yyyy-MM-dd'),
         endDate: format(new Date(result.rows[0].end_date), 'yyyy-MM-dd'),
+        recurringDay: result.rows[0].recurring_day
     }
 }
 

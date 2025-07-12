@@ -46,9 +46,10 @@ export default function AccessControlPage() {
         teamId: data.teamId,
         startDate: format(data.startDate, 'yyyy-MM-dd'),
         endDate: format(data.endDate, 'yyyy-MM-dd'),
+        recurringDay: data.recurringDay
     };
 
-    addFreezeRule(newRuleData, teamName);
+    addFreezeRule(newRuleData);
     setIsFreezeDialogOpen(false);
     toast({
         title: 'Calendar Frozen',
@@ -112,7 +113,7 @@ export default function AccessControlPage() {
                   freezeRules.map(rule => (
                     <TableRow key={rule.id}>
                       <TableCell className="font-medium">{getTeamName(rule.teamId)}</TableCell>
-                      <TableCell>{format(new Date(rule.startDate), 'PP')}</TableCell>
+                      <TableCell>{(rule.recurringDay !== undefined && rule.recurringDay !== null) ? 'Recurring' : format(new Date(rule.startDate), 'PP')}</TableCell>
                       <TableCell>{format(new Date(rule.endDate), 'PP')}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="outline" size="sm" onClick={() => setUnfreezingRule(rule)}>
