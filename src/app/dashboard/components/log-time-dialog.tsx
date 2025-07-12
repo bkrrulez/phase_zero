@@ -64,42 +64,11 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
       remarks: '',
     }
   });
-
-  useEffect(() => {
-    if (isEditMode && entryToEdit) {
-      const [project, ...taskParts] = entryToEdit.task.split(' - ');
-      const task = taskParts.join(' - ');
-      form.reset({
-        date: new Date(entryToEdit.date),
-        startTime: entryToEdit.startTime,
-        endTime: entryToEdit.endTime,
-        project: project.trim(),
-        task: task.trim(),
-        remarks: entryToEdit.remarks || '',
-      });
-    } else {
-      form.reset({
-        date: new Date(),
-        startTime: '',
-        endTime: '',
-        project: '',
-        task: '',
-        remarks: '',
-      });
-    }
-  }, [entryToEdit, isOpen, form, isEditMode]);
-
-
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>();
-
+  
   const { freezeRules } = useAccessControl();
-  const { projects } = useProjects();
-  const { tasks } = useTasks();
-
-  const availableProjects = projects.filter(p => targetUser?.associatedProjectIds?.includes(p.id));
 
   const isDateFrozen = (date: Date) => {
+    if (!targetUser) return false;
     for (const rule of freezeRules) {
       const ruleAppliesToAll = rule.teamId === 'all-teams';
       const ruleAppliesToUserTeam = targetUser?.teamId && rule.teamId === targetUser.teamId;
@@ -116,6 +85,52 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     }
     return false;
   };
+  
+  const [isFormDisabled, setIsFormDisabled] = useState(false);
+
+  useEffect(() => {
+    if (isEditMode && entryToEdit) {
+      const [project, ...taskParts] = entryToEdit.task.split(' - ');
+      const task = taskParts.join(' - ');
+      const entryDate = new Date(entryToEdit.date);
+      
+      form.reset({
+        date: entryDate,
+        startTime: entryToEdit.startTime,
+        endTime: entryToEdit.endTime,
+        project: project.trim(),
+        task: task.trim(),
+        remarks: entryToEdit.remarks || '',
+      });
+      
+      // Check if the date of the entry being edited is frozen
+      if (isDateFrozen(entryDate)) {
+        setIsFormDisabled(true);
+      } else {
+        setIsFormDisabled(false);
+      }
+
+    } else {
+      setIsFormDisabled(false);
+      form.reset({
+        date: new Date(),
+        startTime: '',
+        endTime: '',
+        project: '',
+        task: '',
+        remarks: '',
+      });
+    }
+  }, [entryToEdit, isOpen, form, isEditMode, targetUser]);
+
+
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [tempDate, setTempDate] = useState<Date>();
+
+  const { projects } = useProjects();
+  const { tasks } = useTasks();
+
+  const availableProjects = projects.filter(p => targetUser?.associatedProjectIds?.includes(p.id));
 
   async function onSubmit(data: LogTimeFormValues) {
     const { success } = await onSave(data, entryToEdit?.id);
@@ -132,155 +147,163 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Time Entry' : 'Log Time'}</DialogTitle>
           <DialogDescription>
-            {isEditMode ? `Editing entry for ${targetUser.name}.` : "Fill in the details below to log your work time. Click save when you're done."}
+            {isFormDisabled 
+              ? `This entry cannot be modified because the date is within a frozen period.`
+              : isEditMode 
+                ? `Editing entry for ${targetUser.name}.` 
+                : "Fill in the details below to log your work time. Click save when you're done."
+            }
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                    <PopoverTrigger asChild>
+            <fieldset disabled={isFormDisabled} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date</FormLabel>
+                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                            onClick={() => {
+                                setTempDate(field.value);
+                                setIsDatePickerOpen(true);
+                            }}
+                            disabled={isEditMode} // Cannot change date in edit mode
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={tempDate}
+                          onSelect={setTempDate}
+                          toDate={new Date()}
+                          disabled={(date) => date > new Date() || isDateFrozen(date)}
+                          initialFocus
+                        />
+                        <div className="p-2 border-t flex justify-end">
+                              <Button size="sm" type="button" onClick={() => {
+                                  if (tempDate) {
+                                      field.onChange(tempDate);
+                                  }
+                                  setIsDatePickerOpen(false);
+                              }}>Ok</Button>
+                          </div>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
                       <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                           onClick={() => {
-                              setTempDate(field.value);
-                              setIsDatePickerOpen(true);
-                           }}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <Input type="time" {...field} />
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={tempDate}
-                        onSelect={setTempDate}
-                        toDate={new Date()}
-                        disabled={(date) => date > new Date() || isDateFrozen(date)}
-                        initialFocus
-                      />
-                       <div className="p-2 border-t flex justify-end">
-                            <Button size="sm" type="button" onClick={() => {
-                                if (tempDate) {
-                                    field.onChange(tempDate);
-                                }
-                                setIsDatePickerOpen(false);
-                            }}>Ok</Button>
-                        </div>
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
-                name="startTime"
+                name="project"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
+                    <FormLabel>Project</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a project" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availableProjects.length > 0 ? (
+                          availableProjects.map((project) => (
+                            <SelectItem key={project.id} value={project.name}>{project.name}</SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>No projects assigned</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="endTime"
+                name="task"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End Time</FormLabel>
+                    <FormLabel>Task</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a task" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tasks.map((task) => (
+                          <SelectItem key={task.id} value={task.name}>{task.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="remarks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Remarks <span className="text-muted-foreground">(Optional)</span></FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <Textarea placeholder="Add any extra details..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            <FormField
-              control={form.control}
-              name="project"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a project" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableProjects.length > 0 ? (
-                        availableProjects.map((project) => (
-                          <SelectItem key={project.id} value={project.name}>{project.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="none" disabled>No projects assigned</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="task"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Task</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a task" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {tasks.map((task) => (
-                        <SelectItem key={task.id} value={task.name}>{task.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="remarks"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Remarks <span className="text-muted-foreground">(Optional)</span></FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Add any extra details..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            </fieldset>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit">{isEditMode ? 'Save Changes' : 'Log Time'}</Button>
+                <Button type="submit" disabled={isFormDisabled}>{isEditMode ? 'Save Changes' : 'Log Time'}</Button>
             </DialogFooter>
           </form>
         </Form>
