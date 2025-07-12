@@ -348,7 +348,7 @@ export function IndividualReport() {
 
     const handleSaveEntry = async (data: LogTimeFormValues, entryId?: string) => {
         if (!entryId || !selectedUser) return { success: false };
-        return updateTimeEntry(entryId, data, selectedUser.id);
+        return updateTimeEntry(entryId, data, selectedUser.id, teamMembers);
     };
 
     const handleDeleteConfirm = async () => {
@@ -513,4 +513,3 @@ export function IndividualReport() {
     </div>
   );
 }
-

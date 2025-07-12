@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import type { TimeEntry } from "@/lib/types";
+import type { TimeEntry, User } from "@/lib/types";
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
@@ -13,7 +13,7 @@ import { getTimeEntries, logTime as logTimeAction, updateTimeEntry as updateTime
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
   logTime: (data: LogTimeFormValues, userId: string) => Promise<{ success: boolean }>;
-  updateTimeEntry: (entryId: string, data: LogTimeFormValues, userId: string) => Promise<{ success: boolean }>;
+  updateTimeEntry: (entryId: string, data: LogTimeFormValues, userId: string, allUsers: User[]) => Promise<{ success: boolean }>;
   deleteTimeEntry: (entryId: string) => Promise<{ success: boolean }>;
   isLoading: boolean;
 }
@@ -91,7 +91,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const updateTimeEntry = async (entryId: string, data: LogTimeFormValues, userId: string): Promise<{ success: boolean }> => {
+  const updateTimeEntry = async (entryId: string, data: LogTimeFormValues, userId: string, allUsers: User[]): Promise<{ success: boolean }> => {
     try {
       const updatedEntryData = {
         userId: userId,
@@ -111,7 +111,8 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
             title: "Time Entry Updated",
             description: `Entry for ${format(new Date(updatedEntry.date), 'PPP')} has been updated.`
         });
-        await logAction(`User '${currentUser.name}' updated a time entry for user ID ${userId}.`);
+        const targetUser = allUsers.find(u => u.id === userId);
+        await logAction(`User '${currentUser.name}' updated a time entry for '${targetUser?.name || userId}'.`);
         return { success: true };
       }
       return { success: false };

@@ -12,6 +12,7 @@ import type { TimeEntry } from "@/lib/types";
 import { DayDetailsDialog } from "../reports/components/day-details-dialog";
 import { LogTimeDialog, type LogTimeFormValues } from "./log-time-dialog";
 import { DeleteTimeEntryDialog } from "../reports/components/delete-time-entry-dialog";
+import { useMembers } from "../contexts/MembersContext";
 
 
 const chartConfig = {
@@ -24,6 +25,7 @@ const chartConfig = {
 export function MonthlyHoursChart() {
   const { timeEntries, updateTimeEntry, deleteTimeEntry } = useTimeTracking();
   const { currentUser } = useAuth();
+  const { teamMembers } = useMembers();
 
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
   const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
@@ -81,7 +83,7 @@ export function MonthlyHoursChart() {
 
   const handleSaveEntry = async (data: LogTimeFormValues, entryId?: string) => {
     if (!entryId) return { success: false };
-    return updateTimeEntry(entryId, data, currentUser.id);
+    return updateTimeEntry(entryId, data, currentUser.id, teamMembers);
   };
 
   const handleDeleteConfirm = async () => {
