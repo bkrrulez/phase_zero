@@ -3,8 +3,10 @@
 
 import * as React from 'react';
 import { format } from "date-fns";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
 import Link from "next/link";
+import * as XLSX from 'xlsx';
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,11 +48,10 @@ export default function MembersSettingsPage() {
         }
         const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
         
-        // Sort to bring current user to the top
         uniqueMembers.sort((a, b) => {
             if (a.id === currentUser.id) return -1;
             if (b.id === currentUser.id) return 1;
-            return a.name.localeCompare(b.name); // Keep alphabetical sort for the rest
+            return a.name.localeCompare(b.name);
         });
 
         return uniqueMembers;
@@ -113,11 +114,9 @@ export default function MembersSettingsPage() {
 
     const canEditMember = (member: User) => {
         if (currentUser.role === 'Super Admin') {
-            // A super admin can edit themselves, or any user who is not another super admin.
             return currentUser.id === member.id || member.role !== 'Super Admin';
         }
         if (currentUser.role === 'Team Lead') {
-            // A team lead can only edit their direct reports (employees).
             return member.reportsTo === currentUser.id && member.role === 'Employee';
         }
         return false;
@@ -144,6 +143,26 @@ export default function MembersSettingsPage() {
         return team?.name ?? 'N/A';
     };
 
+    const handleExport = () => {
+        if (visibleMembers.length === 0) return;
+    
+        const dataForExport = visibleMembers.map(member => ({
+            'Member': member.name,
+            'Email': member.email,
+            'Role': member.role,
+            'Team': getTeamName(member.teamId),
+            'Weekly Contract Hours': member.contract.weeklyHours,
+            'Contract Start': format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
+            'Contract End': member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
+        }));
+    
+        const worksheet = XLSX.utils.json_to_sheet(dataForExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Members");
+    
+        XLSX.writeFile(workbook, `all_members_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
+
   return (
     <>
       <div className="space-y-6">
@@ -152,11 +171,16 @@ export default function MembersSettingsPage() {
             <h1 className="text-3xl font-bold font-headline">All Members</h1>
             <p className="text-muted-foreground">Manage all members in the system.</p>
           </div>
-          {canAddMember && (
-            <Button onClick={() => setIsAddMemberDialogOpen(true)}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Member
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExport}>
+                <FileUp className="mr-2 h-4 w-4" /> Export
             </Button>
-          )}
+            {canAddMember && (
+                <Button onClick={() => setIsAddMemberDialogOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Member
+                </Button>
+            )}
+          </div>
         </div>
         <Card>
           <CardHeader>
