@@ -41,22 +41,17 @@ export function TeamDashboard() {
 
       // 1. Calculate Assigned Hours for the whole month
       let assignedWorkDaysInMonth = 0;
+      const monthHolidays = publicHolidays.filter(h => isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd}))
+        .concat(customHolidays.filter(h => {
+             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+             return applies && isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd});
+        }));
+
       for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
         const dayOfWeek = getDay(d);
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-        const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-        if (isPublic) continue;
-
-        const isCustom = customHolidays.some(h => {
-          const hDate = new Date(h.date);
-          const applies = (h.appliesTo === 'all-members') ||
-                          (h.appliesTo === 'all-teams' && !!member.teamId) ||
-                          (h.appliesTo === member.teamId);
-          return hDate.toDateString() === d.toDateString() && applies;
-        });
-        if (isCustom) continue;
-        
+        const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+        if (isHoliday) continue;
         assignedWorkDaysInMonth++;
       }
       const assignedHours = assignedWorkDaysInMonth * dailyContractHours;
@@ -94,18 +89,14 @@ export function TeamDashboard() {
       for (let d = new Date(monthStart); d <= today; d = addDays(d, 1)) {
         const dayOfWeek = getDay(d);
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString()) || customHolidays.some(h => {
-          const hDate = new Date(h.date);
-          const applies = (h.appliesTo === 'all-members') ||
-                          (h.appliesTo === 'all-teams' && !!member.teamId) ||
-                          (h.appliesTo === member.teamId);
-          return hDate.toDateString() === d.toDateString() && applies;
-        });
+        const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
         if (!isHoliday) {
           workDaysSoFar++;
         }
       }
-      const expectedHoursSoFar = (workDaysSoFar * dailyContractHours) - (leaveHours * (today.getDate() / daysInCurrentMonth));
+      const assignedHoursSoFar = workDaysSoFar * dailyContractHours;
+      const leaveHoursSoFar = (totalYearlyLeaveHours * today.getDate()) / daysInYear;
+      const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
       const performance = manualTotalHours - expectedHoursSoFar;
       
       return {
