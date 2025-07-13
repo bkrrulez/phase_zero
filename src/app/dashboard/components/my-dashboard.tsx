@@ -84,64 +84,74 @@ export function MyDashboard() {
 
   const { totalHours, expectedHours, overtime, takenDays, remainingDays } = React.useMemo(() => {
     const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
+    const currentYear = today.getFullYear();
     const dailyContractHours = currentUser.contract.weeklyHours / 5;
 
-    // 1. Calculate Assigned Hours for the whole month
-    let assignedWorkDaysInMonth = 0;
-    const monthHolidays = publicHolidays.filter(h => isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd}))
-      .concat(customHolidays.filter(h => {
-           const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
-           return applies && isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd});
-      }));
+    // --- Start: Accurate Calculation Logic from Reports ---
+    const yearStartForProrata = startOfYear(new Date(currentYear, 0, 1));
+    const yearEndForProrata = endOfYear(new Date(currentYear, 11, 31));
 
-    for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
+    const userHolidaysForYear = publicHolidays
+      .filter(h => getYear(parseISO(h.date)) === currentYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
+      .concat(customHolidays.filter(h => {
+        if (getYear(parseISO(h.date)) !== currentYear) return false;
+        if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+        const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
+        return applies;
+      }));
+    
+    let totalWorkingDaysInYear = 0;
+    for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
       const dayOfWeek = getDay(d);
       if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-      const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+      const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
       if (isHoliday) continue;
-      assignedWorkDaysInMonth++;
+      totalWorkingDaysInYear++;
     }
-    const assignedHours = assignedWorkDaysInMonth * dailyContractHours;
 
-    // 2. Calculate Leave Hours for the month (prorated from annual)
-    const yearStartForProrata = startOfYear(today);
-    const yearEndForProrata = endOfYear(today);
-    const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
-    
-    const proratedAllowanceDays = getProratedAllowance(currentUser);
-    const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-    
-    const daysInCurrentMonth = getDaysInMonth(today);
-    const leaveHours = (totalYearlyLeaveHours * daysInCurrentMonth) / daysInYear;
+    const monthStart = startOfMonth(today);
+    const monthEnd = endOfMonth(today);
 
-    // 3. Calculate Expected Hours for the month
-    const expectedHours = assignedHours - leaveHours;
+    let workingDaysInMonth = 0;
+    for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isHoliday) continue;
+        workingDaysInMonth++;
+    }
 
-    // 4. Calculate Logged Hours for the month so far
+    const assignedHours = workingDaysInMonth * dailyContractHours;
+    const totalYearlyLeaveHours = getProratedAllowance(currentUser) * dailyContractHours;
+    const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
+    const leaveHoursForMonth = dailyLeaveCredit * workingDaysInMonth;
+    const expectedHours = assignedHours - leaveHoursForMonth;
+    // --- End: Accurate Calculation Logic ---
+
+
+    // Calculate Logged Hours for the month so far
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
         return entry.userId === currentUser.id && isSameMonth(entryDate, today);
     });
     const totalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
 
-    // 5. Calculate Overtime so far
+    // Calculate Overtime so far
     let workDaysSoFar = 0;
     for (let d = new Date(monthStart); d <= today; d = addDays(d, 1)) {
         const dayOfWeek = getDay(d);
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+        const isHoliday = userHolidaysForYear.some(h => new Date(h.date).toDateString() === d.toDateString());
         if (!isHoliday) {
           workDaysSoFar++;
         }
     }
     const assignedHoursSoFar = workDaysSoFar * dailyContractHours;
-    const leaveHoursSoFar = (totalYearlyLeaveHours * today.getDate()) / daysInYear;
+    const leaveHoursSoFar = dailyLeaveCredit * workDaysSoFar;
     const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
     const overtime = totalHours - expectedHoursSoFar;
 
-    // 6. Calculate Holiday Days Taken
+    // Calculate Holiday Days Taken
     const takenDays = holidayRequests
       .filter(req => req.userId === currentUser.id && req.status === 'Approved')
       .reduce((acc, req) => acc + calculateDurationInWorkdays(new Date(req.startDate), new Date(req.endDate), req.userId), 0);
@@ -279,5 +289,3 @@ export function MyDashboard() {
     </div>
   )
 }
-
-    
