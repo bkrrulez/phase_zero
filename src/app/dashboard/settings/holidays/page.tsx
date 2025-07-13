@@ -33,6 +33,10 @@ export default function HolidaysSettingsPage() {
     )
   }
 
+  const handleToggle = async (checked: boolean) => {
+    await setIsHolidaysNavVisible(checked);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -48,7 +52,7 @@ export default function HolidaysSettingsPage() {
                     <Switch 
                         id="display-holidays" 
                         checked={isHolidaysNavVisible}
-                        onCheckedChange={setIsHolidaysNavVisible}
+                        onCheckedChange={handleToggle}
                     />
                     <Label htmlFor="display-holidays">{t('displayHolidays')}</Label>
                 </>

@@ -1,48 +1,43 @@
+
 'use client';
 
 import * as React from 'react';
+import { getIsHolidaysNavVisible, setIsHolidaysNavVisible as setGlobalVisibility } from '../actions';
+import { useAuth } from './AuthContext';
+import { useSystemLog } from './SystemLogContext';
 
 interface SettingsContextType {
   isHolidaysNavVisible: boolean;
-  setIsHolidaysNavVisible: (isVisible: boolean) => void;
+  setIsHolidaysNavVisible: (isVisible: boolean) => Promise<void>;
+  isLoading: boolean;
 }
 
 const SettingsContext = React.createContext<SettingsContextType | undefined>(undefined);
 
-// A simple hook to read from localStorage, meant to be used on the client.
-function useLocalStorage(key: string, initialValue: boolean): [boolean, (value: boolean) => void] {
-    const [storedValue, setStoredValue] = React.useState<boolean>(() => {
-        if (typeof window === 'undefined') {
-            return initialValue;
-        }
-        try {
-            const item = window.localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialValue;
-        } catch (error) {
-            console.error(error);
-            return initialValue;
-        }
-    });
-
-    const setValue = (value: boolean) => {
-        try {
-            setStoredValue(value);
-            if (typeof window !== 'undefined') {
-                window.localStorage.setItem(key, JSON.stringify(value));
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    };
-    return [storedValue, setValue];
-}
-
-
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  const [isHolidaysNavVisible, setIsHolidaysNavVisible] = useLocalStorage('isHolidaysNavVisible', true);
+  const { currentUser } = useAuth();
+  const { logAction } = useSystemLog();
+  const [isHolidaysNavVisible, _setIsHolidaysNavVisible] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(true);
+  
+  React.useEffect(() => {
+    const fetchVisibility = async () => {
+      setIsLoading(true);
+      const visible = await getIsHolidaysNavVisible();
+      _setIsHolidaysNavVisible(visible);
+      setIsLoading(false);
+    }
+    fetchVisibility();
+  }, []);
+
+  const setIsHolidaysNavVisible = async (isVisible: boolean) => {
+    _setIsHolidaysNavVisible(isVisible);
+    await setGlobalVisibility(isVisible);
+    await logAction(`User '${currentUser.name}' set 'Display Holidays' navigation to ${isVisible}.`);
+  };
 
   return (
-    <SettingsContext.Provider value={{ isHolidaysNavVisible, setIsHolidaysNavVisible }}>
+    <SettingsContext.Provider value={{ isHolidaysNavVisible, setIsHolidaysNavVisible, isLoading }}>
       {children}
     </SettingsContext.Provider>
   );
