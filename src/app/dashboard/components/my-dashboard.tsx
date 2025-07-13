@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from 'react';
-import { Clock, Users, BarChart as BarChartIcon, CalendarHeart, getYear } from "lucide-react";
+import { Clock, Users, BarChart as BarChartIcon, CalendarHeart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { User } from "@/lib/types";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth, isWithinInterval, getYear } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -288,4 +288,5 @@ export function MyDashboard() {
       </div>
     </div>
   )
-}
+
+    
