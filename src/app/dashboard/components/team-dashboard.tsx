@@ -21,6 +21,33 @@ export function TeamDashboard() {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
 
+  const getProratedAllowance = useMemo(() => (user: typeof currentUser) => {
+    const parseDateStringAsLocal = (dateString: string): Date => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    };
+
+    const { startDate, endDate } = user.contract;
+    const today = new Date();
+    const yearStart = startOfYear(today);
+    const yearEnd = endOfYear(today);
+    const daysInYear = differenceInCalendarDays(yearEnd, yearStart) + 1;
+
+    const contractStart = parseDateStringAsLocal(startDate);
+    const contractEnd = endDate ? parseDateStringAsLocal(endDate) : yearEnd;
+
+    const effectiveStartDate = max([yearStart, contractStart]);
+    const effectiveEndDate = min([yearEnd, contractEnd]);
+
+    if (effectiveStartDate > effectiveEndDate) {
+        return 0;
+    }
+
+    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveStartDate) + 1;
+    
+    return (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+  }, [annualLeaveAllowance]);
+
   const teamPerformance = useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
         if (currentUser.role === 'Super Admin') {
@@ -57,19 +84,11 @@ export function TeamDashboard() {
       const assignedHours = assignedWorkDaysInMonth * dailyContractHours;
 
       // 2. Calculate Leave Hours for the month (prorated from annual)
-      const parseDateStringAsLocal = (dateString: string): Date => {
-        const [year, month, day] = dateString.split('-').map(Number);
-        return new Date(year, month - 1, day);
-      };
       const yearStartForProrata = startOfYear(today);
       const yearEndForProrata = endOfYear(today);
-      const contractStartDate = parseDateStringAsLocal(member.contract.startDate);
-      const contractEndDate = member.contract.endDate ? parseDateStringAsLocal(member.contract.endDate) : yearEndForProrata;
-      const prorataContractStart = max([yearStartForProrata, contractStartDate]);
-      const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
       const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
-      const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
-      const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
+
+      const proratedAllowanceDays = getProratedAllowance(member);
       const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
       const daysInCurrentMonth = getDaysInMonth(today);
       const leaveHours = (totalYearlyLeaveHours * daysInCurrentMonth) / daysInYear;
@@ -106,7 +125,7 @@ export function TeamDashboard() {
         performance,
       }
     });
-  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser, annualLeaveAllowance]);
+  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser, getProratedAllowance]);
 
   const usersWithOvertime = teamPerformance
     .filter(u => u.performance > 0)
@@ -118,6 +137,7 @@ export function TeamDashboard() {
   
   const totalTeamHours = teamPerformance.reduce((acc, member) => acc + member.totalHours, 0);
   const totalExpectedHours = teamPerformance.reduce((acc, member) => acc + member.expectedHours, 0);
+  const totalPerformance = teamPerformance.reduce((acc, member) => acc + member.performance, 0);
 
   return (
     <div className="space-y-6">
@@ -159,9 +179,9 @@ export function TeamDashboard() {
                 <CardDescription>{t('teamPerformanceDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
-                <p className={`text-3xl font-bold ${(totalTeamHours - totalExpectedHours) < 0 ? 'text-destructive' : ''}`}>
-                    { (totalTeamHours - totalExpectedHours) >= 0 ? '+' : '' }
-                    {(totalTeamHours - totalExpectedHours).toFixed(2)}h
+                <p className={`text-3xl font-bold ${totalPerformance < 0 ? 'text-destructive' : ''}`}>
+                    { totalPerformance >= 0 ? '+' : '' }
+                    {totalPerformance.toFixed(2)}h
                 </p>
             </CardContent>
         </Card>
@@ -255,3 +275,5 @@ export function TeamDashboard() {
     </div>
   );
 }
+
+    

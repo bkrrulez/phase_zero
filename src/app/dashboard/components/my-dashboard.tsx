@@ -86,53 +86,57 @@ export function MyDashboard() {
     const today = new Date();
     const monthStart = startOfMonth(today);
     const monthEnd = endOfMonth(today);
-    
-    // --- Correct Calculation Logic from Team Dashboard ---
-    // 1. Calculate Assigned Hours
+    const dailyContractHours = currentUser.contract.weeklyHours / 5;
+
+    // 1. Calculate Assigned Hours for the whole month
     let assignedWorkDaysInMonth = 0;
     const monthHolidays = publicHolidays.filter(h => isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd}))
-        .concat(customHolidays.filter(h => {
-             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
-             return applies && isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd});
-        }));
+      .concat(customHolidays.filter(h => {
+           const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
+           return applies && isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd});
+      }));
 
     for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
-        const dayOfWeek = getDay(d);
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-        if (isHoliday) continue;
-        assignedWorkDaysInMonth++;
+      const dayOfWeek = getDay(d);
+      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+      const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
+      if (isHoliday) continue;
+      assignedWorkDaysInMonth++;
     }
-    const assignedHours = assignedWorkDaysInMonth * dailyHours;
+    const assignedHours = assignedWorkDaysInMonth * dailyContractHours;
 
-    // 2. Calculate Leave Hours for the month
-    const totalYearlyLeaveHours = getProratedAllowance(currentUser) * dailyHours;
+    // 2. Calculate Leave Hours for the month (prorated from annual)
+    const yearStartForProrata = startOfYear(today);
+    const yearEndForProrata = endOfYear(today);
+    const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
+    
+    const proratedAllowanceDays = getProratedAllowance(currentUser);
+    const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
+    
     const daysInCurrentMonth = getDaysInMonth(today);
-    const yearStart = startOfYear(today);
-    const yearEnd = endOfYear(today);
-    const daysInYear = differenceInCalendarDays(yearEnd, yearStart) + 1;
     const leaveHours = (totalYearlyLeaveHours * daysInCurrentMonth) / daysInYear;
 
-    // 3. Calculate Expected Hours
+    // 3. Calculate Expected Hours for the month
     const expectedHours = assignedHours - leaveHours;
 
-    // 4. Calculate Logged Hours
+    // 4. Calculate Logged Hours for the month so far
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
         return entry.userId === currentUser.id && isSameMonth(entryDate, today);
     });
     const totalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
 
-    // 5. Calculate Overtime
+    // 5. Calculate Overtime so far
     let workDaysSoFar = 0;
     for (let d = new Date(monthStart); d <= today; d = addDays(d, 1)) {
         const dayOfWeek = getDay(d);
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
         const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-        if (isHoliday) continue;
-        workDaysSoFar++;
+        if (!isHoliday) {
+          workDaysSoFar++;
+        }
     }
-    const assignedHoursSoFar = workDaysSoFar * dailyHours;
+    const assignedHoursSoFar = workDaysSoFar * dailyContractHours;
     const leaveHoursSoFar = (totalYearlyLeaveHours * today.getDate()) / daysInYear;
     const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
     const overtime = totalHours - expectedHoursSoFar;
@@ -275,3 +279,5 @@ export function MyDashboard() {
     </div>
   )
 }
+
+    
