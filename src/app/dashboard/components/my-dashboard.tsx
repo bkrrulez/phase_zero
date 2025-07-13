@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import * as React from 'react';
 import { Clock, Users, BarChart as BarChartIcon, CalendarHeart } from "lucide-react";
@@ -17,12 +17,12 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export function MyDashboard() {
+  const { t } = useLanguage();
   const { timeEntries } = useTimeTracking();
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
   const { isHolidaysNavVisible } = useSettings();
-  const { t } = useLanguage();
   
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
@@ -288,5 +288,4 @@ export function MyDashboard() {
       </div>
     </div>
   )
-
-    
+}
