@@ -2,12 +2,12 @@
 "use client";
 
 import * as React from 'react';
-import { Clock, Users, BarChart as BarChartIcon, CalendarHeart } from "lucide-react";
+import { Clock, Users, BarChart as BarChartIcon, CalendarHeart, getYear } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { User } from "@/lib/mock-data";
+import type { User } from "@/lib/types";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth, isWithinInterval, getYear } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -92,21 +92,21 @@ export function MyDashboard() {
     const yearEndForProrata = endOfYear(new Date(currentYear, 11, 31));
 
     const userHolidaysForYear = publicHolidays
-      .filter(h => getYear(parseISO(h.date)) === currentYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
-      .concat(customHolidays.filter(h => {
-        if (getYear(parseISO(h.date)) !== currentYear) return false;
-        if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
-        const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
-        return applies;
-      }));
-    
+        .filter(h => getYear(parseISO(h.date)) === currentYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
+        .concat(customHolidays.filter(h => {
+            if (getYear(parseISO(h.date)) !== currentYear) return false;
+            if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
+            return applies;
+        }));
+
     let totalWorkingDaysInYear = 0;
     for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
-      const dayOfWeek = getDay(d);
-      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-      const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
-      if (isHoliday) continue;
-      totalWorkingDaysInYear++;
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isHoliday) continue;
+        totalWorkingDaysInYear++;
     }
 
     const monthStart = startOfMonth(today);
@@ -122,7 +122,7 @@ export function MyDashboard() {
     }
 
     const assignedHours = workingDaysInMonth * dailyContractHours;
-    const totalYearlyLeaveHours = getProratedAllowance(currentUser) * dailyContractHours;
+    const totalYearlyLeaveHours = annualLeaveAllowance * dailyContractHours; // Use the base allowance, not prorated for this calc
     const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
     const leaveHoursForMonth = dailyLeaveCredit * workingDaysInMonth;
     const expectedHours = assignedHours - leaveHoursForMonth;
@@ -159,7 +159,7 @@ export function MyDashboard() {
     const remainingDays = userAllowance - takenDays;
 
     return { totalHours, expectedHours, overtime, takenDays, remainingDays };
-  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays, currentUser, getProratedAllowance]);
+  }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, dailyHours, calculateDurationInWorkdays, currentUser, getProratedAllowance, annualLeaveAllowance]);
 
   const upcomingHolidays = React.useMemo(() => {
     const today = new Date();
