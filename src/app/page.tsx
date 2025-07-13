@@ -11,6 +11,7 @@ import { LogoIcon } from "@/components/ui/logo-icon";
 import { useToast } from '@/hooks/use-toast';
 import { ForgotPasswordDialog } from './components/forgot-password-dialog';
 import { verifyUserCredentials } from './dashboard/actions';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotDialogOpen, setIsForgotDialogOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +84,28 @@ export default function LoginPage() {
                       Forgot password?
                     </Button>
                   </div>
-                  <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} disabled={isLoading} />
+                  <div className="relative">
+                    <Input 
+                      id="password" 
+                      type={showPassword ? 'text' : 'password'} 
+                      required 
+                      value={password} 
+                      onChange={e => setPassword(e.target.value)} 
+                      disabled={isLoading}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                      onClick={() => setShowPassword(prev => !prev)}
+                      disabled={isLoading}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Logging in...' : 'Login'}
