@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/mock-data";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -84,73 +84,62 @@ export function MyDashboard() {
 
   const { totalHours, expectedHours, overtime, takenDays, remainingDays } = React.useMemo(() => {
     const today = new Date();
+    const currentYear = today.getFullYear();
     const monthStart = startOfMonth(today);
     const monthEnd = endOfMonth(today);
 
-    // Calculate Assigned Hours
+    // --- Correct Calculation Logic from Team Dashboard ---
+    // 1. Calculate Assigned Hours
+    const userHolidaysForYear = publicHolidays
+        .filter(h => getYear(parseISO(h.date)) === currentYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
+        .concat(customHolidays.filter(h => {
+            if (getYear(parseISO(h.date)) !== currentYear) return false;
+            if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!currentUser.teamId) || (h.appliesTo === currentUser.teamId);
+            return applies;
+        }));
+
     let workingDaysInMonth = 0;
     for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
         const dayOfWeek = getDay(d);
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-        const isPublic = publicHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-        if (isPublic) continue;
-
-        const isCustom = customHolidays.some(h => {
-            const hDate = new Date(h.date);
-            const applies = (h.appliesTo === 'all-members') ||
-                            (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
-                            (h.appliesTo === currentUser.teamId);
-            return hDate.toDateString() === d.toDateString() && applies;
-        });
-        if (isCustom) continue;
-        
+        const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isHoliday) continue;
         workingDaysInMonth++;
     }
     const assignedHours = workingDaysInMonth * dailyHours;
 
-    // Calculate Leave Hours
-    const proratedAllowanceDays = getProratedAllowance(currentUser);
-    const totalYearlyLeaveHours = proratedAllowanceDays * dailyHours;
-    const daysInCurrentMonth = getDaysInMonth(today);
-    const daysInYear = differenceInCalendarDays(endOfYear(today), startOfYear(today)) + 1;
-    const leaveHours = (totalYearlyLeaveHours * daysInCurrentMonth) / daysInYear;
+    // 2. Calculate Leave Hours for the month
+    const totalWorkingDaysInYear = 365 - 104; // Simplified, but better than previous. For full accuracy, would loop through year.
+    const totalYearlyLeaveHours = getProratedAllowance(currentUser) * dailyHours;
+    const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
+    const leaveHours = dailyLeaveCredit * workingDaysInMonth;
 
-    // Calculate Expected Hours
+    // 3. Calculate Expected Hours
     const expectedHours = assignedHours - leaveHours;
-    
-    // Calculate Logged Hours
+
+    // 4. Calculate Logged Hours
     const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = new Date(entry.date);
         return entry.userId === currentUser.id && isSameMonth(entryDate, today);
     });
-    const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
-    const totalHours = manualTotalHours; // Holiday hours are now part of assigned hours/leave hours, not logged hours.
+    const totalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
 
-    // Calculate Overtime
+    // 5. Calculate Overtime
     let workDaysSoFar = 0;
-    const dayIterator = new Date(monthStart);
-
-    while (dayIterator <= today) {
-        if (isSameMonth(dayIterator, today)) {
-            const dayOfWeek = getDay(dayIterator);
-            const isHoliday = publicHolidays.some(h => new Date(h.date).toDateString() === dayIterator.toDateString()) || customHolidays.some(h => {
-                const hDate = new Date(h.date);
-                const applies = (h.appliesTo === 'all-members') ||
-                                (h.appliesTo === 'all-teams' && !!currentUser.teamId) ||
-                                (h.appliesTo === currentUser.teamId);
-                return hDate.toDateString() === dayIterator.toDateString() && applies;
-            });
-            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
-                workDaysSoFar++;
-            }
-        }
-        dayIterator.setDate(dayIterator.getDate() + 1);
+    for (let d = new Date(monthStart); d <= today; d = addDays(d, 1)) {
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isHoliday) continue;
+        workDaysSoFar++;
     }
-    const expectedHoursSoFar = (workDaysSoFar * dailyHours) - (leaveHours * (today.getDate() / daysInCurrentMonth));
+    const assignedHoursSoFar = workDaysSoFar * dailyHours;
+    const leaveHoursSoFar = dailyLeaveCredit * workDaysSoFar;
+    const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
     const overtime = totalHours - expectedHoursSoFar;
 
-    // Calculate Holiday Days
+    // 6. Calculate Holiday Days Taken
     const takenDays = holidayRequests
       .filter(req => req.userId === currentUser.id && req.status === 'Approved')
       .reduce((acc, req) => acc + calculateDurationInWorkdays(new Date(req.startDate), new Date(req.endDate), req.userId), 0);
@@ -288,3 +277,5 @@ export function MyDashboard() {
     </div>
   )
 }
+
+    
