@@ -85,6 +85,7 @@
     "consolidated": "Consolidated",
     "projectLevel": "Project Level",
     "taskLevel": "Task Level",
+    "detailed": "Detailed",
     "export": "Export",
     "assignedHours": "Assigned Hours",
     "leaveHours": "Leave Hours",
@@ -212,5 +213,7 @@
     "pickDateRange": "Pick a date range",
     "timestamp": "Timestamp",
     "logEntry": "Log Entry",
-    "noLogsFound": "No logs found for the selected period."
+    "noLogsFound": "No logs found for the selected period.",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All"
 }

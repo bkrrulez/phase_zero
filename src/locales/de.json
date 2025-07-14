@@ -85,6 +85,7 @@
     "consolidated": "Konsolidiert",
     "projectLevel": "Projektebene",
     "taskLevel": "Aufgabenebene",
+    "detailed": "Detailliert",
     "export": "Exportieren",
     "assignedHours": "Zugewiesene Stunden",
     "leaveHours": "Urlaubsstunden",
@@ -212,5 +213,7 @@
     "pickDateRange": "Wählen Sie einen Datumsbereich",
     "timestamp": "Zeitstempel",
     "logEntry": "Protokolleintrag",
-    "noLogsFound": "Für den ausgewählten Zeitraum wurden keine Protokolle gefunden."
+    "noLogsFound": "Für den ausgewählten Zeitraum wurden keine Protokolle gefunden.",
+    "expandAll": "Alle ausklappen",
+    "collapseAll": "Alle einklappen"
 }

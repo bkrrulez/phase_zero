@@ -4,8 +4,8 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import * as XLSX from 'xlsx';
-import { FileUp } from 'lucide-react';
+import * as XLSX from 'xlsx-js-style';
+import { FileUp, Minus, Plus } from 'lucide-react';
 import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay } from 'date-fns';
 import {
   Card,
@@ -42,8 +42,10 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useProjects } from '../contexts/ProjectsContext';
 import { useTasks } from '../contexts/TasksContext';
-import { type User } from '@/lib/types';
+import { type User, type TimeEntry } from '@/lib/types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { DetailedReport } from './components/detailed-report';
+
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 const months = Array.from({ length: 12 }, (_, i) => ({
@@ -69,6 +71,38 @@ const getWeeksForMonth = (year: number, month: number) => {
     return weeks;
 };
 
+type ProjectReportItem = {
+    key: string;
+    member: User;
+    projectName: string;
+    loggedHours: string;
+};
+
+type TaskReportItem = {
+    key: string;
+    member: User;
+    taskName: string;
+    loggedHours: string;
+};
+
+export type DetailedReportData = {
+    user: User;
+    assignedHours: number;
+    leaveHours: number;
+    expectedHours: number;
+    loggedHours: number;
+    remainingHours: number;
+    projects: {
+        name: string;
+        loggedHours: number;
+        tasks: {
+            name: string;
+            loggedHours: number;
+        }[];
+    }[];
+}
+
+
 export default function ReportsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -80,7 +114,7 @@ export default function ReportsPage() {
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
   const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
-  const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task'>('consolidated');
+  const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task' | 'detailed'>('consolidated');
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
   const [selectedWeekIndex, setSelectedWeekIndex] = React.useState<number>(0);
@@ -126,38 +160,75 @@ export default function ReportsPage() {
       return visibleMemberIds.includes(entry.userId) && isWithinInterval(entryDate, { start: periodStart, end: periodEnd });
     });
     
-    // Consolidated Report
+    const projectAgg: Record<string, ProjectReportItem> = {};
+    const taskAgg: Record<string, TaskReportItem> = {};
+    const detailedAgg: Record<string, DetailedReportData> = {};
+
+    visibleMembers.forEach(member => {
+        detailedAgg[member.id] = {
+            user: member, assignedHours: 0, leaveHours: 0, expectedHours: 0, loggedHours: 0, remainingHours: 0,
+            projects: []
+        };
+    });
+
+    // Calculations for all views
+    filteredTimeEntries.forEach(entry => {
+        const [projectName, ...taskParts] = entry.task.split(' - ');
+        const taskName = taskParts.join(' - ') || 'Unspecified';
+        const member = teamMembers.find(m => m.id === entry.userId);
+
+        if (!member) return;
+
+        // Project Level
+        const projectKey = `${entry.userId}__${projectName}`;
+        if (!projectAgg[projectKey]) projectAgg[projectKey] = { key: projectKey, member, projectName, loggedHours: "0" };
+        projectAgg[projectKey].loggedHours = (parseFloat(projectAgg[projectKey].loggedHours) + entry.duration).toFixed(2);
+
+        // Task Level
+        const taskKey = `${entry.userId}__${taskName}`;
+        if (!taskAgg[taskKey]) taskAgg[taskKey] = { key: taskKey, member, taskName, loggedHours: "0" };
+        taskAgg[taskKey].loggedHours = (parseFloat(taskAgg[taskKey].loggedHours) + entry.duration).toFixed(2);
+
+        // Detailed Level
+        if (detailedAgg[entry.userId]) {
+            let project = detailedAgg[entry.userId].projects.find(p => p.name === projectName);
+            if (!project) {
+                project = { name: projectName, loggedHours: 0, tasks: [] };
+                detailedAgg[entry.userId].projects.push(project);
+            }
+            project.loggedHours += entry.duration;
+
+            let task = project.tasks.find(t => t.name === taskName);
+            if (!task) {
+                task = { name: taskName, loggedHours: 0 };
+                project.tasks.push(task);
+            }
+            task.loggedHours += entry.duration;
+        }
+    });
+
     const consolidatedData = visibleMembers.map(member => {
         const dailyContractHours = member.contract.weeklyHours / 5;
-
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
-        
-        const userHolidaysForYear = publicHolidays
-            .filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
-            .concat(customHolidays.filter(h => {
-                if (getYear(parseISO(h.date)) !== selectedYear) return false;
-                if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
-                const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-                return applies;
-            }));
+        const userHolidaysForYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6).concat(customHolidays.filter(h => {
+            if (getYear(parseISO(h.date)) !== selectedYear) return false;
+            if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+            return applies;
+        }));
 
         let totalWorkingDaysInYear = 0;
         for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
-            const dayOfWeek = getDay(d);
-            if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-            const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
-            if (isHoliday) continue;
-            totalWorkingDaysInYear++;
+            if (getDay(d) !== 0 && getDay(d) !== 6 && !userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d))) {
+                totalWorkingDaysInYear++;
+            }
         }
-
         let workingDaysInPeriod = 0;
         for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
-            const dayOfWeek = getDay(d);
-            if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-            const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
-            if (isHoliday) continue;
-            workingDaysInPeriod++;
+            if (getDay(d) !== 0 && getDay(d) !== 6 && !userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d))) {
+                workingDaysInPeriod++;
+            }
         }
         
         const assignedHours = workingDaysInPeriod * dailyContractHours;
@@ -168,50 +239,18 @@ export default function ReportsPage() {
         const loggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
         const remainingHours = expectedHours - loggedHours;
         
-        return { 
-            ...member, 
-            assignedHours: assignedHours.toFixed(2),
-            leaveHours: leaveHours.toFixed(2),
-            expectedHours: expectedHours.toFixed(2), 
-            loggedHours: loggedHours.toFixed(2), 
-            remainingHours: remainingHours.toFixed(2)
-        };
-    });
-
-    // Project Level Report
-    const projectAgg: { [key: string]: { duration: number, member: User } } = {};
-    filteredTimeEntries.forEach(entry => {
-        const [projectName] = entry.task.split(' - ');
-        const key = `${entry.userId}__${projectName}`;
-        if (!projectAgg[key]) {
-            const member = teamMembers.find(m => m.id === entry.userId);
-            if (member) projectAgg[key] = { duration: 0, member };
+        if (detailedAgg[member.id]) {
+            detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
         }
-        if (projectAgg[key]) projectAgg[key].duration += entry.duration;
-    });
-    const projectReport = Object.keys(projectAgg).map(key => {
-        const [, projectName] = key.split('__');
-        return { key, member: projectAgg[key].member, projectName, loggedHours: projectAgg[key].duration.toFixed(2) };
-    }).sort((a, b) => a.member.name.localeCompare(b.member.name));
 
-    // Task Level Report
-    const taskAgg: { [key: string]: { duration: number, member: User } } = {};
-    filteredTimeEntries.forEach(entry => {
-        const [, ...taskParts] = entry.task.split(' - ');
-        const taskName = taskParts.join(' - ') || 'Unspecified';
-        const key = `${entry.userId}__${taskName}`;
-        if (!taskAgg[key]) {
-            const member = teamMembers.find(m => m.id === entry.userId);
-            if (member) taskAgg[key] = { duration: 0, member };
-        }
-        if (taskAgg[key]) taskAgg[key].duration += entry.duration;
+        return { ...member, assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
     });
-    const taskReport = Object.keys(taskAgg).map(key => {
-        const [, taskName] = key.split('__');
-        return { key, member: taskAgg[key].member, taskName, loggedHours: taskAgg[key].duration.toFixed(2) };
-    }).sort((a,b) => a.member.name.localeCompare(b.member.name));
 
-    return { consolidatedData, projectReport, taskReport };
+    const projectReport = Object.values(projectAgg).sort((a, b) => a.member.name.localeCompare(b.member.name));
+    const taskReport = Object.values(taskAgg).sort((a,b) => a.member.name.localeCompare(b.member.name));
+    const detailedReport = Object.values(detailedAgg).sort((a,b) => a.user.name.localeCompare(b.user.name));
+
+    return { consolidatedData, projectReport, taskReport, detailedReport };
   }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth]);
 
   const onTabChange = (value: string) => {
@@ -219,12 +258,8 @@ export default function ReportsPage() {
   };
 
   const getReportTitle = () => {
-    if (periodType === 'yearly') {
-        return t('reportForYear', { year: selectedYear });
-    }
-    if (periodType === 'monthly') {
-        return t('reportForMonth', { month: months.find(m => m.value === selectedMonth)?.label, year: selectedYear });
-    }
+    if (periodType === 'yearly') return t('reportForYear', { year: selectedYear });
+    if (periodType === 'monthly') return t('reportForMonth', { month: months.find(m => m.value === selectedMonth)?.label, year: selectedYear });
     if (periodType === 'weekly' && weeksInMonth[selectedWeekIndex]) {
         const week = weeksInMonth[selectedWeekIndex];
         return t('reportForWeek', { week: selectedWeekIndex + 1, start: getDate(week.start), end: getDate(week.end), month: months[selectedMonth].label, year: selectedYear });
@@ -233,43 +268,62 @@ export default function ReportsPage() {
   };
 
   const handleExport = () => {
-    if (reports.consolidatedData.length === 0) return;
+    const boldStyle = { font: { bold: true } };
+    const grayFill = { fill: { fgColor: { rgb: "E0E0E0" } } };
 
-    // -- Sheet 1: Total Time --
-    const title = getReportTitle();
-    
-    const totalTimeData = [
-      [title], [], [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')],
-      ...reports.consolidatedData.map(member => [
-        member.name, member.role, member.assignedHours, member.leaveHours, member.expectedHours, member.loggedHours, member.remainingHours,
-      ]),
-    ];
-    const totalTimeSheet = XLSX.utils.aoa_to_sheet(totalTimeData);
+    if (reportView === 'detailed') {
+      const dataForExport: any[][] = [];
+      const title = getReportTitle();
+      dataForExport.push([title]);
+      dataForExport.push([]);
+      dataForExport.push([
+        t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')
+      ].map(h => ({ v: h, s: { ...boldStyle, ...grayFill } })));
 
-    // -- Sheet 2: Project Level Report --
-    const projectData = [
-      [t('projectLevelReport')], [], [t('member'), t('role'), t('project'), t('loggedHours')],
-      ...reports.projectReport.map(item => [
-        item.member.name, item.member.role, item.projectName, item.loggedHours
-      ]),
-    ];
-    const projectSheet = XLSX.utils.aoa_to_sheet(projectData);
+      reports.detailedReport.forEach(userRow => {
+        dataForExport.push([
+          { v: userRow.user.name, s: boldStyle }, userRow.user.role,
+          { v: userRow.assignedHours, t: 'n', z: '0.00' }, { v: userRow.leaveHours, t: 'n', z: '0.00' },
+          { v: userRow.expectedHours, t: 'n', z: '0.00' }, { v: userRow.loggedHours, t: 'n', z: '0.00' },
+          { v: userRow.remainingHours, t: 'n', z: '0.00' }
+        ]);
+        const userLevel = dataForExport.length;
+        userRow.projects.forEach(projectRow => {
+          dataForExport.push([
+            { v: `    ${projectRow.name}` }, '', '', '', '', { v: projectRow.loggedHours, t: 'n', z: '0.00' }, ''
+          ]);
+          const projectLevel = dataForExport.length;
+          projectRow.tasks.forEach(taskRow => {
+            dataForExport.push([
+              { v: `        ${taskRow.name}` }, '', '', '', '', { v: taskRow.loggedHours, t: 'n', z: '0.00' }, ''
+            ]);
+          });
+          if (projectRow.tasks.length > 0) {
+            dataForExport[projectLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 2 } } });
+          }
+        });
+        if (userRow.projects.length > 0) {
+          dataForExport[userLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 1 } } });
+        }
+      });
+      const worksheet = XLSX.utils.aoa_to_sheet(dataForExport);
+      worksheet['!outline'] = { summaryBelow: false };
+      worksheet['!cols'] = [ {wch: 40}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15} ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Detailed Report");
+      XLSX.writeFile(workbook, `detailed_report_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-    // -- Sheet 3: Task Level Report --
-    const taskData = [
-        [t('taskLevelReport')], [], [t('member'), t('role'), t('task'), t('loggedHours')],
-        ...reports.taskReport.map(item => [
-            item.member.name, item.member.role, item.taskName, item.loggedHours
-        ])
-    ];
-    const taskSheet = XLSX.utils.aoa_to_sheet(taskData);
-
-    // Create workbook and export
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, totalTimeSheet, t('totalTime'));
-    XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
-    XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
-    XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } else {
+        const totalTimeData = [[getReportTitle()], [], [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')], ...reports.consolidatedData.map(m => [m.user.name, m.user.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours])];
+        const projectData = [[t('projectLevelReport')], [], [t('member'), t('role'), t('project'), t('loggedHours')], ...reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, item.loggedHours])];
+        const taskData = [[t('taskLevelReport')], [], [t('member'), t('role'), t('task'), t('loggedHours')], ...reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, item.loggedHours])];
+        
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalTimeData), t('totalTime'));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(projectData), t('projectLevelReport'));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(taskData), t('taskLevelReport'));
+        XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
   };
 
 
@@ -343,6 +397,7 @@ export default function ReportsPage() {
                         <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">{t('consolidated')}</Label></div>
                         <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">{t('projectLevel')}</Label></div>
                         <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">{t('taskLevel')}</Label></div>
+                        <div className="flex items-center space-x-2"><RadioGroupItem value="detailed" id="r-detailed" /><Label htmlFor="r-detailed">{t('detailed')}</Label></div>
                     </RadioGroup>
                      <Button variant="outline" onClick={handleExport}>
                         <FileUp className="mr-2 h-4 w-4" /> {t('export')}
@@ -373,11 +428,11 @@ export default function ReportsPage() {
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge></TableCell>
-                            <TableCell className="text-right font-mono">{member.assignedHours}h</TableCell>
-                            <TableCell className="text-right font-mono">{member.leaveHours}h</TableCell>
-                            <TableCell className="text-right font-mono">{member.expectedHours}h</TableCell>
-                            <TableCell className="text-right font-mono">{member.loggedHours}h</TableCell>
-                            <TableCell className={`text-right font-mono ${parseFloat(member.remainingHours) < 0 ? 'text-destructive' : ''}`}>{member.remainingHours}h</TableCell>
+                            <TableCell className="text-right font-mono">{member.assignedHours.toFixed(2)}h</TableCell>
+                            <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
+                            <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
+                            <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
+                            <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-destructive' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={7} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
@@ -425,6 +480,9 @@ export default function ReportsPage() {
                         {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noTaskHours')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
+                  )}
+                  {reportView === 'detailed' && (
+                      <DetailedReport data={reports.detailedReport} />
                   )}
                 </CardContent>
               </Card>
