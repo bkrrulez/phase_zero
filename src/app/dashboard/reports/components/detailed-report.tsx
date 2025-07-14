@@ -68,80 +68,77 @@ export function DetailedReport({ data }: DetailedReportProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length > 0 ? data.map(userRow => (
-            <React.Fragment key={userRow.user.id}>
-                <Collapsible asChild key={userRow.user.id} open={openStates[userRow.user.id] ?? false} onOpenChange={() => toggleOpen(userRow.user.id)}>
-                <>
-                    <TableRow className="bg-muted/50 border-b">
-                    <TableCell>
-                        <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="w-9 p-0">
-                            {openStates[userRow.user.id] ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                            <span className="sr-only">Toggle</span>
-                        </Button>
-                        </CollapsibleTrigger>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10"><AvatarImage src={userRow.user.avatar} alt={userRow.user.name} data-ai-hint="person avatar"/><AvatarFallback>{userRow.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
-                        <div><Link href={`/dashboard/reports?tab=individual-report&userId=${userRow.user.id}`} className="font-medium hover:underline">{userRow.user.name}</Link><p className="text-sm text-muted-foreground hidden sm:table-cell">{userRow.user.email}</p></div>
-                        </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell"><Badge variant={userRow.user.role === 'Team Lead' || userRow.user.role === 'Super Admin' ? "default" : "secondary"}>{userRow.user.role}</Badge></TableCell>
-                    <TableCell className="text-right font-mono">{userRow.assignedHours.toFixed(2)}h</TableCell>
-                    <TableCell className="text-right font-mono">{userRow.leaveHours.toFixed(2)}h</TableCell>
-                    <TableCell className="text-right font-mono">{userRow.expectedHours.toFixed(2)}h</TableCell>
-                    <TableCell className="text-right font-mono">{userRow.loggedHours.toFixed(2)}h</TableCell>
-                    <TableCell className={`text-right font-mono ${userRow.remainingHours < 0 ? 'text-destructive' : ''}`}>{userRow.remainingHours.toFixed(2)}h</TableCell>
-                    </TableRow>
-                    <CollapsibleContent asChild>
-                      <TableRow>
-                          <TableCell colSpan={8} className="p-0">
-                              <div className="p-4">
-                                  {userRow.projects.map(projectRow => (
-                                  <Collapsible asChild key={`${userRow.user.id}-${projectRow.name}`} open={openStates[`${userRow.user.id}-${projectRow.name}`] ?? false} onOpenChange={() => toggleOpen(`${userRow.user.id}-${projectRow.name}`)}>
-                                      <div className='pl-6'>
-                                          <div className="flex items-center">
-                                              <CollapsibleTrigger asChild>
-                                                  <div className="flex items-center h-full">
-                                                      <Button variant="ghost" size="sm" className="w-9 p-0">
-                                                          {openStates[`${userRow.user.id}-${projectRow.name}`] ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                                          <span className="sr-only">Toggle</span>
-                                                      </Button>
-                                                  </div>
-                                              </CollapsibleTrigger>
-                                              <Table className="w-full">
-                                                  <TableRow className="border-none hover:bg-transparent">
-                                                      <TableCell className="font-medium">{projectRow.name}</TableCell>
-                                                      <TableCell className="text-right font-mono w-[116px]">{projectRow.loggedHours.toFixed(2)}h</TableCell>
-                                                  </TableRow>
+          {data.length > 0 ? data.map(userRow => {
+            const isUserOpen = openStates[userRow.user.id] ?? false;
+            return (
+              <React.Fragment key={userRow.user.id}>
+                <TableRow className="bg-muted/50 border-b">
+                  <TableCell>
+                      <Button variant="ghost" size="sm" className="w-9 p-0" onClick={() => toggleOpen(userRow.user.id)}>
+                          {isUserOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          <span className="sr-only">Toggle</span>
+                      </Button>
+                  </TableCell>
+                  <TableCell>
+                      <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10"><AvatarImage src={userRow.user.avatar} alt={userRow.user.name} data-ai-hint="person avatar"/><AvatarFallback>{userRow.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
+                      <div><Link href={`/dashboard/reports?tab=individual-report&userId=${userRow.user.id}`} className="font-medium hover:underline">{userRow.user.name}</Link><p className="text-sm text-muted-foreground hidden sm:table-cell">{userRow.user.email}</p></div>
+                      </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell"><Badge variant={userRow.user.role === 'Team Lead' || userRow.user.role === 'Super Admin' ? "default" : "secondary"}>{userRow.user.role}</Badge></TableCell>
+                  <TableCell className="text-right font-mono">{userRow.assignedHours.toFixed(2)}h</TableCell>
+                  <TableCell className="text-right font-mono">{userRow.leaveHours.toFixed(2)}h</TableCell>
+                  <TableCell className="text-right font-mono">{userRow.expectedHours.toFixed(2)}h</TableCell>
+                  <TableCell className="text-right font-mono">{userRow.loggedHours.toFixed(2)}h</TableCell>
+                  <TableCell className={`text-right font-mono ${userRow.remainingHours < 0 ? 'text-destructive' : ''}`}>{userRow.remainingHours.toFixed(2)}h</TableCell>
+                </TableRow>
+                {isUserOpen && (
+                  <TableRow>
+                      <TableCell colSpan={8} className="p-0">
+                          <div className="p-4">
+                              {userRow.projects.map(projectRow => (
+                              <Collapsible asChild key={`${userRow.user.id}-${projectRow.name}`} open={openStates[`${userRow.user.id}-${projectRow.name}`] ?? false} onOpenChange={() => toggleOpen(`${userRow.user.id}-${projectRow.name}`)}>
+                                  <div className='pl-6'>
+                                      <div className="flex items-center">
+                                          <CollapsibleTrigger asChild>
+                                              <div className="flex items-center h-full">
+                                                  <Button variant="ghost" size="sm" className="w-9 p-0">
+                                                      {openStates[`${userRow.user.id}-${projectRow.name}`] ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                                      <span className="sr-only">Toggle</span>
+                                                  </Button>
+                                              </div>
+                                          </CollapsibleTrigger>
+                                          <Table className="w-full">
+                                              <TableRow className="border-none hover:bg-transparent">
+                                                  <TableCell className="font-medium">{projectRow.name}</TableCell>
+                                                  <TableCell className="text-right font-mono w-[116px]">{projectRow.loggedHours.toFixed(2)}h</TableCell>
+                                              </TableRow>
+                                          </Table>
+                                      </div>
+                                      <CollapsibleContent asChild>
+                                          <div className='pl-10'>
+                                              <Table>
+                                                  <TableBody>
+                                                  {projectRow.tasks.map(taskRow => (
+                                                      <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`} className="bg-muted/20 border-none hover:bg-muted/40">
+                                                      <TableCell className="text-muted-foreground">{taskRow.name}</TableCell>
+                                                      <TableCell className="text-right font-mono text-muted-foreground w-[116px]">{taskRow.loggedHours.toFixed(2)}h</TableCell>
+                                                      </TableRow>
+                                                  ))}
+                                                  </TableBody>
                                               </Table>
                                           </div>
-                                          <CollapsibleContent asChild>
-                                              <div className='pl-10'>
-                                                  <Table>
-                                                      <TableBody>
-                                                      {projectRow.tasks.map(taskRow => (
-                                                          <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`} className="bg-muted/20 border-none hover:bg-muted/40">
-                                                          <TableCell className="text-muted-foreground">{taskRow.name}</TableCell>
-                                                          <TableCell className="text-right font-mono text-muted-foreground w-[116px]">{taskRow.loggedHours.toFixed(2)}h</TableCell>
-                                                          </TableRow>
-                                                      ))}
-                                                      </TableBody>
-                                                  </Table>
-                                              </div>
-                                          </CollapsibleContent>
-                                      </div>
-                                  </Collapsible>
-                                  ))}
-                              </div>
-                          </TableCell>
-                      </TableRow>
-                    </CollapsibleContent>
-                </>
-                </Collapsible>
-            </React.Fragment>
-          )) : (
+                                      </CollapsibleContent>
+                                  </div>
+                              </Collapsible>
+                              ))}
+                          </div>
+                      </TableCell>
+                  </TableRow>
+                )}
+              </React.Fragment>
+            )
+          }) : (
             <TableRow>
               <TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell>
             </TableRow>
