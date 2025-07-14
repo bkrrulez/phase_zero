@@ -13,6 +13,7 @@ export type User = {
     endDate: string | null;
     weeklyHours: number;
   };
+  contractPdf?: string | null; // New field for storing contract PDF as data URI
 };
 
 export type TimeEntry = {

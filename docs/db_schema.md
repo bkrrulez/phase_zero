@@ -26,6 +26,7 @@ Stores information about individual users.
 -   `contract_start_date` (DATE, NOT NULL): Start date of the employment contract.
 -   `contract_end_date` (DATE): End date of the employment contract. NULL if ongoing.
 -   `contract_weekly_hours` (INTEGER, NOT NULL): Contracted weekly work hours.
+-   `contract_pdf` (TEXT): Base64 encoded data URI of the contract PDF. Can be NULL.
 
 ### `teams`
 

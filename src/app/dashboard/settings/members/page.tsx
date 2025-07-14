@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { format } from "date-fns";
-import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileUp, Download } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from 'xlsx-js-style';
 
@@ -25,6 +25,8 @@ import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { DeleteMemberDialog } from "./components/delete-member-dialog";
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MemberContractTab } from './components/member-contract-tab';
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
@@ -137,6 +139,14 @@ export default function MembersSettingsPage() {
         return true;
     };
 
+    const canDownloadContract = (member: User) => {
+        if (!member.contractPdf) return false;
+        if (currentUser.role === 'Super Admin') return true;
+        if (currentUser.id === member.id) return true;
+        if (currentUser.role === 'Team Lead' && member.reportsTo === currentUser.id) return true;
+        return false;
+    }
+
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
     const getTeamName = (teamId?: string) => {
@@ -165,12 +175,22 @@ export default function MembersSettingsPage() {
         XLSX.writeFile(workbook, `all_members_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
+    const handleDownloadContract = (member: User) => {
+        if (!member.contractPdf) return;
+        const link = document.createElement('a');
+        link.href = member.contractPdf;
+        link.download = `contract-${member.name.replace(/\s+/g, '-')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
   return (
     <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
-            <h1 className="text-3xl font-bold font-headline">{t('allMembers')}</h1>
+            <h1 className="text-3xl font-bold font-headline">{t('members')}</h1>
             <p className="text-muted-foreground">{t('allMembersSubtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -184,93 +204,112 @@ export default function MembersSettingsPage() {
             )}
           </div>
         </div>
-        <Card>
-          <CardHeader>
-              <CardTitle>{t('allMembers')}</CardTitle>
-              <CardDescription>{t('allMembersDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead>{t('member')}</TableHead>
-                          <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
-                          <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
-                          <TableHead className="hidden md:table-cell text-right">{t('weeklyHours')}</TableHead>
-                          <TableHead className="hidden lg:table-cell">{t('contractStart')}</TableHead>
-                          <TableHead className="hidden lg:table-cell">{t('contractEnd')}</TableHead>
-                          <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      {visibleMembers.map(member => (
-                          <TableRow key={member.id}>
-                              <TableCell>
-                                  <div className="flex items-center gap-3">
-                                      <Avatar className="w-10 h-10">
-                                          <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar"/>
-                                          <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                          <p className="font-medium">{member.name}</p>
-                                          <p className="text-sm text-muted-foreground hidden sm:table-cell">{member.email}</p>
-                                      </div>
-                                  </div>
-                              </TableCell>
-                              <TableCell className="hidden md:table-cell">
-                                  <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
-                              </TableCell>
-                              <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
-                              <TableCell className="hidden md:table-cell text-right font-mono">{member.contract.weeklyHours}h</TableCell>
-                              <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
-                              <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
-                              <TableCell>
-                                  <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                                              <MoreHorizontal className="h-4 w-4" />
-                                              <span className="sr-only">Toggle menu</span>
-                                          </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                                          <DropdownMenuItem asChild>
-                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>{t('viewReport')}</Link>
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem 
-                                            onClick={() => setEditingUser(member)}
-                                            disabled={!canEditMember(member)}
-                                          >
-                                            {t('viewEditDetails')}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() => setChangingPasswordUser(member)}
-                                            disabled={!canChangePassword(member)}
-                                          >
-                                            {t('changePassword')}
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            onClick={() => setDeletingUser(member)}
-                                            disabled={!canDeleteMember(member)}
-                                            className="text-destructive focus:text-destructive"
-                                          >
-                                            {t('deleteUser')}
-                                          </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                  </DropdownMenu>
-                              </TableCell>
-                          </TableRow>
-                      ))}
-                      {visibleMembers.length === 0 && (
-                          <TableRow>
-                              <TableCell colSpan={7} className="h-24 text-center">{t('noMembers')}</TableCell>
-                          </TableRow>
-                      )}
-                  </TableBody>
-              </Table>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="all-members">
+            <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+                <TabsTrigger value="all-members">All Members</TabsTrigger>
+                {currentUser.role === 'Super Admin' && <TabsTrigger value="member-contract">Member Contract</TabsTrigger>}
+            </TabsList>
+            <TabsContent value="all-members">
+                <Card>
+                <CardHeader>
+                    <CardTitle>{t('allMembers')}</CardTitle>
+                    <CardDescription>{t('allMembersDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>{t('member')}</TableHead>
+                                <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
+                                <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
+                                <TableHead className="hidden md:table-cell text-right">{t('weeklyHours')}</TableHead>
+                                <TableHead className="hidden lg:table-cell">{t('contractStart')}</TableHead>
+                                <TableHead className="hidden lg:table-cell">{t('contractEnd')}</TableHead>
+                                <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {visibleMembers.map(member => (
+                                <TableRow key={member.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="w-10 h-10">
+                                                <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar"/>
+                                                <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="font-medium">{member.name}</p>
+                                                <p className="text-sm text-muted-foreground hidden sm:table-cell">{member.email}</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
+                                    <TableCell className="hidden md:table-cell text-right font-mono">{member.contract.weeklyHours}h</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
+                                    <TableCell>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                    <span className="sr-only">Toggle menu</span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>{t('viewReport')}</Link>
+                                                </DropdownMenuItem>
+                                                 {canDownloadContract(member) && (
+                                                    <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
+                                                        <Download className="mr-2 h-4 w-4" />
+                                                        Download Contract
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem 
+                                                    onClick={() => setEditingUser(member)}
+                                                    disabled={!canEditMember(member)}
+                                                >
+                                                    {t('viewEditDetails')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => setChangingPasswordUser(member)}
+                                                    disabled={!canChangePassword(member)}
+                                                >
+                                                    {t('changePassword')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => setDeletingUser(member)}
+                                                    disabled={!canDeleteMember(member)}
+                                                    className="text-destructive focus:text-destructive"
+                                                >
+                                                    {t('deleteUser')}
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {visibleMembers.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-24 text-center">{t('noMembers')}</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+                </Card>
+            </TabsContent>
+            {currentUser.role === 'Super Admin' && (
+                <TabsContent value="member-contract">
+                    <MemberContractTab />
+                </TabsContent>
+            )}
+        </Tabs>
       </div>
       {editingUser && (
         <EditMemberDialog 

@@ -38,6 +38,7 @@ const mapDbUserToUser = (dbUser: any): User => ({
     endDate: dbUser.contract_end_date ? format(new Date(dbUser.contract_end_date), 'yyyy-MM-dd') : null,
     weeklyHours: dbUser.contract_weekly_hours,
   },
+  contractPdf: dbUser.contract_pdf,
 });
 
 const mapDbProjectToProject = (dbProject: any): Project => ({
@@ -154,7 +155,7 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar'>): Promise
 }
 
 export async function updateUser(updatedUser: User): Promise<User | null> {
-    const { id, name, email, role, reportsTo, teamId, associatedProjectIds, contract, avatar } = updatedUser;
+    const { id, name, email, role, reportsTo, teamId, associatedProjectIds, contract, avatar, contractPdf } = updatedUser;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -163,9 +164,9 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
             `UPDATE users SET
                 name = $1, email = $2, role = $3, reports_to = $4, team_id = $5,
                 contract_start_date = $6, contract_end_date = $7, contract_weekly_hours = $8,
-                avatar = $9
-             WHERE id = $10 RETURNING *`,
-            [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, avatar, id]
+                avatar = $9, contract_pdf = $10
+             WHERE id = $11 RETURNING *`,
+            [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, avatar, contractPdf, id]
         );
 
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [id]);
@@ -192,6 +193,17 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         client.release();
     }
 }
+
+export async function uploadUserContract(userId: string, contractPdfDataUri: string): Promise<void> {
+    await db.query('UPDATE users SET contract_pdf = $1 WHERE id = $2', [contractPdfDataUri, userId]);
+    revalidatePath('/dashboard/settings/members');
+}
+
+export async function deleteUserContract(userId: string): Promise<void> {
+    await db.query('UPDATE users SET contract_pdf = NULL WHERE id = $1', [userId]);
+    revalidatePath('/dashboard/settings/members');
+}
+
 
 export async function deleteUser(userId: string): Promise<void> {
     const client = await db.connect();
