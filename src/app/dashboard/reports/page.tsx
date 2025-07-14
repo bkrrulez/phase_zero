@@ -277,8 +277,8 @@ export default function ReportsPage() {
       dataForExport.push([{ v: title }]);
       dataForExport.push([]);
       dataForExport.push([
-        t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')
-      ].map(h => ({ v: h, s: { ...boldStyle, ...grayFill } })));
+        { v: t('member')}, { v: t('role')}, { v: t('assignedHours')}, { v: t('leaveHours')}, { v: t('expected')}, { v: t('logged')}, { v: t('remaining')}
+      ].map(h => ({ ...h, s: { ...boldStyle, ...grayFill } })));
 
       reports.detailedReport.forEach(userRow => {
         dataForExport.push([
@@ -309,28 +309,16 @@ export default function ReportsPage() {
               { v: '' }
             ]);
           });
+          if (projectRow.tasks.length > 0) {
+             dataForExport[projectLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 2 } } });
+          }
         });
+        if (userRow.projects.length > 0) {
+          dataForExport[userLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 1 } } });
+        }
       });
 
       const worksheet = XLSX.utils.aoa_to_sheet(dataForExport);
-      let rowIndex = 3; // Start after headers
-      reports.detailedReport.forEach(userRow => {
-          const startRow = rowIndex;
-          rowIndex += 1; // For user row
-          
-          userRow.projects.forEach(projectRow => {
-              const projectStartRow = rowIndex;
-              rowIndex += 1; // For project row
-              rowIndex += projectRow.tasks.length; // For task rows
-              if(worksheet[`A${projectStartRow}`] && projectRow.tasks.length > 0) {
-                 worksheet[`A${projectStartRow}`].s = { ...worksheet[`A${projectStartRow}`].s, outlineLevel: 2 };
-              }
-          });
-          
-          if (worksheet[`A${startRow}`] && userRow.projects.length > 0) {
-              worksheet[`A${startRow}`].s = { ...worksheet[`A${startRow}`].s, outlineLevel: 1 };
-          }
-      });
 
       worksheet['!cols'] = [ {wch: 40}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15} ];
       const workbook = XLSX.utils.book_new();
@@ -338,7 +326,7 @@ export default function ReportsPage() {
       XLSX.writeFile(workbook, `detailed_report_${new Date().toISOString().split('T')[0]}.xlsx`);
 
     } else {
-        const totalTimeData = [[getReportTitle()], [], [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')], ...reports.consolidatedData.map(m => [m.user.name, m.user.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours])];
+        const totalTimeData = [[getReportTitle()], [], [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')], ...reports.consolidatedData.map(m => [m.name, m.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours])];
         const projectData = [[t('projectLevelReport')], [], [t('member'), t('role'), t('project'), t('loggedHours')], ...reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, item.loggedHours])];
         const taskData = [[t('taskLevelReport')], [], [t('member'), t('role'), t('task'), t('loggedHours')], ...reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, item.loggedHours])];
         
