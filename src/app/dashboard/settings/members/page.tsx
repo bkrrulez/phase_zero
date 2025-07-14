@@ -5,7 +5,7 @@ import * as React from 'react';
 import { format } from "date-fns";
 import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
 import Link from "next/link";
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

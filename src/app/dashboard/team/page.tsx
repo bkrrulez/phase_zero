@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { PlusCircle, FileUp } from "lucide-react";
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { type User } from "@/lib/mock-data";

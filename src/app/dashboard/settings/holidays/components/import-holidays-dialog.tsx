@@ -3,7 +3,7 @@
 
 import { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
