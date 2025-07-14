@@ -114,11 +114,11 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                                     </TableCell>
                                                     <TableCell className="font-medium">Project - {projectRow.name}</TableCell>
                                                     <TableCell className="hidden md:table-cell"></TableCell>
-                                                    <TableCell className="text-right"></TableCell>
-                                                    <TableCell className="text-right"></TableCell>
-                                                    <TableCell className="text-right"></TableCell>
+                                                    <TableCell></TableCell>
+                                                    <TableCell></TableCell>
+                                                    <TableCell></TableCell>
                                                     <TableCell className="text-right font-mono">{projectRow.loggedHours.toFixed(2)}h</TableCell>
-                                                    <TableCell className="text-right"></TableCell>
+                                                    <TableCell></TableCell>
                                                 </TableRow>
                                                 <CollapsibleContent asChild>
                                                     <TableRow>
@@ -131,11 +131,11 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                                                             <TableCell className="w-[50px]"></TableCell>
                                                                             <TableCell className="text-muted-foreground">Task - {taskRow.name}</TableCell>
                                                                             <TableCell className="hidden md:table-cell"></TableCell>
-                                                                            <TableCell className="text-right"></TableCell>
-                                                                            <TableCell className="text-right"></TableCell>
-                                                                            <TableCell className="text-right"></TableCell>
+                                                                            <TableCell></TableCell>
+                                                                            <TableCell></TableCell>
+                                                                            <TableCell></TableCell>
                                                                             <TableCell className="text-right font-mono text-muted-foreground">{taskRow.loggedHours.toFixed(2)}h</TableCell>
-                                                                            <TableCell className="text-right"></TableCell>
+                                                                            <TableCell></TableCell>
                                                                         </TableRow>
                                                                     ))}
                                                                     </TableBody>
@@ -166,4 +166,3 @@ export function DetailedReport({ data }: DetailedReportProps) {
     </div>
   );
 }
-
