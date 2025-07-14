@@ -70,8 +70,8 @@ export function DetailedReport({ data }: DetailedReportProps) {
         <TableBody>
           {data.length > 0 ? data.map(userRow => (
             <Collapsible asChild key={userRow.user.id} open={openStates[userRow.user.id] ?? false} onOpenChange={() => toggleOpen(userRow.user.id)}>
-              <>
-                <TableRow className="bg-muted/50">
+              <tbody className="border-b">
+                <TableRow className="bg-muted/50 border-none">
                   <TableCell>
                     <CollapsibleTrigger asChild>
                       <Button variant="ghost" size="sm" className="w-9 p-0">
@@ -98,7 +98,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                     {userRow.projects.map(projectRow => (
                       <Collapsible asChild key={`${userRow.user.id}-${projectRow.name}`} open={openStates[`${userRow.user.id}-${projectRow.name}`] ?? false} onOpenChange={() => toggleOpen(`${userRow.user.id}-${projectRow.name}`)}>
                         <>
-                          <TableRow>
+                          <TableRow className="border-none">
                             <TableCell></TableCell>
                             <TableCell colSpan={4} className="p-0">
                                 <CollapsibleTrigger asChild>
@@ -117,7 +117,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                           <CollapsibleContent asChild>
                             <>
                               {projectRow.tasks.map(taskRow => (
-                                <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`} className="bg-muted/20">
+                                <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`} className="bg-muted/20 border-none">
                                   <TableCell colSpan={5}></TableCell>
                                   <TableCell className="pl-20 text-muted-foreground">{taskRow.name}</TableCell>
                                   <TableCell className="text-right font-mono text-muted-foreground">{taskRow.loggedHours.toFixed(2)}h</TableCell>
@@ -131,7 +131,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                     ))}
                   </>
                 </CollapsibleContent>
-              </>
+              </tbody>
             </Collapsible>
           )) : (
             <TableRow>
@@ -143,4 +143,3 @@ export function DetailedReport({ data }: DetailedReportProps) {
     </div>
   );
 }
-
