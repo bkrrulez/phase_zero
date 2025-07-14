@@ -213,3 +213,15 @@ Tracks which users have read a specific notification.
 -   `notification_id` (PK, FK -> `app_notifications.id`, TEXT, NOT NULL)
 -   `user_id` (PK, FK -> `users.id`, TEXT, NOT NULL)
 ---
+
+## Schema Updates / Migrations
+
+This section documents `ALTER` statements for updating an existing database schema.
+
+### Add `contract_pdf` to `users` table
+
+To add the ability to store user contract PDFs, run the following SQL command:
+
+```sql
+ALTER TABLE users ADD COLUMN contract_pdf TEXT;
+```
