@@ -86,7 +86,7 @@ export function TeamMembers() {
 
     const canEditMember = (member: User) => {
         if (currentUser.role === 'Super Admin') {
-            return currentUser.id === member.id || member.role !== 'Super Admin';
+            return true;
         }
         if (currentUser.role === 'Team Lead') {
             return member.reportsTo === currentUser.id && member.role === 'Employee';
