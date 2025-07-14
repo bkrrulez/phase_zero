@@ -265,7 +265,6 @@ export default function MembersSettingsPage() {
                                                 </DropdownMenuItem>
                                                  {canDownloadContract(member) && (
                                                     <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
-                                                        <Download className="mr-2 h-4 w-4" />
                                                         Download Contract
                                                     </DropdownMenuItem>
                                                 )}

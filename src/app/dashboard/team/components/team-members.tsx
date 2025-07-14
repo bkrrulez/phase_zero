@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -101,6 +102,24 @@ export function TeamMembers() {
         return false;
     };
 
+    const canDownloadContract = (member: User) => {
+        if (!member.contractPdf) return false;
+        if (currentUser.role === 'Super Admin') return true;
+        if (currentUser.id === member.id) return true;
+        if (currentUser.role === 'Team Lead' && member.reportsTo === currentUser.id) return true;
+        return false;
+    }
+
+    const handleDownloadContract = (member: User) => {
+        if (!member.contractPdf) return;
+        const link = document.createElement('a');
+        link.href = member.contractPdf;
+        link.download = `contract-${member.name.replace(/\s+/g, '-')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const getTeamName = (teamId?: string) => {
         if (!teamId) return 'N/A';
         const team = teams.find(t => t.id === teamId);
@@ -162,6 +181,11 @@ export function TeamMembers() {
                                           <DropdownMenuItem asChild>
                                             <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>View Report</Link>
                                           </DropdownMenuItem>
+                                          {canDownloadContract(member) && (
+                                            <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
+                                                Download Contract
+                                            </DropdownMenuItem>
+                                          )}
                                           <DropdownMenuItem 
                                             onClick={() => setEditingUser(member)}
                                             disabled={!canEditMember(member)}
