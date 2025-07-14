@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -113,7 +114,7 @@ export default function ReportsPage() {
   const { t } = useLanguage();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
-  const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('monthly');
   const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task' | 'detailed'>('consolidated');
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
@@ -135,7 +136,7 @@ export default function ReportsPage() {
   const reports = React.useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
       if (currentUser.role === 'Super Admin') return true;
-      if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id;
+      if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id || member.id === currentUser.id;
       return false;
     });
 
@@ -268,53 +269,64 @@ export default function ReportsPage() {
   };
 
   const handleExport = () => {
-    const boldStyle = { font: { bold: true } };
-    const grayFill = { fill: { fgColor: { rgb: "E0E0E0" } } };
-
     if (reportView === 'detailed') {
+      const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } } };
+      const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } } }; // Light Sky Blue
+      const projectStyle = { fill: { fgColor: { rgb: "FFE699" } } }; // Light Yellow
+      const taskStyle = { font: { italic: true } };
+      
       const dataForExport: any[][] = [];
       const title = getReportTitle();
       dataForExport.push([{ v: title }]);
-      dataForExport.push([]);
+      dataForExport.push([]); // Spacer row
       dataForExport.push([
         { v: t('member')}, { v: t('role')}, { v: t('assignedHours')}, { v: t('leaveHours')}, { v: t('expected')}, { v: t('logged')}, { v: t('remaining')}
-      ].map(h => ({ ...h, s: { ...boldStyle, ...grayFill } })));
+      ].map(h => ({ ...h, s: headerStyle })));
 
       reports.detailedReport.forEach(userRow => {
-        dataForExport.push([
-          { v: userRow.user.name, s: boldStyle },
-          { v: userRow.user.role },
-          { v: userRow.assignedHours, t: 'n', z: '0.00' },
-          { v: userRow.leaveHours, t: 'n', z: '0.00' },
-          { v: userRow.expectedHours, t: 'n', z: '0.00' },
-          { v: userRow.loggedHours, t: 'n', z: '0.00' },
+        const userRowData = [
+          { v: userRow.user.name }, { v: userRow.user.role },
+          { v: userRow.assignedHours, t: 'n', z: '0.00' }, { v: userRow.leaveHours, t: 'n', z: '0.00' },
+          { v: userRow.expectedHours, t: 'n', z: '0.00' }, { v: userRow.loggedHours, t: 'n', z: '0.00' },
           { v: userRow.remainingHours, t: 'n', z: '0.00' }
-        ]);
+        ];
+        userRowData.forEach(cell => cell.s = userStyle);
+        dataForExport.push(userRowData);
+        
         const userLevel = dataForExport.length;
 
         userRow.projects.forEach(projectRow => {
-          dataForExport.push([
-            { v: `    Project- ${projectRow.name}` },
-            { v: '' }, { v: '' }, { v: '' }, { v: '' },
-            { v: projectRow.loggedHours, t: 'n', z: '0.00' },
-            { v: '' }
-          ]);
-          const projectLevel = dataForExport.length;
+            const projectRowData = [
+                { v: `    Project- ${projectRow.name}` }, { v: '' }, { v: '' }, { v: '' }, { v: '' },
+                { v: projectRow.loggedHours, t: 'n', z: '0.00' }, { v: '' }
+            ];
+            projectRowData.forEach(cell => cell.s = projectStyle);
+            dataForExport.push(projectRowData);
+          
+            const projectLevel = dataForExport.length;
 
-          projectRow.tasks.forEach(taskRow => {
-            dataForExport.push([
-              { v: `        Task- ${taskRow.name}` },
-              { v: '' }, { v: '' }, { v: '' }, { v: '' },
-              { v: taskRow.loggedHours, t: 'n', z: '0.00' },
-              { v: '' }
-            ]);
-          });
-          if (projectRow.tasks.length > 0) {
-             dataForExport[projectLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 2 } } });
-          }
+            projectRow.tasks.forEach(taskRow => {
+                const taskRowData = [
+                    { v: `        Task- ${taskRow.name}` }, { v: '' }, { v: '' }, { v: '' }, { v: '' },
+                    { v: taskRow.loggedHours, t: 'n', z: '0.00' }, { v: '' }
+                ];
+                taskRowData.forEach(cell => cell.s = taskStyle);
+                dataForExport.push(taskRowData);
+            });
+            
+            if (projectRow.tasks.length > 0) {
+              const row = dataForExport[projectLevel-1];
+              if(row) {
+                row.forEach((cell: any) => cell.s = {...cell.s, outline: {level: 2}});
+              }
+            }
         });
+        
         if (userRow.projects.length > 0) {
-          dataForExport[userLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 1 } } });
+           const row = dataForExport[userLevel-1];
+           if(row) {
+              row.forEach((cell: any) => cell.s = {...cell.s, outline: {level: 1}});
+            }
         }
       });
 
