@@ -94,46 +94,62 @@ export function DetailedReport({ data }: DetailedReportProps) {
                 </TableRow>
                 {isUserOpen && (
                   <TableRow>
-                      <TableCell colSpan={8} className="p-0">
-                          <div className="p-4">
-                              {userRow.projects.map(projectRow => (
-                              <Collapsible asChild key={`${userRow.user.id}-${projectRow.name}`} open={openStates[`${userRow.user.id}-${projectRow.name}`] ?? false} onOpenChange={() => toggleOpen(`${userRow.user.id}-${projectRow.name}`)}>
-                                  <div className='pl-6'>
-                                      <div className="flex items-center">
-                                          <CollapsibleTrigger asChild>
-                                              <div className="flex items-center h-full">
-                                                  <Button variant="ghost" size="sm" className="w-9 p-0">
-                                                      {openStates[`${userRow.user.id}-${projectRow.name}`] ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                                      <span className="sr-only">Toggle</span>
-                                                  </Button>
-                                              </div>
-                                          </CollapsibleTrigger>
-                                          <Table className="w-full">
+                      <TableCell colSpan={8} className="p-0 border-none">
+                          <div className="px-4 py-2">
+                              {userRow.projects.map(projectRow => {
+                                const isProjectOpen = openStates[`${userRow.user.id}-${projectRow.name}`] ?? false;
+                                return (
+                                <Collapsible asChild key={`${userRow.user.id}-${projectRow.name}`} open={isProjectOpen} onOpenChange={() => toggleOpen(`${userRow.user.id}-${projectRow.name}`)}>
+                                    <div className='pl-6'>
+                                        <Table>
                                             <TableBody>
-                                              <TableRow className="border-none hover:bg-transparent">
-                                                  <TableCell className="font-medium">{projectRow.name}</TableCell>
-                                                  <TableCell className="text-right font-mono w-[116px]">{projectRow.loggedHours.toFixed(2)}h</TableCell>
-                                              </TableRow>
+                                                <TableRow className="border-none hover:bg-transparent">
+                                                    <TableCell className="w-[50px]">
+                                                        <CollapsibleTrigger asChild>
+                                                            <Button variant="ghost" size="sm" className="w-9 p-0">
+                                                                {isProjectOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                                                                <span className="sr-only">Toggle</span>
+                                                            </Button>
+                                                        </CollapsibleTrigger>
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">Project - {projectRow.name}</TableCell>
+                                                    <TableCell className="hidden md:table-cell"></TableCell>
+                                                    <TableCell className="text-right"></TableCell>
+                                                    <TableCell className="text-right"></TableCell>
+                                                    <TableCell className="text-right"></TableCell>
+                                                    <TableCell className="text-right font-mono">{projectRow.loggedHours.toFixed(2)}h</TableCell>
+                                                    <TableCell className="text-right"></TableCell>
+                                                </TableRow>
+                                                <CollapsibleContent asChild>
+                                                    <TableRow>
+                                                        <TableCell colSpan={8} className="p-0 border-none">
+                                                            <div className='pl-16'>
+                                                                <Table>
+                                                                    <TableBody>
+                                                                    {projectRow.tasks.map(taskRow => (
+                                                                        <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`} className="border-none hover:bg-transparent">
+                                                                            <TableCell className="w-[50px]"></TableCell>
+                                                                            <TableCell className="text-muted-foreground">Task - {taskRow.name}</TableCell>
+                                                                            <TableCell className="hidden md:table-cell"></TableCell>
+                                                                            <TableCell className="text-right"></TableCell>
+                                                                            <TableCell className="text-right"></TableCell>
+                                                                            <TableCell className="text-right"></TableCell>
+                                                                            <TableCell className="text-right font-mono text-muted-foreground">{taskRow.loggedHours.toFixed(2)}h</TableCell>
+                                                                            <TableCell className="text-right"></TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </CollapsibleContent>
                                             </TableBody>
-                                          </Table>
-                                      </div>
-                                      <CollapsibleContent asChild>
-                                          <div className='pl-10'>
-                                              <Table>
-                                                  <TableBody>
-                                                  {projectRow.tasks.map(taskRow => (
-                                                      <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`} className="bg-muted/20 border-none hover:bg-muted/40">
-                                                      <TableCell className="text-muted-foreground">{taskRow.name}</TableCell>
-                                                      <TableCell className="text-right font-mono text-muted-foreground w-[116px]">{taskRow.loggedHours.toFixed(2)}h</TableCell>
-                                                      </TableRow>
-                                                  ))}
-                                                  </TableBody>
-                                              </Table>
-                                          </div>
-                                      </CollapsibleContent>
-                                  </div>
-                              </Collapsible>
-                              ))}
+                                        </Table>
+                                    </div>
+                                </Collapsible>
+                                )
+                              })}
                           </div>
                       </TableCell>
                   </TableRow>
@@ -150,3 +166,4 @@ export function DetailedReport({ data }: DetailedReportProps) {
     </div>
   );
 }
+
