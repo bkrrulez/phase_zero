@@ -274,7 +274,7 @@ export default function ReportsPage() {
     if (reportView === 'detailed') {
       const dataForExport: any[][] = [];
       const title = getReportTitle();
-      dataForExport.push([title]);
+      dataForExport.push([{ v: title }]);
       dataForExport.push([]);
       dataForExport.push([
         t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')
@@ -282,32 +282,56 @@ export default function ReportsPage() {
 
       reports.detailedReport.forEach(userRow => {
         dataForExport.push([
-          { v: userRow.user.name, s: boldStyle }, userRow.user.role,
-          { v: userRow.assignedHours, t: 'n', z: '0.00' }, { v: userRow.leaveHours, t: 'n', z: '0.00' },
-          { v: userRow.expectedHours, t: 'n', z: '0.00' }, { v: userRow.loggedHours, t: 'n', z: '0.00' },
+          { v: userRow.user.name, s: boldStyle },
+          { v: userRow.user.role },
+          { v: userRow.assignedHours, t: 'n', z: '0.00' },
+          { v: userRow.leaveHours, t: 'n', z: '0.00' },
+          { v: userRow.expectedHours, t: 'n', z: '0.00' },
+          { v: userRow.loggedHours, t: 'n', z: '0.00' },
           { v: userRow.remainingHours, t: 'n', z: '0.00' }
         ]);
         const userLevel = dataForExport.length;
+
         userRow.projects.forEach(projectRow => {
           dataForExport.push([
-            { v: `    ${projectRow.name}` }, '', '', '', '', { v: projectRow.loggedHours, t: 'n', z: '0.00' }, ''
+            { v: `    Project- ${projectRow.name}` },
+            { v: '' }, { v: '' }, { v: '' }, { v: '' },
+            { v: projectRow.loggedHours, t: 'n', z: '0.00' },
+            { v: '' }
           ]);
           const projectLevel = dataForExport.length;
+
           projectRow.tasks.forEach(taskRow => {
             dataForExport.push([
-              { v: `        ${taskRow.name}` }, '', '', '', '', { v: taskRow.loggedHours, t: 'n', z: '0.00' }, ''
+              { v: `        Task- ${taskRow.name}` },
+              { v: '' }, { v: '' }, { v: '' }, { v: '' },
+              { v: taskRow.loggedHours, t: 'n', z: '0.00' },
+              { v: '' }
             ]);
           });
-          if (projectRow.tasks.length > 0) {
-            dataForExport[projectLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 2 } } });
-          }
         });
-        if (userRow.projects.length > 0) {
-          dataForExport[userLevel - 1].forEach((cell: any) => cell.s = { ...cell.s, ...{ outline: { level: 1 } } });
-        }
       });
+
       const worksheet = XLSX.utils.aoa_to_sheet(dataForExport);
-      worksheet['!outline'] = { summaryBelow: false };
+      let rowIndex = 3; // Start after headers
+      reports.detailedReport.forEach(userRow => {
+          const startRow = rowIndex;
+          rowIndex += 1; // For user row
+          
+          userRow.projects.forEach(projectRow => {
+              const projectStartRow = rowIndex;
+              rowIndex += 1; // For project row
+              rowIndex += projectRow.tasks.length; // For task rows
+              if(worksheet[`A${projectStartRow}`] && projectRow.tasks.length > 0) {
+                 worksheet[`A${projectStartRow}`].s = { ...worksheet[`A${projectStartRow}`].s, outlineLevel: 2 };
+              }
+          });
+          
+          if (worksheet[`A${startRow}`] && userRow.projects.length > 0) {
+              worksheet[`A${startRow}`].s = { ...worksheet[`A${startRow}`].s, outlineLevel: 1 };
+          }
+      });
+
       worksheet['!cols'] = [ {wch: 40}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15} ];
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Detailed Report");
