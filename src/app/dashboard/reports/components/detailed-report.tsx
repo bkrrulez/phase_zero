@@ -109,10 +109,12 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                               </div>
                                           </CollapsibleTrigger>
                                           <Table className="w-full">
+                                            <TableBody>
                                               <TableRow className="border-none hover:bg-transparent">
                                                   <TableCell className="font-medium">{projectRow.name}</TableCell>
                                                   <TableCell className="text-right font-mono w-[116px]">{projectRow.loggedHours.toFixed(2)}h</TableCell>
                                               </TableRow>
+                                            </TableBody>
                                           </Table>
                                       </div>
                                       <CollapsibleContent asChild>
