@@ -55,6 +55,10 @@ export default function ProfilePage() {
     }
   };
 
+  if (!currentUser) {
+    return null; // or a loading spinner
+  }
+
   return (
     <>
       <div className="space-y-6">
