@@ -11,12 +11,13 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { type TimeEntry, type User } from '@/lib/types';
+import { type TimeEntry } from '@/lib/types';
 import { format } from 'date-fns';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAccessControl } from '../../contexts/AccessControlContext';
 import { useMembers } from '../../contexts/MembersContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface DayDetailsDialogProps {
   isOpen: boolean;
@@ -29,10 +30,16 @@ interface DayDetailsDialogProps {
 }
 
 export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit, onEdit, onDelete }: DayDetailsDialogProps) {
+  const { currentUser } = useAuth();
   const { freezeRules } = useAccessControl();
   const { teamMembers } = useMembers();
 
   const isDateFrozenForUser = (userId: string, dateToCheck: Date) => {
+    // Super Admins are never frozen
+    if (currentUser?.role === 'Super Admin') {
+      return false;
+    }
+    
     const user = teamMembers.find(m => m.id === userId);
     if (!user) return false;
 
