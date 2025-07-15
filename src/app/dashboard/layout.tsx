@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Shield,
   ScrollText,
+  LifeBuoy,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -113,13 +114,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { logTime } = useTimeTracking();
   const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   const { t } = useLanguage();
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-  const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
-  const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
   const { pushMessages, userMessageStates } = usePushMessages();
   const { notifications } = useNotifications();
 
-  const isLoading = isAuthLoading || isSettingsLoading;
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
+  const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
 
   React.useEffect(() => {
     setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
@@ -154,6 +154,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return logTime(data, currentUser!.id);
   };
   
+  const isLoading = isAuthLoading || isSettingsLoading;
+
   if (isLoading || !currentUser) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -357,7 +359,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/profile">{t('profile')}</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>{t('support')}</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                   <Link href="/dashboard/support">{t('support')}</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>{t('logout')}</DropdownMenuItem>
               </DropdownMenuContent>
