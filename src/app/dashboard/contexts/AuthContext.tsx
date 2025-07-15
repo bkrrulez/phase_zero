@@ -6,7 +6,7 @@ import { type User } from '@/lib/types';
 import { useMembers } from './MembersContext';
 
 interface AuthContextType {
-  currentUser: User; // Non-null because provider ensures it exists for consumers
+  currentUser: User | null; 
   logout: () => void;
   isLoading: boolean;
 }
@@ -85,14 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/');
   };
 
-  if (isLoading || !isMounted || !currentUser) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <div className="text-xl font-semibold text-foreground">Loading...</div>
-        </div>
-    );
-  }
-
   return (
     <AuthContext.Provider value={{ currentUser, logout, isLoading }}>
       {children}
@@ -107,5 +99,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    

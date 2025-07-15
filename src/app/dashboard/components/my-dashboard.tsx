@@ -23,8 +23,10 @@ export function MyDashboard() {
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
-  const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
+  const { isHolidaysNavVisible } = useSettings();
   
+  if (!currentUser) return null; // Should not happen if AuthProvider works correctly
+
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
   const calculateDurationInWorkdays = React.useCallback((startDate: Date, endDate: Date, userId: string): number => {
@@ -209,18 +211,7 @@ export function MyDashboard() {
             </p>
           </CardContent>
         </Card>
-        {isSettingsLoading ? (
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <Skeleton className="h-4 w-24"/>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-7 w-16 mb-1"/>
-                    <Skeleton className="h-3 w-32"/>
-                </CardContent>
-            </Card>
-        ) : isHolidaysNavVisible && (
+        {isHolidaysNavVisible && (
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('holidaysTaken')}</CardTitle>
