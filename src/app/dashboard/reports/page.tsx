@@ -76,14 +76,14 @@ type ProjectReportItem = {
     key: string;
     member: User;
     projectName: string;
-    loggedHours: string;
+    loggedHours: number;
 };
 
 type TaskReportItem = {
     key: string;
     member: User;
     taskName: string;
-    loggedHours: string;
+    loggedHours: number;
 };
 
 export type DetailedReportData = {
@@ -182,13 +182,13 @@ export default function ReportsPage() {
 
         // Project Level
         const projectKey = `${entry.userId}__${projectName}`;
-        if (!projectAgg[projectKey]) projectAgg[projectKey] = { key: projectKey, member, projectName, loggedHours: "0" };
-        projectAgg[projectKey].loggedHours = (parseFloat(projectAgg[projectKey].loggedHours) + entry.duration).toFixed(2);
+        if (!projectAgg[projectKey]) projectAgg[projectKey] = { key: projectKey, member, projectName, loggedHours: 0 };
+        projectAgg[projectKey].loggedHours += entry.duration;
 
         // Task Level
         const taskKey = `${entry.userId}__${taskName}`;
-        if (!taskAgg[taskKey]) taskAgg[taskKey] = { key: taskKey, member, taskName, loggedHours: "0" };
-        taskAgg[taskKey].loggedHours = (parseFloat(taskAgg[taskKey].loggedHours) + entry.duration).toFixed(2);
+        if (!taskAgg[taskKey]) taskAgg[taskKey] = { key: taskKey, member, taskName, loggedHours: 0 };
+        taskAgg[taskKey].loggedHours += entry.duration;
 
         // Detailed Level
         if (detailedAgg[entry.userId]) {
@@ -232,13 +232,13 @@ export default function ReportsPage() {
             }
         }
         
-        const assignedHours = workingDaysInPeriod * dailyContractHours;
+        const assignedHours = parseFloat((workingDaysInPeriod * dailyContractHours).toFixed(2));
         const totalYearlyLeaveHours = annualLeaveAllowance * dailyContractHours;
         const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
-        const leaveHours = dailyLeaveCredit * workingDaysInPeriod;
-        const expectedHours = assignedHours - leaveHours;
-        const loggedHours = filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0);
-        const remainingHours = expectedHours - loggedHours;
+        const leaveHours = parseFloat((dailyLeaveCredit * workingDaysInPeriod).toFixed(2));
+        const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
+        const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
+        const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
         
         if (detailedAgg[member.id]) {
             detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
@@ -247,9 +247,20 @@ export default function ReportsPage() {
         return { ...member, assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
     });
 
-    const projectReport = Object.values(projectAgg).sort((a, b) => a.member.name.localeCompare(b.member.name));
-    const taskReport = Object.values(taskAgg).sort((a,b) => a.member.name.localeCompare(b.member.name));
-    const detailedReport = Object.values(detailedAgg).sort((a,b) => a.user.name.localeCompare(b.user.name));
+    const projectReport = Object.values(projectAgg).map(item => ({ ...item, loggedHours: parseFloat(item.loggedHours.toFixed(2))})).sort((a, b) => a.member.name.localeCompare(b.member.name));
+    const taskReport = Object.values(taskAgg).map(item => ({...item, loggedHours: parseFloat(item.loggedHours.toFixed(2))})).sort((a,b) => a.member.name.localeCompare(b.member.name));
+    
+    const detailedReport = Object.values(detailedAgg).map(userReport => ({
+        ...userReport,
+        projects: userReport.projects.map(p => ({
+            ...p,
+            loggedHours: parseFloat(p.loggedHours.toFixed(2)),
+            tasks: p.tasks.map(t => ({
+                ...t,
+                loggedHours: parseFloat(t.loggedHours.toFixed(2))
+            }))
+        }))
+    })).sort((a,b) => a.user.name.localeCompare(b.user.name));
 
     return { consolidatedData, projectReport, taskReport, detailedReport };
   }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth]);
@@ -269,126 +280,127 @@ export default function ReportsPage() {
   };
 
   const handleExport = () => {
-    if (reportView === 'detailed') {
-      const borderStyle = { style: "thin", color: { rgb: "000000" } };
-      const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
-      const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } }; 
-      const projectStyle = { fill: { fgColor: { rgb: "FFE699" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
-      const taskStyle = { font: { italic: true }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
       const numberFormat = { z: '0.00' };
-      
-      const dataForExport: any[][] = [];
-      const title = getReportTitle();
-      dataForExport.push([{ v: title }]);
-      dataForExport.push([]);
-      
-      const headers = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
-      dataForExport.push(headers.map(h => ({ v: h, s: headerStyle })));
 
-      reports.detailedReport.forEach(userRow => {
-        const userRowData = [
-          { v: userRow.user.name, s: userStyle }, 
-          { v: userRow.user.role, s: userStyle },
-          { v: userRow.assignedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
-          { v: userRow.leaveHours, t: 'n', z: numberFormat.z, s: userStyle },
-          { v: userRow.expectedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
-          { v: userRow.loggedHours, t: 'n', z: numberFormat.z, s: userStyle },
-          { v: userRow.remainingHours, t: 'n', z: numberFormat.z, s: userStyle }
-        ];
-        dataForExport.push(userRowData);
-        
-        userRow.projects.forEach(projectRow => {
-            const projectRowData = [
-                { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
-                { v: projectRow.loggedHours, t: 'n', z: numberFormat.z, s: projectStyle }, { v: '', s: projectStyle }
-            ];
-            dataForExport.push(projectRowData);
+      if (reportView === 'detailed') {
+          const borderStyle = { style: "thin", color: { rgb: "000000" } };
+          const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
+          const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } }; 
+          const projectStyle = { fill: { fgColor: { rgb: "FFE699" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
+          const taskStyle = { font: { italic: true }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
           
-            projectRow.tasks.forEach(taskRow => {
-                const taskRowData = [
-                    { v: `        Task- ${taskRow.name}`, s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle },
-                    { v: taskRow.loggedHours, t: 'n', z: numberFormat.z, s: taskStyle }, { v: '', s: taskStyle }
-                ];
-                dataForExport.push(taskRowData);
-            });
-        });
-      });
-      
-      const worksheet = XLSX.utils.aoa_to_sheet(dataForExport);
-      
-      const colWidths = headers.map((header, i) => {
-        let maxWidth = header.length;
-        dataForExport.slice(2).forEach(row => {
-          const cellValue = row[i]?.v ? String(row[i].v) : '';
-          if (cellValue.length > maxWidth) {
-            maxWidth = cellValue.length;
-          }
-        });
-        return { wch: maxWidth + 2 };
-      });
-      worksheet['!cols'] = colWidths;
-      
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Detailed Report");
-      XLSX.writeFile(workbook, `detailed_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+          const dataForExport: any[][] = [];
+          const title = getReportTitle();
+          dataForExport.push([{ v: title }]);
+          dataForExport.push([]);
+          
+          const headers = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+          dataForExport.push(headers.map(h => ({ v: h, s: headerStyle })));
 
-    } else {
-        const titleStyle = { font: { bold: true } };
-        const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
-        const cellStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
-        const numberCellStyle = { ...cellStyle, z: '0.00' };
+          reports.detailedReport.forEach(userRow => {
+              const userRowData = [
+                  { v: userRow.user.name, s: userStyle }, 
+                  { v: userRow.user.role, s: userStyle },
+                  { v: userRow.assignedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
+                  { v: userRow.leaveHours, t: 'n', z: numberFormat.z, s: userStyle },
+                  { v: userRow.expectedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
+                  { v: userRow.loggedHours, t: 'n', z: numberFormat.z, s: userStyle },
+                  { v: userRow.remainingHours, t: 'n', z: numberFormat.z, s: userStyle }
+              ];
+              dataForExport.push(userRowData);
+              
+              userRow.projects.forEach(projectRow => {
+                  const projectRowData = [
+                      { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
+                      { v: projectRow.loggedHours, t: 'n', z: numberFormat.z, s: projectStyle }, { v: '', s: projectStyle }
+                  ];
+                  dataForExport.push(projectRowData);
+                
+                  projectRow.tasks.forEach(taskRow => {
+                      const taskRowData = [
+                          { v: `        Task- ${taskRow.name}`, s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle },
+                          { v: taskRow.loggedHours, t: 'n', z: numberFormat.z, s: taskStyle }, { v: '', s: taskStyle }
+                      ];
+                      dataForExport.push(taskRowData);
+                  });
+              });
+          });
+          
+          const worksheet = XLSX.utils.aoa_to_sheet(dataForExport);
+          
+          const colWidths = headers.map((header, i) => {
+              let maxWidth = header.length;
+              dataForExport.slice(2).forEach(row => {
+                  const cellValue = row[i]?.v ? String(row[i].v) : '';
+                  if (cellValue.length > maxWidth) {
+                      maxWidth = cellValue.length;
+                  }
+              });
+              return { wch: maxWidth + 2 };
+          });
+          worksheet['!cols'] = colWidths;
+          
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, "Detailed Report");
+          XLSX.writeFile(workbook, `detailed_report_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-        const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
-            const worksheetData = [
-                [{ v: title, s: titleStyle }],
-                [],
-                headers.map(h => ({ v: h, s: headerStyle })),
-                ...data.map(row => row.map(cell => {
-                    const isNumber = typeof cell === 'number';
-                    return {
-                        v: cell,
-                        s: isNumber ? numberCellStyle : cellStyle,
-                        t: isNumber ? 'n' : 's'
-                    };
-                }))
-            ];
+      } else {
+          const titleStyle = { font: { bold: true } };
+          const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+          const cellStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+          const numberCellStyle = { ...cellStyle, z: numberFormat.z };
 
-            const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-            
-            const columnWidths = headers.map((header, i) => {
-                let maxWidth = header.length;
-                data.forEach(row => {
-                    const cellValue = row[i] ? String(row[i]) : '';
-                    if (cellValue.length > maxWidth) {
-                        maxWidth = cellValue.length;
-                    }
-                });
-                return { wch: maxWidth + 2 };
-            });
+          const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
+              const worksheetData = [
+                  [{ v: title, s: titleStyle }],
+                  [],
+                  headers.map(h => ({ v: h, s: headerStyle })),
+                  ...data.map(row => row.map(cell => {
+                      const isNumber = typeof cell === 'number';
+                      return {
+                          v: cell,
+                          s: isNumber ? numberCellStyle : cellStyle,
+                          t: isNumber ? 'n' : 's'
+                      };
+                  }))
+              ];
 
-            worksheet['!cols'] = columnWidths;
-            return worksheet;
-        };
-        
-        const wb = XLSX.utils.book_new();
+              const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+              
+              const columnWidths = headers.map((header, i) => {
+                  let maxWidth = header.length;
+                  data.forEach(row => {
+                      const cellValue = row[i] ? String(row[i]) : '';
+                      if (cellValue.length > maxWidth) {
+                          maxWidth = cellValue.length;
+                      }
+                  });
+                  return { wch: maxWidth + 2 };
+              });
 
-        const consolidatedHeaders = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
-        const consolidatedReportData = reports.consolidatedData.map(m => [m.name, m.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
-        const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
-        XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
+              worksheet['!cols'] = columnWidths;
+              return worksheet;
+          };
+          
+          const wb = XLSX.utils.book_new();
 
-        const projectHeaders = [t('member'), t('role'), t('project'), t('loggedHours')];
-        const projectReportData = reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, parseFloat(item.loggedHours)]);
-        const projectSheet = createStyledSheet(t('projectLevelReport'), projectHeaders, projectReportData);
-        XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
-        
-        const taskHeaders = [t('member'), t('role'), t('task'), t('loggedHours')];
-        const taskReportData = reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, parseFloat(item.loggedHours)]);
-        const taskSheet = createStyledSheet(t('taskLevelReport'), taskHeaders, taskReportData);
-        XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
+          const consolidatedHeaders = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+          const consolidatedReportData = reports.consolidatedData.map(m => [m.name, m.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
+          const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
+          XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
 
-        XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
-    }
+          const projectHeaders = [t('member'), t('role'), t('project'), t('loggedHours')];
+          const projectReportData = reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, item.loggedHours]);
+          const projectSheet = createStyledSheet(t('projectLevelReport'), projectHeaders, projectReportData);
+          XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
+          
+          const taskHeaders = [t('member'), t('role'), t('task'), t('loggedHours')];
+          const taskReportData = reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, item.loggedHours]);
+          const taskSheet = createStyledSheet(t('taskLevelReport'), taskHeaders, taskReportData);
+          XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
+
+          XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+      }
   };
 
 
@@ -518,7 +530,7 @@ export default function ReportsPage() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={item.member.role === 'Team Lead' || item.member.role === 'Super Admin' ? "default" : "secondary"}>{item.member.role}</Badge></TableCell>
                             <TableCell className="font-medium">{item.projectName}</TableCell>
-                            <TableCell className="text-right font-mono">{item.loggedHours}h</TableCell>
+                            <TableCell className="text-right font-mono">{item.loggedHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.projectReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noProjectHours')}</TableCell></TableRow>)}
@@ -539,7 +551,7 @@ export default function ReportsPage() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={item.member.role === 'Team Lead' || item.member.role === 'Super Admin' ? "default" : "secondary"}>{item.member.role}</Badge></TableCell>
                             <TableCell className="font-medium">{item.taskName}</TableCell>
-                            <TableCell className="text-right font-mono">{item.loggedHours}h</TableCell>
+                            <TableCell className="text-right font-mono">{item.loggedHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noTaskHours')}</TableCell></TableRow>)}
@@ -559,3 +571,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
