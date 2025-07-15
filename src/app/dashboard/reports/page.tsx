@@ -275,6 +275,7 @@ export default function ReportsPage() {
       const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } }; 
       const projectStyle = { fill: { fgColor: { rgb: "FFE699" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
       const taskStyle = { font: { italic: true }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
+      const numberFormat = { z: '0.00' };
       
       const dataForExport: any[][] = [];
       const title = getReportTitle();
@@ -286,28 +287,28 @@ export default function ReportsPage() {
 
       reports.detailedReport.forEach(userRow => {
         const userRowData = [
-          { v: userRow.user.name }, { v: userRow.user.role },
-          { v: userRow.assignedHours, t: 'n', z: '0.00' }, { v: userRow.leaveHours, t: 'n', z: '0.00' },
-          { v: userRow.expectedHours, t: 'n', z: '0.00' }, { v: userRow.loggedHours, t: 'n', z: '0.00' },
-          { v: userRow.remainingHours, t: 'n', z: '0.00' }
+          { v: userRow.user.name, s: userStyle }, 
+          { v: userRow.user.role, s: userStyle },
+          { v: userRow.assignedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
+          { v: userRow.leaveHours, t: 'n', z: numberFormat.z, s: userStyle },
+          { v: userRow.expectedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
+          { v: userRow.loggedHours, t: 'n', z: numberFormat.z, s: userStyle },
+          { v: userRow.remainingHours, t: 'n', z: numberFormat.z, s: userStyle }
         ];
-        userRowData.forEach(cell => cell.s = userStyle);
         dataForExport.push(userRowData);
         
         userRow.projects.forEach(projectRow => {
             const projectRowData = [
-                { v: `    Project- ${projectRow.name}` }, { v: '' }, { v: '' }, { v: '' }, { v: '' },
-                { v: projectRow.loggedHours, t: 'n', z: '0.00' }, { v: '' }
+                { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
+                { v: projectRow.loggedHours, t: 'n', z: numberFormat.z, s: projectStyle }, { v: '', s: projectStyle }
             ];
-            projectRowData.forEach(cell => cell.s = projectStyle);
             dataForExport.push(projectRowData);
           
             projectRow.tasks.forEach(taskRow => {
                 const taskRowData = [
-                    { v: `        Task- ${taskRow.name}` }, { v: '' }, { v: '' }, { v: '' }, { v: '' },
-                    { v: taskRow.loggedHours, t: 'n', z: '0.00' }, { v: '' }
+                    { v: `        Task- ${taskRow.name}`, s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle },
+                    { v: taskRow.loggedHours, t: 'n', z: numberFormat.z, s: taskStyle }, { v: '', s: taskStyle }
                 ];
-                taskRowData.forEach(cell => cell.s = taskStyle);
                 dataForExport.push(taskRowData);
             });
         });
@@ -335,13 +336,21 @@ export default function ReportsPage() {
         const titleStyle = { font: { bold: true } };
         const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
         const cellStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+        const numberCellStyle = { ...cellStyle, z: '0.00' };
 
         const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
             const worksheetData = [
                 [{ v: title, s: titleStyle }],
                 [],
                 headers.map(h => ({ v: h, s: headerStyle })),
-                ...data.map(row => row.map(cell => ({ v: cell, s: cellStyle, t: typeof cell === 'number' ? 'n' : 's' })))
+                ...data.map(row => row.map(cell => {
+                    const isNumber = typeof cell === 'number';
+                    return {
+                        v: cell,
+                        s: isNumber ? numberCellStyle : cellStyle,
+                        t: isNumber ? 'n' : 's'
+                    };
+                }))
             ];
 
             const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
