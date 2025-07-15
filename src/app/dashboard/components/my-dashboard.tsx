@@ -23,7 +23,7 @@ export function MyDashboard() {
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
-  const { isHolidaysNavVisible } = useSettings();
+  const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   
   if (!currentUser) return null; // Should not happen if AuthProvider works correctly
 
@@ -184,7 +184,7 @@ export function MyDashboard() {
         </div>
       </div>
 
-      <div className={cn("grid gap-4 md:grid-cols-2", isHolidaysNavVisible ? "lg:grid-cols-3" : "lg:grid-cols-2")}>
+      <div className={cn("grid gap-4 md:grid-cols-2", isHolidaysNavVisible ? "lg:grid-cols-4" : "lg:grid-cols-2")}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('hoursThisMonth')}</CardTitle>
@@ -211,7 +211,10 @@ export function MyDashboard() {
             </p>
           </CardContent>
         </Card>
-        {isHolidaysNavVisible && (
+        {isSettingsLoading ? (
+            <Skeleton className="h-full w-full" />
+        ) : isHolidaysNavVisible ? (
+          <>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('holidaysTaken')}</CardTitle>
@@ -224,67 +227,67 @@ export function MyDashboard() {
                     </p>
                 </CardContent>
             </Card>
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-            <MonthlyHoursChart />
-        </div>
-        <div className="lg:col-span-2 flex flex-col gap-6">
-            <Card>
-            <CardHeader>
-                <CardTitle>{t('recentTimeEntries')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>{t('date')}</TableHead>
-                    <TableHead>{t('task')}</TableHead>
-                    <TableHead className="text-right">{t('duration')}</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {timeEntries.filter(e => e.userId === currentUser.id).slice(0, 5).map(entry => (
-                    <TableRow key={entry.id}>
-                        <TableCell>{format(new Date(entry.date), 'PP')}</TableCell>
-                        <TableCell className="font-medium truncate max-w-[120px]">{entry.task}</TableCell>
-                        <TableCell className="text-right">{entry.duration.toFixed(2)}h</TableCell>
-                    </TableRow>
-                    ))}
-                     {timeEntries.filter(e => e.userId === currentUser.id).length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center">{t('noRecentEntries')}</TableCell>
-                        </TableRow>
-                     )}
-                </TableBody>
-                </Table>
-            </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarHeart className="h-5 w-5" />
+             <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                  <CalendarHeart className="h-4 w-4 text-muted-foreground" />
                   {t('upcomingPublicHolidays')}
                 </CardTitle>
-                <CardDescription>{t('upcomingPublicHolidaysDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {upcomingHolidays.length > 0 ? (
                     upcomingHolidays.map(holiday => (
-                      <div key={holiday.id} className="flex justify-between items-center">
+                      <div key={holiday.id} className="flex justify-between items-center text-xs">
                         <p className="font-medium">{holiday.name}</p>
-                        <p className="text-sm text-muted-foreground">{format(holiday.dateObj, 'PP')}</p>
+                        <p className="text-muted-foreground">{format(holiday.dateObj, 'PP')}</p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
+                    <p className="text-sm text-muted-foreground text-center py-2">
                       {t('noUpcomingPublicHolidays')}
                     </p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : null}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="lg:col-span-1">
+            <MonthlyHoursChart />
+        </div>
+        <div className="lg:col-span-1 flex">
+            <Card className="flex-grow flex flex-col">
+              <CardHeader>
+                  <CardTitle>{t('recentTimeEntries')}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                  <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>{t('date')}</TableHead>
+                        <TableHead>{t('task')}</TableHead>
+                        <TableHead className="text-right">{t('duration')}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {timeEntries.filter(e => e.userId === currentUser.id).slice(0, 5).map(entry => (
+                        <TableRow key={entry.id}>
+                            <TableCell>{format(new Date(entry.date), 'PP')}</TableCell>
+                            <TableCell className="font-medium truncate max-w-[120px]">{entry.task}</TableCell>
+                            <TableCell className="text-right">{entry.duration.toFixed(2)}h</TableCell>
+                        </TableRow>
+                        ))}
+                        {timeEntries.filter(e => e.userId === currentUser.id).length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center">{t('noRecentEntries')}</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                  </Table>
               </CardContent>
             </Card>
         </div>
