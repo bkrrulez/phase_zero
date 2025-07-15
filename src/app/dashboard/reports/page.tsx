@@ -338,14 +338,52 @@ export default function ReportsPage() {
       XLSX.writeFile(workbook, `detailed_report_${new Date().toISOString().split('T')[0]}.xlsx`);
 
     } else {
-        const totalTimeData = [[getReportTitle()], [], [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')], ...reports.consolidatedData.map(m => [m.name, m.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours])];
-        const projectData = [[t('projectLevelReport')], [], [t('member'), t('role'), t('project'), t('loggedHours')], ...reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, item.loggedHours])];
-        const taskData = [[t('taskLevelReport')], [], [t('member'), t('role'), t('task'), t('loggedHours')], ...reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, item.loggedHours])];
+        const titleStyle = { font: { bold: true } };
+        const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+        const cellStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+
+        const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
+            const worksheetData = [
+                [{ v: title, s: titleStyle }],
+                [],
+                headers.map(h => ({ v: h, s: headerStyle })),
+                ...data.map(row => row.map(cell => ({ v: cell, s: cellStyle, t: typeof cell === 'number' ? 'n' : 's' })))
+            ];
+
+            const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+            
+            const columnWidths = headers.map((header, i) => {
+                let maxWidth = header.length;
+                data.forEach(row => {
+                    const cellValue = row[i] ? String(row[i]) : '';
+                    if (cellValue.length > maxWidth) {
+                        maxWidth = cellValue.length;
+                    }
+                });
+                return { wch: maxWidth + 2 };
+            });
+
+            worksheet['!cols'] = columnWidths;
+            return worksheet;
+        };
         
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(totalTimeData), t('totalTime'));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(projectData), t('projectLevelReport'));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(taskData), t('taskLevelReport'));
+
+        const consolidatedHeaders = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+        const consolidatedReportData = reports.consolidatedData.map(m => [m.name, m.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
+        const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
+        XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
+
+        const projectHeaders = [t('member'), t('role'), t('project'), t('loggedHours')];
+        const projectReportData = reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, parseFloat(item.loggedHours)]);
+        const projectSheet = createStyledSheet(t('projectLevelReport'), projectHeaders, projectReportData);
+        XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
+        
+        const taskHeaders = [t('member'), t('role'), t('task'), t('loggedHours')];
+        const taskReportData = reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, parseFloat(item.loggedHours)]);
+        const taskSheet = createStyledSheet(t('taskLevelReport'), taskHeaders, taskReportData);
+        XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
+
         XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
   };
