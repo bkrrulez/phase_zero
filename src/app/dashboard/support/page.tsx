@@ -13,10 +13,10 @@ export default function SupportPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Contact for Support</CardTitle>
+          <CardTitle>{t('contactSupportTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>Please contact the creator of this application for further help, support or to report issues on the below email id-</p>
+            <p>{t('contactSupportDesc')}</p>
             <div>
                 <p className="font-semibold text-foreground">Bikramjit Chowdhury</p>
                 <a href="mailto:bikramjit.chowdhury@tuwien.ac.at" className="text-primary hover:underline">

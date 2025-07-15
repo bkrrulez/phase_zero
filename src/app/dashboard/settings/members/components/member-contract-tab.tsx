@@ -17,6 +17,7 @@ import { useSystemLog } from '@/app/dashboard/contexts/SystemLogContext';
 import { useAuth } from '@/app/dashboard/contexts/AuthContext';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { type User } from '@/lib/types';
+import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
 
 
 export function MemberContractTab() {
@@ -24,6 +25,7 @@ export function MemberContractTab() {
   const { logAction } = useSystemLog();
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [openCombobox, setOpenCombobox] = React.useState(false);
   const [selectedMemberId, setSelectedMemberId] = React.useState('');
@@ -40,8 +42,8 @@ export function MemberContractTab() {
       if (file.type !== 'application/pdf') {
         toast({
           variant: 'destructive',
-          title: 'Invalid File Type',
-          description: 'Please upload a PDF file.',
+          title: t('invalidFileType'),
+          description: t('pleaseUploadPdf'),
         });
         return;
       }
@@ -53,8 +55,8 @@ export function MemberContractTab() {
     if (!selectedMemberId || !selectedFile) {
       toast({
         variant: 'destructive',
-        title: 'Missing Information',
-        description: 'Please select a member and a PDF file.',
+        title: t('missingInformation'),
+        description: t('selectMemberAndPdf'),
       });
       return;
     }
@@ -74,8 +76,8 @@ export function MemberContractTab() {
         }
 
         toast({
-          title: 'Upload Successful',
-          description: `Contract for ${member?.name} has been uploaded.`,
+          title: t('uploadSuccessful'),
+          description: t('contractUploadedFor', { name: member?.name }),
         });
         await logAction(`User '${currentUser.name}' uploaded a contract for '${member?.name}'.`);
         
@@ -95,8 +97,8 @@ export function MemberContractTab() {
       console.error(error);
       toast({
         variant: 'destructive',
-        title: 'Upload Failed',
-        description: 'An error occurred while uploading the contract.',
+        title: t('uploadFailed'),
+        description: t('uploadErrorOccurred'),
       });
       setIsUploading(false);
     }
@@ -109,16 +111,16 @@ export function MemberContractTab() {
         await deleteUserContract(deletingContractForUser.id);
         updateMember({ ...deletingContractForUser, contractPdf: null });
         toast({
-            title: 'Contract Deleted',
-            description: `Contract for ${deletingContractForUser.name} has been removed.`,
+            title: t('contractDeletedTitle'),
+            description: t('contractDeletedFor', { name: deletingContractForUser.name }),
             variant: 'destructive'
         });
         await logAction(`User '${currentUser.name}' deleted the contract for '${deletingContractForUser.name}'.`);
       } catch (error) {
            toast({
                 variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to delete the contract.',
+                title: t('error'),
+                description: t('contractDeleteError'),
             });
       } finally {
         setDeletingContractForUser(null);
@@ -130,14 +132,14 @@ export function MemberContractTab() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Upload Contract</CardTitle>
+          <CardTitle>{t('uploadContractTitle')}</CardTitle>
           <CardDescription>
-            Select a member and upload their contract in PDF format. This will overwrite any existing contract.
+            {t('uploadContractDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row items-end gap-4">
           <div className="grid w-full sm:w-auto sm:flex-1 gap-1.5">
-            <label>Select Member</label>
+            <label>{t('selectMemberLabel')}</label>
             <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                 <PopoverTrigger asChild>
                     <Button
@@ -148,15 +150,15 @@ export function MemberContractTab() {
                     >
                     {selectedMemberId
                         ? teamMembers.find((member) => member.id === selectedMemberId)?.name
-                        : "Select member..."}
+                        : t('selectMemberPlaceholder')}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[300px] p-0">
                     <Command>
-                    <CommandInput placeholder="Search member..." />
+                    <CommandInput placeholder={t('searchMemberPlaceholder')} />
                     <CommandList>
-                        <CommandEmpty>No member found.</CommandEmpty>
+                        <CommandEmpty>{t('noMemberFound')}</CommandEmpty>
                         <CommandGroup>
                         {teamMembers.map((member) => (
                             <CommandItem
@@ -183,27 +185,27 @@ export function MemberContractTab() {
             </Popover>
           </div>
           <div className="grid w-full sm:w-auto sm:flex-1 gap-1.5">
-            <label>Contract File (PDF)</label>
+            <label>{t('contractFileLabel')}</label>
             <Input type="file" accept="application/pdf" onChange={handleFileChange} ref={fileInputRef} />
           </div>
           <Button onClick={handleUpload} disabled={isUploading}>
-            {isUploading ? 'Uploading...' : 'Upload Contract'}
+            {isUploading ? t('uploading') : t('uploadContractBtn')}
           </Button>
         </CardContent>
       </Card>
       
       <Card>
           <CardHeader>
-              <CardTitle>Uploaded Contracts</CardTitle>
-              <CardDescription>A list of all members with an uploaded contract file.</CardDescription>
+              <CardTitle>{t('uploadedContractsTitle')}</CardTitle>
+              <CardDescription>{t('uploadedContractsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
               <Table>
                   <TableHeader>
                       <TableRow>
-                          <TableHead>Member</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>{t('member')}</TableHead>
+                          <TableHead>{t('email')}</TableHead>
+                          <TableHead className="text-right">{t('actions')}</TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -213,14 +215,14 @@ export function MemberContractTab() {
                             <TableCell>{member.email}</TableCell>
                             <TableCell className="text-right">
                                 <Button variant="destructive" size="sm" onClick={() => setDeletingContractForUser(member)}>
-                                    <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                    <Trash2 className="mr-2 h-4 w-4"/> {t('delete')}
                                 </Button>
                             </TableCell>
                           </TableRow>
                       ))}
                       {membersWithContracts.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={3} className="h-24 text-center">No contracts have been uploaded yet.</TableCell>
+                              <TableCell colSpan={3} className="h-24 text-center">{t('noContractsUploaded')}</TableCell>
                           </TableRow>
                       )}
                   </TableBody>
@@ -231,14 +233,14 @@ export function MemberContractTab() {
       <AlertDialog open={!!deletingContractForUser} onOpenChange={(open) => !open && setDeletingContractForUser(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                      This will permanently delete the contract for "{deletingContractForUser?.name}". This action cannot be undone.
+                      {t('deleteContractConfirmation', { name: deletingContractForUser?.name })}
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">{t('delete')}</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>

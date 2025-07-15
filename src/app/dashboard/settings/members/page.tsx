@@ -206,9 +206,9 @@ export default function MembersSettingsPage() {
           </div>
         </div>
         <Tabs defaultValue="all-members">
-            <TabsList className={cn("grid w-full", currentUser.role === 'Super Admin' ? "grid-cols-2 md:w-[400px]" : "grid-cols-1 w-[200px]")}>
-                <TabsTrigger value="all-members">All Members</TabsTrigger>
-                {currentUser.role === 'Super Admin' && <TabsTrigger value="member-contract">Member Contract</TabsTrigger>}
+            <TabsList className={cn("grid w-full", currentUser.role === 'Super Admin' ? "grid-cols-2 md:w-[400px]" : "grid-cols-1 md:w-[200px]")}>
+                <TabsTrigger value="all-members">{t('allMembers')}</TabsTrigger>
+                {currentUser.role === 'Super Admin' && <TabsTrigger value="member-contract">{t('memberContractTab')}</TabsTrigger>}
             </TabsList>
             <TabsContent value="all-members">
                 <Card>
@@ -256,7 +256,7 @@ export default function MembersSettingsPage() {
                                             <DropdownMenuTrigger asChild>
                                                 <Button aria-haspopup="true" size="icon" variant="ghost">
                                                     <MoreHorizontal className="h-4 w-4" />
-                                                    <span className="sr-only">Toggle menu</span>
+                                                    <span className="sr-only">{t('toggleMenu')}</span>
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
@@ -266,7 +266,7 @@ export default function MembersSettingsPage() {
                                                 </DropdownMenuItem>
                                                  {canDownloadContract(member) && (
                                                     <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
-                                                        Download Contract
+                                                        {t('downloadContract')}
                                                     </DropdownMenuItem>
                                                 )}
                                                 <DropdownMenuItem 
