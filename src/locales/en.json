@@ -243,5 +243,9 @@
     "deleteContractConfirmation": "This will permanently delete the contract for \"{{name}}\". This action cannot be undone.",
     "contractDeletedTitle": "Contract Deleted",
     "contractDeletedFor": "Contract for {{name}} has been removed.",
-    "contractDeleteError": "Failed to delete the contract."
+    "contractDeleteError": "Failed to delete the contract.",
+    "teamPageSubtitle": "Manage your team members and their details.",
+    "teamMembersTabTitle": "Team Members",
+    "teamMembersTabDesc": "A list of all employees in your team.",
+    "noMembersToDisplay": "No members to display."
 }

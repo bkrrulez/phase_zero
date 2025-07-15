@@ -243,5 +243,9 @@
     "deleteContractConfirmation": "Dadurch wird der Vertrag für \"{{name}}\" endgültig gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
     "contractDeletedTitle": "Vertrag gelöscht",
     "contractDeletedFor": "Der Vertrag für {{name}} wurde entfernt.",
-    "contractDeleteError": "Der Vertrag konnte nicht gelöscht werden."
+    "contractDeleteError": "Der Vertrag konnte nicht gelöscht werden.",
+    "teamPageSubtitle": "Verwalten Sie Ihre Teammitglieder und deren Details.",
+    "teamMembersTabTitle": "Teammitglieder",
+    "teamMembersTabDesc": "Eine Liste aller Mitarbeiter in Ihrem Team.",
+    "noMembersToDisplay": "Keine Mitglieder zum Anzeigen."
 }

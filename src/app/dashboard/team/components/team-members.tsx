@@ -20,6 +20,7 @@ import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export function TeamMembers() {
     const { toast } = useToast();
@@ -27,6 +28,7 @@ export function TeamMembers() {
     const { teams } = useTeams();
     const { currentUser } = useAuth();
     const { logAction } = useSystemLog();
+    const { t } = useLanguage();
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
@@ -56,8 +58,8 @@ export function TeamMembers() {
         updateMember(updatedUser);
         setEditingUser(null);
         toast({
-            title: "Member Details Updated",
-            description: `Successfully updated details for ${updatedUser.name}.`,
+            title: t('memberDetailsUpdated'),
+            description: t('memberDetailsUpdatedDesc', { name: updatedUser.name }),
         });
         logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
     }
@@ -69,15 +71,15 @@ export function TeamMembers() {
         try {
             await sendPasswordChangeEmail({ to: changingPasswordUser.email, name: changingPasswordUser.name });
             toast({
-                title: "Password Changed",
-                description: `Password for ${changingPasswordUser.name} has been changed and a notification email has been sent.`,
+                title: t('passwordChanged'),
+                description: t('passwordChangedDesc', { name: changingPasswordUser.name }),
             });
             logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
         } catch (error) {
             toast({
                 variant: 'destructive',
-                title: "Error",
-                description: "Could not send password change notification. Please check SMTP settings.",
+                title: t('error'),
+                description: t('smtpError'),
             });
         } finally {
             setIsSavingPassword(false);
@@ -130,20 +132,20 @@ export function TeamMembers() {
     <>
       <Card>
           <CardHeader>
-              <CardTitle>Team Members</CardTitle>
-              <CardDescription>A list of all employees in your team.</CardDescription>
+              <CardTitle>{t('teamMembersTabTitle')}</CardTitle>
+              <CardDescription>{t('teamMembersTabDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
               <Table>
                   <TableHeader>
                       <TableRow>
-                          <TableHead>Member</TableHead>
-                          <TableHead className="hidden md:table-cell">Role</TableHead>
-                          <TableHead className="hidden md:table-cell">Team</TableHead>
-                          <TableHead className="hidden md:table-cell text-right">Weekly Contract Hours</TableHead>
-                          <TableHead className="hidden lg:table-cell">Contract Start</TableHead>
-                          <TableHead className="hidden lg:table-cell">Contract End</TableHead>
-                          <TableHead><span className="sr-only">Actions</span></TableHead>
+                          <TableHead>{t('member')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
+                          <TableHead className="hidden md:table-cell text-right">{t('weeklyHours')}</TableHead>
+                          <TableHead className="hidden lg:table-cell">{t('contractStart')}</TableHead>
+                          <TableHead className="hidden lg:table-cell">{t('contractEnd')}</TableHead>
+                          <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
                       </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -173,30 +175,30 @@ export function TeamMembers() {
                                       <DropdownMenuTrigger asChild>
                                           <Button aria-haspopup="true" size="icon" variant="ghost">
                                               <MoreHorizontal className="h-4 w-4" />
-                                              <span className="sr-only">Toggle menu</span>
+                                              <span className="sr-only">{t('toggleMenu')}</span>
                                           </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
-                                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                          <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                                           <DropdownMenuItem asChild>
-                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>View Report</Link>
+                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>{t('viewReport')}</Link>
                                           </DropdownMenuItem>
                                           {canDownloadContract(member) && (
                                             <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
-                                                Download Contract
+                                                {t('downloadContract')}
                                             </DropdownMenuItem>
                                           )}
                                           <DropdownMenuItem 
                                             onClick={() => setEditingUser(member)}
                                             disabled={!canEditMember(member)}
                                           >
-                                            View/Edit Details
+                                            {t('viewEditDetails')}
                                           </DropdownMenuItem>
                                           <DropdownMenuItem
                                             onClick={() => setChangingPasswordUser(member)}
                                             disabled={!canChangePassword(member)}
                                           >
-                                            Change Password
+                                            {t('changePassword')}
                                           </DropdownMenuItem>
                                       </DropdownMenuContent>
                                   </DropdownMenu>
@@ -205,7 +207,7 @@ export function TeamMembers() {
                       ))}
                       {visibleMembers.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={7} className="h-24 text-center">No members to display.</TableCell>
+                              <TableCell colSpan={7} className="h-24 text-center">{t('noMembersToDisplay')}</TableCell>
                           </TableRow>
                       )}
                   </TableBody>

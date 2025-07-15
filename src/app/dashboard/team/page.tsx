@@ -14,6 +14,7 @@ import { AddMemberDialog } from './components/add-member-dialog';
 import { useAuth } from '../contexts/AuthContext';
 import { useSystemLog } from '../contexts/SystemLogContext';
 import { useTeams } from '../contexts/TeamsContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function TeamPage() {
     const { toast } = useToast();
@@ -21,6 +22,7 @@ export default function TeamPage() {
     const { currentUser } = useAuth();
     const { logAction } = useSystemLog();
     const { teams } = useTeams();
+    const { t } = useLanguage();
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
@@ -49,8 +51,8 @@ export default function TeamPage() {
         addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({
-            title: "Member Added",
-            description: `${newUser.name} has been added to the team.`,
+            title: t('memberAdded'),
+            description: t('memberAddedDesc', { name: newUser.name }),
         });
         logAction(`User '${currentUser.name}' added a new member: '${newUser.name}'.`);
     };
@@ -65,13 +67,13 @@ export default function TeamPage() {
         if (visibleMembers.length === 0) return;
     
         const dataForExport = visibleMembers.map(member => ({
-            'Member': member.name,
-            'Email': member.email,
-            'Role': member.role,
-            'Team': getTeamName(member.teamId),
-            'Weekly Contract Hours': member.contract.weeklyHours,
-            'Contract Start': format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
-            'Contract End': member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
+            [t('member')]: member.name,
+            [t('email')]: member.email,
+            [t('role')]: member.role,
+            [t('team')]: getTeamName(member.teamId),
+            [t('weeklyHours')]: member.contract.weeklyHours,
+            [t('contractStart')]: format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
+            [t('contractEnd')]: member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
         }));
     
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
@@ -86,16 +88,16 @@ export default function TeamPage() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">Team</h1>
-                        <p className="text-muted-foreground">Manage your team members and their details.</p>
+                        <h1 className="text-3xl font-bold font-headline">{t('team')}</h1>
+                        <p className="text-muted-foreground">{t('teamPageSubtitle')}</p>
                     </div>
                     <div className="flex items-center gap-2">
                          <Button variant="outline" onClick={handleExport}>
-                            <FileUp className="mr-2 h-4 w-4" /> Export
+                            <FileUp className="mr-2 h-4 w-4" /> {t('export')}
                         </Button>
                         {canAddMember && (
                             <Button onClick={() => setIsAddMemberDialogOpen(true)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Member
+                                <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
                             </Button>
                         )}
                     </div>
