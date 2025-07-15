@@ -270,18 +270,19 @@ export default function ReportsPage() {
 
   const handleExport = () => {
     if (reportView === 'detailed') {
-      const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } } };
-      const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } } }; // Light Sky Blue
-      const projectStyle = { fill: { fgColor: { rgb: "FFE699" } } }; // Light Yellow
-      const taskStyle = { font: { italic: true } };
+      const borderStyle = { style: "thin", color: { rgb: "000000" } };
+      const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
+      const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } }; 
+      const projectStyle = { fill: { fgColor: { rgb: "FFE699" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
+      const taskStyle = { font: { italic: true }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
       
       const dataForExport: any[][] = [];
       const title = getReportTitle();
       dataForExport.push([{ v: title }]);
-      dataForExport.push([]); // Spacer row
-      dataForExport.push([
-        { v: t('member')}, { v: t('role')}, { v: t('assignedHours')}, { v: t('leaveHours')}, { v: t('expected')}, { v: t('logged')}, { v: t('remaining')}
-      ].map(h => ({ ...h, s: headerStyle })));
+      dataForExport.push([]);
+      
+      const headers = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+      dataForExport.push(headers.map(h => ({ v: h, s: headerStyle })));
 
       reports.detailedReport.forEach(userRow => {
         const userRowData = [
@@ -293,8 +294,6 @@ export default function ReportsPage() {
         userRowData.forEach(cell => cell.s = userStyle);
         dataForExport.push(userRowData);
         
-        const userLevel = dataForExport.length;
-
         userRow.projects.forEach(projectRow => {
             const projectRowData = [
                 { v: `    Project- ${projectRow.name}` }, { v: '' }, { v: '' }, { v: '' }, { v: '' },
@@ -303,8 +302,6 @@ export default function ReportsPage() {
             projectRowData.forEach(cell => cell.s = projectStyle);
             dataForExport.push(projectRowData);
           
-            const projectLevel = dataForExport.length;
-
             projectRow.tasks.forEach(taskRow => {
                 const taskRowData = [
                     { v: `        Task- ${taskRow.name}` }, { v: '' }, { v: '' }, { v: '' }, { v: '' },
@@ -313,26 +310,23 @@ export default function ReportsPage() {
                 taskRowData.forEach(cell => cell.s = taskStyle);
                 dataForExport.push(taskRowData);
             });
-            
-            if (projectRow.tasks.length > 0) {
-              const row = dataForExport[projectLevel-1];
-              if(row) {
-                row.forEach((cell: any) => cell.s = {...cell.s, outline: {level: 2}});
-              }
-            }
         });
-        
-        if (userRow.projects.length > 0) {
-           const row = dataForExport[userLevel-1];
-           if(row) {
-              row.forEach((cell: any) => cell.s = {...cell.s, outline: {level: 1}});
-            }
-        }
       });
-
+      
       const worksheet = XLSX.utils.aoa_to_sheet(dataForExport);
-
-      worksheet['!cols'] = [ {wch: 40}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15} ];
+      
+      const colWidths = headers.map((header, i) => {
+        let maxWidth = header.length;
+        dataForExport.slice(2).forEach(row => {
+          const cellValue = row[i]?.v ? String(row[i].v) : '';
+          if (cellValue.length > maxWidth) {
+            maxWidth = cellValue.length;
+          }
+        });
+        return { wch: maxWidth + 2 };
+      });
+      worksheet['!cols'] = colWidths;
+      
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Detailed Report");
       XLSX.writeFile(workbook, `detailed_report_${new Date().toISOString().split('T')[0]}.xlsx`);
