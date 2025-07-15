@@ -247,5 +247,14 @@
     "teamPageSubtitle": "Verwalten Sie Ihre Teammitglieder und deren Details.",
     "teamMembersTabTitle": "Teammitglieder",
     "teamMembersTabDesc": "Eine Liste aller Mitarbeiter in Ihrem Team.",
-    "noMembersToDisplay": "Keine Mitglieder zum Anzeigen."
+    "noMembersToDisplay": "Keine Mitglieder zum Anzeigen.",
+    "userCalendar": "Kalender von {{name}}",
+    "userCalendarDesc": "Monatsübersicht der protokollierten Stunden und Feiertage.",
+    "selectUserPlaceholder": "Benutzer auswählen",
+    "selectMonthPlaceholder": "Monat auswählen",
+    "selectYearPlaceholder": "Jahr auswählen",
+    "expectedHoursShort": "Erwartet {{hours}}h",
+    "noUserSelectedTitle": "Kein Benutzer ausgewählt",
+    "noUserSelectedDescMulti": "Bitte wählen Sie einen Benutzer aus, um dessen Kalender anzuzeigen.",
+    "noUserSelectedDescSingle": "Keine Benutzerdaten verfügbar."
 }

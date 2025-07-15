@@ -247,5 +247,14 @@
     "teamPageSubtitle": "Manage your team members and their details.",
     "teamMembersTabTitle": "Team Members",
     "teamMembersTabDesc": "A list of all employees in your team.",
-    "noMembersToDisplay": "No members to display."
+    "noMembersToDisplay": "No members to display.",
+    "userCalendar": "{{name}}'s Calendar",
+    "userCalendarDesc": "Monthly overview of logged hours and holidays.",
+    "selectUserPlaceholder": "Select User",
+    "selectMonthPlaceholder": "Select month",
+    "selectYearPlaceholder": "Select year",
+    "expectedHoursShort": "Expected {{hours}}h",
+    "noUserSelectedTitle": "No User Selected",
+    "noUserSelectedDescMulti": "Please select a user to view their calendar.",
+    "noUserSelectedDescSingle": "No user data available."
 }

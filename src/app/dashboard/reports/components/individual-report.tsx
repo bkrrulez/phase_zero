@@ -29,6 +29,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { LogTimeDialog, type LogTimeFormValues } from '../../components/log-time-dialog';
 import { DeleteTimeEntryDialog } from './delete-time-entry-dialog';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -47,6 +48,7 @@ interface ReportCalendarContextValue {
     customHolidayDays: Date[];
   };
   onDayClick: (date: Date) => void;
+  t: (key: any, options?: any) => string;
 }
 
 const ReportCalendarContext = React.createContext<ReportCalendarContextValue | null>(null);
@@ -58,7 +60,7 @@ const DayContent: React.FC<DayContentProps> = (props) => {
     return <div className="p-1">{props.date.getDate()}</div>;
   }
 
-  const { selectedDate, monthlyData, onDayClick } = context;
+  const { selectedDate, monthlyData, onDayClick, t } = context;
   const { date } = props;
   const dayOfMonth = date.getDate();
 
@@ -96,7 +98,7 @@ const DayContent: React.FC<DayContentProps> = (props) => {
                 </span>
             ) : expectedHours > 0 ? (
                 <span className="text-[10px] font-semibold text-orange-400">
-                    Expected {expectedHours.toFixed(1)}h
+                    {t('expectedHoursShort', { hours: expectedHours.toFixed(1) })}
                 </span>
             ) : <span className="h-[15px]" />
         ) : <span className="h-[15px]" />}
@@ -108,6 +110,7 @@ const DayContent: React.FC<DayContentProps> = (props) => {
 export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { t } = useLanguage();
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
@@ -363,15 +366,16 @@ export function IndividualReport() {
         selectedDate,
         monthlyData,
         onDayClick: handleDayClick,
-    }), [selectedDate, monthlyData, handleDayClick]);
+        t,
+    }), [selectedDate, monthlyData, handleDayClick, t]);
 
   if (!selectedUser) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>No User Selected</CardTitle>
+          <CardTitle>{t('noUserSelectedTitle')}</CardTitle>
           <CardDescription>
-            {viewableUsers.length > 1 ? 'Please select a user to view their calendar.' : 'No user data available.'}
+            {viewableUsers.length > 1 ? t('noUserSelectedDescMulti') : t('noUserSelectedDescSingle')}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -388,14 +392,14 @@ export function IndividualReport() {
                 <AvatarFallback>{selectedUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl font-bold font-headline">{selectedUser.name}'s Calendar</h2>
-                  <p className="text-muted-foreground">Monthly overview of logged hours and holidays.</p>
+                  <h2 className="text-xl font-bold font-headline">{t('userCalendar', {name: selectedUser.name})}</h2>
+                  <p className="text-muted-foreground">{t('userCalendarDesc')}</p>
                 </div>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
                 <Select onValueChange={handleUserChange} value={selectedUser.id} disabled={viewableUsers.length <= 1}>
                     <SelectTrigger className="w-full md:w-[180px]">
-                        <SelectValue placeholder="Select User" />
+                        <SelectValue placeholder={t('selectUserPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                         {viewableUsers.map(user => (
@@ -412,7 +416,7 @@ export function IndividualReport() {
                     onValueChange={handleMonthChange}
                 >
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select month" />
+                        <SelectValue placeholder={t('selectMonthPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                         {availableMonths.map(month => (
@@ -427,7 +431,7 @@ export function IndividualReport() {
                     onValueChange={handleYearChange}
                 >
                     <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Select year" />
+                        <SelectValue placeholder={t('selectYearPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                         {availableYears.map(year => (
