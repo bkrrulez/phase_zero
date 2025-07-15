@@ -44,7 +44,7 @@
     "welcomeSubtitle": "Hier ist Ihre Zeiterfassungsübersicht für diesen Monat.",
     "hoursThisMonth": "Stunden diesen Monat",
     "outOfExpected": "von {{hours}}h erwartet",
-    "overtime": "Überstunden",
+    "overtime": "Überstunden / Defizit",
     "basedOnContract": "Basierend auf {{hours}}h/Woche Vertrag",
     "holidaysTaken": "Genommene Urlaubstage",
     "daysCount": "{{count}} Tag(e)",

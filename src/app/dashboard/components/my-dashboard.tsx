@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Clock, Users, BarChart as BarChartIcon, CalendarHeart } from "lucide-react";
+import { Clock, Users, BarChartHorizontal, CalendarHeart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { User } from "@/lib/types";
@@ -200,7 +200,7 @@ export function MyDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('overtime')}</CardTitle>
-            <BarChartIcon className="h-4 w-4 text-muted-foreground" />
+            <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${overtime < 0 ? 'text-destructive' : ''}`}>
@@ -253,11 +253,11 @@ export function MyDashboard() {
         ) : null}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="lg:col-span-1">
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
             <MonthlyHoursChart />
         </div>
-        <div className="lg:col-span-1 flex">
+        <div className="lg:col-span-2 flex">
             <Card className="flex-grow flex flex-col">
               <CardHeader>
                   <CardTitle>{t('recentTimeEntries')}</CardTitle>
@@ -293,5 +293,3 @@ export function MyDashboard() {
     </div>
   )
 }
-
-    

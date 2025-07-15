@@ -44,7 +44,7 @@
     "welcomeSubtitle": "Here's your time tracking summary for this month.",
     "hoursThisMonth": "Hours this month",
     "outOfExpected": "out of {{hours}}h expected",
-    "overtime": "Overtime",
+    "overtime": "Overtime / Deficit",
     "basedOnContract": "Based on {{hours}}h/week contract",
     "holidaysTaken": "Holidays Taken",
     "daysCount": "{{count}} Day(s)",
