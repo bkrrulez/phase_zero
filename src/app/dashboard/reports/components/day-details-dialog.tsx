@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { useAccessControl } from '../../contexts/AccessControlContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface DayDetailsDialogProps {
   isOpen: boolean;
@@ -33,6 +35,7 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
   const { currentUser } = useAuth();
   const { freezeRules } = useAccessControl();
   const { teamMembers } = useMembers();
+  const { toast } = useToast();
 
   const isDateFrozenForUser = (userId: string, dateToCheck: Date) => {
     // Super Admins are never frozen
@@ -60,6 +63,18 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
     return false;
   }
   
+  const handleActionClick = (isFrozen: boolean, action: () => void) => {
+    if (isFrozen) {
+      toast({
+        variant: 'destructive',
+        title: 'Date is Frozen',
+        description: 'This date is frozen by the Admin. Please contact your Supervisor for more information.',
+      });
+    } else {
+      action();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -98,15 +113,21 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" disabled={isFrozen}>
+                                                <Button variant="ghost" size="icon">
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => onEdit(entry)} disabled={isFrozen}>
+                                                <DropdownMenuItem
+                                                  onClick={() => handleActionClick(isFrozen, () => onEdit(entry))}
+                                                  className={cn(isFrozen && "text-muted-foreground cursor-not-allowed")}
+                                                >
                                                     Edit
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => onDelete(entry)} className="text-destructive focus:text-destructive" disabled={isFrozen}>
+                                                <DropdownMenuItem
+                                                  onClick={() => handleActionClick(isFrozen, () => onDelete(entry))}
+                                                  className={cn("text-destructive focus:text-destructive", isFrozen && "text-muted-foreground cursor-not-allowed focus:text-muted-foreground")}
+                                                >
                                                     Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
