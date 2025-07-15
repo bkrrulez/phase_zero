@@ -116,60 +116,57 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
-  
   const { pushMessages, userMessageStates } = usePushMessages();
   const { notifications } = useNotifications();
-  
+
   const isLoading = isAuthLoading || isSettingsLoading;
 
   React.useEffect(() => {
     setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
   }, [pathname]);
 
-  if (isLoading || !currentUser) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <div className="flex items-center gap-2 text-xl font-semibold text-foreground">
-                <svg className="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Loading...</span>
-            </div>
-        </div>
-    );
-  }
-  
   const activeUnreadPushCount = React.useMemo(() => {
+    if (!currentUser) return 0;
     const userReadIds = userMessageStates[currentUser.id]?.readMessageIds || [];
     return pushMessages.filter(msg => {
-      const isApplicable = msg.receivers === 'all-members' || 
+      const isApplicable = msg.receivers === 'all-members' ||
                            (msg.receivers === 'all-teams' && currentUser.teamId) ||
                            (Array.isArray(msg.receivers) && currentUser.teamId && msg.receivers.includes(currentUser.teamId));
-      
-      return isApplicable && 
-             getStatus(msg.startDate, msg.endDate) === 'Active' && 
+
+      return isApplicable &&
+             getStatus(msg.startDate, msg.endDate) === 'Active' &&
              !userReadIds.includes(msg.id);
     }).length;
   }, [pushMessages, userMessageStates, currentUser]);
 
   const unreadRequestCount = React.useMemo(() => {
+    if (!currentUser) return 0;
     return notifications.filter(n => n.recipientIds.includes(currentUser.id) && !n.readBy.includes(currentUser.id)).length;
   }, [notifications, currentUser]);
 
   const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
-  
+
   const handleLogTime = (data: LogTimeFormValues, entryId?: string) => {
-    // This dialog instance is only for CREATING new entries.
-    // The individual report page will have its own instance for editing.
     if (entryId) {
-      // This should not happen from the main layout's "Log Time" button.
       console.error("Attempted to edit an entry from the main log time dialog.");
       return Promise.resolve({ success: false });
     }
-    return logTime(data, currentUser.id);
+    return logTime(data, currentUser!.id);
   };
-
+  
+  if (isLoading || !currentUser) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex items-center gap-2 text-xl font-semibold text-foreground">
+          <svg className="animate-spin h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -210,7 +207,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            {isHolidaysNavVisible && (
+            {isLoading ? (
+                <SidebarMenuItem>
+                    <Skeleton className="h-8 w-full" />
+                </SidebarMenuItem>
+             ) : isHolidaysNavVisible ? (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/holidays")}>
                   <Link href="/dashboard/holidays">
@@ -219,7 +220,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )}
+            ) : null}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
