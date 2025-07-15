@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { format } from "date-fns";
-import { MoreHorizontal, PlusCircle, FileUp, Download } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from 'xlsx-js-style';
 
@@ -27,6 +27,7 @@ import { DeleteMemberDialog } from "./components/delete-member-dialog";
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MemberContractTab } from './components/member-contract-tab';
+import { cn } from '@/lib/utils';
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
@@ -205,7 +206,7 @@ export default function MembersSettingsPage() {
           </div>
         </div>
         <Tabs defaultValue="all-members">
-            <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+            <TabsList className={cn("grid w-full", currentUser.role === 'Super Admin' ? "grid-cols-2 md:w-[400px]" : "grid-cols-1 w-[200px]")}>
                 <TabsTrigger value="all-members">All Members</TabsTrigger>
                 {currentUser.role === 'Super Admin' && <TabsTrigger value="member-contract">Member Contract</TabsTrigger>}
             </TabsList>
