@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function MyDashboard() {
   const { t } = useLanguage();
@@ -22,7 +23,7 @@ export function MyDashboard() {
   const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
-  const { isHolidaysNavVisible } = useSettings();
+  const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   
   const dailyHours = currentUser.contract.weeklyHours / 5;
 
@@ -208,7 +209,18 @@ export function MyDashboard() {
             </p>
           </CardContent>
         </Card>
-        {isHolidaysNavVisible && (
+        {isSettingsLoading ? (
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <Skeleton className="h-4 w-24"/>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-7 w-16 mb-1"/>
+                    <Skeleton className="h-3 w-32"/>
+                </CardContent>
+            </Card>
+        ) : isHolidaysNavVisible && (
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('holidaysTaken')}</CardTitle>

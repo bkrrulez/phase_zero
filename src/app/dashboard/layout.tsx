@@ -75,6 +75,7 @@ import { SettingsProvider, useSettings } from "./contexts/SettingsContext";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -110,7 +111,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
   const { logTime } = useTimeTracking();
-  const { isHolidaysNavVisible } = useSettings();
+  const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   const { t } = useLanguage();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
@@ -193,7 +194,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            {isHolidaysNavVisible && (
+            {isSettingsLoading ? (
+              <SidebarMenuItem>
+                <Skeleton className="h-8 w-full" />
+              </SidebarMenuItem>
+            ) : isHolidaysNavVisible && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/holidays")}>
                   <Link href="/dashboard/holidays">
