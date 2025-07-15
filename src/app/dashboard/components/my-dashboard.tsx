@@ -184,7 +184,7 @@ export function MyDashboard() {
         </div>
       </div>
 
-      <div className={cn("grid gap-4 md:grid-cols-2", isHolidaysNavVisible ? "lg:grid-cols-4" : "lg:grid-cols-2")}>
+      <div className={cn("grid gap-4 md:grid-cols-2", isHolidaysNavVisible ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('hoursThisMonth')}</CardTitle>
@@ -211,10 +211,33 @@ export function MyDashboard() {
             </p>
           </CardContent>
         </Card>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <CalendarHeart className="h-4 w-4 text-muted-foreground" />
+                {t('upcomingPublicHolidays')}
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                {upcomingHolidays.length > 0 ? (
+                    upcomingHolidays.map(holiday => (
+                    <div key={holiday.id} className="flex justify-between items-center text-xs">
+                        <p className="font-medium">{holiday.name}</p>
+                        <p className="text-muted-foreground">{format(holiday.dateObj, 'PP')}</p>
+                    </div>
+                    ))
+                ) : (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                    {t('noUpcomingPublicHolidays')}
+                    </p>
+                )}
+                </div>
+            </CardContent>
+        </Card>
         {isSettingsLoading ? (
             <Skeleton className="h-full w-full" />
         ) : isHolidaysNavVisible ? (
-          <>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('holidaysTaken')}</CardTitle>
@@ -227,31 +250,6 @@ export function MyDashboard() {
                     </p>
                 </CardContent>
             </Card>
-             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                  <CalendarHeart className="h-4 w-4 text-muted-foreground" />
-                  {t('upcomingPublicHolidays')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {upcomingHolidays.length > 0 ? (
-                    upcomingHolidays.map(holiday => (
-                      <div key={holiday.id} className="flex justify-between items-center text-xs">
-                        <p className="font-medium">{holiday.name}</p>
-                        <p className="text-muted-foreground">{format(holiday.dateObj, 'PP')}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-2">
-                      {t('noUpcomingPublicHolidays')}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </>
         ) : null}
       </div>
 
@@ -295,3 +293,5 @@ export function MyDashboard() {
     </div>
   )
 }
+
+    
