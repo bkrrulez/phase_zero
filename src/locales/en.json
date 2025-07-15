@@ -256,5 +256,9 @@
     "expectedHoursShort": "Expected {{hours}}h",
     "noUserSelectedTitle": "No User Selected",
     "noUserSelectedDescMulti": "Please select a user to view their calendar.",
-    "noUserSelectedDescSingle": "No user data available."
+    "noUserSelectedDescSingle": "No user data available.",
+    "dayDetailsTitle": "Time Entries for {{date}}",
+    "dayDetailsDesc": "A detailed breakdown of manually logged hours for this day.",
+    "frozenDateToastTitle": "Date is Frozen",
+    "frozenDateToastDesc": "This date is frozen by the Admin. Please contact your Supervisor for more information."
 }

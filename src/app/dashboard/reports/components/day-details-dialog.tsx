@@ -20,6 +20,7 @@ import { useMembers } from '../../contexts/MembersContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DayDetailsDialogProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
   const { freezeRules } = useAccessControl();
   const { teamMembers } = useMembers();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const isDateFrozenForUser = (userId: string, dateToCheck: Date) => {
     // Super Admins are never frozen
@@ -67,8 +69,8 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
     if (isFrozen) {
       toast({
         variant: 'destructive',
-        title: 'Date is Frozen',
-        description: 'This date is frozen by the Admin. Please contact your Supervisor for more information.',
+        title: t('frozenDateToastTitle'),
+        description: t('frozenDateToastDesc'),
       });
     } else {
       action();
@@ -79,9 +81,9 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Time Entries for {format(date, 'PPP')}</DialogTitle>
+          <DialogTitle>{t('dayDetailsTitle', { date: format(date, 'PPP') })}</DialogTitle>
           <DialogDescription>
-            A detailed breakdown of manually logged hours for this day.
+            {t('dayDetailsDesc')}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh]">
