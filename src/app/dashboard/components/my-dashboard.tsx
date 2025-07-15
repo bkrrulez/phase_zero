@@ -2,12 +2,12 @@
 'use client';
 
 import * as React from 'react';
-import { Clock, Users, BarChartHorizontal, CalendarHeart, MoreHorizontal, Download } from "lucide-react";
+import { Clock, Users, BarChartHorizontal, CalendarHeart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { TimeEntry, User } from "@/lib/types";
 import { MonthlyHoursChart } from "./monthly-chart";
-import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, isFuture, parseISO, isSameMonth, endOfMonth, isWithinInterval, getYear } from "date-fns";
+import { format, isSameDay, differenceInCalendarDays, addDays, startOfYear, endOfYear, max, min, getDay, getDaysInMonth, startOfMonth, parseISO, isSameMonth, endOfMonth, isWithinInterval, getYear } from "date-fns";
 import { useTimeTracking } from "@/app/dashboard/contexts/TimeTrackingContext";
 import { useHolidays } from "../contexts/HolidaysContext";
 import { useMembers } from '../contexts/MembersContext';
@@ -18,6 +18,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LogTimeDialog, LogTimeFormValues } from './log-time-dialog';
 import { DeleteTimeEntryDialog } from '../reports/components/delete-time-entry-dialog';
+import { DayDetailsDialog } from '../reports/components/day-details-dialog';
 
 export function MyDashboard() {
   const { t } = useLanguage();
@@ -29,6 +30,9 @@ export function MyDashboard() {
 
   const [editingEntry, setEditingEntry] = React.useState<TimeEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = React.useState<TimeEntry | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
+  const [selectedDayEntries, setSelectedDayEntries] = React.useState<TimeEntry[]>([]);
+  const [selectedDayForDialog, setSelectedDayForDialog] = React.useState<Date>(new Date());
   
   if (!currentUser) return null; // Should not happen if AuthProvider works correctly
 
@@ -188,10 +192,17 @@ export function MyDashboard() {
     if (!deletingEntry) return;
     await deleteTimeEntry(deletingEntry.id);
     setDeletingEntry(null);
+    setIsDetailsDialogOpen(false); // Also close day details dialog
   };
 
   const handleRowDoubleClick = (entry: TimeEntry) => {
-    setEditingEntry(entry);
+    const entryDate = new Date(entry.date);
+    const entriesForDay = timeEntries.filter(e =>
+      e.userId === currentUser.id && isSameDay(new Date(e.date), entryDate)
+    );
+    setSelectedDayEntries(entriesForDay);
+    setSelectedDayForDialog(entryDate);
+    setIsDetailsDialogOpen(true);
   };
 
   return (
@@ -234,9 +245,9 @@ export function MyDashboard() {
           <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                  <CalendarHeart className="h-4 w-4 text-muted-foreground" />
                   {t('upcomingPublicHolidays')}
                   </CardTitle>
+                  <CalendarHeart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                   <div className="space-y-2">
@@ -312,6 +323,19 @@ export function MyDashboard() {
         </div>
       </div>
       
+       <DayDetailsDialog 
+        isOpen={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        date={selectedDayForDialog}
+        entries={selectedDayEntries}
+        canEdit={true}
+        onEdit={(entry) => {
+            setIsDetailsDialogOpen(false);
+            setEditingEntry(entry);
+        }}
+        onDelete={(entry) => setDeletingEntry(entry)}
+      />
+
       {editingEntry && (
         <LogTimeDialog
           isOpen={!!editingEntry}
