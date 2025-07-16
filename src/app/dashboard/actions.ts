@@ -18,7 +18,7 @@ import {
   type AppNotification,
   type LogEntry,
 } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, subYears } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
@@ -945,6 +945,17 @@ export async function addSystemLog(message: string): Promise<LogEntry | null> {
         timestamp: new Date(result.rows[0].timestamp).toISOString(),
         message: result.rows[0].message
     };
+}
+
+export async function purgeOldSystemLogs(): Promise<number> {
+    const threeYearsAgo = subYears(new Date(), 3);
+    const result = await db.query('DELETE FROM system_logs WHERE timestamp < $1', [threeYearsAgo]);
+    const deletedCount = result.rowCount || 0;
+    if (deletedCount > 0) {
+        await addSystemLog(`System automatically purged ${deletedCount} log entries older than 3 years.`);
+    }
+    revalidatePath('/dashboard/settings/system-logs');
+    return deletedCount;
 }
 
 // ========== Global Settings ==========
