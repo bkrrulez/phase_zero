@@ -27,8 +27,11 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    const runPurgeCheck = async (currentLogs: LogEntry[]) => {
+    const runPurgeCheck = async () => {
         if (currentUser?.role !== 'Super Admin') return;
+
+        const currentLogs = await getSystemLogs();
+        setLogs(currentLogs);
 
         const lastPurgeLog = currentLogs.find(log => log.message.startsWith('System automatically purged'));
 
@@ -48,7 +51,8 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
                 if (deletedCount > 0) {
                     console.log(`Successfully purged ${deletedCount} old log entries.`);
                     // We need to re-fetch logs if any were purged to update the view
-                    await fetchLogs();
+                    const newLogs = await getSystemLogs();
+                    setLogs(newLogs);
                 } else {
                     console.log('No old log entries to purge.');
                 }
@@ -59,12 +63,9 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
     };
 
     if (currentUser) {
-        // Fetch logs first, then decide whether to purge
-        fetchLogs().then(fetchedLogs => {
-            runPurgeCheck(fetchedLogs);
-        });
+        runPurgeCheck();
     }
-  }, [currentUser, fetchLogs]);
+  }, [currentUser]);
 
   const logAction = async (message: string) => {
     const newLog = await addSystemLog(message);
