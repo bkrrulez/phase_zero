@@ -5,6 +5,7 @@ import * as React from 'react';
 import { type LogEntry } from '@/lib/types';
 import { getSystemLogs, addSystemLog, purgeOldSystemLogs } from '../actions';
 import { useAuth } from './AuthContext';
+import { differenceInHours } from 'date-fns';
 
 interface SystemLogContextType {
   logs: LogEntry[];
@@ -13,8 +14,7 @@ interface SystemLogContextType {
 
 const SystemLogContext = React.createContext<SystemLogContextType | undefined>(undefined);
 
-const LAST_PURGE_KEY = 'lastSystemLogPurge';
-const PURGE_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+const PURGE_INTERVAL_HOURS = 24;
 
 export function SystemLogProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = React.useState<LogEntry[]>([]);
@@ -23,17 +23,25 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
   const fetchLogs = React.useCallback(async () => {
     const fetchedLogs = await getSystemLogs();
     setLogs(fetchedLogs);
+    return fetchedLogs;
   }, []);
 
   React.useEffect(() => {
-    const runPurgeCheck = async () => {
+    const runPurgeCheck = async (currentLogs: LogEntry[]) => {
         if (currentUser?.role !== 'Super Admin') return;
 
-        const lastPurgeStr = localStorage.getItem(LAST_PURGE_KEY);
-        const lastPurgeTime = lastPurgeStr ? parseInt(lastPurgeStr, 10) : 0;
-        const now = Date.now();
+        const lastPurgeLog = currentLogs.find(log => log.message.startsWith('System automatically purged'));
 
-        if (now - lastPurgeTime > PURGE_INTERVAL) {
+        let shouldPurge = true;
+        if (lastPurgeLog) {
+            const lastPurgeTime = new Date(lastPurgeLog.timestamp);
+            const hoursSinceLastPurge = differenceInHours(new Date(), lastPurgeTime);
+            if (hoursSinceLastPurge < PURGE_INTERVAL_HOURS) {
+                shouldPurge = false;
+            }
+        }
+        
+        if (shouldPurge) {
             console.log('Performing daily check for old system logs to purge...');
             try {
                 const deletedCount = await purgeOldSystemLogs();
@@ -44,7 +52,6 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     console.log('No old log entries to purge.');
                 }
-                localStorage.setItem(LAST_PURGE_KEY, String(now));
             } catch (error) {
                 console.error('Failed to purge old system logs:', error);
             }
@@ -52,13 +59,12 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
     };
 
     if (currentUser) {
-        runPurgeCheck();
+        // Fetch logs first, then decide whether to purge
+        fetchLogs().then(fetchedLogs => {
+            runPurgeCheck(fetchedLogs);
+        });
     }
   }, [currentUser, fetchLogs]);
-
-  React.useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
 
   const logAction = async (message: string) => {
     const newLog = await addSystemLog(message);
