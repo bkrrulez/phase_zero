@@ -21,7 +21,7 @@ export const initialData: InitialData = {
   teamMembers: [
     {
       id: 'user-admin',
-      name: 'Bikramjit Chowdhury',
+      name: 'Admin Account',
       email: 'admin@example.com',
       role: 'Super Admin',
       avatar: 'https://placehold.co/100x100.png',
