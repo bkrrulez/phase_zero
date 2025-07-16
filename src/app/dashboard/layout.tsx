@@ -390,14 +390,14 @@ function DataProviders({
 }) {
   return (
     <LanguageProvider>
-      <SystemLogProvider>
-        <TeamsProvider>
-          <ProjectsProvider>
-            <TasksProvider>
-              <MembersProvider>
-                <NotificationsProvider>
-                  <PushMessagesProvider>
-                    <AuthProvider>
+      <TeamsProvider>
+        <ProjectsProvider>
+          <TasksProvider>
+            <MembersProvider>
+              <NotificationsProvider>
+                <PushMessagesProvider>
+                  <AuthProvider>
+                    <SystemLogProvider>
                       <SettingsProvider>
                         <HolidaysProvider>
                           <TimeTrackingProvider>
@@ -407,14 +407,14 @@ function DataProviders({
                           </TimeTrackingProvider>
                         </HolidaysProvider>
                       </SettingsProvider>
-                    </AuthProvider>
-                  </PushMessagesProvider>
-                </NotificationsProvider>
-              </MembersProvider>
-            </TasksProvider>
-          </ProjectsProvider>
-        </TeamsProvider>
-      </SystemLogProvider>
+                    </SystemLogProvider>
+                  </AuthProvider>
+                </PushMessagesProvider>
+              </NotificationsProvider>
+            </MembersProvider>
+          </TasksProvider>
+        </ProjectsProvider>
+      </TeamsProvider>
     </LanguageProvider>
   )
 }
