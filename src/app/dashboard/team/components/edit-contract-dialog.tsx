@@ -106,21 +106,12 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
 
 
   const roleWatcher = form.watch('role');
-  const reportsToWatcher = form.watch('reportsTo');
 
   useEffect(() => {
     if (roleWatcher === 'Super Admin') {
       form.setValue('reportsTo', undefined);
     }
-    if (roleWatcher === 'Employee' && reportsToWatcher) {
-      const manager = teamMembers.find(m => m.id === reportsToWatcher);
-      if (manager && manager.teamId) {
-        form.setValue('teamId', manager.teamId);
-      } else {
-        form.setValue('teamId', undefined);
-      }
-    }
-  }, [roleWatcher, reportsToWatcher, form, teamMembers]);
+  }, [roleWatcher, form]);
 
   const managers = Array.from(new Map(teamMembers.filter(m => (m.role === 'Team Lead' || m.role === 'Super Admin') && m.id !== user?.id).map(item => [item.id, item])).values());
 
@@ -234,7 +225,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Team</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''} disabled={roleWatcher === 'Employee'}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a team" />

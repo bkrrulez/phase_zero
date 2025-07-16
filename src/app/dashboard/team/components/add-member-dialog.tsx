@@ -90,22 +90,12 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   });
 
   const roleWatcher = form.watch('role');
-  const reportsToWatcher = form.watch('reportsTo');
 
   React.useEffect(() => {
     if (roleWatcher === 'Super Admin') {
       form.setValue('reportsTo', undefined);
     }
-    
-    if (roleWatcher === 'Employee' && reportsToWatcher) {
-        const manager = teamMembers.find(m => m.id === reportsToWatcher);
-        if (manager && manager.teamId) {
-            form.setValue('teamId', manager.teamId);
-        } else {
-            form.setValue('teamId', undefined);
-        }
-    }
-  }, [roleWatcher, reportsToWatcher, form, teamMembers]);
+  }, [roleWatcher, form]);
   
   const availableRoles = React.useMemo(() => {
     if (!currentUser) return [];
@@ -229,7 +219,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Team</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''} disabled={roleWatcher === 'Employee'}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a team" />
