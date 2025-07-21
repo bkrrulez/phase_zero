@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { sendPasswordChangeEmail } from "@/lib/mail";
 import { ChangePasswordDialog } from "../team/components/change-password-dialog";
 import { useAuth } from "../contexts/AuthContext";
 import { useMembers } from "../contexts/MembersContext";
 import { ChangePhotoDialog } from "./components/change-photo-dialog";
 import { useLanguage } from "../contexts/LanguageContext";
+import { updateUserPasswordAndNotify } from "../actions";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -28,7 +28,7 @@ export default function ProfilePage() {
     if (!currentUser) return;
     setIsSavingPassword(true);
     try {
-      await sendPasswordChangeEmail({ to: currentUser.email, name: currentUser.name });
+      await updateUserPasswordAndNotify({ email: currentUser.email, name: currentUser.name, password });
       toast({
         title: "Password Changed",
         description: `Your password has been changed and a notification email has been sent.`,

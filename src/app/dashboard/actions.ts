@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { sendHolidayRequestUpdateEmail } from '@/lib/mail';
+import { sendHolidayRequestUpdateEmail, sendPasswordResetConfirmationEmail } from '@/lib/mail';
 import {
   type User,
   type TimeEntry,
@@ -236,6 +236,12 @@ export async function deleteUser(userId: string): Promise<void> {
         client.release();
     }
 }
+
+export async function updateUserPasswordAndNotify({ email, name, password }: { email: string; name: string, password: string}): Promise<void> {
+    await db.query('UPDATE users SET password = $1 WHERE email = $2', [password, email]);
+    await sendPasswordResetConfirmationEmail({ user: { name, email } as User, teamLead: null });
+}
+
 
 export async function resetUserPassword(email: string, newPassword: string): Promise<{user: User, teamLead: User | null} | null> {
     const client = await db.connect();

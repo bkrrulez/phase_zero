@@ -15,7 +15,7 @@ import { type User } from "@/lib/mock-data";
 import { EditMemberDialog } from "./edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./change-password-dialog";
-import { sendPasswordChangeEmail } from "@/lib/mail";
+import { updateUserPasswordAndNotify } from "@/app/dashboard/actions";
 import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -69,7 +69,7 @@ export function TeamMembers() {
 
         setIsSavingPassword(true);
         try {
-            await sendPasswordChangeEmail({ to: changingPasswordUser.email, name: changingPasswordUser.name });
+            await updateUserPasswordAndNotify({ email: changingPasswordUser.email, name: changingPasswordUser.name, password: password });
             toast({
                 title: t('passwordChanged'),
                 description: t('passwordChangedDesc', { name: changingPasswordUser.name }),

@@ -18,7 +18,7 @@ import { EditMemberDialog } from "@/app/dashboard/team/components/edit-contract-
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "@/app/dashboard/team/components/add-member-dialog";
 import { ChangePasswordDialog } from "@/app/dashboard/team/components/change-password-dialog";
-import { sendPasswordChangeEmail } from "@/lib/mail";
+import { updateUserPasswordAndNotify } from "@/app/dashboard/actions";
 import { useMembers } from "../../contexts/MembersContext";
 import { useTeams } from "../../contexts/TeamsContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
@@ -87,7 +87,7 @@ export default function MembersSettingsPage() {
 
         setIsSavingPassword(true);
         try {
-            await sendPasswordChangeEmail({ to: changingPasswordUser.email, name: changingPasswordUser.name });
+            await updateUserPasswordAndNotify({ email: changingPasswordUser.email, name: changingPasswordUser.name, password: password });
             toast({
                 title: t('passwordChanged'),
                 description: t('passwordChangedDesc', { name: changingPasswordUser.name }),
