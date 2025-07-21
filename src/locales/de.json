@@ -219,7 +219,7 @@
     "downloadContract": "Vertrag herunterladen",
     "memberContractTab": "Mitgliedervertrag",
     "contactSupportTitle": "Support kontaktieren",
-    "contactSupportDesc": "Bitte kontaktieren Sie den Ersteller dieser Anwendung für weitere Hilfe, Unterstützung oder um Probleme unter der unten angegebenen E-Mail-Adresse zu melden-",
+    "contactSupportDesc": "Für weitere Hilfe, Unterstützung oder um Probleme im Zusammenhang mit dieser Anwendung zu melden, wenden Sie sich bitte an den Entwickler:",
     "uploadContractTitle": "Vertrag hochladen",
     "uploadContractDesc": "Wählen Sie ein Mitglied aus und laden Sie dessen Vertrag im PDF-Format hoch. Dies überschreibt jeden bestehenden Vertrag.",
     "selectMemberLabel": "Mitglied auswählen",
@@ -262,3 +262,5 @@
     "frozenDateToastTitle": "Datum ist gesperrt",
     "frozenDateToastDesc": "Dieses Datum wurde vom Administrator gesperrt. Bitte kontaktieren Sie Ihren Vorgesetzten für weitere Informationen."
 }
+
+    

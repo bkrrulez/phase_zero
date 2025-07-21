@@ -219,7 +219,7 @@
     "downloadContract": "Download Contract",
     "memberContractTab": "Member Contract",
     "contactSupportTitle": "Contact for Support",
-    "contactSupportDesc": "Please contact the creator of this application for further help, support or to report issues on the below email id-",
+    "contactSupportDesc": "For further assistance, support, or to report any issues related to this application, please contact the developer:",
     "uploadContractTitle": "Upload Contract",
     "uploadContractDesc": "Select a member and upload their contract in PDF format. This will overwrite any existing contract.",
     "selectMemberLabel": "Select Member",
@@ -262,3 +262,5 @@
     "frozenDateToastTitle": "Date is Frozen",
     "frozenDateToastDesc": "This date is frozen by the Admin. Please contact your Supervisor for more information."
 }
+
+    
