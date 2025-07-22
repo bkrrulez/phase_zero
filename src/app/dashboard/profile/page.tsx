@@ -112,7 +112,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="end-date">{t('employmentEndDate')}</Label>
-                <Input id="end-date" type="date" defaultValue={currentUser.contract.endDate ?? ''} disabled={currentUser.role === 'Employee'} />
+                <Input id="end-date" type="date" value={currentUser.contract.endDate ?? ''} disabled={currentUser.role === 'Employee'} />
               </div>
             </div>
           </CardContent>

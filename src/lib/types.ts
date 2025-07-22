@@ -21,6 +21,7 @@ export type User = {
     endDate: string | null;
     weeklyHours: number;
   },
+  contracts: Omit<Contract, 'userId'>[];
   contractPdf?: string | null;
 };
 
@@ -122,8 +123,8 @@ export type LogEntry = {
 };
 
 export type InitialData = {
-  teamMembers: User[];
-  contracts: Contract[];
+  teamMembers: Omit<User, 'contract' | 'contracts'>[];
+  contracts: Omit<Contract, 'userId'>[];
   timeEntries: TimeEntry[];
   holidayRequests: HolidayRequest[];
   projects: Project[];

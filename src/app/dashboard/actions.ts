@@ -25,22 +25,39 @@ import { revalidatePath } from 'next/cache';
 // ========== Mappers ==========
 // Map DB rows to application types
 
-const mapDbUserToUser = (dbUser: any): User => ({
-  id: dbUser.id,
-  name: dbUser.name,
-  email: dbUser.email,
-  role: dbUser.role,
-  avatar: dbUser.avatar,
-  reportsTo: dbUser.reports_to,
-  teamId: dbUser.team_id,
-  associatedProjectIds: dbUser.associated_project_ids || [],
-  contract: { // Assuming the primary/latest contract info is joined here for convenience
-    startDate: format(new Date(dbUser.contract_start_date), 'yyyy-MM-dd'),
-    endDate: dbUser.contract_end_date ? format(new Date(dbUser.contract_end_date), 'yyyy-MM-dd') : null,
-    weeklyHours: dbUser.contract_weekly_hours,
-  },
-  contractPdf: dbUser.contract_pdf,
-});
+const mapDbUserToUser = (dbUser: any): User => {
+    // Sort contracts by end date descending (nulls last) to find the most current one
+    const sortedContracts = (dbUser.contracts || []).sort((a: any, b: any) => {
+        if (a.end_date === null) return -1; // a is ongoing, should come first
+        if (b.end_date === null) return 1;  // b is ongoing, should come first
+        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+    });
+
+    const primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
+    
+    return {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role,
+        avatar: dbUser.avatar,
+        reportsTo: dbUser.reports_to,
+        teamId: dbUser.team_id,
+        associatedProjectIds: dbUser.associated_project_ids || [],
+        contract: {
+            startDate: format(new Date(primaryContract.start_date), 'yyyy-MM-dd'),
+            endDate: primaryContract.end_date ? format(new Date(primaryContract.end_date), 'yyyy-MM-dd') : null,
+            weeklyHours: primaryContract.weekly_hours,
+        },
+        contracts: (dbUser.contracts || []).map((c: any) => ({
+             id: c.id,
+             startDate: format(new Date(c.start_date), 'yyyy-MM-dd'),
+             endDate: c.end_date ? format(new Date(c.end_date), 'yyyy-MM-dd') : null,
+             weeklyHours: c.weekly_hours,
+        })),
+        contractPdf: dbUser.contract_pdf,
+    };
+};
 
 const mapDbContractToContract = (dbContract: any): Contract => ({
     id: dbContract.id,
@@ -118,7 +135,10 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 
 export async function getUsers(): Promise<User[]> {
     const result = await db.query(`
-        SELECT u.*, COALESCE(array_agg(up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids
+        SELECT 
+            u.*, 
+            COALESCE(array_agg(up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids,
+            (SELECT json_agg(c.*) FROM contracts c WHERE c.user_id = u.id) as contracts
         FROM users u
         LEFT JOIN user_projects up ON u.id = up.user_id
         GROUP BY u.id
@@ -142,12 +162,14 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar' | 'contrac
             [id, name, email, password, role, avatar, reportsTo, teamId]
         );
         
+        let insertedContracts = [];
         for (const contract of contracts) {
-            const contractId = `contract-${Date.now()}`;
-            await client.query(
-                `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5)`,
+            const contractId = `contract-${Date.now()}-${Math.random()}`;
+            const contractRes = await client.query(
+                `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
                 [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
             );
+            insertedContracts.push(contractRes.rows[0]);
         }
 
         if (associatedProjectIds && associatedProjectIds.length > 0) {
@@ -161,11 +183,9 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar' | 'contrac
         revalidatePath('/dashboard/team');
         const newUser = mapDbUserToUser({
             ...insertedUserRes.rows[0],
-            contract_start_date: contracts[0].startDate,
-            contract_end_date: contracts[0].endDate,
-            contract_weekly_hours: contracts[0].weeklyHours
+            contracts: insertedContracts,
+            associated_project_ids: associatedProjectIds
         });
-        newUser.associatedProjectIds = associatedProjectIds;
         return newUser;
     } catch (error) {
         await client.query('ROLLBACK');
@@ -177,7 +197,7 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar' | 'contrac
 }
 
 export async function updateUser(updatedUser: User): Promise<User | null> {
-    const { id, name, email, role, reportsTo, teamId, associatedProjectIds, contract, avatar, contractPdf } = updatedUser;
+    const { id, name, email, role, reportsTo, teamId, associatedProjectIds, contracts, avatar, contractPdf } = updatedUser;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -190,17 +210,33 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
             [name, email, role, reportsTo, teamId, avatar, contractPdf, id]
         );
         
-        // This is simplified. A real app would handle contract updates separately.
-        // For now, we assume the primary contract is what's passed in the User object.
-        const contractRes = await client.query(
-            'SELECT id FROM contracts WHERE user_id = $1 ORDER BY end_date DESC NULLS FIRST LIMIT 1', [id]
-        );
-        if (contractRes.rows.length > 0) {
-            const contractId = contractRes.rows[0].id;
-             await client.query(
-                `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4`,
-                [contract.startDate, contract.endDate, contract.weeklyHours, contractId]
-            );
+        // Full sync of contracts
+        const existingContractsRes = await client.query('SELECT id FROM contracts WHERE user_id = $1', [id]);
+        const existingContractIds = existingContractsRes.rows.map(r => r.id);
+        const updatedContractIds = contracts.map(c => c.id).filter(Boolean);
+
+        // Delete contracts that are no longer in the list
+        const contractsToDelete = existingContractIds.filter(cid => !updatedContractIds.includes(cid));
+        if (contractsToDelete.length > 0) {
+            await client.query('DELETE FROM contracts WHERE id = ANY($1::text[])', [contractsToDelete]);
+        }
+        
+        let finalContracts = [];
+        for (const contract of contracts) {
+            if (contract.id) { // Update existing
+                const contractRes = await client.query(
+                    `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4 RETURNING *`,
+                    [contract.startDate, contract.endDate, contract.weeklyHours, contract.id]
+                );
+                 finalContracts.push(contractRes.rows[0]);
+            } else { // Add new
+                 const contractId = `contract-${Date.now()}-${Math.random()}`;
+                 const contractRes = await client.query(
+                    `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                    [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
+                );
+                finalContracts.push(contractRes.rows[0]);
+            }
         }
 
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [id]);
@@ -215,14 +251,13 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         revalidatePath('/dashboard/settings/members');
         revalidatePath('/dashboard/team');
         revalidatePath('/dashboard/profile');
+        revalidatePath('/dashboard/contracts');
         
         const finalUser = mapDbUserToUser({
             ...res.rows[0],
-            contract_start_date: contract.startDate,
-            contract_end_date: contract.endDate,
-            contract_weekly_hours: contract.weeklyHours
+            contracts: finalContracts,
+            associated_project_ids: associatedProjectIds
         });
-        finalUser.associatedProjectIds = associatedProjectIds;
         return finalUser;
     } catch (error) {
         await client.query('ROLLBACK');
