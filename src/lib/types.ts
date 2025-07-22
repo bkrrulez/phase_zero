@@ -16,7 +16,11 @@ export type User = {
   reportsTo?: string; // User ID of manager
   teamId?: string;
   associatedProjectIds?: string[];
-  contracts: Contract[];
+  contract: { // This is now a single object representing the primary contract for simplified access
+    startDate: string;
+    endDate: string | null;
+    weeklyHours: number;
+  },
   contractPdf?: string | null;
 };
 

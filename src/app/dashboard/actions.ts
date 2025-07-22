@@ -17,6 +17,7 @@ import {
   type UserMessageState,
   type AppNotification,
   type LogEntry,
+  type Contract,
 } from '@/lib/types';
 import { format, subYears } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -33,12 +34,20 @@ const mapDbUserToUser = (dbUser: any): User => ({
   reportsTo: dbUser.reports_to,
   teamId: dbUser.team_id,
   associatedProjectIds: dbUser.associated_project_ids || [],
-  contract: {
+  contract: { // Assuming the primary/latest contract info is joined here for convenience
     startDate: format(new Date(dbUser.contract_start_date), 'yyyy-MM-dd'),
     endDate: dbUser.contract_end_date ? format(new Date(dbUser.contract_end_date), 'yyyy-MM-dd') : null,
     weeklyHours: dbUser.contract_weekly_hours,
   },
   contractPdf: dbUser.contract_pdf,
+});
+
+const mapDbContractToContract = (dbContract: any): Contract => ({
+    id: dbContract.id,
+    userId: dbContract.user_id,
+    startDate: format(new Date(dbContract.start_date), 'yyyy-MM-dd'),
+    endDate: dbContract.end_date ? format(new Date(dbContract.end_date), 'yyyy-MM-dd') : null,
+    weeklyHours: dbContract.weekly_hours
 });
 
 const mapDbProjectToProject = (dbProject: any): Project => ({
@@ -118,8 +127,8 @@ export async function getUsers(): Promise<User[]> {
     return result.rows.map(mapDbUserToUser);
 }
 
-export async function addUser(newUserData: Omit<User, 'id' | 'avatar'>): Promise<User | null> {
-    const { name, email, role, reportsTo, teamId, associatedProjectIds, contract } = newUserData;
+export async function addUser(newUserData: Omit<User, 'id' | 'avatar' | 'contract'> & { contracts: Omit<Contract, 'id'|'userId'>[] }): Promise<User | null> {
+    const { name, email, role, reportsTo, teamId, associatedProjectIds, contracts } = newUserData;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -128,10 +137,18 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar'>): Promise
         const avatar = `https://placehold.co/100x100.png`;
 
         const insertedUserRes = await client.query(
-            `INSERT INTO users (id, name, email, password, role, avatar, reports_to, team_id, contract_start_date, contract_end_date, contract_weekly_hours)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-            [id, name, email, password, role, avatar, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours]
+            `INSERT INTO users (id, name, email, password, role, avatar, reports_to, team_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+            [id, name, email, password, role, avatar, reportsTo, teamId]
         );
+        
+        for (const contract of contracts) {
+            const contractId = `contract-${Date.now()}`;
+            await client.query(
+                `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5)`,
+                [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
+            );
+        }
 
         if (associatedProjectIds && associatedProjectIds.length > 0) {
             for (const projectId of associatedProjectIds) {
@@ -142,7 +159,12 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar'>): Promise
         
         revalidatePath('/dashboard/settings/members');
         revalidatePath('/dashboard/team');
-        const newUser = mapDbUserToUser(insertedUserRes.rows[0]);
+        const newUser = mapDbUserToUser({
+            ...insertedUserRes.rows[0],
+            contract_start_date: contracts[0].startDate,
+            contract_end_date: contracts[0].endDate,
+            contract_weekly_hours: contracts[0].weeklyHours
+        });
         newUser.associatedProjectIds = associatedProjectIds;
         return newUser;
     } catch (error) {
@@ -163,11 +185,23 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         const res = await client.query(
             `UPDATE users SET
                 name = $1, email = $2, role = $3, reports_to = $4, team_id = $5,
-                contract_start_date = $6, contract_end_date = $7, contract_weekly_hours = $8,
-                avatar = $9, contract_pdf = $10
-             WHERE id = $11 RETURNING *`,
-            [name, email, role, reportsTo, teamId, contract.startDate, contract.endDate, contract.weeklyHours, avatar, contractPdf, id]
+                avatar = $6, contract_pdf = $7
+             WHERE id = $8 RETURNING *`,
+            [name, email, role, reportsTo, teamId, avatar, contractPdf, id]
         );
+        
+        // This is simplified. A real app would handle contract updates separately.
+        // For now, we assume the primary contract is what's passed in the User object.
+        const contractRes = await client.query(
+            'SELECT id FROM contracts WHERE user_id = $1 ORDER BY end_date DESC NULLS FIRST LIMIT 1', [id]
+        );
+        if (contractRes.rows.length > 0) {
+            const contractId = contractRes.rows[0].id;
+             await client.query(
+                `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4`,
+                [contract.startDate, contract.endDate, contract.weeklyHours, contractId]
+            );
+        }
 
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [id]);
         if (associatedProjectIds && associatedProjectIds.length > 0) {
@@ -182,7 +216,12 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         revalidatePath('/dashboard/team');
         revalidatePath('/dashboard/profile');
         
-        const finalUser = mapDbUserToUser(res.rows[0]);
+        const finalUser = mapDbUserToUser({
+            ...res.rows[0],
+            contract_start_date: contract.startDate,
+            contract_end_date: contract.endDate,
+            contract_weekly_hours: contract.weeklyHours
+        });
         finalUser.associatedProjectIds = associatedProjectIds;
         return finalUser;
     } catch (error) {
@@ -214,6 +253,7 @@ export async function deleteUser(userId: string): Promise<void> {
         await client.query('UPDATE users SET reports_to = NULL WHERE reports_to = $1', [userId]);
 
         // Delete associated records in other tables to maintain referential integrity
+        await client.query('DELETE FROM contracts WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM time_entries WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM holiday_requests WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [userId]);
@@ -395,6 +435,37 @@ export async function deleteTimeEntry(entryId: string): Promise<void> {
     await db.query('DELETE FROM time_entries WHERE id = $1', [entryId]);
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/reports');
+}
+
+// ========== Contracts ==========
+
+export async function getContracts(): Promise<Contract[]> {
+    const result = await db.query('SELECT * FROM contracts ORDER BY end_date DESC');
+    return result.rows.map(mapDbContractToContract);
+}
+
+export async function addContract(contractData: Omit<Contract, 'id'>): Promise<void> {
+    const { userId, startDate, endDate, weeklyHours } = contractData;
+    const id = `contract-${Date.now()}`;
+    await db.query(
+        'INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5)',
+        [id, userId, startDate, endDate, weeklyHours]
+    );
+    revalidatePath('/dashboard/contracts');
+}
+
+export async function updateContract(contractId: string, contractData: Omit<Contract, 'id'>): Promise<void> {
+    const { userId, startDate, endDate, weeklyHours } = contractData;
+    await db.query(
+        'UPDATE contracts SET user_id = $1, start_date = $2, end_date = $3, weekly_hours = $4 WHERE id = $5',
+        [userId, startDate, endDate, weeklyHours, contractId]
+    );
+    revalidatePath('/dashboard/contracts');
+}
+
+export async function deleteContract(contractId: string): Promise<void> {
+    await db.query('DELETE FROM contracts WHERE id = $1', [contractId]);
+    revalidatePath('/dashboard/contracts');
 }
 
 

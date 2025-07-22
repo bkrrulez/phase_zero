@@ -78,6 +78,7 @@ import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContractsProvider } from "./contexts/ContractsContext";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -410,11 +411,13 @@ function DataProviders({
                     <SystemLogProvider>
                       <SettingsProvider>
                         <HolidaysProvider>
-                          <TimeTrackingProvider>
-                            <AccessControlProvider>
-                              <LayoutContent>{children}</LayoutContent>
-                            </AccessControlProvider>
-                          </TimeTrackingProvider>
+                          <ContractsProvider>
+                            <TimeTrackingProvider>
+                              <AccessControlProvider>
+                                <LayoutContent>{children}</LayoutContent>
+                              </AccessControlProvider>
+                            </TimeTrackingProvider>
+                          </ContractsProvider>
                         </HolidaysProvider>
                       </SettingsProvider>
                     </SystemLogProvider>
