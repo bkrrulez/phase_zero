@@ -103,7 +103,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         remarks: entryToEdit.remarks || '',
       });
       
-      // Check if the date of the entry being edited is frozen
       if (isDateFrozen(entryDate)) {
         setIsFormDisabled(true);
       } else {
@@ -128,9 +127,22 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   const [tempDate, setTempDate] = useState<Date>();
 
   const { projects } = useProjects();
-  const { tasks } = useTasks();
+  const { tasks: allTasks } = useTasks();
 
   const availableProjects = projects.filter(p => targetUser?.associatedProjectIds?.includes(p.id));
+
+  const selectedProjectName = form.watch("project");
+  
+  const availableTasks = React.useMemo(() => {
+    if (!selectedProjectName) return [];
+    const selectedProject = availableProjects.find(p => p.name === selectedProjectName);
+    if (!selectedProject || !selectedProject.taskIds) return [];
+    return allTasks.filter(task => selectedProject.taskIds?.includes(task.id));
+  }, [selectedProjectName, availableProjects, allTasks]);
+
+  useEffect(() => {
+    form.setValue('task', '');
+  }, [selectedProjectName, form]);
 
   async function onSubmit(data: LogTimeFormValues) {
     const { success } = await onSave(data, entryToEdit?.id);
@@ -271,14 +283,14 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Task</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProjectName}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a task" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {tasks.map((task) => (
+                        {availableTasks.map((task) => (
                           <SelectItem key={task.id} value={task.name}>{task.name}</SelectItem>
                         ))}
                       </SelectContent>
