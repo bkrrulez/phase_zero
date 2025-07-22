@@ -59,7 +59,7 @@
     "noUpcomingPublicHolidays": "Keine kommenden Feiertage.",
     "teamDashboardTitle": "Team-Dashboard",
     "teamDashboardSubtitle": "Eine Übersicht über die Leistung Ihres Teams in diesem Monat.",
-    "teamMembersTitle": "Teammitglieder",
+    "teamMembersTitle": "Team Mitglieder",
     "teamMembersDesc": "Anzahl der aktiven Mitglieder",
     "totalHoursLoggedTitle": "Gesamte protokollierte Stunden",
     "totalHoursLoggedDesc": "Im gesamten Team diesen Monat",
@@ -245,7 +245,6 @@
     "contractDeletedFor": "Der Vertrag für {{name}} wurde entfernt.",
     "contractDeleteError": "Der Vertrag konnte nicht gelöscht werden.",
     "teamPageSubtitle": "Verwalten Sie Ihre Teammitglieder und deren Details.",
-    "teamMembersTabTitle": "Teammitglieder",
     "teamMembersTabDesc": "Eine Liste aller Mitarbeiter in Ihrem Team.",
     "noMembersToDisplay": "Keine Mitglieder zum Anzeigen.",
     "userCalendar": "Kalender von {{name}}",
@@ -260,7 +259,6 @@
     "dayDetailsTitle": "Zeiteinträge für {{date}}",
     "dayDetailsDesc": "Eine detaillierte Aufschlüsselung der manuell protokollierten Stunden für diesen Tag.",
     "frozenDateToastTitle": "Datum ist gesperrt",
-    "frozenDateToastDesc": "Dieses Datum wurde vom Administrator gesperrt. Bitte kontaktieren Sie Ihren Vorgesetzten für weitere Informationen."
+    "frozenDateToastDesc": "Dieses Datum wurde vom Administrator gesperrt. Bitte kontaktieren Sie Ihren Vorgesetzten für weitere Informationen.",
+    "contracts": "Verträge"
 }
-
-    

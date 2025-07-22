@@ -21,6 +21,7 @@ import {
   Shield,
   ScrollText,
   LifeBuoy,
+  FileText,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -269,7 +270,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                             </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                      {(currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead') && (
+                      {(currentUser.role === 'Team Lead' || currentUser.role === 'Super Admin') && (
                         <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/access-control")}>
                               <Link href="/dashboard/settings/access-control">
@@ -280,6 +281,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                       )}
                       {currentUser.role === 'Super Admin' && (
                         <>
+                          <SidebarMenuItem>
+                              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/contracts")}>
+                                  <Link href="/dashboard/settings/contracts">
+                                      <FileText /> {t('contracts')}
+                                  </Link>
+                              </SidebarMenuButton>
+                          </SidebarMenuItem>
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/holidays")}>
                                 <Link href="/dashboard/settings/holidays">

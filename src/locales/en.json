@@ -245,7 +245,6 @@
     "contractDeletedFor": "Contract for {{name}} has been removed.",
     "contractDeleteError": "Failed to delete the contract.",
     "teamPageSubtitle": "Manage your team members and their details.",
-    "teamMembersTabTitle": "Team Members",
     "teamMembersTabDesc": "A list of all employees in your team.",
     "noMembersToDisplay": "No members to display.",
     "userCalendar": "{{name}}'s Calendar",
@@ -260,7 +259,6 @@
     "dayDetailsTitle": "Time Entries for {{date}}",
     "dayDetailsDesc": "A detailed breakdown of manually logged hours for this day.",
     "frozenDateToastTitle": "Date is Frozen",
-    "frozenDateToastDesc": "This date is frozen by the Admin. Please contact your Supervisor for more information."
+    "frozenDateToastDesc": "This date is frozen by the Admin. Please contact your Supervisor for more information.",
+    "contracts": "Contracts"
 }
-
-    
