@@ -105,7 +105,7 @@ export default function TeamsSettingsPage() {
                                 <TableRow>
                                     <TableHead>{t('team')}</TableHead>
                                     <TableHead>{t('teamLead')}</TableHead>
-                                    <TableHead>{t('teamMembers')}</TableHead>
+                                    <TableHead>{t('teamMembersTitle')}</TableHead>
                                     <TableHead>{t('projects')}</TableHead>
                                     {canManageTeams && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
