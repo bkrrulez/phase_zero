@@ -260,5 +260,13 @@
     "dayDetailsDesc": "A detailed breakdown of manually logged hours for this day.",
     "frozenDateToastTitle": "Date is Frozen",
     "frozenDateToastDesc": "This date is frozen by the Admin. Please contact your Supervisor for more information.",
-    "contracts": "Contracts"
+    "contracts": "Contracts",
+    "contractsSubtitle": "View and manage all employment contracts.",
+    "allContracts": "All Contracts",
+    "addContract": "+ Add Contract",
+    "filterByUser": "Filter by User",
+    "allContractsDesc": "A list of all contracts in the system.",
+    "noContractsFound": "No contracts found for the selected user."
 }
+
+    

@@ -260,5 +260,13 @@
     "dayDetailsDesc": "Eine detaillierte Aufschlüsselung der manuell protokollierten Stunden für diesen Tag.",
     "frozenDateToastTitle": "Datum ist gesperrt",
     "frozenDateToastDesc": "Dieses Datum wurde vom Administrator gesperrt. Bitte kontaktieren Sie Ihren Vorgesetzten für weitere Informationen.",
-    "contracts": "Verträge"
+    "contracts": "Verträge",
+    "contractsSubtitle": "Alle Arbeitsverträge anzeigen und verwalten.",
+    "allContracts": "Alle Verträge",
+    "addContract": "+ Vertrag hinzufügen",
+    "filterByUser": "Nach Benutzer filtern",
+    "allContractsDesc": "Eine Liste aller Verträge im System.",
+    "noContractsFound": "Für den ausgewählten Benutzer wurden keine Verträge gefunden."
 }
+
+    
