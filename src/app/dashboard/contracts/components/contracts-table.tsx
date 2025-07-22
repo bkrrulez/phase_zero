@@ -205,6 +205,7 @@ export function ContractsTable() {
             isOpen={!!deletingContract}
             onOpenChange={() => setDeletingContract(null)}
             onConfirm={() => handleDeleteContract(deletingContract!.id)}
+            contract={deletingContract}
         />
         </>
     )
