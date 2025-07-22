@@ -16,7 +16,7 @@ import { type Task } from '@/lib/mock-data';
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required.'),
   taskIds: z.array(z.string()).optional(),
-  budget: z.coerce.number().positive({ message: 'Budget must be a positive number.' }).optional(),
+  budget: z.coerce.number().min(0, { message: 'Budget cannot be a negative number.' }).optional(),
   details: z.string().max(100, 'Details cannot exceed 100 characters.').optional(),
 });
 
