@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { format } from "date-fns";
+import { format, min as minDate, max as maxDate } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { type User } from "@/lib/mock-data";
+import { type User } from "@/lib/types";
 import { EditMemberDialog } from "./edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./change-password-dialog";
@@ -128,11 +128,38 @@ export function TeamMembers() {
         return team?.name ?? 'N/A';
     };
 
+    const getAggregatedContractDetails = (member: User) => {
+        const now = new Date();
+        const activeContracts = member.contracts.filter(c => {
+            const start = new Date(c.startDate);
+            const end = c.endDate ? new Date(c.endDate) : now;
+            return start <= now && end >= now;
+        });
+
+        if (activeContracts.length === 0) {
+            return {
+                weeklyHours: member.contract.weeklyHours, // fallback to primary
+                startDate: member.contract.startDate,
+                endDate: member.contract.endDate
+            };
+        }
+
+        const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
+        const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
+        const latestEndDate = maxDate(activeContracts.filter(c => c.endDate).map(c => new Date(c.endDate!)));
+        
+        return {
+            weeklyHours: totalWeeklyHours,
+            startDate: format(earliestStartDate, 'yyyy-MM-dd'),
+            endDate: activeContracts.some(c => !c.endDate) ? null : format(latestEndDate, 'yyyy-MM-dd'),
+        };
+    };
+
   return (
     <>
       <Card>
           <CardHeader>
-              <CardTitle>{t('teamMembersTabTitle')}</CardTitle>
+              <CardTitle>{t('teamMembers')}</CardTitle>
               <CardDescription>{t('teamMembersTabDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -149,7 +176,9 @@ export function TeamMembers() {
                       </TableRow>
                   </TableHeader>
                   <TableBody>
-                      {visibleMembers.map(member => (
+                      {visibleMembers.map(member => {
+                          const contractDetails = getAggregatedContractDetails(member);
+                          return (
                           <TableRow key={member.id}>
                               <TableCell>
                                   <div className="flex items-center gap-3">
@@ -167,9 +196,9 @@ export function TeamMembers() {
                                   <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
-                              <TableCell className="hidden md:table-cell text-right font-mono">{member.contract.weeklyHours}h</TableCell>
-                              <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
-                              <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
+                              <TableCell className="hidden md:table-cell text-right font-mono">{contractDetails.weeklyHours}h</TableCell>
+                              <TableCell className="hidden lg:table-cell">{format(new Date(contractDetails.startDate), 'PP')}</TableCell>
+                              <TableCell className="hidden lg:table-cell">{contractDetails.endDate ? format(new Date(contractDetails.endDate), 'PP') : 'Ongoing'}</TableCell>
                               <TableCell>
                                   <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
@@ -204,7 +233,7 @@ export function TeamMembers() {
                                   </DropdownMenu>
                               </TableCell>
                           </TableRow>
-                      ))}
+                      )})}
                       {visibleMembers.length === 0 && (
                           <TableRow>
                               <TableCell colSpan={7} className="h-24 text-center">{t('noMembersToDisplay')}</TableCell>

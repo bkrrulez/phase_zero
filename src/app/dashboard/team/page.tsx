@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { PlusCircle, FileUp } from "lucide-react";
 import * as XLSX from 'xlsx-js-style';
-import { format } from "date-fns";
+import { format, min as minDate, max as maxDate } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { type User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -63,18 +63,48 @@ export default function TeamPage() {
         return team?.name ?? 'N/A';
     };
 
+    const getAggregatedContractDetails = (member: User) => {
+        const now = new Date();
+        const activeContracts = member.contracts.filter(c => {
+            const start = new Date(c.startDate);
+            const end = c.endDate ? new Date(c.endDate) : now;
+            return start <= now && end >= now;
+        });
+
+        if (activeContracts.length === 0) {
+            return {
+                weeklyHours: member.contract.weeklyHours, // fallback to primary
+                startDate: member.contract.startDate,
+                endDate: member.contract.endDate
+            };
+        }
+
+        const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
+        const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
+        const latestEndDate = maxDate(activeContracts.filter(c => c.endDate).map(c => new Date(c.endDate!)));
+        
+        return {
+            weeklyHours: totalWeeklyHours,
+            startDate: format(earliestStartDate, 'yyyy-MM-dd'),
+            endDate: activeContracts.some(c => !c.endDate) ? null : format(latestEndDate, 'yyyy-MM-dd'),
+        };
+    };
+
     const handleExport = () => {
         if (visibleMembers.length === 0) return;
     
-        const dataForExport = visibleMembers.map(member => ({
-            [t('member')]: member.name,
-            [t('email')]: member.email,
-            [t('role')]: member.role,
-            [t('team')]: getTeamName(member.teamId),
-            [t('weeklyHours')]: member.contract.weeklyHours,
-            [t('contractStart')]: format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
-            [t('contractEnd')]: member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
-        }));
+        const dataForExport = visibleMembers.map(member => {
+            const contractDetails = getAggregatedContractDetails(member);
+            return {
+                [t('member')]: member.name,
+                [t('email')]: member.email,
+                [t('role')]: member.role,
+                [t('team')]: getTeamName(member.teamId),
+                [t('weeklyHours')]: contractDetails.weeklyHours,
+                [t('contractStart')]: format(new Date(contractDetails.startDate), 'yyyy-MM-dd'),
+                [t('contractEnd')]: contractDetails.endDate ? format(new Date(contractDetails.endDate), 'yyyy-MM-dd') : 'Ongoing'
+            }
+        });
     
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
         const workbook = XLSX.utils.book_new();

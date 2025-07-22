@@ -147,7 +147,7 @@ export async function getUsers(): Promise<User[]> {
     return result.rows.map(mapDbUserToUser);
 }
 
-export async function addUser(newUserData: Omit<User, 'id' | 'avatar' | 'contract'> & { contracts: Omit<Contract, 'id'|'userId'>[] }): Promise<User | null> {
+export async function addUser(newUserData: Omit<User, 'id' | 'avatar' >): Promise<User | null> {
     const { name, email, role, reportsTo, teamId, associatedProjectIds, contracts } = newUserData;
     const client = await db.connect();
     try {

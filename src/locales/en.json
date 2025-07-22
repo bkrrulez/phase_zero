@@ -245,6 +245,7 @@
     "contractDeletedFor": "Contract for {{name}} has been removed.",
     "contractDeleteError": "Failed to delete the contract.",
     "teamPageSubtitle": "Manage your team members and their details.",
+    "teamMembers": "Team Members",
     "teamMembersTabDesc": "A list of all employees in your team.",
     "noMembersToDisplay": "No members to display.",
     "userCalendar": "{{name}}'s Calendar",
@@ -263,10 +264,8 @@
     "contracts": "Contracts",
     "contractsSubtitle": "View and manage all employment contracts.",
     "allContracts": "All Contracts",
-    "addContract": "+ Add Contract",
+    "addContract": "+ Add Contracts",
     "filterByUser": "Filter by User",
     "allContractsDesc": "A list of all contracts in the system.",
     "noContractsFound": "No contracts found for the selected user."
 }
-
-    
