@@ -210,6 +210,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
+             {currentUser.role === 'Super Admin' && (
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/contracts")}>
+                        <Link href="/dashboard/contracts">
+                            <FileText /> {t('contracts')}
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+             )}
             {isLoading ? (
                 <SidebarMenuItem>
                     <Skeleton className="h-8 w-full" />
@@ -281,13 +290,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                       )}
                       {currentUser.role === 'Super Admin' && (
                         <>
-                          <SidebarMenuItem>
-                              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/contracts")}>
-                                  <Link href="/dashboard/settings/contracts">
-                                      <FileText /> {t('contracts')}
-                                  </Link>
-                              </SidebarMenuButton>
-                          </SidebarMenuItem>
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/holidays")}>
                                 <Link href="/dashboard/settings/holidays">
