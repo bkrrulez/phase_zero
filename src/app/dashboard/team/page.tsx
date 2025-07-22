@@ -6,7 +6,7 @@ import { PlusCircle, FileUp } from "lucide-react";
 import * as XLSX from 'xlsx-js-style';
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { type User } from "@/lib/mock-data";
+import { type User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useMembers } from "../contexts/MembersContext";
 import { TeamMembers } from './components/team-members';
@@ -47,7 +47,7 @@ export default function TeamPage() {
         return uniqueMembers;
     }, [teamMembers, currentUser]);
 
-    const handleAddMember = (newUser: User) => {
+    const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
         addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({

@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/types";
-import { EditMemberDialog } from "@/app/dashboard/team/components/edit-contract-dialog";
+import { EditMemberDialog, type EditMemberFormValues } from "@/app/dashboard/team/components/edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { AddMemberDialog } from "@/app/dashboard/team/components/add-member-dialog";
 import { ChangePasswordDialog } from "@/app/dashboard/team/components/change-password-dialog";
@@ -62,7 +62,31 @@ export default function MembersSettingsPage() {
         return uniqueMembers;
     }, [teamMembers, currentUser]);
 
-    const handleSaveDetails = (updatedUser: User) => {
+    const handleSaveDetails = (updatedData: EditMemberFormValues) => {
+        if (!editingUser) return;
+        
+        const updatedUser: User = {
+            ...editingUser,
+            name: updatedData.name,
+            email: updatedData.email,
+            role: updatedData.role,
+            reportsTo: updatedData.reportsTo,
+            teamId: updatedData.teamId,
+            associatedProjectIds: updatedData.associatedProjectIds,
+            contracts: updatedData.contracts.map(c => ({
+                id: c.id,
+                startDate: c.startDate,
+                endDate: c.endDate || null,
+                weeklyHours: c.weeklyHours,
+            })),
+            // The primary contract is derived in the backend, but we can update it here for immediate UI consistency
+            contract: {
+                startDate: updatedData.contracts[0]?.startDate || '',
+                endDate: updatedData.contracts[0]?.endDate || null,
+                weeklyHours: updatedData.contracts[0]?.weeklyHours || 0,
+            }
+        };
+
         updateMember(updatedUser);
         setEditingUser(null);
         toast({
@@ -72,7 +96,7 @@ export default function MembersSettingsPage() {
         logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
     }
 
-    const handleAddMember = (newUser: User) => {
+    const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
         addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({
