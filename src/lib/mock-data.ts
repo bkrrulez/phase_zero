@@ -26,7 +26,7 @@ export const initialData: InitialData = {
       role: 'Super Admin',
       avatar: 'https://placehold.co/100x100.png',
       associatedProjectIds: ['proj-1', 'proj-2', 'proj-3'],
-      contract: { startDate: '2023-01-01', endDate: null, weeklyHours: 40 },
+      contracts: [], // Contracts will be added below
     },
     {
       id: 'user-lead',
@@ -37,7 +37,7 @@ export const initialData: InitialData = {
       reportsTo: 'user-admin',
       teamId: 'team-eng',
       associatedProjectIds: ['proj-2', 'proj-3'],
-      contract: { startDate: '2023-03-15', endDate: null, weeklyHours: 40 },
+      contracts: [],
     },
     {
       id: 'user-1',
@@ -48,7 +48,7 @@ export const initialData: InitialData = {
       reportsTo: 'user-lead',
       teamId: 'team-eng',
       associatedProjectIds: ['proj-2'],
-      contract: { startDate: '2023-05-20', endDate: null, weeklyHours: 40 },
+      contracts: [],
     },
     {
       id: 'user-2',
@@ -59,8 +59,14 @@ export const initialData: InitialData = {
       reportsTo: 'user-lead',
       teamId: 'team-eng',
       associatedProjectIds: ['proj-1'],
-      contract: { startDate: '2023-07-01', endDate: '2024-12-31', weeklyHours: 32 },
+      contracts: [],
     },
+  ],
+  contracts: [
+    { id: 'contract-admin-1', userId: 'user-admin', startDate: '2023-01-01', endDate: null, weeklyHours: 40 },
+    { id: 'contract-lead-1', userId: 'user-lead', startDate: '2023-03-15', endDate: null, weeklyHours: 40 },
+    { id: 'contract-user1-1', userId: 'user-1', startDate: '2023-05-20', endDate: null, weeklyHours: 40 },
+    { id: 'contract-user2-1', userId: 'user-2', startDate: '2023-07-01', endDate: '2024-12-31', weeklyHours: 32 },
   ],
   timeEntries: [
     { id: 'te-1', userId: 'user-1', date: '2024-07-01', startTime: '09:00', endTime: '12:00', task: 'Mobile App - Backend Development', duration: 3, remarks: 'Worked on user auth API.' },

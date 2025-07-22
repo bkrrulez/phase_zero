@@ -1,4 +1,12 @@
 
+export type Contract = {
+  id: string;
+  userId: string;
+  startDate: string;
+  endDate: string | null;
+  weeklyHours: number;
+};
+
 export type User = {
   id: string;
   name: string;
@@ -8,12 +16,8 @@ export type User = {
   reportsTo?: string; // User ID of manager
   teamId?: string;
   associatedProjectIds?: string[];
-  contract: {
-    startDate: string;
-    endDate: string | null;
-    weeklyHours: number;
-  };
-  contractPdf?: string | null; // New field for storing contract PDF as data URI
+  contracts: Contract[];
+  contractPdf?: string | null;
 };
 
 export type TimeEntry = {
@@ -115,6 +119,7 @@ export type LogEntry = {
 
 export type InitialData = {
   teamMembers: User[];
+  contracts: Contract[];
   timeEntries: TimeEntry[];
   holidayRequests: HolidayRequest[];
   projects: Project[];
