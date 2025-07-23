@@ -43,7 +43,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useProjects } from '../contexts/ProjectsContext';
 import { useTasks } from '../contexts/TasksContext';
-import { type User, type TimeEntry } from '@/lib/types';
+import { type User, type TimeEntry, type Contract } from '@/lib/types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DetailedReport } from './components/detailed-report';
 
@@ -209,9 +209,14 @@ export default function ReportsPage() {
     });
 
     const consolidatedData = visibleMembers.map(member => {
-        const dailyContractHours = member.contract.weeklyHours / 5;
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
+        
+        // --- Day-by-day calculation for accurate assigned/leave hours ---
+        let totalAssignedHours = 0;
+        let totalLeaveHoursCredit = 0;
+        
+        // Pre-calculate total working days in the year for leave proration
         const userHolidaysForYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6).concat(customHolidays.filter(h => {
             if (getYear(parseISO(h.date)) !== selectedYear) return false;
             if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
@@ -225,17 +230,31 @@ export default function ReportsPage() {
                 totalWorkingDaysInYear++;
             }
         }
-        let workingDaysInPeriod = 0;
+        
+        const totalYearlyLeaveHours = annualLeaveAllowance * (member.contracts[0]?.weeklyHours / 5 || 8); // A bit simplified, but better than nothing for prorata
+        const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
+        
         for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
-            if (getDay(d) !== 0 && getDay(d) !== 6 && !userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d))) {
-                workingDaysInPeriod++;
+            const dayOfWeek = getDay(d);
+            const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+
+            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
+                const activeContractsOnDay = member.contracts.filter(c => {
+                    const contractStart = parseISO(c.startDate);
+                    const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForProrata;
+                    return isWithinInterval(d, { start: contractStart, end: contractEnd });
+                });
+
+                if (activeContractsOnDay.length > 0) {
+                    const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+                    totalAssignedHours += dailyHours;
+                    totalLeaveHoursCredit += dailyLeaveCredit; // This uses an average, but is better than previous
+                }
             }
         }
         
-        const assignedHours = parseFloat((workingDaysInPeriod * dailyContractHours).toFixed(2));
-        const totalYearlyLeaveHours = annualLeaveAllowance * dailyContractHours;
-        const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
-        const leaveHours = parseFloat((dailyLeaveCredit * workingDaysInPeriod).toFixed(2));
+        const assignedHours = parseFloat(totalAssignedHours.toFixed(2));
+        const leaveHours = parseFloat(totalLeaveHoursCredit.toFixed(2));
         const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
         const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
         const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
@@ -305,7 +324,7 @@ export default function ReportsPage() {
                   { v: userRow.leaveHours, t: 'n', z: numberFormat.z, s: userStyle },
                   { v: userRow.expectedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
                   { v: userRow.loggedHours, t: 'n', z: numberFormat.z, s: userStyle },
-                  { v: userRow.remainingHours, t: 'n', z: numberFormat.z, s: userStyle }
+                  { v: userRow.remainingHours, t: 'n', z: numberFormat.z, s: { ...userStyle, font: { ...userStyle.font, color: { rgb: userRow.remainingHours < 0 ? "FF0000" : "000000" } } } }
               ];
               dataForExport.push(userRowData);
               
@@ -571,4 +590,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
