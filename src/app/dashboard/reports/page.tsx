@@ -208,27 +208,27 @@ export default function ReportsPage() {
         }
     });
 
+    const yearStart = startOfYear(new Date(selectedYear, 0, 1));
+    const yearEnd = endOfYear(new Date(selectedYear, 11, 31));
+    const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
+
     const consolidatedData = visibleMembers.map(member => {
-      const yearStart = startOfYear(new Date(selectedYear, 0, 1));
-      const yearEnd = endOfYear(new Date(selectedYear, 11, 31));
+      
+      const userHolidaysInYear = publicHolidaysInYear
+        .concat(customHolidays.filter(h => {
+            if (getYear(parseISO(h.date)) !== selectedYear) return false;
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+            return applies;
+        }));
 
-      const userHolidaysForYear = publicHolidays
-          .filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
-          .concat(customHolidays.filter(h => {
-              if (getYear(parseISO(h.date)) !== selectedYear) return false;
-              if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
-              const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-              return applies;
-          }));
+      let assignedHoursInPeriod = 0;
+      let workingDaysInPeriod = 0;
 
-      let totalAssignedHoursInYear = 0;
-      let totalWorkingDaysInYear = 0;
-
-      for (let d = new Date(yearStart); d <= yearEnd; d = addDays(d, 1)) {
+      for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
           const dayOfWeek = getDay(d);
           if (dayOfWeek === 0 || dayOfWeek === 6) continue;
           
-          const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+          const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
           if (isHoliday) continue;
           
           const activeContractsOnDay = member.contracts.filter(c => {
@@ -238,37 +238,29 @@ export default function ReportsPage() {
           });
 
           if (activeContractsOnDay.length > 0) {
+              workingDaysInPeriod++;
               const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-              totalWorkingDaysInYear++;
-              totalAssignedHoursInYear += dailyHours;
-          }
-      }
-
-      const avgDailyHours = totalWorkingDaysInYear > 0 ? totalAssignedHoursInYear / totalWorkingDaysInYear : 0;
-      const totalYearlyLeaveHours = annualLeaveAllowance * avgDailyHours;
-      const leaveCreditRate = totalAssignedHoursInYear > 0 ? totalYearlyLeaveHours / totalAssignedHoursInYear : 0;
-      
-      let assignedHoursInPeriod = 0;
-      for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
-          const dayOfWeek = getDay(d);
-          const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
-
-          if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
-              const activeContractsOnDay = member.contracts.filter(c => {
-                  const contractStart = parseISO(c.startDate);
-                  const contractEnd = c.endDate ? parseISO(c.endDate) : yearEnd;
-                  return isWithinInterval(d, { start: contractStart, end: contractEnd });
-              });
-
-              if (activeContractsOnDay.length > 0) {
-                  const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-                  assignedHoursInPeriod += dailyHours;
-              }
+              assignedHoursInPeriod += dailyHours;
           }
       }
       
       const assignedHours = parseFloat(assignedHoursInPeriod.toFixed(2));
-      const leaveHours = parseFloat((assignedHours * leaveCreditRate).toFixed(2));
+      
+      // --- Leave Calculation ---
+      let standardWorkingDaysInYear = 0;
+      for (let d = new Date(yearStart); d <= yearEnd; d = addDays(d,1)) {
+          const dayOfWeek = getDay(d);
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          const isPublicHoliday = publicHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
+          if (isPublicHoliday) continue;
+          standardWorkingDaysInYear++;
+      }
+      
+      const dailyLeaveCredit = standardWorkingDaysInYear > 0 ? annualLeaveAllowance / standardWorkingDaysInYear : 0;
+      const leaveDaysInPeriod = workingDaysInPeriod * dailyLeaveCredit;
+      const avgDailyHoursInPeriod = workingDaysInPeriod > 0 ? assignedHours / workingDaysInPeriod : 0;
+      const leaveHours = parseFloat((leaveDaysInPeriod * avgDailyHoursInPeriod).toFixed(2));
+
       const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
       const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
       const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
