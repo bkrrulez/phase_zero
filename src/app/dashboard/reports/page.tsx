@@ -220,33 +220,33 @@ export default function ReportsPage() {
             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
             return applies;
         }));
-
-      // Calculate total assigned hours and leave credit rate for the entire year
+      
       let totalAssignedHoursInYear = 0;
-      let totalYearlyLeaveHours = 0;
+      let totalWorkingDaysInYear = 0;
 
       for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
         const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        
         const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
-
-        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
-          const activeContractsOnDay = member.contracts.filter(c => {
+        
+        const activeContractsOnDay = member.contracts.filter(c => {
             const contractStart = parseISO(c.startDate);
             const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForProrata;
             return isWithinInterval(d, { start: contractStart, end: contractEnd });
-          });
+        });
 
-          if (activeContractsOnDay.length > 0) {
+        if (activeContractsOnDay.length > 0 && !isHoliday) {
             const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+            totalWorkingDaysInYear++;
             totalAssignedHoursInYear += dailyHours;
-            totalYearlyLeaveHours += (annualLeaveAllowance * dailyHours);
-          }
         }
       }
+
+      const avgDailyHours = totalWorkingDaysInYear > 0 ? totalAssignedHoursInYear / totalWorkingDaysInYear : 0;
+      const totalYearlyLeaveHours = annualLeaveAllowance * avgDailyHours;
+      const leaveCreditRate = totalAssignedHoursInYear > 0 ? totalYearlyLeaveHours / totalAssignedHoursInYear : 0;
       
-      const leaveCreditRate = totalAssignedHoursInYear > 0 ? (totalYearlyLeaveHours / 365) / totalAssignedHoursInYear : 0;
-      
-      // Calculate assigned hours and leave hours for the selected period
       let assignedHoursInPeriod = 0;
       for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
           const dayOfWeek = getDay(d);
