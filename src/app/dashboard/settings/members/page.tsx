@@ -62,7 +62,7 @@ export default function MembersSettingsPage() {
         return uniqueMembers;
     }, [teamMembers, currentUser]);
 
-    const handleSaveDetails = (updatedData: EditMemberFormValues) => {
+    const handleSaveDetails = async (updatedData: EditMemberFormValues) => {
         if (!editingUser) return;
         
         const updatedUser: User = {
@@ -87,13 +87,13 @@ export default function MembersSettingsPage() {
             }
         };
 
-        updateMember(updatedUser);
+        await updateMember(updatedUser);
         setEditingUser(null);
         toast({
             title: t('memberDetailsUpdated'),
             description: t('memberDetailsUpdatedDesc', { name: updatedUser.name }),
         });
-        logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
+        await logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
     }
 
     const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
@@ -116,7 +116,7 @@ export default function MembersSettingsPage() {
                 title: t('passwordChanged'),
                 description: t('passwordChangedDesc', { name: changingPasswordUser.name }),
             });
-            logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
+            await logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
         } catch (error) {
             toast({
                 variant: 'destructive',
