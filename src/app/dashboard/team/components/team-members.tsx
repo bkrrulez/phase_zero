@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/types";
-import { EditMemberDialog } from "./edit-contract-dialog";
+import { EditMemberDialog, type EditMemberFormValues } from "./edit-contract-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "./change-password-dialog";
 import { updateUserPasswordAndNotify } from "@/app/dashboard/actions";
@@ -54,14 +54,15 @@ export function TeamMembers() {
         return uniqueMembers;
     }, [teamMembers, currentUser]);
     
-    const handleSaveDetails = (updatedUser: User) => {
-        updateMember(updatedUser);
+    const handleSaveDetails = async (updatedData: EditMemberFormValues) => {
+        if (!editingUser) return;
+        await updateMember(editingUser, updatedData);
         setEditingUser(null);
         toast({
             title: t('memberDetailsUpdated'),
-            description: t('memberDetailsUpdatedDesc', { name: updatedUser.name }),
+            description: t('memberDetailsUpdatedDesc', { name: updatedData.name }),
         });
-        logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
+        await logAction(`User '${currentUser.name}' updated details for member '${updatedData.name}'.`);
     }
 
     const handlePasswordChange = async (password: string) => {
@@ -74,7 +75,7 @@ export function TeamMembers() {
                 title: t('passwordChanged'),
                 description: t('passwordChangedDesc', { name: changingPasswordUser.name }),
             });
-            logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
+            await logAction(`User '${currentUser.name}' changed password for '${changingPasswordUser.name}'.`);
         } catch (error) {
             toast({
                 variant: 'destructive',
