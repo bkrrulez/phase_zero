@@ -264,7 +264,7 @@
     "contracts": "Contracts",
     "contractsSubtitle": "View and manage all employment contracts.",
     "allContracts": "All Contracts",
-    "addContract": "+ Add Contracts",
+    "addContract": "Add Contract",
     "filterByUser": "Filter by User",
     "allContractsDesc": "A list of all contracts in the system.",
     "noContractsFound": "No contracts found for the selected user."
