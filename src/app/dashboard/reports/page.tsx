@@ -209,38 +209,39 @@ export default function ReportsPage() {
     });
 
     const consolidatedData = visibleMembers.map(member => {
-      const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
-      const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
+      const yearStart = startOfYear(new Date(selectedYear, 0, 1));
+      const yearEnd = endOfYear(new Date(selectedYear, 11, 31));
 
       const userHolidaysForYear = publicHolidays
-        .filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
-        .concat(customHolidays.filter(h => {
-            if (getYear(parseISO(h.date)) !== selectedYear) return false;
-            if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
-            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-            return applies;
-        }));
-      
+          .filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6)
+          .concat(customHolidays.filter(h => {
+              if (getYear(parseISO(h.date)) !== selectedYear) return false;
+              if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+              const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+              return applies;
+          }));
+
       let totalAssignedHoursInYear = 0;
       let totalWorkingDaysInYear = 0;
 
-      for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
-        const dayOfWeek = getDay(d);
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        
-        const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
-        
-        const activeContractsOnDay = member.contracts.filter(c => {
-            const contractStart = parseISO(c.startDate);
-            const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForProrata;
-            return isWithinInterval(d, { start: contractStart, end: contractEnd });
-        });
+      for (let d = new Date(yearStart); d <= yearEnd; d = addDays(d, 1)) {
+          const dayOfWeek = getDay(d);
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          
+          const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+          if (isHoliday) continue;
+          
+          const activeContractsOnDay = member.contracts.filter(c => {
+              const contractStart = parseISO(c.startDate);
+              const contractEnd = c.endDate ? parseISO(c.endDate) : yearEnd;
+              return isWithinInterval(d, { start: contractStart, end: contractEnd });
+          });
 
-        if (activeContractsOnDay.length > 0 && !isHoliday) {
-            const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-            totalWorkingDaysInYear++;
-            totalAssignedHoursInYear += dailyHours;
-        }
+          if (activeContractsOnDay.length > 0) {
+              const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+              totalWorkingDaysInYear++;
+              totalAssignedHoursInYear += dailyHours;
+          }
       }
 
       const avgDailyHours = totalWorkingDaysInYear > 0 ? totalAssignedHoursInYear / totalWorkingDaysInYear : 0;
@@ -255,7 +256,7 @@ export default function ReportsPage() {
           if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
               const activeContractsOnDay = member.contracts.filter(c => {
                   const contractStart = parseISO(c.startDate);
-                  const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForProrata;
+                  const contractEnd = c.endDate ? parseISO(c.endDate) : yearEnd;
                   return isWithinInterval(d, { start: contractStart, end: contractEnd });
               });
 
