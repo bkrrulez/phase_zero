@@ -64,7 +64,7 @@ import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dia
 import { NotificationPopover } from "./components/notification-popover";
 import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
 import { MembersProvider } from "./contexts/MembersContext";
-import { AccessControlProvider } from "./contexts/AccessControlProvider";
+import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
 import { TasksProvider } from "./contexts/TasksContext";
 import { HolidaysProvider } from "./contexts/HolidaysContext";
