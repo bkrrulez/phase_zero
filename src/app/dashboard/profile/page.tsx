@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,8 @@ import { useMembers } from "../contexts/MembersContext";
 import { ChangePhotoDialog } from "./components/change-photo-dialog";
 import { useLanguage } from "../contexts/LanguageContext";
 import { updateUserPasswordAndNotify } from "../actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -47,7 +50,21 @@ export default function ProfilePage() {
   
   const handlePhotoSave = (dataUrl: string) => {
     if (currentUser) {
-      updateMember({ ...currentUser, avatar: dataUrl });
+      // Create a minimal update object for EditMemberFormValues
+      const updatedData = {
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        reportsTo: currentUser.reportsTo,
+        teamId: currentUser.teamId,
+        associatedProjectIds: currentUser.associatedProjectIds,
+        contracts: currentUser.contracts.map(c => ({...c, endDate: c.endDate || ''}))
+      };
+      const userToUpdate = {
+        ...currentUser,
+        avatar: dataUrl,
+      };
+      updateMember(userToUpdate, updatedData);
       toast({
         title: "Photo Updated",
         description: "Your profile photo has been successfully updated.",
@@ -58,6 +75,12 @@ export default function ProfilePage() {
   if (!currentUser) {
     return null; // or a loading spinner
   }
+
+  const sortedContracts = [...currentUser.contracts].sort((a,b) => {
+    if (!a.endDate) return -1;
+    if (!b.endDate) return 1;
+    return new Date(b.endDate).getTime() - new Date(a.endDate).getTime()
+  });
 
   return (
     <>
@@ -82,11 +105,15 @@ export default function ProfilePage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">{t('fullName')}</Label>
-                <Input id="name" defaultValue={currentUser.name} />
+                <Input id="name" defaultValue={currentUser.name} disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">{t('emailAddress')}</Label>
-                <Input id="email" type="email" defaultValue={currentUser.email} />
+                <Input id="email" type="email" defaultValue={currentUser.email} disabled />
+              </div>
+               <div className="space-y-2">
+                  <Label>{t('role')}</Label>
+                  <Input defaultValue={currentUser.role} disabled />
               </div>
             </div>
           </CardContent>
@@ -96,25 +123,32 @@ export default function ProfilePage() {
             <CardTitle>{t('contractDetails')}</CardTitle>
             <CardDescription>{t('contractDetailsDesc')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                  <Label>{t('role')}</Label>
-                  <Input defaultValue={currentUser.role} disabled />
-              </div>
-              <div className="space-y-2">
-                  <Label htmlFor="weekly-hours">{t('weeklyHours')}</Label>
-                  <Input id="weekly-hours" type="number" defaultValue={currentUser.contract.weeklyHours} disabled={currentUser.role === 'Employee'} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="start-date">{t('employmentStartDate')}</Label>
-                <Input id="start-date" type="date" defaultValue={currentUser.contract.startDate} disabled={currentUser.role === 'Employee'} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-date">{t('employmentEndDate')}</Label>
-                <Input id="end-date" type="date" value={currentUser.contract.endDate ?? ''} disabled={currentUser.role === 'Employee'} />
-              </div>
-            </div>
+          <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>{t('startDate')}</TableHead>
+                        <TableHead>{t('endDate')}</TableHead>
+                        <TableHead className="text-right">{t('weeklyHours')}</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {sortedContracts.length > 0 ? sortedContracts.map((contract) => {
+                         const isPast = contract.endDate ? new Date(contract.endDate) < new Date() : false;
+                         return (
+                            <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/50")}>
+                                <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>
+                                <TableCell>{contract.endDate ? format(new Date(contract.endDate), 'PP') : 'Ongoing'}</TableCell>
+                                <TableCell className="text-right">{contract.weeklyHours}h</TableCell>
+                            </TableRow>
+                         )
+                    }) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">No contracts found.</TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
           </CardContent>
         </Card>
         <Card>
