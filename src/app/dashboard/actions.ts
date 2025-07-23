@@ -210,12 +210,12 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
             [name, email, role, reportsTo, teamId, avatar, contractPdf, id]
         );
         
-        // Full sync of contracts
+        // --- Full sync of contracts ---
         const existingContractsRes = await client.query('SELECT id FROM contracts WHERE user_id = $1', [id]);
         const existingContractIds = existingContractsRes.rows.map(r => r.id);
         const updatedContractIds = contracts.map(c => c.id).filter(Boolean);
 
-        // Delete contracts that are no longer in the list
+        // Delete contracts that are no longer present in the updated data
         const contractsToDelete = existingContractIds.filter(cid => !updatedContractIds.includes(cid));
         if (contractsToDelete.length > 0) {
             await client.query('DELETE FROM contracts WHERE id = ANY($1::text[])', [contractsToDelete]);
@@ -223,13 +223,13 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         
         let finalContracts = [];
         for (const contract of contracts) {
-            if (contract.id) { // Update existing
+            if (contract.id && existingContractIds.includes(contract.id)) { // Update existing contract
                 const contractRes = await client.query(
                     `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4 RETURNING *`,
                     [contract.startDate, contract.endDate, contract.weeklyHours, contract.id]
                 );
                  finalContracts.push(contractRes.rows[0]);
-            } else { // Add new
+            } else { // Add new contract
                  const contractId = `contract-${Date.now()}-${Math.random()}`;
                  const contractRes = await client.query(
                     `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
@@ -238,6 +238,8 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
                 finalContracts.push(contractRes.rows[0]);
             }
         }
+        // --- End of contract sync ---
+
 
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [id]);
         if (associatedProjectIds && associatedProjectIds.length > 0) {

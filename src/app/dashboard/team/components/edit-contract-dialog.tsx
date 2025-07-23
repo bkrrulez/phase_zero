@@ -116,7 +116,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
         reportsTo: user.reportsTo || '',
         teamId: user.teamId || '',
         associatedProjectIds: user.associatedProjectIds || [],
-        contracts: sortedContracts,
+        contracts: sortedContracts.map(c => ({...c, endDate: c.endDate || ''})),
       });
     }
   }, [user, form]);
@@ -299,6 +299,9 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                 {form.formState.errors.contracts?.root && (
                     <p className="text-sm font-medium text-destructive">{form.formState.errors.contracts.root.message}</p>
                 )}
+                 {form.formState.errors.contracts && (
+                    <p className="text-sm font-medium text-destructive">{form.formState.errors.contracts.message}</p>
+                 )}
             </div>
 
             <FormField
