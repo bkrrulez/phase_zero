@@ -20,7 +20,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { User, TimeEntry } from '@/lib/types';
-import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, differenceInCalendarDays, endOfYear, max, min, startOfYear, endOfMonth } from 'date-fns';
+import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, differenceInCalendarDays, endOfYear, max, min, startOfYear, endOfMonth, parseISO, isSameDay, getYear } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
@@ -203,102 +203,93 @@ export function IndividualReport() {
     const dailyEntries: Record<string, TimeEntry[]> = {};
     const dailyExpected: Record<string, number> = {};
     const dailyHolidayNames: Record<string, string> = {};
-    const dailyContractHours = selectedUser.contract.weeklyHours / 5;
-    
-    const yearStartForProrata = startOfYear(selectedDate);
-    const yearEndForProrata = endOfYear(selectedDate);
-    const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
-    
-    const contractStartDate = new Date(selectedUser.contract.startDate);
-    const contractEndDate = selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : yearEndForProrata;
 
-    const prorataContractStart = max([yearStartForProrata, contractStartDate]);
-    const prorataContractEnd = min([yearEndForProrata, contractEndDate]);
-    const contractDurationInYear = prorataContractStart > prorataContractEnd ? 0 : differenceInCalendarDays(prorataContractEnd, prorataContractStart) + 1;
-    const proratedAllowanceDays = (annualLeaveAllowance / daysInYear) * contractDurationInYear;
-    const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-    const dailyLeaveHours = totalYearlyLeaveHours > 0 ? totalYearlyLeaveHours / contractDurationInYear : 0; // Distribute over contract days in year
-    const dailyExpectedHours = dailyContractHours - dailyLeaveHours;
+    const selectedYear = selectedDate.getFullYear();
+    const yearStart = startOfYear(selectedDate);
+    const yearEnd = endOfYear(selectedDate);
+    const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
+
+    // --- Start: Standardized Leave Credit Calculation ---
+    let standardWorkingDaysInYear = 0;
+    for (let d = new Date(yearStart); d <= yearEnd; d = addDays(d,1)) {
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        const isPublicHoliday = publicHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isPublicHoliday) continue;
+        standardWorkingDaysInYear++;
+    }
+    const dailyLeaveCredit = standardWorkingDaysInYear > 0 ? annualLeaveAllowance / standardWorkingDaysInYear : 0;
+    // --- End: Standardized Leave Credit Calculation ---
+
+    const userHolidaysInYear = publicHolidaysInYear
+        .concat(customHolidays.filter(h => {
+            if (getYear(parseISO(h.date)) !== selectedYear) return false;
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!selectedUser.teamId) || (h.appliesTo === selectedUser.teamId);
+            return applies;
+        }));
     
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
-    
-    const publicHolidaysInMonth = publicHolidays.filter(h => {
-        const hDate = new Date(h.date);
-        return isSameMonth(hDate, selectedDate) && getDay(hDate) !== 0 && getDay(hDate) !== 6;
-    });
-    
-    const customHolidaysInMonth = customHolidays.filter(h => {
-        const hDate = new Date(h.date);
-        const applies = (h.appliesTo === 'all-members') ||
-                        (h.appliesTo === 'all-teams' && !!selectedUser.teamId) ||
-                        (h.appliesTo === selectedUser.teamId);
-        return isSameMonth(hDate, selectedDate) && getDay(hDate) !== 0 && getDay(hDate) !== 6 && applies;
-    });
 
     for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
+        const dayOfMonth = d.getDate();
         const dayOfWeek = getDay(d);
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          const isHolidayOrLeave = holidayRequests.some(req => req.userId === selectedUser.id && req.status === 'Approved' && isWithinInterval(d, {start: new Date(req.startDate), end: new Date(req.endDate)})) ||
-                                   publicHolidaysInMonth.some(h => new Date(h.date).toDateString() === d.toDateString()) ||
-                                   customHolidaysInMonth.some(h => new Date(h.date).toDateString() === d.toDateString());
-          if (!isHolidayOrLeave) {
-            dailyExpected[d.getDate()] = dailyExpectedHours;
-          }
+
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isHoliday) {
+            const holiday = userHolidaysInYear.find(h => isSameDay(parseISO(h.date), d));
+            if (holiday) dailyHolidayNames[dayOfMonth] = holiday.name;
+            continue;
+        }
+
+        const isLeaveDay = holidayRequests.some(req => req.userId === selectedUser.id && req.status === 'Approved' && isWithinInterval(d, { start: parseISO(req.startDate), end: parseISO(req.endDate) }));
+        if (isLeaveDay) continue;
+
+        const activeContractsOnDay = selectedUser.contracts.filter(c => {
+            const contractStart = parseISO(c.startDate);
+            const contractEnd = c.endDate ? parseISO(c.endDate) : yearEnd;
+            return isWithinInterval(d, { start: contractStart, end: contractEnd });
+        });
+        
+        if (activeContractsOnDay.length > 0) {
+            const dailyContractHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+            const leaveHoursForDay = dailyLeaveCredit * dailyContractHours;
+            dailyExpected[dayOfMonth] = dailyContractHours - leaveHoursForDay;
         }
     }
 
     const userTimeEntries = timeEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
+        const entryDate = parseISO(entry.date);
         return entry.userId === selectedUser.id &&
                isSameMonth(entryDate, selectedDate);
     });
 
     userTimeEntries.forEach(entry => {
-        const day = new Date(entry.date).getDate();
+        const day = parseISO(entry.date).getDate();
         if (!dailyTotals[day]) dailyTotals[day] = 0;
         if (!dailyEntries[day]) dailyEntries[day] = [];
         dailyTotals[day] += entry.duration;
         dailyEntries[day].push(entry);
     });
-
-    publicHolidaysInMonth.forEach(holiday => {
-        const day = new Date(holiday.date).getDate();
-        const holidayCredit = holiday.type === 'Full Day' ? dailyExpectedHours : dailyExpectedHours / 2;
-        if (!dailyTotals[day]) dailyTotals[day] = 0;
-        dailyTotals[day] += holidayCredit;
-        dailyHolidayNames[day] = holiday.name;
-    });
     
-    customHolidaysInMonth.forEach(holiday => {
-        const day = new Date(holiday.date).getDate();
-        const holidayCredit = holiday.type === 'Full Day' ? dailyExpectedHours : dailyExpectedHours / 2;
-        if (!dailyTotals[day]) dailyTotals[day] = 0;
-        dailyTotals[day] += holidayCredit;
-        dailyHolidayNames[day] = holiday.name;
-    });
-
     const personalLeaveDays = holidayRequests.filter(req => 
         req.userId === selectedUser.id && req.status === 'Approved'
     ).flatMap(req => {
-        const start = new Date(req.startDate);
-        const end = new Date(req.endDate);
+        const start = parseISO(req.startDate);
+        const end = parseISO(req.endDate);
         const dates: Date[] = [];
         for (let dt = start; dt <= end; dt = addDays(dt, 1)) {
             if (isSameMonth(dt, selectedDate)) {
                 dates.push(new Date(dt));
-                if (getDay(dt) !== 0 && getDay(dt) !== 6) {
-                    const dayOfMonth = dt.getDate();
-                    if (!dailyTotals[dayOfMonth]) dailyTotals[dayOfMonth] = 0;
-                    dailyTotals[dayOfMonth] += dailyExpectedHours;
-                }
             }
         }
         return dates;
     });
     
-    const publicHolidayDays = publicHolidaysInMonth.map(h => new Date(h.date));
-    const customHolidayDays = customHolidaysInMonth.map(h => new Date(h.date));
+    const publicHolidayDays = publicHolidaysInYear.map(h => parseISO(h.date));
+    const customHolidayDays = userHolidaysInYear.filter(h => !publicHolidaysInYear.includes(h)).map(h => parseISO(h.date));
 
     return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries, dailyExpected, dailyHolidayNames };
   }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries, annualLeaveAllowance]);
