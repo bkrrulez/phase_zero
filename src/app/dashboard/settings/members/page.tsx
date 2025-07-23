@@ -67,23 +67,17 @@ export default function MembersSettingsPage() {
         
         const updatedUser: User = {
             ...editingUser,
-            name: updatedData.name,
-            email: updatedData.email,
-            role: updatedData.role,
-            reportsTo: updatedData.reportsTo,
-            teamId: updatedData.teamId,
-            associatedProjectIds: updatedData.associatedProjectIds,
+            ...updatedData,
             contracts: updatedData.contracts.map(c => ({
                 id: c.id,
                 startDate: c.startDate,
                 endDate: c.endDate || null,
                 weeklyHours: c.weeklyHours,
             })),
-            // The primary contract is derived in the backend, but we can update it here for immediate UI consistency
-            contract: {
-                startDate: updatedData.contracts[0]?.startDate || '',
-                endDate: updatedData.contracts[0]?.endDate || null,
-                weeklyHours: updatedData.contracts[0]?.weeklyHours || 0,
+            contract: { // This will be recalculated on the backend anyway
+                startDate: updatedData.contracts[0]?.startDate || editingUser.contract.startDate,
+                endDate: updatedData.contracts[0]?.endDate || editingUser.contract.endDate,
+                weeklyHours: updatedData.contracts[0]?.weeklyHours || editingUser.contract.weeklyHours,
             }
         };
 
