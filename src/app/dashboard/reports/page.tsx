@@ -212,11 +212,6 @@ export default function ReportsPage() {
         const yearStartForProrata = startOfYear(new Date(selectedYear, 0, 1));
         const yearEndForProrata = endOfYear(new Date(selectedYear, 11, 31));
         
-        // --- Day-by-day calculation for accurate assigned/leave hours ---
-        let totalAssignedHours = 0;
-        let totalLeaveHoursCredit = 0;
-        
-        // Pre-calculate total working days in the year for leave proration
         const userHolidaysForYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6).concat(customHolidays.filter(h => {
             if (getYear(parseISO(h.date)) !== selectedYear) return false;
             if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
@@ -225,14 +220,30 @@ export default function ReportsPage() {
         }));
 
         let totalWorkingDaysInYear = 0;
+        let totalContractHoursInYear = 0;
         for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
-            if (getDay(d) !== 0 && getDay(d) !== 6 && !userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d))) {
-                totalWorkingDaysInYear++;
+            const dayOfWeek = getDay(d);
+            const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
+
+            if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
+                const activeContractsOnDay = member.contracts.filter(c => {
+                    const contractStart = parseISO(c.startDate);
+                    const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForProrata;
+                    return isWithinInterval(d, { start: contractStart, end: contractEnd });
+                });
+
+                if (activeContractsOnDay.length > 0) {
+                    totalWorkingDaysInYear++;
+                    const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+                    totalContractHoursInYear += dailyHours;
+                }
             }
         }
+
+        const totalYearlyLeaveHours = annualLeaveAllowance * (totalContractHoursInYear / totalWorkingDaysInYear || 0);
         
-        const totalYearlyLeaveHours = annualLeaveAllowance * (member.contracts[0]?.weeklyHours / 5 || 8); // A bit simplified, but better than nothing for prorata
-        const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? totalYearlyLeaveHours / totalWorkingDaysInYear : 0;
+        let totalAssignedHours = 0;
+        let totalLeaveHoursCredit = 0;
         
         for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
@@ -248,7 +259,9 @@ export default function ReportsPage() {
                 if (activeContractsOnDay.length > 0) {
                     const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
                     totalAssignedHours += dailyHours;
-                    totalLeaveHoursCredit += dailyLeaveCredit; // This uses an average, but is better than previous
+
+                    const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? (totalYearlyLeaveHours / totalWorkingDaysInYear) : 0;
+                    totalLeaveHoursCredit += dailyLeaveCredit;
                 }
             }
         }
