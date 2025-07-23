@@ -33,6 +33,8 @@ const mapDbUserToUser = (dbUser: any): User => {
         return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
     });
 
+    // The primary contract is the most current active one, or the most recently expired one.
+    // If no contracts, provide a default structure.
     const primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
     
     return {
@@ -163,14 +165,17 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar' >): Promis
         );
         
         let insertedContracts = [];
-        for (const contract of contracts) {
-            const contractId = `contract-${Date.now()}-${Math.random()}`;
-            const contractRes = await client.query(
-                `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
-            );
-            insertedContracts.push(contractRes.rows[0]);
+        if (contracts && contracts.length > 0) {
+            for (const contract of contracts) {
+                const contractId = `contract-${Date.now()}-${Math.random()}`;
+                const contractRes = await client.query(
+                    `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                    [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
+                );
+                insertedContracts.push(contractRes.rows[0]);
+            }
         }
+
 
         if (associatedProjectIds && associatedProjectIds.length > 0) {
             for (const projectId of associatedProjectIds) {
@@ -181,12 +186,19 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar' >): Promis
         
         revalidatePath('/dashboard/settings/members');
         revalidatePath('/dashboard/team');
-        const newUser = mapDbUserToUser({
-            ...insertedUserRes.rows[0],
-            contracts: insertedContracts,
-            associated_project_ids: associatedProjectIds
-        });
-        return newUser;
+
+        const newUserQuery = await db.query(`
+            SELECT 
+                u.*, 
+                COALESCE(array_agg(up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids,
+                (SELECT json_agg(c.*) FROM contracts c WHERE c.user_id = u.id) as contracts
+            FROM users u
+            LEFT JOIN user_projects up ON u.id = up.user_id
+            WHERE u.id = $1
+            GROUP BY u.id
+        `, [id]);
+
+        return mapDbUserToUser(newUserQuery.rows[0]);
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error adding user:', error);
@@ -202,45 +214,46 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
     try {
         await client.query('BEGIN');
         
-        const res = await client.query(
+        // Update the users table
+        await client.query(
             `UPDATE users SET
                 name = $1, email = $2, role = $3, reports_to = $4, team_id = $5,
                 avatar = $6, contract_pdf = $7
-             WHERE id = $8 RETURNING *`,
+             WHERE id = $8`,
             [name, email, role, reportsTo, teamId, avatar, contractPdf, id]
         );
         
-        // --- Full sync of contracts ---
+        // --- Full Contract Synchronization ---
         const existingContractsRes = await client.query('SELECT id FROM contracts WHERE user_id = $1', [id]);
         const existingContractIds = new Set(existingContractsRes.rows.map(r => r.id));
         const updatedContractIds = new Set(contracts.map(c => c.id).filter(Boolean));
 
-        // Delete contracts that are no longer present in the updated data
+        // 1. Delete contracts that are no longer in the list
         const contractsToDelete = [...existingContractIds].filter(cid => !updatedContractIds.has(cid));
         if (contractsToDelete.length > 0) {
             await client.query('DELETE FROM contracts WHERE id = ANY($1::text[])', [contractsToDelete]);
         }
         
-        let finalContracts = [];
+        // 2. Update existing contracts and insert new ones
         for (const contract of contracts) {
-            if (contract.id && existingContractIds.has(contract.id)) { // Update existing contract
-                const contractRes = await client.query(
-                    `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4 RETURNING *`,
+            if (contract.id && existingContractIds.has(contract.id)) {
+                // Update existing contract
+                await client.query(
+                    `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4`,
                     [contract.startDate, contract.endDate || null, contract.weeklyHours, contract.id]
                 );
-                 finalContracts.push(contractRes.rows[0]);
-            } else { // Add new contract
+            } else {
+                 // Insert new contract
                  const contractId = `contract-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                 const contractRes = await client.query(
-                    `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                 await client.query(
+                    `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5)`,
                     [contractId, id, contract.startDate, contract.endDate || null, contract.weeklyHours]
                 );
-                finalContracts.push(contractRes.rows[0]);
             }
         }
-        // --- End of contract sync ---
+        // --- End of Contract Synchronization ---
 
-
+        // Update project associations
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [id]);
         if (associatedProjectIds && associatedProjectIds.length > 0) {
             for (const projectId of associatedProjectIds) {
@@ -255,12 +268,22 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         revalidatePath('/dashboard/profile');
         revalidatePath('/dashboard/contracts');
         
-        const finalUser = mapDbUserToUser({
-            ...res.rows[0],
-            contracts: finalContracts,
-            associated_project_ids: associatedProjectIds
-        });
-        return finalUser;
+        // Refetch the user with all updated relations to return the latest state
+        const finalUserQuery = await db.query(`
+            SELECT 
+                u.*, 
+                COALESCE(array_agg(up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids,
+                (SELECT json_agg(c.*) FROM contracts c WHERE c.user_id = u.id) as contracts
+            FROM users u
+            LEFT JOIN user_projects up ON u.id = up.user_id
+            WHERE u.id = $1
+            GROUP BY u.id
+        `, [id]);
+        
+        if (finalUserQuery.rows.length === 0) return null;
+
+        return mapDbUserToUser(finalUserQuery.rows[0]);
+
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error updating user:', error);
