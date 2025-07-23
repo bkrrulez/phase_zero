@@ -212,28 +212,28 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
         
         // --- Full sync of contracts ---
         const existingContractsRes = await client.query('SELECT id FROM contracts WHERE user_id = $1', [id]);
-        const existingContractIds = existingContractsRes.rows.map(r => r.id);
-        const updatedContractIds = contracts.map(c => c.id).filter(Boolean);
+        const existingContractIds = new Set(existingContractsRes.rows.map(r => r.id));
+        const updatedContractIds = new Set(contracts.map(c => c.id).filter(Boolean));
 
         // Delete contracts that are no longer present in the updated data
-        const contractsToDelete = existingContractIds.filter(cid => !updatedContractIds.includes(cid));
+        const contractsToDelete = [...existingContractIds].filter(cid => !updatedContractIds.has(cid));
         if (contractsToDelete.length > 0) {
             await client.query('DELETE FROM contracts WHERE id = ANY($1::text[])', [contractsToDelete]);
         }
         
         let finalContracts = [];
         for (const contract of contracts) {
-            if (contract.id && existingContractIds.includes(contract.id)) { // Update existing contract
+            if (contract.id && existingContractIds.has(contract.id)) { // Update existing contract
                 const contractRes = await client.query(
                     `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4 RETURNING *`,
-                    [contract.startDate, contract.endDate, contract.weeklyHours, contract.id]
+                    [contract.startDate, contract.endDate || null, contract.weeklyHours, contract.id]
                 );
                  finalContracts.push(contractRes.rows[0]);
             } else { // Add new contract
-                 const contractId = `contract-${Date.now()}-${Math.random()}`;
+                 const contractId = `contract-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                  const contractRes = await client.query(
                     `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
+                    [contractId, id, contract.startDate, contract.endDate || null, contract.weeklyHours]
                 );
                 finalContracts.push(contractRes.rows[0]);
             }
