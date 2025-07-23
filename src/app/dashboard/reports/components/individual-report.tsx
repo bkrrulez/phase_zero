@@ -20,7 +20,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { User, TimeEntry } from '@/lib/types';
-import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, differenceInCalendarDays, endOfYear, max, min, startOfYear, endOfMonth, parseISO, isSameDay, getYear } from 'date-fns';
+import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, getYear, parseISO, isSameDay, min as minDate, max as maxDate, getMonth, endOfYear, startOfYear, endOfMonth } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
@@ -148,53 +148,59 @@ export function IndividualReport() {
 
     React.useEffect(() => {
         if (selectedUser) {
-            const now = new Date();
-            const year = selectedDate.getFullYear() || now.getFullYear();
-            const month = selectedDate.getMonth() || now.getMonth();
-            let date = startOfMonth(new Date(year, month, 1));
-            
-            const contractStart = startOfMonth(new Date(selectedUser.contract.startDate));
-            const contractEnd = selectedUser.contract.endDate ? startOfMonth(new Date(selectedUser.contract.endDate)) : startOfMonth(now);
+          const now = new Date();
+          const year = selectedDate.getFullYear();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
 
-            if (date < contractStart) date = contractStart;
-            if (date > contractEnd) date = contractEnd;
-            
-            setSelectedDate(date);
+          let defaultDate = new Date(year, selectedDate.getMonth(), 1);
+
+          // If the user's calendar for the current year is being viewed, default to the current month.
+          if (year === currentYear) {
+            defaultDate = new Date(year, currentMonth, 1);
+          }
+          
+          setSelectedDate(defaultDate);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUser]);
 
-  const availableYears = React.useMemo(() => {
-    if (!selectedUser) return [];
-    const startYear = new Date(selectedUser.contract.startDate).getFullYear();
-    const endYear = selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate).getFullYear() : new Date().getFullYear();
+    const { availableYears, availableMonths, minContractDate, maxContractDate } = React.useMemo(() => {
+        if (!selectedUser || !selectedUser.contracts || selectedUser.contracts.length === 0) {
+            return { availableYears: [], availableMonths: [], minContractDate: null, maxContractDate: null };
+        }
     
-    const yearsList = [];
-    for (let i = endYear; i >= startYear; i--) {
-        yearsList.push(i);
-    }
-    return yearsList;
-  }, [selectedUser]);
+        const startDates = selectedUser.contracts.map(c => parseISO(c.startDate));
+        const endDates = selectedUser.contracts.map(c => c.endDate ? parseISO(c.endDate) : new Date());
+    
+        const minDateVal = minDate(startDates);
+        const maxDateVal = maxDate(endDates);
+        
+        const startYear = getYear(minDateVal);
+        const endYear = getYear(maxDateVal);
+        
+        const yearsList = [];
+        for (let i = endYear; i >= startYear; i--) {
+            yearsList.push(i);
+        }
+    
+        const year = selectedDate.getFullYear();
+    
+        let startMonth = 0;
+        if (year === startYear) {
+            startMonth = getMonth(minDateVal);
+        }
+        
+        let endMonth = 11;
+        if (year === endYear) {
+            endMonth = getMonth(maxDateVal);
+        }
+    
+        const monthsList = months.filter(m => m.value >= startMonth && m.value <= endMonth);
+    
+        return { availableYears: yearsList, availableMonths: monthsList, minContractDate: minDateVal, maxContractDate: maxDateVal };
+    }, [selectedUser, selectedDate]);
 
-  const availableMonths = React.useMemo(() => {
-      if (!selectedUser) return months;
-
-      const contractStart = new Date(selectedUser.contract.startDate);
-      const contractEnd = selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : null;
-      const year = selectedDate.getFullYear();
-
-      let startMonth = 0;
-      if (year === contractStart.getFullYear()) {
-          startMonth = contractStart.getMonth();
-      }
-      
-      let endMonth = 11;
-      if (contractEnd && year === contractEnd.getFullYear()) {
-          endMonth = contractEnd.getMonth();
-      }
-
-      return months.filter(m => m.value >= startMonth && m.value <= endMonth);
-  }, [selectedUser, selectedDate]);
 
   const monthlyData = React.useMemo(() => {
     if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {}, dailyExpected: {}, dailyHolidayNames: {} };
@@ -209,18 +215,9 @@ export function IndividualReport() {
     const yearEnd = endOfYear(selectedDate);
     const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
 
-    // --- Start: Standardized Leave Credit Calculation ---
-    let standardWorkingDaysInYear = 0;
-    for (let d = new Date(yearStart); d <= yearEnd; d = addDays(d,1)) {
-        const dayOfWeek = getDay(d);
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isPublicHoliday = publicHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-        if (isPublicHoliday) continue;
-        standardWorkingDaysInYear++;
-    }
-    const dailyLeaveCredit = standardWorkingDaysInYear > 0 ? annualLeaveAllowance / standardWorkingDaysInYear : 0;
-    // --- End: Standardized Leave Credit Calculation ---
-
+    const standardWorkDaysInYear = 261;
+    const dailyLeaveCredit = annualLeaveAllowance / standardWorkDaysInYear;
+    
     const userHolidaysInYear = publicHolidaysInYear
         .concat(customHolidays.filter(h => {
             if (getYear(parseISO(h.date)) !== selectedYear) return false;
@@ -316,14 +313,12 @@ export function IndividualReport() {
         const newYear = parseInt(year);
         let newMonth = selectedDate.getMonth();
         
-        const contractStart = new Date(selectedUser.contract.startDate);
-        if (newYear === contractStart.getFullYear() && newMonth < contractStart.getMonth()) {
-            newMonth = contractStart.getMonth();
+        if (minContractDate && newYear === getYear(minContractDate) && newMonth < getMonth(minContractDate)) {
+            newMonth = getMonth(minContractDate);
         }
 
-        const contractEnd = selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : null;
-        if (contractEnd && newYear === contractEnd.getFullYear() && newMonth > contractEnd.getMonth()) {
-            newMonth = contractEnd.getMonth();
+        if (maxContractDate && newYear === getYear(maxContractDate) && newMonth > getMonth(maxContractDate)) {
+            newMonth = getMonth(maxContractDate);
         }
 
         setSelectedDate(new Date(newYear, newMonth, 1));
@@ -438,8 +433,8 @@ export function IndividualReport() {
                   month={selectedDate}
                   onMonthChange={setSelectedDate}
                   weekStartsOn={1}
-                  fromDate={new Date(selectedUser.contract.startDate)}
-                  toDate={selectedUser.contract.endDate ? new Date(selectedUser.contract.endDate) : new Date()}
+                  fromDate={minContractDate || undefined}
+                  toDate={maxContractDate || undefined}
                   modifiers={{ 
                       saturday: (date) => getDay(date) === 6,
                       sunday: (date) => getDay(date) === 0,
