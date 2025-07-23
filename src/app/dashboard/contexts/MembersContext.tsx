@@ -4,10 +4,11 @@
 import * as React from 'react';
 import { type User } from "@/lib/types";
 import { getUsers, addUser as addUserAction, updateUser as updateUserAction, deleteUser as deleteUserAction } from '../actions';
+import { EditMemberFormValues } from '../team/components/edit-contract-dialog';
 
 interface MembersContextType {
   teamMembers: User[];
-  updateMember: (updatedUser: User) => Promise<void>;
+  updateMember: (originalUser: User, updatedData: EditMemberFormValues) => Promise<void>;
   addMember: (newUser: Omit<User, 'id' | 'avatar'>) => Promise<void>;
   deleteMember: (userId: string) => Promise<void>;
   isLoading: boolean;
@@ -36,8 +37,24 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   }, [fetchMembers]);
 
 
-  const updateMember = async (updatedUserData: User) => {
-    const updatedUserFromServer = await updateUserAction(updatedUserData);
+  const updateMember = async (originalUser: User, updatedData: EditMemberFormValues) => {
+    // Construct the full user object to send to the server
+    const userToUpdate: User = {
+        ...originalUser,
+        ...updatedData,
+        contracts: updatedData.contracts.map(c => ({
+            id: c.id,
+            startDate: c.startDate,
+            endDate: c.endDate || null,
+            weeklyHours: c.weeklyHours,
+        })),
+        // The primary contract is purely for display and will be recalculated on the backend
+        // So we can just pass a placeholder.
+        contract: originalUser.contract 
+    };
+    
+    const updatedUserFromServer = await updateUserAction(userToUpdate);
+    
     if (updatedUserFromServer) {
       setTeamMembers(prevMembers =>
         prevMembers.map(member => member.id === updatedUserFromServer.id ? updatedUserFromServer : member)
@@ -71,5 +88,3 @@ export const useMembers = () => {
   }
   return context;
 };
-
-    

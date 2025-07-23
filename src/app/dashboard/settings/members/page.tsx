@@ -65,29 +65,14 @@ export default function MembersSettingsPage() {
     const handleSaveDetails = async (updatedData: EditMemberFormValues) => {
         if (!editingUser) return;
         
-        const updatedUser: User = {
-            ...editingUser,
-            ...updatedData,
-            contracts: updatedData.contracts.map(c => ({
-                id: c.id,
-                startDate: c.startDate,
-                endDate: c.endDate || null,
-                weeklyHours: c.weeklyHours,
-            })),
-            contract: { // This will be recalculated on the backend anyway
-                startDate: updatedData.contracts[0]?.startDate || editingUser.contract.startDate,
-                endDate: updatedData.contracts[0]?.endDate || editingUser.contract.endDate,
-                weeklyHours: updatedData.contracts[0]?.weeklyHours || editingUser.contract.weeklyHours,
-            }
-        };
+        await updateMember(editingUser, updatedData);
 
-        await updateMember(updatedUser);
         setEditingUser(null);
         toast({
             title: t('memberDetailsUpdated'),
-            description: t('memberDetailsUpdatedDesc', { name: updatedUser.name }),
+            description: t('memberDetailsUpdatedDesc', { name: updatedData.name }),
         });
-        await logAction(`User '${currentUser.name}' updated details for member '${updatedUser.name}'.`);
+        await logAction(`User '${currentUser.name}' updated details for member '${updatedData.name}'.`);
     }
 
     const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
