@@ -36,11 +36,13 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   }, [fetchMembers]);
 
 
-  const updateMember = async (updatedUser: User) => {
-    await updateUserAction(updatedUser);
-    setTeamMembers(prevMembers =>
-        prevMembers.map(member => member.id === updatedUser.id ? updatedUser : member)
-    );
+  const updateMember = async (updatedUserData: User) => {
+    const updatedUserFromServer = await updateUserAction(updatedUserData);
+    if (updatedUserFromServer) {
+      setTeamMembers(prevMembers =>
+        prevMembers.map(member => member.id === updatedUserFromServer.id ? updatedUserFromServer : member)
+      );
+    }
   };
 
   const addMember = async (newUserData: Omit<User, 'id' | 'avatar'>) => {
