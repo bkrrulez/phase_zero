@@ -41,7 +41,12 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     // Construct the full user object to send to the server
     const userToUpdate: User = {
         ...originalUser,
-        ...updatedData,
+        name: updatedData.name,
+        email: updatedData.email,
+        role: updatedData.role,
+        reportsTo: updatedData.reportsTo,
+        teamId: updatedData.teamId,
+        associatedProjectIds: updatedData.associatedProjectIds,
         contracts: updatedData.contracts.map(c => ({
             id: c.id,
             startDate: c.startDate,
