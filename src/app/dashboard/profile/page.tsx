@@ -14,18 +14,34 @@ import { useAuth } from "../contexts/AuthContext";
 import { useMembers } from "../contexts/MembersContext";
 import { ChangePhotoDialog } from "./components/change-photo-dialog";
 import { useLanguage } from "../contexts/LanguageContext";
-import { updateUserPasswordAndNotify } from "../actions";
+import { updateUserPasswordAndNotify, addContract as addContractAction, updateContract as updateContractAction, deleteContract as deleteContractAction } from "../actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { ContractDialog } from "../contracts/components/contract-dialog";
+import { DeleteContractDialog } from "../contracts/components/delete-contract-dialog";
+import { useContracts } from "../contexts/ContractsContext";
+import { useSystemLog } from "../contexts/SystemLogContext";
+import { type Contract } from "@/lib/types";
+
 
 export default function ProfilePage() {
   const { toast } = useToast();
   const { currentUser } = useAuth();
-  const { updateMember } = useMembers();
+  const { teamMembers, updateMember, fetchMembers } = useMembers();
   const { t } = useLanguage();
+  const { fetchContracts } = useContracts();
+  const { logAction } = useSystemLog();
+
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+
+  // State for contract dialogs
+  const [isContractDialogOpen, setIsContractDialogOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [deletingContract, setDeletingContract] = useState<Contract | null>(null);
 
   const handlePasswordChange = async (password: string) => {
     if (!currentUser) return;
@@ -71,6 +87,60 @@ export default function ProfilePage() {
       });
     }
   };
+
+  const handleOpenAddContractDialog = () => {
+    setEditingContract(null);
+    setIsContractDialogOpen(true);
+  };
+
+  const handleOpenEditContractDialog = (contract: Contract) => {
+     if (contract.endDate && new Date(contract.endDate) < new Date()) {
+        toast({
+            variant: "destructive",
+            title: "Cannot Edit Expired Contract",
+            description: "This contract has expired and cannot be modified.",
+        });
+        return;
+    }
+    setEditingContract(contract);
+    setIsContractDialogOpen(true);
+  }
+
+  const handleSaveContract = async (data: Omit<Contract, 'id'>, contractId?: string) => {
+      if (contractId) {
+          await updateContractAction(contractId, data);
+          toast({ title: "Contract Updated" });
+          logAction(`User '${currentUser.name}' updated contract #${contractId} for '${currentUser.name}'.`);
+      } else {
+          await addContractAction(data);
+          toast({ title: "Contract Added" });
+          logAction(`User '${currentUser.name}' added a new contract for '${currentUser.name}'.`);
+      }
+      await fetchMembers(); // Refetches all members to get updated contract info
+      setIsContractDialogOpen(false);
+      setEditingContract(null);
+  };
+
+  const handleDeleteContract = async () => {
+      if (!deletingContract) return;
+      if (deletingContract.endDate && new Date(deletingContract.endDate) < new Date()) {
+        toast({
+            variant: "destructive",
+            title: "Cannot Delete Expired Contract",
+            description: "This contract has expired and cannot be deleted.",
+        });
+        setDeletingContract(null);
+        return;
+    }
+
+      await deleteContractAction(deletingContract.id);
+      toast({ title: "Contract Deleted", variant: "destructive" });
+      logAction(`User '${currentUser.name}' deleted contract #${deletingContract.id} for '${currentUser.name}'.`);
+      
+      await fetchMembers();
+      setDeletingContract(null);
+  };
+
 
   if (!currentUser) {
     return null; // or a loading spinner
@@ -119,9 +189,16 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>{t('contractDetails')}</CardTitle>
-            <CardDescription>{t('contractDetailsDesc')}</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>{t('contractDetails')}</CardTitle>
+              <CardDescription>{t('contractDetailsDesc')}</CardDescription>
+            </div>
+            {currentUser.role === 'Super Admin' && (
+                <Button onClick={handleOpenAddContractDialog}>
+                    <PlusCircle className="mr-2 h-4 w-4"/> Add Contract
+                </Button>
+            )}
           </CardHeader>
           <CardContent>
             <Table>
@@ -130,6 +207,7 @@ export default function ProfilePage() {
                         <TableHead>{t('startDate')}</TableHead>
                         <TableHead>{t('endDate')}</TableHead>
                         <TableHead className="text-right">{t('weeklyHours')}</TableHead>
+                         {currentUser.role === 'Super Admin' && <TableHead className="text-right">{t('actions')}</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -140,11 +218,24 @@ export default function ProfilePage() {
                                 <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>
                                 <TableCell>{contract.endDate ? format(new Date(contract.endDate), 'PP') : 'Ongoing'}</TableCell>
                                 <TableCell className="text-right">{contract.weeklyHours}h</TableCell>
+                                {currentUser.role === 'Super Admin' && (
+                                     <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onClick={() => handleOpenEditContractDialog(contract as Contract)} disabled={isPast}>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setDeletingContract(contract as Contract)} className={cn(isPast ? "text-muted-foreground focus:text-muted-foreground" : "text-destructive focus:text-destructive")} disabled={isPast}>Delete</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                )}
                             </TableRow>
                          )
                     }) : (
                         <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">No contracts found.</TableCell>
+                            <TableCell colSpan={currentUser.role === 'Super Admin' ? 4 : 3} className="text-center h-24">No contracts found.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -172,6 +263,20 @@ export default function ProfilePage() {
         isOpen={isPhotoDialogOpen}
         onOpenChange={setIsPhotoDialogOpen}
         onSave={handlePhotoSave}
+      />
+      <ContractDialog
+        isOpen={isContractDialogOpen}
+        onOpenChange={setIsContractDialogOpen}
+        onSave={handleSaveContract}
+        contract={editingContract}
+        users={[currentUser]}
+        userId={currentUser.id}
+      />
+      <DeleteContractDialog
+        isOpen={!!deletingContract}
+        onOpenChange={() => setDeletingContract(null)}
+        onConfirm={handleDeleteContract}
+        contract={deletingContract}
       />
     </>
   )
