@@ -214,13 +214,13 @@ export default function ReportsPage() {
         
         const userHolidaysForYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear && getDay(parseISO(h.date)) !== 0 && getDay(parseISO(h.date)) !== 6).concat(customHolidays.filter(h => {
             if (getYear(parseISO(h.date)) !== selectedYear) return false;
-            if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) === 6) return false;
+            if (getDay(parseISO(h.date)) === 0 || getDay(parseISO(h.date)) !== 6) return false;
             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
             return applies;
         }));
 
         let totalWorkingDaysInYear = 0;
-        let totalContractHoursInYear = 0;
+        let totalAssignedHoursInYear = 0;
         for (let d = new Date(yearStartForProrata); d <= yearEndForProrata; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
             const isHoliday = userHolidaysForYear.some(h => isSameDay(parseISO(h.date), d));
@@ -235,15 +235,16 @@ export default function ReportsPage() {
                 if (activeContractsOnDay.length > 0) {
                     totalWorkingDaysInYear++;
                     const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-                    totalContractHoursInYear += dailyHours;
+                    totalAssignedHoursInYear += dailyHours;
                 }
             }
         }
-
-        const totalYearlyLeaveHours = annualLeaveAllowance * (totalContractHoursInYear / totalWorkingDaysInYear || 0);
         
-        let totalAssignedHours = 0;
-        let totalLeaveHoursCredit = 0;
+        const totalYearlyLeaveHours = annualLeaveAllowance * (member.contract.weeklyHours / 5);
+        const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? (totalYearlyLeaveHours / totalWorkingDaysInYear) : 0;
+        
+        let totalAssignedHoursInPeriod = 0;
+        let workingDaysInPeriod = 0;
         
         for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
             const dayOfWeek = getDay(d);
@@ -257,17 +258,15 @@ export default function ReportsPage() {
                 });
 
                 if (activeContractsOnDay.length > 0) {
+                    workingDaysInPeriod++;
                     const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-                    totalAssignedHours += dailyHours;
-
-                    const dailyLeaveCredit = totalWorkingDaysInYear > 0 ? (totalYearlyLeaveHours / totalWorkingDaysInYear) : 0;
-                    totalLeaveHoursCredit += dailyLeaveCredit;
+                    totalAssignedHoursInPeriod += dailyHours;
                 }
             }
         }
         
-        const assignedHours = parseFloat(totalAssignedHours.toFixed(2));
-        const leaveHours = parseFloat(totalLeaveHoursCredit.toFixed(2));
+        const assignedHours = parseFloat(totalAssignedHoursInPeriod.toFixed(2));
+        const leaveHours = parseFloat((workingDaysInPeriod * dailyLeaveCredit).toFixed(2));
         const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
         const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
         const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
