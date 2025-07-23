@@ -264,8 +264,9 @@
     "contracts": "Verträge",
     "contractsSubtitle": "Alle Arbeitsverträge anzeigen und verwalten.",
     "allContracts": "Alle Verträge",
-    "addContract": "Vertrag hinzufügen",
+    "addContractBtn": "Vertrag hinzufügen",
     "filterByUser": "Nach Benutzer filtern",
     "allContractsDesc": "Eine Liste aller Verträge im System.",
-    "noContractsFound": "Für den ausgewählten Benutzer wurden keine Verträge gefunden."
+    "noContractsFound": "Für den ausgewählten Benutzer wurden keine Verträge gefunden.",
+    "nameColumn": "Name"
 }

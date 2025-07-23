@@ -37,14 +37,31 @@ export function ContractsTable() {
     const [deletingContract, setDeletingContract] = React.useState<Contract | null>(null);
     const [selectedUserIdForNew, setSelectedUserIdForNew] = React.useState<string | undefined>(undefined);
 
-    const filteredContracts = React.useMemo(() => {
-        if (!selectedMemberId) return contracts;
-        return contracts.filter(c => c.userId === selectedMemberId);
-    }, [contracts, selectedMemberId]);
-
     const getUserName = (userId: string) => {
         return teamMembers.find(m => m.id === userId)?.name || userId;
     }
+    
+    const sortedContracts = React.useMemo(() => {
+        return [...contracts].sort((a, b) => {
+            const nameA = getUserName(a.userId).toLowerCase();
+            const nameB = getUserName(b.userId).toLowerCase();
+            
+            if (nameA < nameB) return -1;
+            if (nameA > nameB) return 1;
+
+            // If names are equal, sort by end date (descending, nulls first)
+            const dateA = a.endDate ? new Date(a.endDate).getTime() : Infinity;
+            const dateB = b.endDate ? new Date(b.endDate).getTime() : Infinity;
+            
+            return dateB - dateA;
+        });
+    }, [contracts, teamMembers]);
+
+    const filteredContracts = React.useMemo(() => {
+        if (!selectedMemberId) return sortedContracts;
+        return sortedContracts.filter(c => c.userId === selectedMemberId);
+    }, [sortedContracts, selectedMemberId]);
+
 
     const getUserEmail = (userId: string) => {
         return teamMembers.find(m => m.id === userId)?.email || 'N/A';
@@ -142,7 +159,7 @@ export function ContractsTable() {
                         </PopoverContent>
                     </Popover>
                     <Button onClick={handleOpenAddDialog}>
-                        <PlusCircle className="h-4 w-4 mr-2" /> {t('addContract')}
+                        <PlusCircle className="h-4 w-4 mr-2" /> {t('addContractBtn')}
                     </Button>
                 </div>
             </CardHeader>
@@ -151,7 +168,7 @@ export function ContractsTable() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>ID</TableHead>
-                            <TableHead>{t('name')}</TableHead>
+                            <TableHead>{t('nameColumn')}</TableHead>
                             <TableHead>{t('email')}</TableHead>
                             <TableHead>{t('startDate')}</TableHead>
                             <TableHead>{t('endDate')}</TableHead>
