@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { format, min as minDate, max as maxDate } from "date-fns";
+import { format, min as minDate, max as maxDate, isWithinInterval } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,9 +54,9 @@ export function TeamMembers() {
         return uniqueMembers;
     }, [teamMembers, currentUser]);
     
-    const handleSaveDetails = async (updatedData: EditMemberFormValues) => {
+    const handleSaveDetails = async (originalUser: User, updatedData: EditMemberFormValues) => {
         if (!editingUser) return;
-        await updateMember(editingUser, updatedData);
+        await updateMember(originalUser, updatedData);
         setEditingUser(null);
         toast({
             title: t('memberDetailsUpdated'),
@@ -133,26 +133,32 @@ export function TeamMembers() {
         const now = new Date();
         const activeContracts = member.contracts.filter(c => {
             const start = new Date(c.startDate);
-            const end = c.endDate ? new Date(c.endDate) : now;
-            return start <= now && end >= now;
+            // If end date is null, it's an ongoing contract, so it's active
+            const end = c.endDate ? new Date(c.endDate) : new Date('9999-12-31');
+            return isWithinInterval(now, { start, end });
         });
 
         if (activeContracts.length === 0) {
+            // If no active contracts, find the most recent one to display as fallback
+            const sortedContracts = [...member.contracts].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+            const mostRecent = sortedContracts[0] || member.contract; // Fallback to primary if no contracts at all
             return {
-                weeklyHours: member.contract.weeklyHours, // fallback to primary
-                startDate: member.contract.startDate,
-                endDate: member.contract.endDate
+                weeklyHours: mostRecent.weeklyHours,
+                startDate: mostRecent.startDate,
+                endDate: mostRecent.endDate
             };
         }
 
         const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
         const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
-        const latestEndDate = maxDate(activeContracts.filter(c => c.endDate).map(c => new Date(c.endDate!)));
         
+        const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
+        const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
+
         return {
             weeklyHours: totalWeeklyHours,
             startDate: format(earliestStartDate, 'yyyy-MM-dd'),
-            endDate: activeContracts.some(c => !c.endDate) ? null : format(latestEndDate, 'yyyy-MM-dd'),
+            endDate: latestEndDate ? format(latestEndDate, 'yyyy-MM-dd') : null,
         };
     };
 
@@ -253,7 +259,7 @@ export function TeamMembers() {
                     setEditingUser(null);
                 }
             }}
-            onSave={handleSaveDetails}
+            onSave={(updatedData) => handleSaveDetails(editingUser, updatedData)}
             teamMembers={teamMembers}
         />
       )}

@@ -23,8 +23,8 @@ import { useSystemLog } from '../../contexts/SystemLogContext';
 import { addContract as addContractAction, updateContract as updateContractAction, deleteContract as deleteContractAction } from '../../actions';
 
 export function ContractsTable() {
-    const { teamMembers } = useMembers();
-    const { contracts, isLoading, addContract, updateContract, deleteContract: deleteContractFromContext } = useContracts();
+    const { teamMembers, fetchMembers } = useMembers();
+    const { contracts, fetchContracts } = useContracts();
     const { t } = useLanguage();
     const { toast } = useToast();
     const { currentUser } = useAuth();
@@ -49,7 +49,6 @@ export function ContractsTable() {
             if (nameA < nameB) return -1;
             if (nameA > nameB) return 1;
 
-            // If names are equal, sort by end date (descending, nulls first)
             const dateA = a.endDate ? new Date(a.endDate).getTime() : Infinity;
             const dateB = b.endDate ? new Date(b.endDate).getTime() : Infinity;
             
@@ -74,33 +73,53 @@ export function ContractsTable() {
     }
     
     const handleOpenEditDialog = (contract: Contract) => {
+        if (contract.endDate && new Date(contract.endDate) < new Date()) {
+            toast({
+                variant: "destructive",
+                title: "Cannot Edit Expired Contract",
+                description: "Contract Expired. Edit/Delete operation is not possible.",
+            });
+            return;
+        }
         setEditingContract(contract);
         setSelectedUserIdForNew(undefined);
         setIsDialogOpen(true);
     }
 
-    const handleSaveContract = async (data: Omit<Contract, 'id'>) => {
-        if (editingContract) {
-            await updateContractAction(editingContract.id, data);
-            updateContract(editingContract.id, data);
+    const handleSaveContract = async (data: Omit<Contract, 'id'>, contractId?: string) => {
+        if (contractId) {
+            await updateContractAction(contractId, data);
             toast({ title: "Contract Updated" });
-            logAction(`User '${currentUser.name}' updated contract #${editingContract.id}.`);
+            logAction(`User '${currentUser.name}' updated contract #${contractId}.`);
         } else {
             await addContractAction(data);
-            addContract(data); // This might need adjustment if the context isn't set up for this
             toast({ title: "Contract Added" });
             logAction(`User '${currentUser.name}' added a new contract for user ID ${data.userId}.`);
         }
+        await fetchContracts();
+        await fetchMembers(); // Also refetch members to update their contract info
         setIsDialogOpen(false);
         setEditingContract(null);
     }
 
     const handleDeleteContract = async () => {
         if (!deletingContract) return;
+        if (deletingContract.endDate && new Date(deletingContract.endDate) < new Date()) {
+            toast({
+                variant: "destructive",
+                title: "Cannot Delete Expired Contract",
+                description: "Contract Expired. Edit/Delete operation is not possible.",
+            });
+            setDeletingContract(null);
+            return;
+        }
+
         await deleteContractAction(deletingContract.id);
-        deleteContractFromContext(deletingContract.id);
         toast({ title: "Contract Deleted", variant: "destructive" });
         logAction(`User '${currentUser.name}' deleted contract #${deletingContract.id}.`);
+        
+        await fetchContracts();
+        await fetchMembers();
         setDeletingContract(null);
     }
     
@@ -180,7 +199,7 @@ export function ContractsTable() {
                         {filteredContracts.map(contract => {
                             const isPast = contract.endDate ? new Date(contract.endDate) < new Date() : false;
                             return (
-                                <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground")}>
+                                <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/20")}>
                                     <TableCell className="font-mono text-xs">{contract.id}</TableCell>
                                     <TableCell>{getUserName(contract.userId)}</TableCell>
                                     <TableCell>{getUserEmail(contract.userId)}</TableCell>
@@ -193,8 +212,8 @@ export function ContractsTable() {
                                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => handleOpenEditDialog(contract)}>Edit</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setDeletingContract(contract)} className="text-destructive">Delete</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleOpenEditDialog(contract)} disabled={isPast}>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setDeletingContract(contract)} className={cn(isPast ? "text-muted-foreground focus:text-muted-foreground" : "text-destructive focus:text-destructive")} disabled={isPast}>Delete</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

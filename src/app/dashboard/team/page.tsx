@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { PlusCircle, FileUp } from "lucide-react";
 import * as XLSX from 'xlsx-js-style';
-import { format, min as minDate, max as maxDate } from "date-fns";
+import { format, min as minDate, max as maxDate, isWithinInterval } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { type User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -67,26 +67,29 @@ export default function TeamPage() {
         const now = new Date();
         const activeContracts = member.contracts.filter(c => {
             const start = new Date(c.startDate);
-            const end = c.endDate ? new Date(c.endDate) : now;
-            return start <= now && end >= now;
+            const end = c.endDate ? new Date(c.endDate) : new Date('9999-12-31');
+            return isWithinInterval(now, { start, end });
         });
 
         if (activeContracts.length === 0) {
+            const sortedContracts = [...member.contracts].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+            const mostRecent = sortedContracts[0] || member.contract;
             return {
-                weeklyHours: member.contract.weeklyHours, // fallback to primary
-                startDate: member.contract.startDate,
-                endDate: member.contract.endDate
+                weeklyHours: mostRecent.weeklyHours,
+                startDate: mostRecent.startDate,
+                endDate: mostRecent.endDate
             };
         }
 
         const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
         const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
-        const latestEndDate = maxDate(activeContracts.filter(c => c.endDate).map(c => new Date(c.endDate!)));
+        const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
+        const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
         
         return {
             weeklyHours: totalWeeklyHours,
             startDate: format(earliestStartDate, 'yyyy-MM-dd'),
-            endDate: activeContracts.some(c => !c.endDate) ? null : format(latestEndDate, 'yyyy-MM-dd'),
+            endDate: latestEndDate ? format(latestEndDate, 'yyyy-MM-dd') : null,
         };
     };
 

@@ -3,15 +3,12 @@
 
 import * as React from 'react';
 import { type Contract } from "@/lib/types";
-import { useMembers } from './MembersContext';
 import { getContracts as getContractsAction } from '../actions';
 
 interface ContractsContextType {
   contracts: Contract[];
   isLoading: boolean;
-  addContract: (newContract: Omit<Contract, 'id'>) => void;
-  updateContract: (contractId: string, updatedData: Omit<Contract, 'id'>) => void;
-  deleteContract: (contractId: string) => void;
+  fetchContracts: () => Promise<void>;
 }
 
 export const ContractsContext = React.createContext<ContractsContextType | undefined>(undefined);
@@ -36,24 +33,8 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
       fetchContracts();
   }, [fetchContracts]);
 
-  const addContract = (newContractData: Omit<Contract, 'id'>) => {
-    // This is optimistic UI update. A re-fetch is better for real apps.
-    const tempId = `contract-${Date.now()}`;
-    setContracts(prev => [...prev, {id: tempId, ...newContractData}]);
-    fetchContracts(); // Re-fetch to get the real data from the server
-  }
-  
-  const updateContract = (contractId: string, updatedData: Omit<Contract, 'id'>) => {
-      setContracts(prev => prev.map(c => c.id === contractId ? {id: contractId, ...updatedData} : c));
-      fetchContracts();
-  }
-
-  const deleteContract = (contractId: string) => {
-      setContracts(prev => prev.filter(c => c.id !== contractId));
-  }
-
   return (
-    <ContractsContext.Provider value={{ contracts, isLoading, addContract, updateContract, deleteContract }}>
+    <ContractsContext.Provider value={{ contracts, isLoading, fetchContracts }}>
       {children}
     </ContractsContext.Provider>
   );

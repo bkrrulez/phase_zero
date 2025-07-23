@@ -25,7 +25,7 @@ type ContractFormValues = z.infer<typeof contractFormSchema>;
 interface ContractDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (data: Omit<Contract, 'id'>) => void;
+  onSave: (data: Omit<Contract, 'id'>, contractId?: string) => void;
   contract: Contract | null;
   users: User[];
   userId?: string; // Optional userId for pre-selection
@@ -67,7 +67,7 @@ export function ContractDialog({ isOpen, onOpenChange, onSave, contract, users, 
     onSave({
       ...data,
       endDate: data.endDate || null,
-    });
+    }, contract?.id);
   };
 
   return (
