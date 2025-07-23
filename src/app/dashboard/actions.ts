@@ -498,6 +498,11 @@ export async function deleteTimeEntry(entryId: string): Promise<void> {
 }
 
 // ========== Contracts ==========
+export async function getContracts(): Promise<Contract[]> {
+    const result = await db.query('SELECT * FROM contracts ORDER BY start_date DESC');
+    return result.rows.map(mapDbContractToContract);
+}
+
 
 export async function addContract(contractData: Omit<Contract, 'id'>): Promise<void> {
     const { userId, startDate, endDate, weeklyHours } = contractData;
