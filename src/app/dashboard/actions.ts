@@ -601,40 +601,29 @@ export async function sendContractEndNotificationsNow(): Promise<number> {
     // Store which contracts have already been notified to avoid duplicates in one run
     const notifiedContractIds = new Set<string>();
 
-    const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification }[] = [];
+    const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification; contract: Omit<Contract, "userId"> }[] = [];
 
     for (const user of allUsers) {
-        const relevantContract = user.contracts
-            .filter(c => c.endDate)
-            .sort((a,b) => new Date(b.endDate!).getTime() - new Date(a.endDate!).getTime())[0];
+        for (const contract of user.contracts) {
+            if (!contract.id || !contract.endDate || notifiedContractIds.has(contract.id)) {
+                continue;
+            }
 
-        if (!relevantContract || !relevantContract.id || !relevantContract.endDate || notifiedContractIds.has(relevantContract.id)) {
-            continue;
-        }
+            const contractEndDate = new Date(contract.endDate);
+            if (contractEndDate < today) continue; 
 
-        const contractEndDate = new Date(relevantContract.endDate);
-        if (contractEndDate < today) continue; 
+            const daysUntilExpiry = differenceInDays(contractEndDate, today);
 
-        const daysUntilExpiry = differenceInDays(contractEndDate, today);
-
-        // Check if the expiry is within any of the threshold days
-        const shouldNotify = rules.some(rule => {
-            const userBelongsToTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
-            if (!userBelongsToTeam) return false;
+            const applicableRule = rules.find(rule => {
+                const userBelongsToTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
+                if (!userBelongsToTeam) return false;
+                
+                return rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold);
+            });
             
-            // Notify if daysUntilExpiry is less than or equal to any threshold day
-            return rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold);
-        });
-        
-        if (shouldNotify) {
-            const applicableRule = rules.find(rule => 
-                (rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId))) &&
-                rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold)
-            );
-
             if(applicableRule) {
-                usersToNotifyDetails.push({ user, daysUntilExpiry, rule: applicableRule });
-                notifiedContractIds.add(relevantContract.id);
+                usersToNotifyDetails.push({ user, daysUntilExpiry, rule: applicableRule, contract });
+                notifiedContractIds.add(contract.id);
             }
         }
     }
