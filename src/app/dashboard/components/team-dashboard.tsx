@@ -3,11 +3,10 @@
 
 import { useMemo } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { isSameDay, startOfMonth, getDay, addDays, endOfMonth, isWithinInterval, differenceInCalendarDays, startOfYear, endOfYear, max, min, getDaysInMonth } from "date-fns";
+import { isSameDay, startOfMonth, getDay, addDays, endOfMonth, isWithinInterval, startOfYear, endOfYear, getYear, parseISO, isSameMonth } from "date-fns";
 import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useMembers } from "../contexts/MembersContext";
 import { useHolidays } from "../contexts/HolidaysContext";
@@ -21,33 +20,6 @@ export function TeamDashboard() {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
 
-  const getProratedAllowance = useMemo(() => (user: typeof currentUser) => {
-    const parseDateStringAsLocal = (dateString: string): Date => {
-        const [year, month, day] = dateString.split('-').map(Number);
-        return new Date(year, month - 1, day);
-    };
-
-    const { startDate, endDate } = user.contract;
-    const today = new Date();
-    const yearStart = startOfYear(today);
-    const yearEnd = endOfYear(today);
-    const daysInYear = differenceInCalendarDays(yearEnd, yearStart) + 1;
-
-    const contractStart = parseDateStringAsLocal(startDate);
-    const contractEnd = endDate ? parseDateStringAsLocal(endDate) : yearEnd;
-
-    const effectiveStartDate = max([yearStart, contractStart]);
-    const effectiveEndDate = min([yearEnd, contractEnd]);
-
-    if (effectiveStartDate > effectiveEndDate) {
-        return 0;
-    }
-
-    const contractDurationInYear = differenceInCalendarDays(effectiveEndDate, effectiveStartDate) + 1;
-    
-    return (annualLeaveAllowance / daysInYear) * contractDurationInYear;
-  }, [annualLeaveAllowance]);
-
   const teamPerformance = useMemo(() => {
     const visibleMembers = teamMembers.filter(member => {
         if (currentUser.role === 'Super Admin') {
@@ -60,72 +32,112 @@ export function TeamDashboard() {
     });
 
     const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
+    const periodStart = startOfMonth(today);
+    const periodEnd = endOfMonth(today);
+    const selectedYear = getYear(today);
+
+    // --- Standardized Leave Calculation ---
+    const yearStart = startOfYear(new Date(selectedYear, 0, 1));
+    const yearEndForLeave = endOfYear(new Date(selectedYear, 11, 31));
+    
+    let standardWorkingDaysInYear = 0;
+    const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
+
+    for (let d = new Date(yearStart); d <= yearEndForLeave; d = addDays(d, 1)) {
+        const dayOfWeek = getDay(d);
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        const isPublicHoliday = publicHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
+        if (isPublicHoliday) continue;
+        standardWorkingDaysInYear++;
+    }
+
+    const dailyLeaveCredit = standardWorkingDaysInYear > 0 ? annualLeaveAllowance / standardWorkingDaysInYear : 0;
+    // --- End Standardized Leave Calculation ---
     
     return visibleMembers.map(member => {
-      const dailyContractHours = member.contract.weeklyHours / 5;
-
-      // 1. Calculate Assigned Hours for the whole month
-      let assignedWorkDaysInMonth = 0;
-      const monthHolidays = publicHolidays.filter(h => isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd}))
+      const userHolidaysInYear = publicHolidaysInYear
         .concat(customHolidays.filter(h => {
-             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-             return applies && isWithinInterval(new Date(h.date), {start: monthStart, end: monthEnd});
+            if (getYear(parseISO(h.date)) !== selectedYear) return false;
+            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
+            return applies;
         }));
 
-      for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
-        const dayOfWeek = getDay(d);
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-        if (isHoliday) continue;
-        assignedWorkDaysInMonth++;
+      let assignedHoursInPeriod = 0;
+      let workingDaysInPeriod = 0;
+
+      for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
+          const dayOfWeek = getDay(d);
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          
+          const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
+          if (isHoliday) continue;
+          
+          const activeContractsOnDay = member.contracts.filter(c => {
+              const contractStart = parseISO(c.startDate);
+              const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForLeave;
+              return isWithinInterval(d, { start: contractStart, end: contractEnd });
+          });
+
+          if (activeContractsOnDay.length > 0) {
+              workingDaysInPeriod++;
+              const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+              assignedHoursInPeriod += dailyHours;
+          }
       }
-      const assignedHours = assignedWorkDaysInMonth * dailyContractHours;
-
-      // 2. Calculate Leave Hours for the month (prorated from annual)
-      const yearStartForProrata = startOfYear(today);
-      const yearEndForProrata = endOfYear(today);
-      const daysInYear = differenceInCalendarDays(yearEndForProrata, yearStartForProrata) + 1;
-
-      const proratedAllowanceDays = getProratedAllowance(member);
-      const totalYearlyLeaveHours = proratedAllowanceDays * dailyContractHours;
-      const daysInCurrentMonth = getDaysInMonth(today);
-      const leaveHours = (totalYearlyLeaveHours * daysInCurrentMonth) / daysInYear;
-
-      // 3. Calculate Expected Hours for the month
-      const expectedHours = assignedHours - leaveHours;
-
-      // 4. Calculate Logged Hours for the month so far
-      const userTimeEntries = timeEntries.filter(entry => {
-        const entryDate = new Date(entry.date);
-        return entry.userId === member.id && isWithinInterval(entryDate, { start: monthStart, end: monthEnd });
-      });
-      const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
-
-      // 5. Calculate Performance (Overtime/Deficit) so far
-      let workDaysSoFar = 0;
-      for (let d = new Date(monthStart); d <= today; d = addDays(d, 1)) {
-        const dayOfWeek = getDay(d);
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isHoliday = monthHolidays.some(h => new Date(h.date).toDateString() === d.toDateString());
-        if (!isHoliday) {
-          workDaysSoFar++;
-        }
-      }
-      const assignedHoursSoFar = workDaysSoFar * dailyContractHours;
-      const leaveHoursSoFar = (totalYearlyLeaveHours * today.getDate()) / daysInYear;
-      const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
-      const performance = manualTotalHours - expectedHoursSoFar;
+      const assignedHours = parseFloat(assignedHoursInPeriod.toFixed(2));
       
+      const leaveDaysInPeriod = workingDaysInPeriod * dailyLeaveCredit;
+      const avgDailyHoursInPeriod = workingDaysInPeriod > 0 ? assignedHours / workingDaysInPeriod : 0;
+      const leaveHours = parseFloat((leaveDaysInPeriod * avgDailyHoursInPeriod).toFixed(2));
+      
+      const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
+
+      // Calculate Logged Hours for the month so far
+      const userTimeEntries = timeEntries.filter(entry => {
+        const entryDate = parseISO(entry.date);
+        return entry.userId === member.id && isSameMonth(entryDate, today);
+      });
+      const loggedHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
+
+      // --- Performance Calculation (Overtime/Deficit so far) ---
+      let assignedHoursSoFar = 0;
+      let workingDaysSoFar = 0;
+
+      for (let d = new Date(periodStart); d <= today; d = addDays(d, 1)) {
+          const dayOfWeek = getDay(d);
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          
+          const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
+          if (isHoliday) continue;
+          
+          const activeContractsOnDay = member.contracts.filter(c => {
+              const contractStart = parseISO(c.startDate);
+              const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForLeave;
+              return isWithinInterval(d, { start: contractStart, end: contractEnd });
+          });
+
+          if (activeContractsOnDay.length > 0) {
+              workingDaysSoFar++;
+              const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
+              assignedHoursSoFar += dailyHours;
+          }
+      }
+      
+      const leaveDaysSoFar = workingDaysSoFar * dailyLeaveCredit;
+      const avgDailyHoursSoFar = workingDaysSoFar > 0 ? assignedHoursSoFar / workingDaysSoFar : 0;
+      const leaveHoursSoFar = leaveDaysSoFar * avgDailyHoursSoFar;
+      const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
+
+      const performance = loggedHours - expectedHoursSoFar;
+
       return {
         ...member,
-        totalHours: manualTotalHours,
+        totalHours: loggedHours,
         expectedHours,
         performance,
       }
     });
-  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser, getProratedAllowance]);
+  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser, annualLeaveAllowance]);
 
   const usersWithOvertime = teamPerformance
     .filter(u => u.performance > 0)
