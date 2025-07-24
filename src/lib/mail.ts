@@ -2,7 +2,7 @@
 'use server';
 
 import nodemailer from 'nodemailer';
-import { type User, type HolidayRequest, type ContractEndNotification } from './types';
+import { type User, type HolidayRequest, type ContractEndNotification, type Contract } from './types';
 import { format } from 'date-fns';
 
 const createTransporter = () => {
@@ -132,7 +132,7 @@ export async function sendHolidayRequestUpdateEmail({ request, user, approver, t
 }
 
 export async function sendContractEndNotifications(
-    expiringContractsDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification }[],
+    expiringContractsDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification, contract: Omit<Contract, 'userId'> }[],
     allUsers: User[]
 ) {
     const transporter = createTransporter();
@@ -168,7 +168,7 @@ export async function sendContractEndNotifications(
         if (recipients.length === 0) continue;
 
         const userListHtml = expiringUsers
-            .map(u => `<li>${u.user.name} (${u.user.email}) - Contract ends on ${format(new Date(u.user.contract.endDate!), 'PP')} (${u.daysUntilExpiry} days)</li>`)
+            .map(u => `<li>${u.user.name} (${u.user.email}) - Contract ends on ${format(new Date(u.contract.endDate!), 'PP')} (${u.daysUntilExpiry} days)</li>`)
             .join('');
 
         const mailOptions = {
@@ -195,14 +195,14 @@ export async function sendContractEndNotifications(
 
     // Send individual emails to the users whose contracts are expiring
     for (const detail of expiringContractsDetails) {
-        const { user } = detail;
+        const { user, contract } = detail;
         const mailOptions = {
             from: process.env.SMTP_FROM,
             to: user.email,
             subject: 'Your Employment Contract is Nearing Expiration',
             html: `
                 <p>Hello ${user.name},</p>
-                <p>This is a reminder that your employment contract is scheduled to end on <b>${format(new Date(user.contract.endDate!), 'PP')}</b>.</p>
+                <p>This is a reminder that your employment contract is scheduled to end on <b>${format(new Date(contract.endDate!), 'PP')}</b>.</p>
                 <p>Kindly reach out to your Admin or Supervisor for more details.</p>
                 <br/>
                 <p>Thanks,</p>
