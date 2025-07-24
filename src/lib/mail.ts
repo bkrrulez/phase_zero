@@ -174,11 +174,13 @@ export async function sendContractEndNotifications(
         const mailOptions = {
             from: process.env.SMTP_FROM,
             to: recipients.join(','),
-            subject: 'Contract Expiry Notification',
+            subject: 'Upcoming Contract Expirations – Action Required',
             html: `
-                <h1>Upcoming Contract Expiries</h1>
-                <p>The following users have contracts ending soon:</p>
+                <p>Dear Team,</p>
+                <p>Please be advised that the following users have contracts set to expire soon:</p>
                 <ul>${userListHtml}</ul>
+                <p>Kindly review these contracts and take any necessary actions to ensure continuity or begin offboarding procedures as appropriate.</p>
+                <br/>
                 <p>This is an automated notification from TimeTool.</p>
             `,
         };
@@ -197,12 +199,12 @@ export async function sendContractEndNotifications(
         const mailOptions = {
             from: process.env.SMTP_FROM,
             to: user.email,
-            subject: 'Your Employment Contract is Ending Soon',
+            subject: 'Your Employment Contract is Nearing Expiration',
             html: `
-                <h1>Contract Ending Soon</h1>
                 <p>Hello ${user.name},</p>
-                <p>This is a reminder that your employment contract with us is scheduled to end on <b>${format(new Date(user.contract.endDate!), 'PP')}</b>.</p>
-                <p>Please reach out to your supervisor or HR for more details about your contract renewal or off-boarding process.</p>
+                <p>This is a reminder that your employment contract is scheduled to end on <b>${format(new Date(user.contract.endDate!), 'PP')}</b>.</p>
+                <p>Kindly reach out to your Admin or Supervisor for more details.</p>
+                <br/>
                 <p>Thanks,</p>
                 <p>The TimeTool Team</p>
             `,
