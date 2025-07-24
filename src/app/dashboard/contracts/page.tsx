@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '../contexts/AuthContext';
 import { ContractsTable } from './components/contracts-table';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ContractEndNotificationTab } from './components/contract-end-notification-tab';
 
 export default function ContractsPage() {
     const { currentUser } = useAuth();
@@ -31,7 +33,18 @@ export default function ContractsPage() {
                 <h1 className="text-3xl font-bold font-headline">{t('contracts')}</h1>
                 <p className="text-muted-foreground">{t('contractsSubtitle')}</p>
             </div>
-            <ContractsTable />
+            <Tabs defaultValue="all-contracts">
+                <TabsList className="grid w-full grid-cols-2 md:w-[450px]">
+                    <TabsTrigger value="all-contracts">{t('allContracts')}</TabsTrigger>
+                    <TabsTrigger value="end-notifications">Contract End Notifications</TabsTrigger>
+                </TabsList>
+                <TabsContent value="all-contracts" className="mt-4">
+                    <ContractsTable />
+                </TabsContent>
+                <TabsContent value="end-notifications" className="mt-4">
+                    <ContractEndNotificationTab />
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }

@@ -1,4 +1,5 @@
 
+
 export type Contract = {
   id: string;
   userId: string;
@@ -120,6 +121,14 @@ export type LogEntry = {
   id:string;
   timestamp: string; // ISO string
   message: string;
+};
+
+export type ContractEndNotification = {
+    id: string;
+    teamIds: string[];
+    recipientUserIds: string[];
+    recipientEmails: string[];
+    thresholdDays: number[];
 };
 
 export type InitialData = {
