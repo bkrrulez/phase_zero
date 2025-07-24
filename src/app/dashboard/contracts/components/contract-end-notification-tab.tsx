@@ -68,7 +68,10 @@ export function ContractEndNotificationTab() {
                     </div>
                     <div className="flex w-full md:w-auto gap-2">
                         <Button variant="outline">Send Now</Button>
-                        <Button onClick={() => setIsAddEditDialogOpen(true)}>
+                        <Button onClick={() => {
+                            setEditingNotification(null);
+                            setIsAddEditDialogOpen(true);
+                        }}>
                             <PlusCircle className="h-4 w-4 mr-2" /> Add Notification
                         </Button>
                     </div>
