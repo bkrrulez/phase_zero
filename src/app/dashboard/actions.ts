@@ -18,6 +18,7 @@ import {
   type AppNotification,
   type LogEntry,
   type Contract,
+  type ContractEndNotification,
 } from '@/lib/types';
 import { format, subYears } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -98,6 +99,15 @@ const mapDbHolidayRequestToHolidayRequest = (row: any): HolidayRequest => ({
   actionByUserId: row.action_by_user_id,
   actionTimestamp: row.action_timestamp ? new Date(row.action_timestamp).toISOString() : null,
 });
+
+const mapDbContractEndNotification = (row: any): ContractEndNotification => ({
+    id: row.id,
+    teamIds: row.team_ids,
+    recipientUserIds: row.recipient_user_ids,
+    recipientEmails: row.recipient_emails,
+    thresholdDays: row.threshold_days.map(Number) // Ensure numbers
+});
+
 
 // ========== Users & Auth ==========
 
@@ -526,6 +536,47 @@ export async function updateContract(contractId: string, contractData: Omit<Cont
 export async function deleteContract(contractId: string): Promise<void> {
     await db.query('DELETE FROM contracts WHERE id = $1', [contractId]);
     revalidatePath('/dashboard/contracts');
+}
+
+// ========== Contract End Notifications ==========
+export async function getContractEndNotifications(): Promise<ContractEndNotification[]> {
+    try {
+        const result = await db.query('SELECT * FROM contract_end_notifications');
+        return result.rows.map(mapDbContractEndNotification);
+    } catch (error) {
+        console.error('Error getting contract end notifications:', error);
+        // If the table doesn't exist, return an empty array to prevent app crash
+        if (error.code === '42P01') { // 'undefined_table' error code for PostgreSQL
+            console.warn('contract_end_notifications table not found. Returning empty array.');
+            return [];
+        }
+        throw error;
+    }
+}
+
+export async function addContractEndNotification(notificationData: Omit<ContractEndNotification, 'id'>): Promise<ContractEndNotification | null> {
+    const { teamIds, recipientUserIds, recipientEmails, thresholdDays } = notificationData;
+    const id = `cen-${Date.now()}`;
+    try {
+        const result = await db.query(
+            'INSERT INTO contract_end_notifications (id, team_ids, recipient_user_ids, recipient_emails, threshold_days) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [id, teamIds, recipientUserIds || [], recipientEmails || [], thresholdDays]
+        );
+        revalidatePath('/dashboard/contracts');
+        return mapDbContractEndNotification(result.rows[0]);
+    } catch (error) {
+        console.error("Failed to add contract end notification", error);
+        return null;
+    }
+}
+
+export async function deleteContractEndNotification(notificationId: string): Promise<void> {
+    try {
+        await db.query('DELETE FROM contract_end_notifications WHERE id = $1', [notificationId]);
+        revalidatePath('/dashboard/contracts');
+    } catch (error) {
+        console.error("Failed to delete contract end notification", error);
+    }
 }
 
 

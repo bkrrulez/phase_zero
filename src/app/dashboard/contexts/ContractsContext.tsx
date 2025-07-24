@@ -2,12 +2,7 @@
 
 import * as React from 'react';
 import { type Contract, type ContractEndNotification } from "@/lib/types";
-import { getContracts as getContractsAction } from '../actions';
-
-// Mocked data and actions for contract end notifications as they are not in the DB
-const MOCKED_NOTIFICATIONS: ContractEndNotification[] = [];
-let MOCKED_NOTIFICATIONS_ID_COUNTER = 0;
-
+import { getContracts as getContractsAction, getContractEndNotifications as getNotificationsAction, addContractEndNotification as addNotificationAction, deleteContractEndNotification as deleteNotificationAction } from '../actions';
 
 interface ContractsContextType {
   contracts: Contract[];
@@ -22,16 +17,20 @@ export const ContractsContext = React.createContext<ContractsContextType | undef
 
 export function ContractsProvider({ children }: { children: React.ReactNode }) {
   const [contracts, setContracts] = React.useState<Contract[]>([]);
-  const [contractEndNotifications, setContractEndNotifications] = React.useState<ContractEndNotification[]>(MOCKED_NOTIFICATIONS);
+  const [contractEndNotifications, setContractEndNotifications] = React.useState<ContractEndNotification[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const fetchContracts = React.useCallback(async () => {
     setIsLoading(true);
     try {
-        const fetchedContracts = await getContractsAction();
+        const [fetchedContracts, fetchedNotifications] = await Promise.all([
+            getContractsAction(),
+            getNotificationsAction()
+        ]);
         setContracts(fetchedContracts);
+        setContractEndNotifications(fetchedNotifications);
     } catch (e) {
-        console.error("Failed to fetch contracts", e);
+        console.error("Failed to fetch contracts data", e);
     } finally {
         setIsLoading(false);
     }
@@ -41,13 +40,15 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
       fetchContracts();
   }, [fetchContracts]);
 
-  // Mocked actions
   const addContractEndNotification = async (notification: Omit<ContractEndNotification, 'id'>) => {
-      const newNotification = { ...notification, id: `cen-${MOCKED_NOTIFICATIONS_ID_COUNTER++}` };
-      setContractEndNotifications(prev => [...prev, newNotification]);
+      const newNotification = await addNotificationAction(notification);
+      if (newNotification) {
+        setContractEndNotifications(prev => [...prev, newNotification]);
+      }
   };
 
   const deleteContractEndNotification = async (notificationId: string) => {
+      await deleteNotificationAction(notificationId);
       setContractEndNotifications(prev => prev.filter(n => n.id !== notificationId));
   }
 
