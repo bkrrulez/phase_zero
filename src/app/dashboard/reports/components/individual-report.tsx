@@ -487,7 +487,7 @@ export function IndividualReport() {
         <LogTimeDialog
           isOpen={!!editingEntry}
           onOpenChange={() => setEditingEntry(null)}
-          onSave={handleSaveEntry}
+          onSave={(data, entryId) => handleSaveEntry(data as Omit<LogTimeFormValues, 'userId'>, entryId)}
           entryToEdit={editingEntry}
           userId={selectedUser.id}
         />

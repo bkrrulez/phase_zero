@@ -63,7 +63,7 @@ import { cn } from "@/lib/utils";
 import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
 import { NotificationPopover } from "./components/notification-popover";
 import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
-import { MembersProvider } from "./contexts/MembersContext";
+import { MembersProvider, useMembers } from "./contexts/MembersContext";
 import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
 import { TasksProvider } from "./contexts/TasksContext";
@@ -113,6 +113,7 @@ function LanguageToggle() {
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, logout, isLoading: isAuthLoading } = useAuth();
+  const { teamMembers } = useMembers();
   const { logTime } = useTimeTracking();
   const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   const { t } = useLanguage();
@@ -153,7 +154,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       console.error("Attempted to edit an entry from the main log time dialog.");
       return Promise.resolve({ success: false });
     }
-    return logTime(data, currentUser!.id);
+    const userIdToLogFor = data.userId || currentUser!.id;
+    return logTime(data, userIdToLogFor, teamMembers);
   };
   
   const isLoading = isAuthLoading || isSettingsLoading;

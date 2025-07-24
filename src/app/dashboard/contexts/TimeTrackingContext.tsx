@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -12,8 +11,8 @@ import { getTimeEntries, logTime as logTimeAction, updateTimeEntry as updateTime
 
 interface TimeTrackingContextType {
   timeEntries: TimeEntry[];
-  logTime: (data: LogTimeFormValues, userId: string) => Promise<{ success: boolean }>;
-  updateTimeEntry: (entryId: string, data: LogTimeFormValues, userId: string, allUsers: User[]) => Promise<{ success: boolean }>;
+  logTime: (data: LogTimeFormValues, userId: string, allUsers: User[]) => Promise<{ success: boolean }>;
+  updateTimeEntry: (entryId: string, data: Omit<LogTimeFormValues, 'userId'>, userId: string, allUsers: User[]) => Promise<{ success: boolean }>;
   deleteTimeEntry: (entryId: string) => Promise<{ success: boolean }>;
   isLoading: boolean;
 }
@@ -43,7 +42,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
     fetchEntries();
   }, [fetchEntries]);
 
-  const logTime = async (data: LogTimeFormValues, userId: string): Promise<{ success: boolean }> => {
+  const logTime = async (data: LogTimeFormValues, userId: string, allUsers: User[]): Promise<{ success: boolean }> => {
     try {
       const start = new Date(`1970-01-01T${data.startTime}`);
       const end = new Date(`1970-01-01T${data.endTime}`);
@@ -76,7 +75,11 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
             title: "Time Logged Successfully",
             description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
         });
-        await logAction(`User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`);
+        const targetUser = allUsers.find(u => u.id === userId);
+        const logMessage = currentUser.id === userId 
+            ? `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`
+            : `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours on behalf of '${targetUser?.name || 'Unknown User'}'.`;
+        await logAction(logMessage);
         return { success: true };
       }
       return { success: false };
@@ -91,7 +94,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const updateTimeEntry = async (entryId: string, data: LogTimeFormValues, userId: string, allUsers: User[]): Promise<{ success: boolean }> => {
+  const updateTimeEntry = async (entryId: string, data: Omit<LogTimeFormValues, 'userId'>, userId: string, allUsers: User[]): Promise<{ success: boolean }> => {
     try {
       const updatedEntryData = {
         userId: userId,

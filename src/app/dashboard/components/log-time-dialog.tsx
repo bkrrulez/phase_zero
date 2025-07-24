@@ -26,6 +26,7 @@ import type { TimeEntry } from "@/lib/types";
 import { useMembers } from "../contexts/MembersContext";
 
 const logTimeSchema = z.object({
+  userId: z.string().optional(),
   date: z.date({ required_error: "A date is required." }),
   startTime: z.string().min(1, { message: "Start time is required." }),
   endTime: z.string().min(1, { message: "End time is required." }),
@@ -51,12 +52,11 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   const { currentUser } = useAuth();
   const { teamMembers } = useMembers();
   const isEditMode = !!entryToEdit;
-  
-  const targetUser = teamMembers.find(m => m.id === (userId || currentUser.id));
 
   const form = useForm<LogTimeFormValues>({
     resolver: zodResolver(logTimeSchema),
     defaultValues: {
+      userId: currentUser.id,
       date: new Date(),
       startTime: '',
       endTime: '',
@@ -65,6 +65,9 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
       remarks: '',
     }
   });
+
+  const selectedUserId = form.watch("userId");
+  const targetUser = teamMembers.find(m => m.id === (isEditMode ? userId : selectedUserId));
   
   const { freezeRules } = useAccessControl();
 
@@ -96,6 +99,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
       const entryDate = new Date(entryToEdit.date);
       
       form.reset({
+        userId: entryToEdit.userId,
         date: entryDate,
         startTime: entryToEdit.startTime,
         endTime: entryToEdit.endTime,
@@ -113,6 +117,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     } else {
       setIsFormDisabled(false);
       form.reset({
+        userId: currentUser.id,
         date: new Date(),
         startTime: '',
         endTime: '',
@@ -121,7 +126,14 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         remarks: '',
       });
     }
-  }, [entryToEdit, isOpen, form, isEditMode, targetUser]);
+  }, [entryToEdit, isOpen, form, isEditMode, currentUser.id]);
+
+  useEffect(() => {
+    if (targetUser && !isEditMode) {
+        form.setValue('project', '');
+        form.setValue('task', '');
+    }
+  }, [selectedUserId, form, isEditMode, targetUser]);
 
 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -152,7 +164,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     }
   }
 
-  if (!targetUser) return null;
+  if (!currentUser) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -163,7 +175,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
             {isFormDisabled 
               ? `This entry cannot be modified because the date is within a frozen period.`
               : isEditMode 
-                ? `Editing entry for ${targetUser.name}.` 
+                ? `Editing entry for ${targetUser?.name}.` 
                 : "Fill in the details below to log your work time. Click save when you're done."
             }
           </DialogDescription>
@@ -171,6 +183,30 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <fieldset disabled={isFormDisabled} className="space-y-4">
+              {!isEditMode && currentUser.role === 'Super Admin' && (
+                <FormField
+                  control={form.control}
+                  name="userId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>User</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a user" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {teamMembers.map((member) => (
+                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <FormField
                 control={form.control}
                 name="date"
@@ -258,7 +294,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Project</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!targetUser}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a project" />
