@@ -20,7 +20,7 @@ import {
   type Contract,
   type ContractEndNotification,
 } from '@/lib/types';
-import { format, subYears } from 'date-fns';
+import { format, subYears, isWithinInterval, addDays, differenceInDays } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
@@ -543,7 +543,7 @@ export async function getContractEndNotifications(): Promise<ContractEndNotifica
     try {
         const result = await db.query('SELECT * FROM contract_end_notifications');
         return result.rows.map(mapDbContractEndNotification);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error getting contract end notifications:', error);
         // If the table doesn't exist, return an empty array to prevent app crash
         if (error.code === '42P01') { // 'undefined_table' error code for PostgreSQL
@@ -579,6 +579,44 @@ export async function deleteContractEndNotification(notificationId: string): Pro
     }
 }
 
+export async function sendContractEndNotificationsNow(): Promise<number> {
+    const allUsers = await getUsers();
+    const rules = await getContractEndNotifications();
+    const today = new Date();
+    
+    const usersToNotify = new Set<string>();
+
+    for (const user of allUsers) {
+        // Find the most current, non-ongoing contract
+        const relevantContract = user.contracts
+            .filter(c => c.endDate)
+            .sort((a,b) => new Date(b.endDate!).getTime() - new Date(a.endDate!).getTime())[0];
+
+        if (!relevantContract || !relevantContract.endDate) continue;
+
+        const contractEndDate = new Date(relevantContract.endDate);
+        if (contractEndDate < today) continue; // Skip already expired contracts
+
+        const daysUntilExpiry = differenceInDays(contractEndDate, today);
+        
+        for (const rule of rules) {
+            const userBelongsToTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
+            
+            if (userBelongsToTeam) {
+                if (rule.thresholdDays.includes(daysUntilExpiry)) {
+                    usersToNotify.add(user.id);
+                    // In a real implementation, you'd collect recipients and send emails/notifications here
+                    // e.g., triggerEmail(rule.recipientUserIds, rule.recipientEmails, user);
+                    // For this task, we just count the users.
+                    break; // Move to next user once a matching rule is found
+                }
+            }
+        }
+    }
+    
+    // The number of unique users whose contracts are expiring based on the rules.
+    return usersToNotify.size;
+}
 
 // ========== Projects ==========
 

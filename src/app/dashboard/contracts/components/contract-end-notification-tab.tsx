@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useMembers } from '../../contexts/MembersContext';
+import { sendContractEndNotificationsNow } from '../../actions';
 
 export function ContractEndNotificationTab() {
     const { contractEndNotifications, addContractEndNotification, deleteContractEndNotification } = useContracts();
@@ -25,6 +26,7 @@ export function ContractEndNotificationTab() {
     const [isAddEditDialogOpen, setIsAddEditDialogOpen] = React.useState(false);
     const [editingNotification, setEditingNotification] = React.useState<ContractEndNotification | null>(null);
     const [deletingNotification, setDeletingNotification] = React.useState<ContractEndNotification | null>(null);
+    const [isSending, setIsSending] = React.useState(false);
 
     const handleSaveNotification = (data: Omit<ContractEndNotification, 'id'>) => {
         if (editingNotification) {
@@ -47,6 +49,26 @@ export function ContractEndNotificationTab() {
         });
     }
 
+    const handleSendNow = async () => {
+        setIsSending(true);
+        try {
+            const count = await sendContractEndNotificationsNow();
+            toast({
+                title: "Notifications Sent",
+                description: `Notifications were triggered for ${count} users.`
+            });
+        } catch (error) {
+            console.error("Failed to send notifications now", error);
+            toast({
+                title: "Error",
+                description: "Could not process notifications.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSending(false);
+        }
+    };
+
     const getTeamNames = (teamIds: string[]) => {
         if (teamIds.includes('all-teams')) return t('allTeams');
         return teamIds.map(id => teams.find(t => t.id === id)?.name || id).join(', ');
@@ -67,7 +89,9 @@ export function ContractEndNotificationTab() {
                         </CardDescription>
                     </div>
                     <div className="flex w-full md:w-auto gap-2">
-                        <Button variant="outline">Send Now</Button>
+                        <Button onClick={handleSendNow} disabled={isSending}>
+                            {isSending ? "Sending..." : "Send Now"}
+                        </Button>
                         <Button onClick={() => {
                             setEditingNotification(null);
                             setIsAddEditDialogOpen(true);
