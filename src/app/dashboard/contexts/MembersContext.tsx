@@ -12,6 +12,7 @@ interface MembersContextType {
   addMember: (newUser: Omit<User, 'id' | 'avatar'>) => Promise<void>;
   deleteMember: (userId: string) => Promise<void>;
   isLoading: boolean;
+  fetchMembers: () => Promise<void>;
 }
 
 export const MembersContext = React.createContext<MembersContextType | undefined>(undefined);
@@ -80,7 +81,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <MembersContext.Provider value={{ teamMembers, updateMember, addMember, deleteMember, isLoading }}>
+    <MembersContext.Provider value={{ teamMembers, updateMember, addMember, deleteMember, isLoading, fetchMembers }}>
         {children}
     </MembersContext.Provider>
   );
