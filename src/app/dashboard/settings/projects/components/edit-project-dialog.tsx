@@ -117,7 +117,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
               render={() => (
                  <FormItem>
                   <FormLabel>Associated Tasks</FormLabel>
-                  <ScrollArea className="h-32 rounded-md border p-2">
+                  <ScrollArea className="h-56 rounded-md border p-2">
                     {allTasks.map((task) => (
                       <FormField
                         key={task.id}
