@@ -33,7 +33,6 @@ export function TeamDashboard() {
 
     const today = new Date();
     const periodStart = startOfMonth(today);
-    const periodEnd = endOfMonth(today);
     const selectedYear = getYear(today);
 
     // --- Standardized Leave Calculation ---
@@ -61,37 +60,7 @@ export function TeamDashboard() {
             const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
             return applies;
         }));
-
-      let assignedHoursInPeriod = 0;
-      let workingDaysInPeriod = 0;
-
-      for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
-          const dayOfWeek = getDay(d);
-          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-          
-          const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-          if (isHoliday) continue;
-          
-          const activeContractsOnDay = member.contracts.filter(c => {
-              const contractStart = parseISO(c.startDate);
-              const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForLeave;
-              return isWithinInterval(d, { start: contractStart, end: contractEnd });
-          });
-
-          if (activeContractsOnDay.length > 0) {
-              workingDaysInPeriod++;
-              const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-              assignedHoursInPeriod += dailyHours;
-          }
-      }
-      const assignedHours = parseFloat(assignedHoursInPeriod.toFixed(2));
       
-      const leaveDaysInPeriod = workingDaysInPeriod * dailyLeaveCredit;
-      const avgDailyHoursInPeriod = workingDaysInPeriod > 0 ? assignedHours / workingDaysInPeriod : 0;
-      const leaveHours = parseFloat((leaveDaysInPeriod * avgDailyHoursInPeriod).toFixed(2));
-      
-      const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
-
       // Calculate Logged Hours for the month so far
       const userTimeEntries = timeEntries.filter(entry => {
         const entryDate = parseISO(entry.date);
@@ -133,7 +102,7 @@ export function TeamDashboard() {
       return {
         ...member,
         totalHours: loggedHours,
-        expectedHours,
+        expectedHours: expectedHoursSoFar, // Use expected hours "so far" for consistency
         performance,
       }
     });
