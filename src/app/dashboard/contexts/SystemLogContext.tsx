@@ -1,10 +1,8 @@
-
-
 'use client';
 
 import * as React from 'react';
 import { type LogEntry } from '@/lib/types';
-import { getSystemLogs, addSystemLog, purgeOldSystemLogs, sendContractEndNotificationsNow } from '../actions';
+import { getSystemLogs, addSystemLog, purgeOldSystemLogs, sendContractEndNotificationsNow, getSystemSetting, setSystemSetting } from '../actions';
 import { useAuth } from './AuthContext';
 import { differenceInHours } from 'date-fns';
 
@@ -33,7 +31,7 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
         if (currentUser?.role !== 'Super Admin') return;
 
         // System Log Purge Check
-        const lastPurgeTimeStr = localStorage.getItem('lastSystemLogPurgeTime');
+        const lastPurgeTimeStr = await getSystemSetting('lastSystemLogPurgeTime');
         const lastPurgeTime = lastPurgeTimeStr ? new Date(lastPurgeTimeStr) : new Date(0);
         const hoursSinceLastPurge = differenceInHours(new Date(), lastPurgeTime);
 
@@ -47,14 +45,14 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     console.log('No old log entries to purge.');
                 }
-                localStorage.setItem('lastSystemLogPurgeTime', new Date().toISOString());
+                await setSystemSetting('lastSystemLogPurgeTime', new Date().toISOString());
             } catch (error) {
                 console.error('Failed to purge old system logs:', error);
             }
         }
         
         // Contract End Notification Check
-        const lastContractCheckTimeStr = localStorage.getItem('lastContractNotificationCheckTime');
+        const lastContractCheckTimeStr = await getSystemSetting('lastContractNotificationCheckTime');
         const lastContractCheckTime = lastContractCheckTimeStr ? new Date(lastContractCheckTimeStr) : new Date(0);
         const hoursSinceLastCheck = differenceInHours(new Date(), lastContractCheckTime);
 
@@ -67,7 +65,7 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
                     console.log(`Automatic notifications sent for ${count} contracts.`);
                     await logAction(`System automatically sent ${count} contract end notifications.`);
                 }
-                localStorage.setItem('lastContractNotificationCheckTime', new Date().toISOString());
+                await setSystemSetting('lastContractNotificationCheckTime', new Date().toISOString());
             } catch (error) {
                 console.error('Failed to run automatic contract end notifications:', error);
             }

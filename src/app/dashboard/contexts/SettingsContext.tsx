@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { getIsHolidaysNavVisible, setIsHolidaysNavVisible as setGlobalVisibility } from '../actions';
+import { getSystemSetting, setSystemSetting } from '../actions';
 import { useAuth } from './AuthContext';
 import { useSystemLog } from './SystemLogContext';
 
@@ -23,8 +23,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const fetchVisibility = async () => {
       setIsLoading(true);
-      const visible = await getIsHolidaysNavVisible();
-      _setIsHolidaysNavVisible(visible);
+      const visibleStr = await getSystemSetting('isHolidaysNavVisible');
+      // Default to true if the setting doesn't exist or is not 'false'
+      _setIsHolidaysNavVisible(visibleStr !== 'false');
       setIsLoading(false);
     }
     fetchVisibility();
@@ -32,7 +33,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const setIsHolidaysNavVisible = async (isVisible: boolean) => {
     _setIsHolidaysNavVisible(isVisible);
-    await setGlobalVisibility(isVisible);
+    await setSystemSetting('isHolidaysNavVisible', String(isVisible));
     await logAction(`User '${currentUser.name}' set 'Display Holidays' navigation to ${isVisible}.`);
   };
 
@@ -50,3 +51,5 @@ export const useSettings = () => {
   }
   return context;
 };
+
+    

@@ -1218,28 +1218,27 @@ export async function purgeOldSystemLogs(): Promise<number> {
 }
 
 // ========== Global Settings ==========
-export async function getIsHolidaysNavVisible(): Promise<boolean> {
+export async function getSystemSetting(key: string): Promise<string | null> {
     try {
-        const result = await db.query(`SELECT value FROM system_settings WHERE key = 'isHolidaysNavVisible'`);
+        const result = await db.query(`SELECT value FROM system_settings WHERE key = $1`, [key]);
         if (result.rows.length > 0) {
-            return result.rows[0].value === 'true';
+            return result.rows[0].value;
         }
-        return true; // Default to true if not found
+        return null;
     } catch (error) {
-        console.error("Failed to get 'isHolidaysNavVisible' setting, defaulting to true:", error);
-        return true;
+        console.error(`Failed to get setting for key '${key}', returning null:`, error);
+        return null;
     }
 }
 
-export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
+export async function setSystemSetting(key: string, value: string): Promise<void> {
     try {
         await db.query(
-            `INSERT INTO system_settings (key, value) VALUES ('isHolidaysNavVisible', $1)
-             ON CONFLICT (key) DO UPDATE SET value = $1`,
-            [String(isVisible)]
+            `INSERT INTO system_settings (key, value) VALUES ($1, $2)
+             ON CONFLICT (key) DO UPDATE SET value = $2`,
+            [key, value]
         );
-        revalidatePath('/dashboard', 'layout');
     } catch (error) {
-        console.error("Failed to set 'isHolidaysNavVisible' setting:", error);
+        console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
