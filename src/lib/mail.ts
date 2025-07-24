@@ -132,25 +132,28 @@ export async function sendHolidayRequestUpdateEmail({ request, user, approver, t
 }
 
 export async function sendContractEndNotifications(
-    expiringContractsDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification }[]
+    expiringContractsDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification }[],
+    allUsers: User[]
 ) {
     const transporter = createTransporter();
 
-    // Group users by rule and recipients to send one summary email per rule
+    // Group users by rule to send one summary email per rule's recipient list
     const notificationsByRule = expiringContractsDetails.reduce((acc, detail) => {
+        const recipientUserEmails = detail.rule.recipientUserIds
+            .map(id => allUsers.find(u => u.id === id)?.email)
+            .filter(Boolean) as string[];
+
         const recipients = [
             ...detail.rule.recipientEmails,
-            ...detail.rule.recipientUserIds.map(id => {
-                // You would need to fetch the user's email by ID here.
-                // This is a placeholder for that logic.
-                return `user-${id}@example.com`; // Placeholder
-            })
+            ...recipientUserEmails
         ];
-        const key = `${detail.rule.id}-${recipients.join(',')}`;
+        const uniqueRecipients = Array.from(new Set(recipients));
+
+        const key = `${detail.rule.id}-${uniqueRecipients.join(',')}`;
 
         if (!acc[key]) {
             acc[key] = {
-                recipients,
+                recipients: uniqueRecipients,
                 expiringUsers: [],
             };
         }
@@ -158,9 +161,12 @@ export async function sendContractEndNotifications(
         return acc;
     }, {} as Record<string, { recipients: string[], expiringUsers: typeof expiringContractsDetails }>);
 
+
     // Send summary emails to recipients
     for (const key in notificationsByRule) {
         const { recipients, expiringUsers } = notificationsByRule[key];
+        if (recipients.length === 0) continue;
+
         const userListHtml = expiringUsers
             .map(u => `<li>${u.user.name} (${u.user.email}) - Contract ends on ${format(new Date(u.user.contract.endDate!), 'PP')} (${u.daysUntilExpiry} days)</li>`)
             .join('');

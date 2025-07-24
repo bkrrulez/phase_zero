@@ -640,7 +640,7 @@ export async function sendContractEndNotificationsNow(): Promise<number> {
     }
     
     if (usersToNotifyDetails.length > 0) {
-        await sendContractEndNotifications(usersToNotifyDetails);
+        await sendContractEndNotifications(usersToNotifyDetails, allUsers);
     }
     
     return usersToNotifyDetails.length;
