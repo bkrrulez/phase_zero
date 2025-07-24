@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -593,19 +594,16 @@ export async function deleteContractEndNotification(notificationId: string): Pro
     }
 }
 
-export async function sendContractEndNotificationsNow(): Promise<number> {
+export async function sendContractEndNotificationsNow(isManualTrigger: boolean = false): Promise<number> {
     const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
     const today = new Date();
     
-    // Store which contracts have already been notified to avoid duplicates in one run
-    const notifiedContractIds = new Set<string>();
-
-    const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification; contract: Omit<Contract, "userId"> }[] = [];
+    const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification; contract: Omit<Contract, "userId"> & { id: string } }[] = [];
 
     for (const user of allUsers) {
         for (const contract of user.contracts) {
-            if (!contract.id || !contract.endDate || notifiedContractIds.has(contract.id)) {
+            if (!contract.id || !contract.endDate) {
                 continue;
             }
 
@@ -617,19 +615,37 @@ export async function sendContractEndNotificationsNow(): Promise<number> {
             const applicableRule = rules.find(rule => {
                 const userBelongsToTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
                 if (!userBelongsToTeam) return false;
-                
-                return rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold);
+
+                if(isManualTrigger) {
+                    // For manual trigger, notify if within any threshold
+                    return rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold);
+                } else {
+                    // For automatic trigger, notify only if it matches a threshold day exactly
+                    return rule.thresholdDays.includes(daysUntilExpiry);
+                }
             });
             
             if(applicableRule) {
-                usersToNotifyDetails.push({ user, daysUntilExpiry, rule: applicableRule, contract });
-                notifiedContractIds.add(contract.id);
+                // For automatic checks, ensure we don't send the same notification twice.
+                if (!isManualTrigger) {
+                    const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
+                    if (sentNotifsRes.rowCount > 0) {
+                        continue; // Already sent for this contract and threshold
+                    }
+                }
+                usersToNotifyDetails.push({ user, daysUntilExpiry, rule: applicableRule, contract: { ...contract, id: contract.id } });
             }
         }
     }
     
     if (usersToNotifyDetails.length > 0) {
         await sendContractEndNotifications(usersToNotifyDetails, allUsers);
+        // Log that the notification has been sent to prevent duplicates in automatic runs
+         if (!isManualTrigger) {
+            for (const detail of usersToNotifyDetails) {
+                 await db.query('INSERT INTO sent_notifications (contract_id, threshold_day, sent_at) VALUES ($1, $2, NOW())', [detail.contract.id, detail.daysUntilExpiry]);
+            }
+         }
     }
     
     return usersToNotifyDetails.length;
