@@ -1,8 +1,15 @@
+
 'use client';
 
 import * as React from 'react';
 import { type Contract, type ContractEndNotification } from "@/lib/types";
-import { getContracts as getContractsAction, getContractEndNotifications as getNotificationsAction, addContractEndNotification as addNotificationAction, deleteContractEndNotification as deleteNotificationAction } from '../actions';
+import { 
+    getContracts as getContractsAction, 
+    getContractEndNotifications as getNotificationsAction, 
+    addContractEndNotification as addNotificationAction, 
+    updateContractEndNotification as updateNotificationAction,
+    deleteContractEndNotification as deleteNotificationAction 
+} from '../actions';
 
 interface ContractsContextType {
   contracts: Contract[];
@@ -10,6 +17,7 @@ interface ContractsContextType {
   fetchContracts: () => Promise<void>;
   contractEndNotifications: ContractEndNotification[];
   addContractEndNotification: (notification: Omit<ContractEndNotification, 'id'>) => Promise<void>;
+  updateContractEndNotification: (id: string, notification: Omit<ContractEndNotification, 'id'>) => Promise<void>;
   deleteContractEndNotification: (notificationId: string) => Promise<void>;
 }
 
@@ -47,6 +55,13 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
       }
   };
 
+  const updateContractEndNotification = async (id: string, notification: Omit<ContractEndNotification, 'id'>) => {
+      const updatedNotification = await updateNotificationAction(id, notification);
+      if (updatedNotification) {
+          setContractEndNotifications(prev => prev.map(n => n.id === id ? updatedNotification : n));
+      }
+  }
+
   const deleteContractEndNotification = async (notificationId: string) => {
       await deleteNotificationAction(notificationId);
       setContractEndNotifications(prev => prev.filter(n => n.id !== notificationId));
@@ -59,6 +74,7 @@ export function ContractsProvider({ children }: { children: React.ReactNode }) {
         fetchContracts,
         contractEndNotifications,
         addContractEndNotification,
+        updateContractEndNotification,
         deleteContractEndNotification
     }}>
       {children}

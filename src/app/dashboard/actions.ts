@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { sendHolidayRequestUpdateEmail, sendPasswordResetConfirmationEmail } from '@/lib/mail';
+import { sendContractEndNotifications, sendHolidayRequestUpdateEmail, sendPasswordResetConfirmationEmail } from '@/lib/mail';
 import {
   type User,
   type TimeEntry,
@@ -545,8 +545,7 @@ export async function getContractEndNotifications(): Promise<ContractEndNotifica
         return result.rows.map(mapDbContractEndNotification);
     } catch (error: any) {
         console.error('Error getting contract end notifications:', error);
-        // If the table doesn't exist, return an empty array to prevent app crash
-        if (error.code === '42P01') { // 'undefined_table' error code for PostgreSQL
+        if (error.code === '42P01') { 
             console.warn('contract_end_notifications table not found. Returning empty array.');
             return [];
         }
@@ -570,6 +569,21 @@ export async function addContractEndNotification(notificationData: Omit<Contract
     }
 }
 
+export async function updateContractEndNotification(id: string, notificationData: Omit<ContractEndNotification, 'id'>): Promise<ContractEndNotification | null> {
+    const { teamIds, recipientUserIds, recipientEmails, thresholdDays } = notificationData;
+    try {
+        const result = await db.query(
+            'UPDATE contract_end_notifications SET team_ids=$1, recipient_user_ids=$2, recipient_emails=$3, threshold_days=$4 WHERE id=$5 RETURNING *',
+            [teamIds, recipientUserIds || [], recipientEmails || [], thresholdDays, id]
+        );
+        revalidatePath('/dashboard/contracts');
+        return mapDbContractEndNotification(result.rows[0]);
+    } catch (error) {
+        console.error("Failed to update contract end notification", error);
+        return null;
+    }
+}
+
 export async function deleteContractEndNotification(notificationId: string): Promise<void> {
     try {
         await db.query('DELETE FROM contract_end_notifications WHERE id = $1', [notificationId]);
@@ -584,10 +598,9 @@ export async function sendContractEndNotificationsNow(): Promise<number> {
     const rules = await getContractEndNotifications();
     const today = new Date();
     
-    const usersToNotify = new Set<string>();
+    const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification }[] = [];
 
     for (const user of allUsers) {
-        // Find the most current, non-ongoing contract
         const relevantContract = user.contracts
             .filter(c => c.endDate)
             .sort((a,b) => new Date(b.endDate!).getTime() - new Date(a.endDate!).getTime())[0];
@@ -595,7 +608,7 @@ export async function sendContractEndNotificationsNow(): Promise<number> {
         if (!relevantContract || !relevantContract.endDate) continue;
 
         const contractEndDate = new Date(relevantContract.endDate);
-        if (contractEndDate < today) continue; // Skip already expired contracts
+        if (contractEndDate < today) continue; 
 
         const daysUntilExpiry = differenceInDays(contractEndDate, today);
         
@@ -604,18 +617,18 @@ export async function sendContractEndNotificationsNow(): Promise<number> {
             
             if (userBelongsToTeam) {
                 if (rule.thresholdDays.includes(daysUntilExpiry)) {
-                    usersToNotify.add(user.id);
-                    // In a real implementation, you'd collect recipients and send emails/notifications here
-                    // e.g., triggerEmail(rule.recipientUserIds, rule.recipientEmails, user);
-                    // For this task, we just count the users.
-                    break; // Move to next user once a matching rule is found
+                    usersToNotifyDetails.push({ user, daysUntilExpiry, rule });
+                    break;
                 }
             }
         }
     }
     
-    // The number of unique users whose contracts are expiring based on the rules.
-    return usersToNotify.size;
+    if (usersToNotifyDetails.length > 0) {
+        await sendContractEndNotifications(usersToNotifyDetails);
+    }
+    
+    return usersToNotifyDetails.length;
 }
 
 // ========== Projects ==========

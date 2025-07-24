@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useContracts } from '../../contexts/ContractsContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTeams } from '../../contexts/TeamsContext';
@@ -15,9 +15,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useMembers } from '../../contexts/MembersContext';
 import { sendContractEndNotificationsNow } from '../../actions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 export function ContractEndNotificationTab() {
-    const { contractEndNotifications, addContractEndNotification, deleteContractEndNotification } = useContracts();
+    const { contractEndNotifications, addContractEndNotification, updateContractEndNotification, deleteContractEndNotification } = useContracts();
     const { teamMembers } = useMembers();
     const { teams } = useTeams();
     const { t } = useLanguage();
@@ -30,12 +31,19 @@ export function ContractEndNotificationTab() {
 
     const handleSaveNotification = (data: Omit<ContractEndNotification, 'id'>) => {
         if (editingNotification) {
-            // Update logic will go here
+            updateContractEndNotification(editingNotification.id, data);
+            toast({ title: "Notification Rule Updated" });
         } else {
             addContractEndNotification(data);
+            toast({ title: "Notification Rule Added" });
         }
         setIsAddEditDialogOpen(false);
         setEditingNotification(null);
+    }
+    
+    const handleOpenEditDialog = (notification: ContractEndNotification) => {
+        setEditingNotification(notification);
+        setIsAddEditDialogOpen(true);
     }
 
     const handleDelete = () => {
@@ -75,6 +83,7 @@ export function ContractEndNotificationTab() {
     }
     
     const getUserNames = (userIds: string[]) => {
+        if (!userIds || userIds.length === 0) return 'N/A';
         return userIds.map(id => teamMembers.find(m => m.id === id)?.name || id).join(', ');
     }
 
@@ -119,9 +128,19 @@ export function ContractEndNotificationTab() {
                                     <TableCell className="max-w-[200px] truncate">{notification.recipientEmails.join(', ')}</TableCell>
                                     <TableCell>{notification.thresholdDays.join(', ')}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => setDeletingNotification(notification)}>
-                                            <Trash2 className="h-4 w-4 text-destructive"/>
-                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onClick={() => handleOpenEditDialog(notification)}>
+                                                    <Edit className="mr-2 h-4 w-4"/> Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setDeletingNotification(notification)} className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}

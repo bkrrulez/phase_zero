@@ -2,13 +2,10 @@
 'use server';
 
 import nodemailer from 'nodemailer';
-import { type User, type HolidayRequest } from './types';
+import { type User, type HolidayRequest, type ContractEndNotification } from './types';
 import { format } from 'date-fns';
 
-export async function sendPasswordResetEmail({ to, name }: { to: string; name: string;}) {
-    const domain = process.env.DOMAIN ? `https://${process.env.DOMAIN}` : 'http://localhost:3000';
-    const resetLink = `${domain}/reset-password?email=${encodeURIComponent(to)}`;
-
+const createTransporter = () => {
     const smtpConfig = {
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT),
@@ -18,8 +15,14 @@ export async function sendPasswordResetEmail({ to, name }: { to: string; name: s
             pass: process.env.SMTP_PASSWORD,
         },
     };
+    return nodemailer.createTransport(smtpConfig);
+};
 
-    const transporter = nodemailer.createTransport(smtpConfig);
+export async function sendPasswordResetEmail({ to, name }: { to: string; name: string;}) {
+    const domain = process.env.DOMAIN ? `https://${process.env.DOMAIN}` : 'http://localhost:3000';
+    const resetLink = `${domain}/reset-password?email=${encodeURIComponent(to)}`;
+
+    const transporter = createTransporter();
 
     const mailOptions = {
         from: process.env.SMTP_FROM,
@@ -52,16 +55,7 @@ type SendPasswordResetConfirmationEmailParams = {
 }
 
 export async function sendPasswordResetConfirmationEmail({ user, teamLead }: SendPasswordResetConfirmationEmailParams) {
-    const smtpConfig = {
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: Number(process.env.SMTP_PORT) === 465,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-        },
-    };
-    const transporter = nodemailer.createTransport(smtpConfig);
+    const transporter = createTransporter();
 
     const recipients = new Set<string>();
     recipients.add(user.email);
@@ -102,16 +96,7 @@ type SendHolidayRequestUpdateEmailParams = {
 }
 
 export async function sendHolidayRequestUpdateEmail({ request, user, approver, teamLead, status }: SendHolidayRequestUpdateEmailParams) {
-    const smtpConfig = {
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: Number(process.env.SMTP_PORT) === 465,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-        },
-    };
-    const transporter = nodemailer.createTransport(smtpConfig);
+    const transporter = createTransporter();
 
     const recipients = new Set<string>();
     recipients.add(user.email);
@@ -143,5 +128,84 @@ export async function sendHolidayRequestUpdateEmail({ request, user, approver, t
     } catch (error) {
         console.error('Failed to send holiday request update email:', error);
         throw new Error('Failed to send email.');
+    }
+}
+
+export async function sendContractEndNotifications(
+    expiringContractsDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification }[]
+) {
+    const transporter = createTransporter();
+
+    // Group users by rule and recipients to send one summary email per rule
+    const notificationsByRule = expiringContractsDetails.reduce((acc, detail) => {
+        const recipients = [
+            ...detail.rule.recipientEmails,
+            ...detail.rule.recipientUserIds.map(id => {
+                // You would need to fetch the user's email by ID here.
+                // This is a placeholder for that logic.
+                return `user-${id}@example.com`; // Placeholder
+            })
+        ];
+        const key = `${detail.rule.id}-${recipients.join(',')}`;
+
+        if (!acc[key]) {
+            acc[key] = {
+                recipients,
+                expiringUsers: [],
+            };
+        }
+        acc[key].expiringUsers.push(detail);
+        return acc;
+    }, {} as Record<string, { recipients: string[], expiringUsers: typeof expiringContractsDetails }>);
+
+    // Send summary emails to recipients
+    for (const key in notificationsByRule) {
+        const { recipients, expiringUsers } = notificationsByRule[key];
+        const userListHtml = expiringUsers
+            .map(u => `<li>${u.user.name} (${u.user.email}) - Contract ends on ${format(new Date(u.user.contract.endDate!), 'PP')} (${u.daysUntilExpiry} days)</li>`)
+            .join('');
+
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: recipients.join(','),
+            subject: 'Contract Expiry Notification',
+            html: `
+                <h1>Upcoming Contract Expiries</h1>
+                <p>The following users have contracts ending soon:</p>
+                <ul>${userListHtml}</ul>
+                <p>This is an automated notification from TimeTool.</p>
+            `,
+        };
+
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log('Contract expiry summary email sent to:', recipients.join(','));
+        } catch (error) {
+            console.error('Failed to send contract expiry summary email:', error);
+        }
+    }
+
+    // Send individual emails to the users whose contracts are expiring
+    for (const detail of expiringContractsDetails) {
+        const { user } = detail;
+        const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: user.email,
+            subject: 'Your Employment Contract is Ending Soon',
+            html: `
+                <h1>Contract Ending Soon</h1>
+                <p>Hello ${user.name},</p>
+                <p>This is a reminder that your employment contract with us is scheduled to end on <b>${format(new Date(user.contract.endDate!), 'PP')}</b>.</p>
+                <p>Please reach out to your supervisor or HR for more details about your contract renewal or off-boarding process.</p>
+                <p>Thanks,</p>
+                <p>The TimeTool Team</p>
+            `,
+        };
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log('Individual contract expiry email sent to:', user.email);
+        } catch (error) {
+            console.error('Failed to send individual contract expiry email:', error);
+        }
     }
 }
