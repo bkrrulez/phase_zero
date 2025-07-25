@@ -149,8 +149,12 @@ export async function getUsers(): Promise<User[]> {
     const result = await db.query(`
         SELECT 
             u.*, 
-            COALESCE(array_agg(up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids,
-            (SELECT json_agg(c.*) FROM contracts c WHERE c.user_id = u.id) as contracts
+            COALESCE(array_agg(DISTINCT up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids,
+            (
+                SELECT json_agg(c.*) 
+                FROM contracts c 
+                WHERE c.user_id = u.id
+            ) as contracts
         FROM users u
         LEFT JOIN user_projects up ON u.id = up.user_id
         GROUP BY u.id
@@ -158,6 +162,7 @@ export async function getUsers(): Promise<User[]> {
     `);
     return result.rows.map(mapDbUserToUser);
 }
+
 
 export async function addUser(newUserData: Omit<User, 'id' | 'avatar' >): Promise<User | null> {
     const { name, email, role, reportsTo, teamId, associatedProjectIds, contracts } = newUserData;
@@ -615,19 +620,16 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
             for (const contract of userContracts) {
                 if (!contract.endDate) continue;
 
-                // Safely parse the date string to avoid timezone issues
                 const contractEndDate = parse(contract.endDate, 'yyyy-MM-dd', new Date());
                 contractEndDate.setHours(0, 0, 0, 0);
                 
                 if (contractEndDate < today) continue;
 
-                // The number of full days between the two dates. This can be off by one because it doesn't count the start date itself.
-                // Add 1 to make it inclusive. A contract expiring tomorrow will be 1 day away, not 0.
                 const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
                 
                 const notificationKey = `${user.id}-${contract.id}`;
                 if (notifiedUserContractSet.has(notificationKey)) {
-                    continue; // Already queued for notification in this run
+                    continue; 
                 }
 
                 if (isManualTrigger) {
@@ -1253,5 +1255,3 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
-
-    
