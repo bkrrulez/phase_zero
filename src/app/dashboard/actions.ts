@@ -597,7 +597,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     const allUsers = await getUsers();
     const allContracts = await getContracts();
     const rules = await getContractEndNotifications();
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -621,8 +621,10 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
                 
                 if (contractEndDate < today) continue;
 
-                const daysUntilExpiry = differenceInDays(contractEndDate, today);
-
+                // The number of full days between the two dates. This can be off by one because it doesn't count the start date itself.
+                // Add 1 to make it inclusive. A contract expiring tomorrow will be 1 day away, not 0.
+                const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
+                
                 const notificationKey = `${user.id}-${contract.id}`;
                 if (notifiedUserContractSet.has(notificationKey)) {
                     continue; // Already queued for notification in this run
@@ -1055,7 +1057,7 @@ export async function addNotification(notification: Omit<AppNotification, 'id' |
         const timestamp = new Date().toISOString();
         
         const res = await client.query(
-            'INSERT INTO app_notifications (id, type, timestamp, title, body, reference_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            `INSERT INTO app_notifications (id, type, timestamp, title, body, reference_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
             [id, type, timestamp, title, body, referenceId]
         );
 
