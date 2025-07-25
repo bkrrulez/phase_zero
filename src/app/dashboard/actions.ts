@@ -35,8 +35,7 @@ const mapDbUserToUser = (dbUser: any): User => {
         return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
     });
 
-    // The primary contract is the most current active one, or the most recently expired one.
-    // If no contracts, provide a default structure.
+    // The primary contract is purely for display and will be recalculated on the backend.
     const primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
     
     return {
@@ -595,59 +594,78 @@ export async function deleteContractEndNotification(notificationId: string): Pro
 }
 
 export async function sendContractEndNotificationsNow(isManualTrigger: boolean = false): Promise<number> {
+    console.log('--- Running Contract End Notification Check ---');
+    console.log(`Trigger type: ${isManualTrigger ? 'Manual' : 'Automatic'}`);
+    
     const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
     const today = new Date();
     
     const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification; contract: Omit<Contract, "userId"> & { id: string } }[] = [];
+    const notifiedContractUserPairs = new Set<string>();
 
-    for (const user of allUsers) {
-        for (const contract of user.contracts) {
-            if (!contract.id || !contract.endDate) {
-                continue;
-            }
+    console.log(`Found ${rules.length} rules and ${allUsers.length} users.`);
 
-            const contractEndDate = new Date(contract.endDate);
-            if (contractEndDate < today) continue; 
+    for (const rule of rules) {
+        console.log(`Processing rule ID: ${rule.id} with thresholds: ${rule.thresholdDays.join(', ')}`);
+        
+        for (const user of allUsers) {
+            const userBelongsToTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
+            if (!userBelongsToTeam) continue;
 
-            const daysUntilExpiry = differenceInDays(contractEndDate, today);
+            for (const contract of user.contracts) {
+                if (!contract.id || !contract.endDate) continue;
 
-            const applicableRule = rules.find(rule => {
-                const userBelongsToTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
-                if (!userBelongsToTeam) return false;
+                const contractEndDate = new Date(contract.endDate);
+                if (contractEndDate < today) continue; 
 
-                if(isManualTrigger) {
-                    // For manual trigger, notify if within any threshold
-                    return rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold);
+                const daysUntilExpiry = differenceInDays(contractEndDate, today);
+
+                let shouldNotify = false;
+                if (isManualTrigger) {
+                    // For manual trigger, notify if within ANY threshold
+                    shouldNotify = rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold);
                 } else {
                     // For automatic trigger, notify only if it matches a threshold day exactly
-                    return rule.thresholdDays.includes(daysUntilExpiry);
+                    shouldNotify = rule.thresholdDays.includes(daysUntilExpiry);
                 }
-            });
-            
-            if(applicableRule) {
-                // For automatic checks, ensure we don't send the same notification twice.
-                if (!isManualTrigger) {
-                    const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
-                    if (sentNotifsRes.rowCount > 0) {
-                        continue; // Already sent for this contract and threshold
+                
+                if (shouldNotify) {
+                    console.log(`Match found for user ${user.name} (Contract ${contract.id}). Days until expiry: ${daysUntilExpiry}. Rule thresholds: ${rule.thresholdDays}`);
+                    
+                    const notificationKey = `${contract.id}-${user.id}`;
+
+                    if (!isManualTrigger) {
+                        const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
+                        if (sentNotifsRes.rowCount > 0) {
+                            console.log(`Skipping: Notification already sent for this contract and threshold.`);
+                            continue;
+                        }
+                    }
+
+                    if (!notifiedContractUserPairs.has(notificationKey)) {
+                        usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract: { ...contract, id: contract.id } });
+                        notifiedContractUserPairs.add(notificationKey);
+                        console.log(`Added user ${user.name} to notification list.`);
                     }
                 }
-                usersToNotifyDetails.push({ user, daysUntilExpiry, rule: applicableRule, contract: { ...contract, id: contract.id } });
             }
         }
     }
     
+    console.log(`Total unique users to notify: ${usersToNotifyDetails.length}`);
+
     if (usersToNotifyDetails.length > 0) {
         await sendContractEndNotifications(usersToNotifyDetails, allUsers);
-        // Log that the notification has been sent to prevent duplicates in automatic runs
          if (!isManualTrigger) {
             for (const detail of usersToNotifyDetails) {
                  await db.query('INSERT INTO sent_notifications (contract_id, threshold_day, sent_at) VALUES ($1, $2, NOW())', [detail.contract.id, detail.daysUntilExpiry]);
+                 console.log(`Logged sent notification for contract ${detail.contract.id} at threshold ${detail.daysUntilExpiry}.`);
             }
          }
     }
     
+    await addSystemLog(`Contract end notifications run. Trigger: ${isManualTrigger ? 'Manual' : 'Automatic'}. Notifications sent for ${usersToNotifyDetails.length} users.`);
     return usersToNotifyDetails.length;
 }
 
