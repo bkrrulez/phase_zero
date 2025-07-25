@@ -599,58 +599,93 @@ export async function deleteContractEndNotification(notificationId: string): Pro
 }
 
 export async function sendContractEndNotificationsNow(isManualTrigger: boolean = false): Promise<number> {
+    console.log(`\n--- Running Contract Notifications (Trigger: ${isManualTrigger ? 'Manual' : 'Automatic'}) ---`);
+    
     const allContracts = await getContracts();
     const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    console.log(`Found ${rules.length} rules, ${allContracts.length} contracts, ${allUsers.length} users.`);
+    console.log(`Today's date (for comparison): ${today.toDateString()}`);
+
     const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification; contract: Contract }[] = [];
-    const notifiedUserContractSet = new Set<string>(); // To prevent duplicate emails for the same user-contract pair
+    const notifiedUserContractSet = new Set<string>();
 
     for (const rule of rules) {
+        console.log(`\nProcessing Rule ID: ${rule.id}`);
+        console.log(`Rule applies to teams: [${rule.teamIds.join(', ')}] with thresholds: [${rule.thresholdDays.join(', ')}]`);
+
         for (const contract of allContracts) {
             const user = allUsers.find(u => u.id === contract.userId);
-            if (!user) continue;
+            if (!user) {
+                console.log(`  - Skipping contract ${contract.id}: User ${contract.userId} not found.`);
+                continue;
+            }
 
             const isUserInRuleTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
-            if (!isUserInRuleTeam) continue;
+            if (!isUserInRuleTeam) {
+                console.log(`  - Skipping contract ${contract.id} for user ${user.name}: User's team (${user.teamId}) is not in rule's teams.`);
+                continue;
+            }
 
-            if (!contract.endDate) continue;
+            if (!contract.endDate) {
+                console.log(`  - Skipping contract ${contract.id} for user ${user.name}: Contract is ongoing (no end date).`);
+                continue;
+            }
 
-            // Use parse to handle 'yyyy-MM-dd' reliably
             const contractEndDate = parse(contract.endDate, 'yyyy-MM-dd', new Date());
             contractEndDate.setHours(0, 0, 0, 0);
 
-            if (contractEndDate < today) continue;
+            if (contractEndDate < today) {
+                console.log(`  - Skipping contract ${contract.id} for user ${user.name}: End date (${contract.endDate}) is in the past.`);
+                continue;
+            }
             
             const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
-            
+            console.log(`  - Checking contract ${contract.id} for user ${user.name}. End Date: ${contract.endDate}, Days Until Expiry: ${daysUntilExpiry}`);
+
             const notificationKey = `${user.id}-${contract.id}`;
             if (notifiedUserContractSet.has(notificationKey)) {
+                console.log(`    - User ${user.name} already in notification queue for this contract. Skipping.`);
                 continue; 
             }
 
+            let shouldNotify = false;
             if (isManualTrigger) {
                 if (rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold)) {
-                    usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract });
-                    notifiedUserContractSet.add(notificationKey);
+                    console.log(`    - MANUAL TRIGGER MATCH: daysUntilExpiry (${daysUntilExpiry}) <= a threshold.`);
+                    shouldNotify = true;
                 }
-            } else {
+            } else { // Automatic Trigger
                 if (rule.thresholdDays.includes(daysUntilExpiry)) {
+                    console.log(`    - AUTOMATIC TRIGGER MATCH: daysUntilExpiry (${daysUntilExpiry}) is one of the thresholds.`);
                     const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
                     if (sentNotifsRes.rowCount === 0) {
-                        usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract });
-                        notifiedUserContractSet.add(notificationKey);
+                        shouldNotify = true;
+                    } else {
+                        console.log(`    - Already notified for this contract at this threshold. Skipping.`);
                     }
                 }
+            }
+            
+            if (shouldNotify) {
+                console.log(`    - SUCCESS: Adding ${user.name} to notification list.`);
+                usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract });
+                notifiedUserContractSet.add(notificationKey);
             }
         }
     }
     
+    console.log(`\n--- SUMMARY ---`);
+    console.log(`Total users to be notified: ${usersToNotifyDetails.length}`);
+
     if (usersToNotifyDetails.length > 0) {
+        console.log(`Users: ${usersToNotifyDetails.map(d => d.user.name).join(', ')}`);
         await sendContractEndNotifications(usersToNotifyDetails, allUsers);
         if (!isManualTrigger) {
+            console.log('Recording automatic notifications to prevent duplicates...');
             for (const detail of usersToNotifyDetails) {
                  await db.query('INSERT INTO sent_notifications (contract_id, threshold_day, sent_at) VALUES ($1, $2, NOW())', [detail.contract.id, detail.daysUntilExpiry]);
             }
@@ -1057,7 +1092,7 @@ export async function addNotification(notification: Omit<AppNotification, 'id' |
         const timestamp = new Date().toISOString();
         
         const res = await client.query(
-            `INSERT INTO app_notifications (id, type, timestamp, title, body, reference_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            'INSERT INTO app_notifications (id, type, timestamp, title, body, reference_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [id, type, timestamp, title, body, referenceId]
         );
 
