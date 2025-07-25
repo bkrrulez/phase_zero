@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -117,9 +116,15 @@ export async function verifyUserCredentials(email: string, password_input: strin
     if (email === adminEmail) {
         if (password_input === adminPassword) {
             const result = await db.query(`
-                SELECT u.*, json_agg(c.*) as contracts
+                SELECT u.*, 
+                (
+                    SELECT json_agg(c.* ORDER BY c.end_date DESC NULLS FIRST, c.start_date DESC)
+                    FROM contracts c
+                    WHERE c.user_id = u.id
+                ) as contracts,
+                COALESCE(array_agg(DISTINCT up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids
                 FROM users u
-                LEFT JOIN contracts c ON u.id = c.user_id
+                LEFT JOIN user_projects up ON u.id = up.user_id
                 WHERE u.email = $1
                 GROUP BY u.id
             `, [email]);
@@ -135,9 +140,15 @@ export async function verifyUserCredentials(email: string, password_input: strin
 
     // Standard user login
     const result = await db.query(`
-        SELECT u.*, json_agg(c.*) as contracts
+        SELECT u.*, 
+        (
+            SELECT json_agg(c.* ORDER BY c.end_date DESC NULLS FIRST, c.start_date DESC)
+            FROM contracts c
+            WHERE c.user_id = u.id
+        ) as contracts,
+        COALESCE(array_agg(DISTINCT up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids
         FROM users u
-        LEFT JOIN contracts c ON u.id = c.user_id
+        LEFT JOIN user_projects up ON u.id = up.user_id
         WHERE u.email = $1 AND u.password = $2
         GROUP BY u.id
     `, [email, password_input]);
@@ -151,9 +162,15 @@ export async function verifyUserCredentials(email: string, password_input: strin
 
 export async function findUserByEmail(email: string): Promise<User | null> {
     const result = await db.query(`
-        SELECT u.*, json_agg(c.*) as contracts
+        SELECT u.*,
+        (
+            SELECT json_agg(c.* ORDER BY c.end_date DESC NULLS FIRST, c.start_date DESC)
+            FROM contracts c
+            WHERE c.user_id = u.id
+        ) as contracts,
+        COALESCE(array_agg(DISTINCT up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids
         FROM users u
-        LEFT JOIN contracts c ON u.id = c.user_id
+        LEFT JOIN user_projects up ON u.id = up.user_id
         WHERE u.email = $1
         GROUP BY u.id
     `, [email]);
@@ -169,7 +186,7 @@ export async function getUsers(): Promise<User[]> {
             u.*, 
             COALESCE(array_agg(DISTINCT up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids,
             (
-                SELECT json_agg(c.*) 
+                SELECT json_agg(c.* ORDER BY c.end_date DESC NULLS FIRST, c.start_date DESC)
                 FROM contracts c 
                 WHERE c.user_id = u.id
             ) as contracts
@@ -1084,7 +1101,7 @@ export async function addNotification(notification: Omit<AppNotification, 'id' |
         const timestamp = new Date().toISOString();
         
         const res = await client.query(
-            'INSERT INTO app_notifications (id, type, timestamp, title, body, reference_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            `INSERT INTO app_notifications (id, type, timestamp, title, body, reference_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
             [id, type, timestamp, title, body, referenceId]
         );
 
@@ -1280,3 +1297,5 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
+
+    
