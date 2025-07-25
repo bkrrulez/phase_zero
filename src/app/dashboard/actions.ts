@@ -21,7 +21,7 @@ import {
   type Contract,
   type ContractEndNotification,
 } from '@/lib/types';
-import { format, subYears, isWithinInterval, addDays, differenceInDays, parse } from 'date-fns';
+import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
@@ -599,8 +599,8 @@ export async function deleteContractEndNotification(notificationId: string): Pro
 }
 
 export async function sendContractEndNotificationsNow(isManualTrigger: boolean = false): Promise<number> {
-    const allUsers = await getUsers();
     const allContracts = await getContracts();
+    const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -618,6 +618,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
 
             if (!contract.endDate) continue;
 
+            // Use parse to handle 'yyyy-MM-dd' reliably
             const contractEndDate = parse(contract.endDate, 'yyyy-MM-dd', new Date());
             contractEndDate.setHours(0, 0, 0, 0);
 
@@ -659,7 +660,6 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     await addSystemLog(`Contract end notifications run. Trigger: ${isManualTrigger ? 'Manual' : 'Automatic'}. Notifications sent for ${usersToNotifyDetails.length} users.`);
     return usersToNotifyDetails.length;
 }
-
 
 
 // ========== Projects ==========
