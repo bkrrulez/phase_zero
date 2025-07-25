@@ -28,14 +28,12 @@ import { revalidatePath } from 'next/cache';
 // Map DB rows to application types
 
 const mapDbUserToUser = (dbUser: any): User => {
-    // Sort contracts by end date descending (nulls last) to find the most current one
     const sortedContracts = (dbUser.contracts || []).sort((a: any, b: any) => {
-        if (a.end_date === null) return -1; // a is ongoing, should come first
-        if (b.end_date === null) return 1;  // b is ongoing, should come first
+        if (a.end_date === null) return -1;
+        if (b.end_date === null) return 1;
         return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
     });
 
-    // The primary contract is purely for display and will be recalculated on the backend.
     const primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
     
     return {
@@ -118,7 +116,14 @@ export async function verifyUserCredentials(email: string, password_input: strin
     // Special case for Super Admin login via environment variables
     if (email === adminEmail) {
         if (password_input === adminPassword) {
-            const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+            const result = await db.query(`
+                SELECT u.*, json_agg(c.*) as contracts
+                FROM users u
+                LEFT JOIN contracts c ON u.id = c.user_id
+                WHERE u.email = $1
+                GROUP BY u.id
+            `, [email]);
+
             if (result.rows.length > 0) {
                 return mapDbUserToUser(result.rows[0]);
             }
@@ -129,7 +134,14 @@ export async function verifyUserCredentials(email: string, password_input: strin
     }
 
     // Standard user login
-    const result = await db.query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password_input]);
+    const result = await db.query(`
+        SELECT u.*, json_agg(c.*) as contracts
+        FROM users u
+        LEFT JOIN contracts c ON u.id = c.user_id
+        WHERE u.email = $1 AND u.password = $2
+        GROUP BY u.id
+    `, [email, password_input]);
+
     if (result.rows.length > 0) {
         return mapDbUserToUser(result.rows[0]);
     }
@@ -138,7 +150,13 @@ export async function verifyUserCredentials(email: string, password_input: strin
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
-    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await db.query(`
+        SELECT u.*, json_agg(c.*) as contracts
+        FROM users u
+        LEFT JOIN contracts c ON u.id = c.user_id
+        WHERE u.email = $1
+        GROUP BY u.id
+    `, [email]);
     if (result.rows.length > 0) {
         return mapDbUserToUser(result.rows[0]);
     }
@@ -598,17 +616,16 @@ export async function deleteContractEndNotification(notificationId: string): Pro
     }
 }
 
-// Helper function to create a date object without timezone issues
 const parseDateAsLocal = (dateString: string): Date => {
     const [year, month, day] = dateString.split('-').map(Number);
-    // Create date in a way that avoids UTC conversion issues upon creation
     return new Date(year, month - 1, day);
 };
 
-export async function sendContractEndNotificationsNow(isManualTrigger: boolean = false): Promise<number> {
+export async function sendContractEndNotificationsNow(isManualTrigger: boolean = true): Promise<number> {
     const allContracts = await getContracts();
     const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -625,7 +642,6 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
 
             if (!contract.endDate) continue;
             
-            // Use timezone-agnostic date parsing
             const contractEndDate = parseDateAsLocal(contract.endDate);
             if (contractEndDate < today) continue;
             
@@ -635,11 +651,14 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
             if (notifiedUserContractSet.has(notificationKey)) continue;
 
             let shouldNotify = false;
+            
             if (isManualTrigger) {
+                // For manual trigger, check if contract expires WITHIN any threshold
                 if (rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold)) {
                     shouldNotify = true;
                 }
-            } else { // Automatic Trigger
+            } else { // Automatic Trigger (daily job)
+                // For automatic trigger, check if contract expires on EXACTLY a threshold day
                 if (rule.thresholdDays.includes(daysUntilExpiry)) {
                     const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
                     if (sentNotifsRes.rowCount === 0) {
@@ -657,6 +676,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     
     if (usersToNotifyDetails.length > 0) {
         await sendContractEndNotifications(usersToNotifyDetails, allUsers);
+        // Only record sent notifications for automatic runs to avoid spamming on manual triggers
         if (!isManualTrigger) {
             for (const detail of usersToNotifyDetails) {
                  await db.query('INSERT INTO sent_notifications (contract_id, threshold_day, sent_at) VALUES ($1, $2, NOW())', [detail.contract.id, detail.daysUntilExpiry]);
