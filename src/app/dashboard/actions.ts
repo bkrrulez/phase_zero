@@ -1280,5 +1280,3 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
-
-    
