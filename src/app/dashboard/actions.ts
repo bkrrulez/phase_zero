@@ -602,7 +602,6 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     const allUsers = await getUsers();
     const allContracts = await getContracts();
     const rules = await getContractEndNotifications();
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -610,40 +609,38 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     const notifiedUserContractSet = new Set<string>(); // To prevent duplicate emails for the same user-contract pair
 
     for (const rule of rules) {
-        const targetUsers = allUsers.filter(user => 
-            rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId))
-        );
+        for (const contract of allContracts) {
+            const user = allUsers.find(u => u.id === contract.userId);
+            if (!user) continue;
 
-        for (const user of targetUsers) {
-            const userContracts = allContracts.filter(c => c.userId === user.id);
+            const isUserInRuleTeam = rule.teamIds.includes('all-teams') || (user.teamId && rule.teamIds.includes(user.teamId));
+            if (!isUserInRuleTeam) continue;
 
-            for (const contract of userContracts) {
-                if (!contract.endDate) continue;
+            if (!contract.endDate) continue;
 
-                const contractEndDate = parse(contract.endDate, 'yyyy-MM-dd', new Date());
-                contractEndDate.setHours(0, 0, 0, 0);
-                
-                if (contractEndDate < today) continue;
+            const contractEndDate = parse(contract.endDate, 'yyyy-MM-dd', new Date());
+            contractEndDate.setHours(0, 0, 0, 0);
 
-                const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
-                
-                const notificationKey = `${user.id}-${contract.id}`;
-                if (notifiedUserContractSet.has(notificationKey)) {
-                    continue; 
+            if (contractEndDate < today) continue;
+            
+            const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
+            
+            const notificationKey = `${user.id}-${contract.id}`;
+            if (notifiedUserContractSet.has(notificationKey)) {
+                continue; 
+            }
+
+            if (isManualTrigger) {
+                if (rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold)) {
+                    usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract });
+                    notifiedUserContractSet.add(notificationKey);
                 }
-
-                if (isManualTrigger) {
-                    if (rule.thresholdDays.some(threshold => daysUntilExpiry <= threshold)) {
+            } else {
+                if (rule.thresholdDays.includes(daysUntilExpiry)) {
+                    const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
+                    if (sentNotifsRes.rowCount === 0) {
                         usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract });
                         notifiedUserContractSet.add(notificationKey);
-                    }
-                } else {
-                    if (rule.thresholdDays.includes(daysUntilExpiry)) {
-                        const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
-                        if (sentNotifsRes.rowCount === 0) {
-                            usersToNotifyDetails.push({ user, daysUntilExpiry, rule, contract });
-                            notifiedUserContractSet.add(notificationKey);
-                        }
                     }
                 }
             }
@@ -662,6 +659,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     await addSystemLog(`Contract end notifications run. Trigger: ${isManualTrigger ? 'Manual' : 'Automatic'}. Notifications sent for ${usersToNotifyDetails.length} users.`);
     return usersToNotifyDetails.length;
 }
+
 
 
 // ========== Projects ==========
