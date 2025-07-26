@@ -5,7 +5,7 @@ version: '3.8'
 services:
   # The PostgreSQL Database Service
   db:
-    image: postgres:15
+    image: postgres:16
     container_name: timetool-db
     restart: unless-stopped
     environment:
@@ -37,7 +37,7 @@ services:
       - "3000:3000"
     environment:
       # This URL connects the app to the 'db' service defined above
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
       # Admin credentials for the application
       NEXT_PUBLIC_ADMIN_EMAIL: ${NEXT_PUBLIC_ADMIN_EMAIL}
       NEXT_PUBLIC_ADMIN_PASSWORD: ${NEXT_PUBLIC_ADMIN_PASSWORD}
@@ -47,7 +47,7 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
-
+      DOMAIN: ${DOMAIN}
 volumes:
   # This named volume will persist your database data even if the container is removed
   postgres_data:
