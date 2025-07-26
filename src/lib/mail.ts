@@ -1,3 +1,4 @@
+
 'use server';
 
 import nodemailer from 'nodemailer';
@@ -23,7 +24,8 @@ const createTransporter = () => {
 };
 
 export async function sendPasswordResetEmail({ to, name }: { to: string; name: string; }) {
-    const domain = process.env.DOMAIN ? `https://${process.env.DOMAIN}` : 'http://localhost:3000';
+    const protocol = process.env.HTTPS === 'NO' ? 'http' : 'https';
+    const domain = process.env.DOMAIN ? `${protocol}://${process.env.DOMAIN}` : 'http://localhost:3000';
     const resetLink = `${domain}/reset-password?email=${encodeURIComponent(to)}`;
 
     const transporter = createTransporter();
