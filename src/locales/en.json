@@ -268,5 +268,22 @@
     "filterByUser": "Filter by User",
     "allContractsDesc": "A list of all contracts in the system.",
     "noContractsFound": "No contracts found for the selected user.",
-    "nameColumn": "Name"
+    "nameColumn": "Name",
+    "contractEndNotifications": "Contract End Notifications",
+    "contractEndNotificationsDesc": "Configure rules to automatically notify recipients about expiring contracts.",
+    "sendNow": "Send Now",
+    "sending": "Sending...",
+    "addNotification": "Add Notification",
+    "recipientUsers": "Recipient Users",
+    "recipientEmails": "Recipient Emails",
+    "thresholdDays": "Threshold Days",
+    "noNotificationRules": "No notification rules have been created yet.",
+    "notificationRuleUpdated": "Notification Rule Updated",
+    "notificationRuleAdded": "Notification Rule Added",
+    "notificationRuleDeleted": "Notification Rule Deleted",
+    "notificationRuleDeletedDesc": "The notification rule has been successfully deleted.",
+    "notificationsSent": "Notifications Sent",
+    "notificationsSentDesc": "Notifications were triggered for {{count}} users.",
+    "notificationsSentError": "Could not process notifications."
 }
+

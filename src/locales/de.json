@@ -268,5 +268,22 @@
     "filterByUser": "Nach Benutzer filtern",
     "allContractsDesc": "Eine Liste aller Verträge im System.",
     "noContractsFound": "Für den ausgewählten Benutzer wurden keine Verträge gefunden.",
-    "nameColumn": "Name"
+    "nameColumn": "Name",
+    "contractEndNotifications": "Benachrichtigungen bei Vertragsende",
+    "contractEndNotificationsDesc": "Regeln konfigurieren, um Empfänger automatisch über auslaufende Verträge zu informieren.",
+    "sendNow": "Jetzt senden",
+    "sending": "Wird gesendet...",
+    "addNotification": "Benachrichtigung hinzufügen",
+    "recipientUsers": "Empfänger Benutzer",
+    "recipientEmails": "Empfänger E-Mails",
+    "thresholdDays": "Schwellentage",
+    "noNotificationRules": "Es wurden noch keine Benachrichtigungsregeln erstellt.",
+    "notificationRuleUpdated": "Benachrichtigungsregel aktualisiert",
+    "notificationRuleAdded": "Benachrichtigungsregel hinzugefügt",
+    "notificationRuleDeleted": "Benachrichtigungsregel gelöscht",
+    "notificationRuleDeletedDesc": "Die Benachrichtigungsregel wurde erfolgreich gelöscht.",
+    "notificationsSent": "Benachrichtigungen gesendet",
+    "notificationsSentDesc": "Benachrichtigungen wurden für {{count}} Benutzer ausgelöst.",
+    "notificationsSentError": "Benachrichtigungen konnten nicht verarbeitet werden."
 }
+

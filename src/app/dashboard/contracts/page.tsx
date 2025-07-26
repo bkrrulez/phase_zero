@@ -36,7 +36,7 @@ export default function ContractsPage() {
             <Tabs defaultValue="all-contracts">
                 <TabsList className="grid w-full grid-cols-2 md:w-[450px]">
                     <TabsTrigger value="all-contracts">{t('allContracts')}</TabsTrigger>
-                    <TabsTrigger value="end-notifications">Contract End Notifications</TabsTrigger>
+                    <TabsTrigger value="end-notifications">{t('contractEndNotifications')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="all-contracts" className="mt-4">
                     <ContractsTable />
@@ -48,3 +48,4 @@ export default function ContractsPage() {
         </div>
     )
 }
+

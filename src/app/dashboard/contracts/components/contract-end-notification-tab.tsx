@@ -32,10 +32,10 @@ export function ContractEndNotificationTab() {
     const handleSaveNotification = (data: Omit<ContractEndNotification, 'id'>) => {
         if (editingNotification) {
             updateContractEndNotification(editingNotification.id, data);
-            toast({ title: "Notification Rule Updated" });
+            toast({ title: t("notificationRuleUpdated") });
         } else {
             addContractEndNotification(data);
-            toast({ title: "Notification Rule Added" });
+            toast({ title: t("notificationRuleAdded") });
         }
         setIsAddEditDialogOpen(false);
         setEditingNotification(null);
@@ -51,8 +51,8 @@ export function ContractEndNotificationTab() {
         deleteContractEndNotification(deletingNotification.id);
         setDeletingNotification(null);
         toast({
-            title: "Notification Rule Deleted",
-            description: "The notification rule has been successfully deleted.",
+            title: t("notificationRuleDeleted"),
+            description: t("notificationRuleDeletedDesc"),
             variant: "destructive"
         });
     }
@@ -62,14 +62,14 @@ export function ContractEndNotificationTab() {
         try {
             const count = await sendContractEndNotificationsNow();
             toast({
-                title: "Notifications Sent",
-                description: `Notifications were triggered for ${count} users.`
+                title: t("notificationsSent"),
+                description: t("notificationsSentDesc", { count: count })
             });
         } catch (error) {
             console.error("Failed to send notifications now", error);
             toast({
-                title: "Error",
-                description: "Could not process notifications.",
+                title: t("error"),
+                description: t("notificationsSentError"),
                 variant: "destructive"
             });
         } finally {
@@ -92,20 +92,20 @@ export function ContractEndNotificationTab() {
             <Card>
                 <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                      <div className="flex-1">
-                        <CardTitle>Contract End Notifications</CardTitle>
+                        <CardTitle>{t('contractEndNotifications')}</CardTitle>
                         <CardDescription>
-                            Configure rules to automatically notify recipients about expiring contracts.
+                           {t('contractEndNotificationsDesc')}
                         </CardDescription>
                     </div>
                     <div className="flex w-full md:w-auto gap-2">
                         <Button onClick={handleSendNow} disabled={isSending}>
-                            {isSending ? "Sending..." : "Send Now"}
+                            {isSending ? t('sending') : t('sendNow')}
                         </Button>
                         <Button onClick={() => {
                             setEditingNotification(null);
                             setIsAddEditDialogOpen(true);
                         }}>
-                            <PlusCircle className="h-4 w-4 mr-2" /> Add Notification
+                            <PlusCircle className="h-4 w-4 mr-2" /> {t('addNotification')}
                         </Button>
                     </div>
                 </CardHeader>
@@ -113,11 +113,11 @@ export function ContractEndNotificationTab() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Teams</TableHead>
-                                <TableHead>Recipient Users</TableHead>
-                                <TableHead>Recipient Emails</TableHead>
-                                <TableHead>Threshold Days</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>{t('teams')}</TableHead>
+                                <TableHead>{t('recipientUsers')}</TableHead>
+                                <TableHead>{t('recipientEmails')}</TableHead>
+                                <TableHead>{t('thresholdDays')}</TableHead>
+                                <TableHead className="text-right">{t('actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -134,10 +134,10 @@ export function ContractEndNotificationTab() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
                                                 <DropdownMenuItem onClick={() => handleOpenEditDialog(notification)}>
-                                                    <Edit className="mr-2 h-4 w-4"/> Edit
+                                                    <Edit className="mr-2 h-4 w-4"/> {t('edit')}
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => setDeletingNotification(notification)} className="text-destructive focus:text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                                    <Trash2 className="mr-2 h-4 w-4"/> {t('delete')}
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -147,7 +147,7 @@ export function ContractEndNotificationTab() {
                             {contractEndNotifications.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="h-24 text-center">
-                                        No notification rules have been created yet.
+                                        {t('noNotificationRules')}
                                     </TableCell>
                                 </TableRow>
                             )}
@@ -168,7 +168,7 @@ export function ContractEndNotificationTab() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete this notification rule. This action cannot be undone.
+                            {t('notificationRuleDeletedDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -180,3 +180,4 @@ export function ContractEndNotificationTab() {
         </div>
     )
 }
+
