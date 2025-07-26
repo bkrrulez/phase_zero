@@ -34,7 +34,7 @@ export default function ContractsPage() {
                 <p className="text-muted-foreground">{t('contractsSubtitle')}</p>
             </div>
             <Tabs defaultValue="all-contracts">
-                <TabsList className="grid w-full grid-cols-2 md:w-[450px]">
+                <TabsList className="grid w-full max-w-md grid-cols-1 sm:grid-cols-2 gap-y-2 sm:gap-y-0">
                     <TabsTrigger value="all-contracts">{t('allContracts')}</TabsTrigger>
                     <TabsTrigger value="end-notifications">{t('contractEndNotifications')}</TabsTrigger>
                 </TabsList>
@@ -48,4 +48,5 @@ export default function ContractsPage() {
         </div>
     )
 }
+
 
