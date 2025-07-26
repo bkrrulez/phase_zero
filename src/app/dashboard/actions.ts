@@ -27,13 +27,31 @@ import { revalidatePath } from 'next/cache';
 // Map DB rows to application types
 
 const mapDbUserToUser = (dbUser: any): User => {
-    const sortedContracts = (dbUser.contracts || []).sort((a: any, b: any) => {
-        if (a.end_date === null) return -1;
-        if (b.end_date === null) return 1;
-        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const allContracts = (dbUser.contracts || []);
+
+    const activeContracts = allContracts.filter((c: any) => {
+        const startDate = new Date(c.start_date);
+        const endDate = c.end_date ? new Date(c.end_date) : new Date('9999-12-31');
+        return isWithinInterval(today, { start: startDate, end: endDate });
     });
 
-    const primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
+    let primaryContract;
+    if (activeContracts.length > 0) {
+        // If there are active contracts, use the one that started most recently.
+        primaryContract = activeContracts.sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime())[0];
+    } else {
+        // If no active contract, find the most recent one (past or future).
+        // This is a sensible fallback for display purposes.
+        const sortedContracts = allContracts.sort((a: any, b: any) => {
+            if (a.end_date === null) return -1;
+            if (b.end_date === null) return 1;
+            return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+        });
+        primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
+    }
     
     return {
         id: dbUser.id,
@@ -49,7 +67,7 @@ const mapDbUserToUser = (dbUser: any): User => {
             endDate: primaryContract.end_date ? format(new Date(primaryContract.end_date), 'yyyy-MM-dd') : null,
             weeklyHours: primaryContract.weekly_hours,
         },
-        contracts: (dbUser.contracts || []).map((c: any) => ({
+        contracts: allContracts.map((c: any) => ({
              id: c.id,
              startDate: format(new Date(c.start_date), 'yyyy-MM-dd'),
              endDate: c.end_date ? format(new Date(c.end_date), 'yyyy-MM-dd') : null,
@@ -1297,5 +1315,3 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
-
-    

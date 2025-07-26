@@ -48,6 +48,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
       DOMAIN: ${DOMAIN}
+      HTTPS: ${HTTPS}
 volumes:
   # This named volume will persist your database data even if the container is removed
   postgres_data:
