@@ -1,3 +1,4 @@
+
 'use server';
 
 import nodemailer from 'nodemailer';
@@ -5,24 +6,19 @@ import { type User, type HolidayRequest, type ContractEndNotification, type Cont
 import { format } from 'date-fns';
 
 const createTransporter = () => {
-    const smtpConfig: any = {
+    const smtpConfig = {
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT),
         secure: Number(process.env.SMTP_PORT) === 465,
-    };
-
-    // Only add auth if both user and pass are non-empty strings
-    if (process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
-        smtpConfig.auth = {
+        auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASSWORD,
-        };
-    }
-
+        },
+    };
     return nodemailer.createTransport(smtpConfig);
 };
 
-export async function sendPasswordResetEmail({ to, name }: { to: string; name: string; }) {
+export async function sendPasswordResetEmail({ to, name }: { to: string; name: string;}) {
     const domain = process.env.DOMAIN ? `https://${process.env.DOMAIN}` : 'http://localhost:3000';
     const resetLink = `${domain}/reset-password?email=${encodeURIComponent(to)}`;
 

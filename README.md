@@ -1,4 +1,4 @@
-# TimeTool by Firebase Studio
+# TimeTool by Bikramjit Chowdhury
 
 This is a Next.js application built for time tracking and managing small teams.
 
