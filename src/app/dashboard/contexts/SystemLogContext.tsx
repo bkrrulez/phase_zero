@@ -4,7 +4,7 @@ import * as React from 'react';
 import { type LogEntry } from '@/lib/types';
 import { getSystemLogs, addSystemLog, purgeOldSystemLogs, sendContractEndNotificationsNow, getSystemSetting, setSystemSetting } from '../actions';
 import { useAuth } from './AuthContext';
-import { differenceInHours } from 'date-fns';
+import { differenceInHours, startOfToday } from 'date-fns';
 
 interface SystemLogContextType {
   logs: LogEntry[];
@@ -14,7 +14,7 @@ interface SystemLogContextType {
 const SystemLogContext = React.createContext<SystemLogContextType | undefined>(undefined);
 
 const PURGE_INTERVAL_HOURS = 24;
-const CONTRACT_CHECK_INTERVAL_HOURS = 24;
+const NOTIFICATION_HOUR = 10; // 10 AM
 
 export function SystemLogProvider({ children }: { children: React.ReactNode }) {
   const [logs, setLogs] = React.useState<LogEntry[]>([]);
@@ -30,12 +30,12 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
     const runDailyTasks = async () => {
         if (currentUser?.role !== 'Super Admin') return;
 
-        // System Log Purge Check
+        const now = new Date();
+        
+        // --- System Log Purge Check (keeps running every 24h) ---
         const lastPurgeTimeStr = await getSystemSetting('lastSystemLogPurgeTime');
         const lastPurgeTime = lastPurgeTimeStr ? new Date(lastPurgeTimeStr) : new Date(0);
-        const hoursSinceLastPurge = differenceInHours(new Date(), lastPurgeTime);
-
-        if (hoursSinceLastPurge >= PURGE_INTERVAL_HOURS) {
+        if (differenceInHours(now, lastPurgeTime) >= PURGE_INTERVAL_HOURS) {
             console.log('Performing daily check for old system logs to purge...');
             try {
                 const deletedCount = await purgeOldSystemLogs();
@@ -45,27 +45,31 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     console.log('No old log entries to purge.');
                 }
-                await setSystemSetting('lastSystemLogPurgeTime', new Date().toISOString());
+                await setSystemSetting('lastSystemLogPurgeTime', now.toISOString());
             } catch (error) {
                 console.error('Failed to purge old system logs:', error);
             }
         }
         
-        // Contract End Notification Check
-        const lastContractCheckTimeStr = await getSystemSetting('lastContractNotificationCheckTime');
-        const lastContractCheckTime = lastContractCheckTimeStr ? new Date(lastContractCheckTimeStr) : new Date(0);
-        const hoursSinceLastCheck = differenceInHours(new Date(), lastContractCheckTime);
+        // --- Contract End Notification Check (runs at a specific time) ---
+        const lastCheckTimeStr = await getSystemSetting('lastContractNotificationCheckTime');
+        const lastCheckTime = lastCheckTimeStr ? new Date(lastCheckTimeStr) : new Date(0);
+        
+        const todayAtRunTime = new Date(startOfToday().setHours(NOTIFICATION_HOUR));
 
-        if(hoursSinceLastCheck >= CONTRACT_CHECK_INTERVAL_HOURS) {
-            console.log("Performing daily check for contract end notifications...");
+        // Check if it's time to run:
+        // 1. Current time is past the scheduled run time for today.
+        // 2. The last check was performed before today's scheduled run time.
+        if (now >= todayAtRunTime && lastCheckTime < todayAtRunTime) {
+            console.log(`It's past ${NOTIFICATION_HOUR}:00 AM, running daily contract notification check...`);
             try {
                 // Pass false to indicate this is an automatic, not manual, trigger
                 const count = await sendContractEndNotificationsNow(false);
                 if (count > 0) {
-                    console.log(`Automatic notifications sent for ${count} contracts.`);
                     await logAction(`System automatically sent ${count} contract end notifications.`);
                 }
-                await setSystemSetting('lastContractNotificationCheckTime', new Date().toISOString());
+                // Record that the check for today has been run
+                await setSystemSetting('lastContractNotificationCheckTime', now.toISOString());
             } catch (error) {
                 console.error('Failed to run automatic contract end notifications:', error);
             }
