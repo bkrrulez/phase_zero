@@ -34,9 +34,9 @@ export default function ContractsPage() {
                 <p className="text-muted-foreground">{t('contractsSubtitle')}</p>
             </div>
             <Tabs defaultValue="all-contracts">
-                <TabsList className="grid w-full max-w-md grid-cols-1 sm:grid-cols-2 gap-y-2 sm:gap-y-0">
-                    <TabsTrigger value="all-contracts">{t('allContracts')}</TabsTrigger>
-                    <TabsTrigger value="end-notifications">{t('contractEndNotifications')}</TabsTrigger>
+                <TabsList className="flex flex-col sm:flex-row h-auto sm:h-10 w-full sm:w-auto sm:inline-flex">
+                    <TabsTrigger value="all-contracts" className="w-full sm:w-auto">{t('allContracts')}</TabsTrigger>
+                    <TabsTrigger value="end-notifications" className="w-full sm:w-auto">{t('contractEndNotifications')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="all-contracts" className="mt-4">
                     <ContractsTable />
@@ -48,5 +48,3 @@ export default function ContractsPage() {
         </div>
     )
 }
-
-
