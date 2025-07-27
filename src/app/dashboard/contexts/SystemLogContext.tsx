@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { type LogEntry } from '@/lib/types';
-import { getSystemLogs, addSystemLog, purgeOldSystemLogs, sendContractEndNotificationsNow, getSystemSetting, setSystemSetting } from '../actions';
+import { getSystemLogs, addSystemLog, purgeOldSystemLogs, getSystemSetting, setSystemSetting } from '../actions';
 import { useAuth } from './AuthContext';
 import { differenceInHours } from 'date-fns';
 
@@ -44,13 +44,6 @@ export function SystemLogProvider({ children }: { children: React.ReactNode }) {
             } catch (error) {
                 console.error('Failed to purge old system logs:', error);
             }
-        }
-        
-        // --- Contract End Notification Check (runs on every render, but action has internal check) ---
-        try {
-            await sendContractEndNotificationsNow(false);
-        } catch (error) {
-            console.error('Failed to run automatic contract end notifications:', error);
         }
     };
 
