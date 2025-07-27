@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from '@/hooks/use-toast';
 import { resetUserPassword } from '../dashboard/actions';
 import { sendPasswordResetConfirmationEmail } from '@/lib/mail';
+import { Eye, EyeOff } from 'lucide-react';
 
 const resetPasswordSchema = z.object({
   password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
@@ -29,6 +30,8 @@ export function ResetPasswordForm() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const email = searchParams.get('email');
 
@@ -127,7 +130,20 @@ export function ResetPasswordForm() {
                             <FormItem>
                             <FormLabel>New Password</FormLabel>
                             <FormControl>
-                                <Input type="password" {...field} disabled={isLoading} />
+                                <div className="relative">
+                                    <Input type={showPassword ? 'text' : 'password'} {...field} disabled={isLoading} className="pr-10"/>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                        onClick={() => setShowPassword(prev => !prev)}
+                                        disabled={isLoading}
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? <EyeOff /> : <Eye />}
+                                    </Button>
+                                </div>
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -140,7 +156,20 @@ export function ResetPasswordForm() {
                             <FormItem>
                             <FormLabel>Confirm New Password</FormLabel>
                             <FormControl>
-                                <Input type="password" {...field} disabled={isLoading} />
+                                <div className="relative">
+                                    <Input type={showConfirmPassword ? 'text' : 'password'} {...field} disabled={isLoading} className="pr-10"/>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                        onClick={() => setShowConfirmPassword(prev => !prev)}
+                                        disabled={isLoading}
+                                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                                    </Button>
+                                </div>
                             </FormControl>
                             <FormMessage />
                             </FormItem>
