@@ -11,8 +11,12 @@ if [ -z "$DATABASE_URL" ]; then
   exit 1
 fi
 
-# Path to the migration file
-MIGRATION_FILE="scripts/migrations/001_add_contracts_table.sql"
+# ==============================================================================
+# IMPORTANT: Manually set the migration file you want to run here.
+# ==============================================================================
+MIGRATION_FILE="scripts/migrations/002_add_sent_notifications_table.sql"
+# ==============================================================================
+
 
 # Check if migration file exists
 if [ ! -f "$MIGRATION_FILE" ]; then
