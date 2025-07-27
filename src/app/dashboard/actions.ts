@@ -20,7 +20,7 @@ import {
   type Contract,
   type ContractEndNotification,
 } from '@/lib/types';
-import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear } from 'date-fns';
+import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
@@ -657,6 +657,22 @@ const parseDateAsLocal = (dateString: string): Date => {
 };
 
 export async function sendContractEndNotificationsNow(isManualTrigger: boolean = true): Promise<number> {
+    const now = new Date();
+    const NOTIFICATION_HOUR = 10;
+    
+    // For automatic trigger, check if it's time to run
+    if (!isManualTrigger) {
+        const lastCheckTimeStr = await getSystemSetting('lastContractNotificationCheckTime');
+        const lastCheckTime = lastCheckTimeStr ? new Date(lastCheckTimeStr) : new Date(0);
+        const todayAtRunTime = startOfToday();
+        todayAtRunTime.setHours(NOTIFICATION_HOUR);
+
+        // Check if current time is past run time and if we haven't already run today
+        if (now < todayAtRunTime || lastCheckTime >= todayAtRunTime) {
+            return 0; // Not time to run yet or already ran today
+        }
+    }
+    
     const allContracts = await getContracts();
     const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
@@ -719,7 +735,19 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
         }
     }
     
-    await addSystemLog(`Contract end notifications run. Trigger: ${isManualTrigger ? 'Manual' : 'Automatic'}. Notifications sent for ${usersToNotifyDetails.length} users.`);
+    const logMessage = `Contract end notifications run. Trigger: ${isManualTrigger ? 'Manual' : 'Automatic'}. Notifications sent for ${usersToNotifyDetails.length} users.`;
+    
+    // If any notifications were sent or if it's a manual trigger, log it.
+    // For automatic trigger, only log if something happened or it's the first run of the day.
+    if (usersToNotifyDetails.length > 0 || isManualTrigger) {
+        await addSystemLog(logMessage);
+    }
+
+    // After a successful automatic run, update the timestamp
+    if (!isManualTrigger) {
+        await setSystemSetting('lastContractNotificationCheckTime', now.toISOString());
+    }
+    
     return usersToNotifyDetails.length;
 }
 
