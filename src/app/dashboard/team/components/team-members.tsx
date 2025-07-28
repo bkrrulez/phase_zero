@@ -21,7 +21,7 @@ import { useTeams } from "../../contexts/TeamsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 interface TeamMembersProps {
     onAddMemberClick: () => void;
@@ -38,9 +38,27 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
-    const [selectedTeam, setSelectedTeam] = React.useState('all');
+    const [selectedTeams, setSelectedTeams] = React.useState<string[]>(['all']);
+    
+    const teamOptions = React.useMemo(() => {
+        return [
+            { value: 'all', label: 'All Teams' },
+            { value: 'none', label: 'No Team' },
+            ...teams.map(team => ({ value: team.id, label: team.name }))
+        ];
+    }, [teams]);
 
-    const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
+    const handleTeamSelectionChange = (newSelection: string[]) => {
+        if (newSelection.includes('all') && selectedTeams.length < newSelection.length) {
+            setSelectedTeams(['all']);
+        } else if (newSelection.length > 1 && newSelection.includes('all')) {
+            setSelectedTeams(newSelection.filter(s => s !== 'all'));
+        }
+        else {
+            setSelectedTeams(newSelection);
+        }
+    };
+
 
     const visibleMembers = React.useMemo(() => {
         let members: User[];
@@ -52,12 +70,13 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
 
-        if (selectedTeam !== 'all') {
-            if (selectedTeam === 'none') {
-                 members = members.filter(member => !member.teamId);
-            } else {
-                 members = members.filter(member => member.teamId === selectedTeam);
-            }
+        if (!selectedTeams.includes('all')) {
+            members = members.filter(member => {
+                if (selectedTeams.includes('none') && !member.teamId) {
+                    return true;
+                }
+                return member.teamId && selectedTeams.includes(member.teamId);
+            });
         }
         
         const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
@@ -69,7 +88,7 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
         });
         
         return uniqueMembers;
-    }, [teamMembers, currentUser, selectedTeam]);
+    }, [teamMembers, currentUser, selectedTeams]);
     
     const handleSaveDetails = async (originalUser: User, updatedData: EditMemberFormValues) => {
         if (!editingUser) return;
@@ -188,18 +207,13 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
                 <CardDescription>{t('teamMembersTabDesc')}</CardDescription>
               </div>
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Filter by team..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Teams</SelectItem>
-                        <SelectItem value="none">No Team</SelectItem>
-                        {teams.map(team => (
-                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                 <MultiSelect
+                    options={teamOptions}
+                    selected={selectedTeams}
+                    onChange={handleTeamSelectionChange}
+                    placeholder="Filter by team..."
+                    className="w-full sm:w-[220px]"
+                 />
               </div>
           </CardHeader>
           <CardContent>
