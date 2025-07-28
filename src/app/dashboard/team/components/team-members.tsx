@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { format, min as minDate, max as maxDate, isWithinInterval } from "date-fns";
-import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -200,14 +200,6 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
                         ))}
                     </SelectContent>
                 </Select>
-                <Button variant="outline" onClick={() => onExportClick(visibleMembers)} className="w-full sm:w-auto">
-                    <FileUp className="mr-2 h-4 w-4" /> {t('export')}
-                </Button>
-                {canAddMember && (
-                    <Button onClick={onAddMemberClick} className="w-full sm:w-auto">
-                        <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
-                    </Button>
-                )}
               </div>
           </CardHeader>
           <CardContent>

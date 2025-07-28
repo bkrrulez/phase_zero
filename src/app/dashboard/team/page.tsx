@@ -104,6 +104,16 @@ export default function TeamPage() {
                         <h1 className="text-3xl font-bold font-headline">{t('team')}</h1>
                         <p className="text-muted-foreground">{t('teamPageSubtitle')}</p>
                     </div>
+                     <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" onClick={() => handleExport(teamMembers)} className="w-full sm:w-auto">
+                            <FileUp className="mr-2 h-4 w-4" /> {t('export')}
+                        </Button>
+                        {canAddMember && (
+                            <Button onClick={() => setIsAddMemberDialogOpen(true)} className="w-full sm:w-auto">
+                                <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <TeamMembers 
                   onAddMemberClick={() => setIsAddMemberDialogOpen(true)}
