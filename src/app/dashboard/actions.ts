@@ -651,11 +651,6 @@ export async function deleteContractEndNotification(notificationId: string): Pro
     }
 }
 
-const parseDateAsLocal = (dateString: string): Date => {
-    const [year, month, day] = dateString.split('-').map(Number);
-    return new Date(year, month - 1, day);
-};
-
 export async function sendContractEndNotificationsNow(isManualTrigger: boolean = true): Promise<number> {
     const now = new Date();
     const NOTIFICATION_HOUR = 10;
@@ -677,8 +672,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
     const allUsers = await getUsers();
     const rules = await getContractEndNotifications();
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = startOfToday();
 
     const usersToNotifyDetails: { user: User; daysUntilExpiry: number; rule: ContractEndNotification; contract: Contract }[] = [];
     const notifiedUserContractSet = new Set<string>();
@@ -693,7 +687,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
 
             if (!contract.endDate) continue;
             
-            const contractEndDate = parseDateAsLocal(contract.endDate);
+            const contractEndDate = new Date(contract.endDate);
             if (contractEndDate < today) continue;
             
             const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
