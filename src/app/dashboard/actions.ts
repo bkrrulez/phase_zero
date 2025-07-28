@@ -616,7 +616,7 @@ export async function addContractEndNotification(notificationData: Omit<Contract
     const id = `cen-${Date.now()}`;
     try {
         const result = await db.query(
-            'INSERT INTO contract_end_notifications (id, team_ids, recipient_user_ids, recipient_emails, threshold_days) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            `INSERT INTO contract_end_notifications (id, team_ids, recipient_user_ids, recipient_emails, threshold_days) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
             [id, teamIds, recipientUserIds || [], recipientEmails || [], thresholdDays]
         );
         revalidatePath('/dashboard/contracts');
@@ -631,7 +631,7 @@ export async function updateContractEndNotification(id: string, notificationData
     const { teamIds, recipientUserIds, recipientEmails, thresholdDays } = notificationData;
     try {
         const result = await db.query(
-            'UPDATE contract_end_notifications SET team_ids=$1, recipient_user_ids=$2, recipient_emails=$3, threshold_days=$4 WHERE id=$5 RETURNING *',
+            `UPDATE contract_end_notifications SET team_ids=$1, recipient_user_ids=$2, recipient_emails=$3, threshold_days=$4 WHERE id=$5 RETURNING *`,
             [teamIds, recipientUserIds || [], recipientEmails || [], thresholdDays, id]
         );
         revalidatePath('/dashboard/contracts');
@@ -690,7 +690,7 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
             const contractEndDate = new Date(contract.endDate);
             if (contractEndDate < today) continue;
             
-            const daysUntilExpiry = differenceInDays(contractEndDate, today) + 1;
+            const daysUntilExpiry = differenceInDays(contractEndDate, today);
             
             const notificationKey = `${user.id}-${contract.id}`;
             if (notifiedUserContractSet.has(notificationKey)) continue;
@@ -705,7 +705,11 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
             } else { // Automatic Trigger (daily job)
                 // For automatic trigger, check if contract expires on EXACTLY a threshold day
                 if (rule.thresholdDays.includes(daysUntilExpiry)) {
-                    const sentNotifsRes = await db.query('SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day = $2', [contract.id, daysUntilExpiry]);
+                    // Check if we've already sent a notification for this contract for this threshold or a higher one.
+                    const sentNotifsRes = await db.query(
+                        'SELECT 1 FROM sent_notifications WHERE contract_id = $1 AND threshold_day >= $2', 
+                        [contract.id, daysUntilExpiry]
+                    );
                     if (sentNotifsRes.rowCount === 0) {
                         shouldNotify = true;
                     }
@@ -930,7 +934,7 @@ export async function addPublicHoliday(holidayData: Omit<PublicHoliday, 'id'>): 
     const { country, name, date, type } = holidayData;
     const id = `ph-${Date.now()}`;
     const result = await db.query(
-        'INSERT INTO public_holidays (id, country, name, date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        `INSERT INTO public_holidays (id, country, name, date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [id, country, name, date, type]
     );
     revalidatePath('/dashboard/settings/holidays');
@@ -941,7 +945,7 @@ export async function addPublicHoliday(holidayData: Omit<PublicHoliday, 'id'>): 
 export async function updatePublicHoliday(holidayId: string, data: Omit<PublicHoliday, 'id'>): Promise<PublicHoliday | null> {
     const { country, name, date, type } = data;
     const result = await db.query(
-        'UPDATE public_holidays SET country = $1, name = $2, date = $3, type = $4 WHERE id = $5 RETURNING *',
+        `UPDATE public_holidays SET country = $1, name = $2, date = $3, type = $4 WHERE id = $5 RETURNING *`,
         [country, name, date, type, holidayId]
     );
     revalidatePath('/dashboard/settings/holidays');
@@ -963,7 +967,7 @@ export async function addCustomHoliday(holidayData: Omit<CustomHoliday, 'id'>): 
     const { country, name, date, type, appliesTo } = holidayData;
     const id = `ch-${Date.now()}`;
     const result = await db.query(
-        'INSERT INTO custom_holidays (id, country, name, date, type, applies_to) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        `INSERT INTO custom_holidays (id, country, name, date, type, applies_to) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [id, country, name, date, type, appliesTo]
     );
     revalidatePath('/dashboard/settings/holidays');
@@ -974,7 +978,7 @@ export async function addCustomHoliday(holidayData: Omit<CustomHoliday, 'id'>): 
 export async function updateCustomHoliday(holidayId: string, data: Omit<CustomHoliday, 'id'>): Promise<CustomHoliday | null> {
     const { country, name, date, type, appliesTo } = data;
     const result = await db.query(
-        'UPDATE custom_holidays SET country = $1, name = $2, date = $3, type = $4, applies_to = $5 WHERE id = $6 RETURNING *',
+        `UPDATE custom_holidays SET country = $1, name = $2, date = $3, type = $4, applies_to = $5 WHERE id = $6 RETURNING *`,
         [country, name, date, type, appliesTo, holidayId]
     );
     revalidatePath('/dashboard/settings/holidays');
@@ -1006,7 +1010,7 @@ export async function setAnnualLeaveAllowance(allowance: number): Promise<void> 
 export async function addHolidayRequest(request: Omit<HolidayRequest, 'id'>): Promise<HolidayRequest | null> {
     const id = `hr-${Date.now()}`;
     const result = await db.query(
-        'INSERT INTO holiday_requests (id, user_id, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        `INSERT INTO holiday_requests (id, user_id, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [id, request.userId, request.startDate, request.endDate, request.status]
     );
     revalidatePath('/dashboard/holidays');
@@ -1019,7 +1023,7 @@ export async function updateHolidayRequestStatus(requestId: string, status: 'App
         await client.query('BEGIN');
         
         const updateResult = await client.query(
-            'UPDATE holiday_requests SET status = $1, action_by_user_id = $2, action_timestamp = NOW() WHERE id = $3 AND status = $4 RETURNING *',
+            `UPDATE holiday_requests SET status = $1, action_by_user_id = $2, action_timestamp = NOW() WHERE id = $3 AND status = $4 RETURNING *`,
             [status, approverId, requestId, 'Pending']
         );
 
@@ -1092,7 +1096,7 @@ export async function addFreezeRule(newRuleData: Omit<FreezeRule, 'id'>): Promis
     const { teamId, startDate, endDate, recurringDay } = newRuleData;
     const id = `freeze-${Date.now()}`;
     const result = await db.query(
-        'INSERT INTO freeze_rules (id, team_id, start_date, end_date, recurring_day) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        `INSERT INTO freeze_rules (id, team_id, start_date, end_date, recurring_day) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [id, teamId, startDate, endDate, recurringDay]
     );
     revalidatePath('/dashboard/settings/access-control');
@@ -1292,7 +1296,7 @@ export async function getSystemLogs(): Promise<LogEntry[]> {
 export async function addSystemLog(message: string): Promise<LogEntry | null> {
     const id = `log-${Date.now()}`;
     const timestamp = new Date().toISOString();
-    const result = await db.query('INSERT INTO system_logs (id, timestamp, message) VALUES ($1, $2, $3) RETURNING *', [id, timestamp, message]);
+    const result = await db.query(`INSERT INTO system_logs (id, timestamp, message) VALUES ($1, $2, $3) RETURNING *`, [id, timestamp, message]);
     revalidatePath('/dashboard/settings/system-logs');
     return {
         id: result.rows[0].id,
