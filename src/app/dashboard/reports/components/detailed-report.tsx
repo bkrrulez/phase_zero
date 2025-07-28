@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { type DetailedReportData } from '../page';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTeams } from '../../contexts/TeamsContext';
 
 interface DetailedReportProps {
   data: DetailedReportData[];
@@ -25,6 +26,7 @@ interface DetailedReportProps {
 
 export function DetailedReport({ data }: DetailedReportProps) {
   const { t } = useLanguage();
+  const { teams } = useTeams();
   const [openStates, setOpenStates] = React.useState<Record<string, boolean>>({});
 
   const toggleOpen = (id: string) => {
@@ -41,6 +43,13 @@ export function DetailedReport({ data }: DetailedReportProps) {
     });
     setOpenStates(newStates);
   };
+  
+  const getTeamName = (teamId?: string) => {
+    if (!teamId) return 'N/A';
+    const team = teams.find(t => t.id === teamId);
+    return team?.name ?? 'N/A';
+  };
+
 
   return (
     <div className="space-y-4">
@@ -54,6 +63,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
             <TableHead className="w-[50px]"></TableHead>
             <TableHead>{t('member')}</TableHead>
             <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
+            <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
             <TableHead className="text-right">{t('assignedHours')}</TableHead>
             <TableHead className="text-right">{t('leaveHours')}</TableHead>
             <TableHead className="text-right">{t('expected')}</TableHead>
@@ -80,6 +90,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                       </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell"><Badge variant={userRow.user.role === 'Team Lead' || userRow.user.role === 'Super Admin' ? "default" : "secondary"}>{userRow.user.role}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell">{getTeamName(userRow.user.teamId)}</TableCell>
                   <TableCell className="text-right font-mono">{userRow.assignedHours.toFixed(2)}h</TableCell>
                   <TableCell className="text-right font-mono">{userRow.leaveHours.toFixed(2)}h</TableCell>
                   <TableCell className="text-right font-mono">{userRow.expectedHours.toFixed(2)}h</TableCell>
@@ -100,6 +111,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                     <span className="font-medium">Project - {projectRow.name}</span>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell"></TableCell>
+                                <TableCell className="hidden md:table-cell"></TableCell>
                                 <TableCell></TableCell>
                                 <TableCell></TableCell>
                                 <TableCell></TableCell>
@@ -111,6 +123,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                 <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`}>
                                     <TableCell></TableCell>
                                     <TableCell className="pl-16 text-muted-foreground">Task - {taskRow.name}</TableCell>
+                                    <TableCell className="hidden md:table-cell"></TableCell>
                                     <TableCell className="hidden md:table-cell"></TableCell>
                                     <TableCell></TableCell>
                                     <TableCell></TableCell>
@@ -126,7 +139,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
             )
           }) : (
             <TableRow>
-              <TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell>
+              <TableCell colSpan={9} className="text-center h-24">{t('noTeamMembers')}</TableCell>
             </TableRow>
           )}
         </TableBody>

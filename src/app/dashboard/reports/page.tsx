@@ -417,13 +417,14 @@ export default function ReportsPage() {
           dataForExport.push([{ v: title }]);
           dataForExport.push([]);
           
-          const headers = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+          const headers = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
           dataForExport.push(headers.map(h => ({ v: h, s: headerStyle })));
 
           reports.detailedReport.forEach(userRow => {
               const userRowData = [
                   { v: userRow.user.name, s: userStyle }, 
                   { v: userRow.user.role, s: userStyle },
+                  { v: getTeamName(userRow.user.teamId), s: userStyle },
                   { v: userRow.assignedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
                   { v: userRow.leaveHours, t: 'n', z: numberFormat.z, s: userStyle },
                   { v: userRow.expectedHours, t: 'n', z: numberFormat.z, s: userStyle }, 
@@ -434,14 +435,14 @@ export default function ReportsPage() {
               
               userRow.projects.forEach(projectRow => {
                   const projectRowData = [
-                      { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
+                      { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
                       { v: projectRow.loggedHours, t: 'n', z: numberFormat.z, s: projectStyle }, { v: '', s: projectStyle }
                   ];
                   dataForExport.push(projectRowData);
                 
                   projectRow.tasks.forEach(taskRow => {
                       const taskRowData = [
-                          { v: `        Task- ${taskRow.name}`, s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle },
+                          { v: `        Task- ${taskRow.name}`, s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle },
                           { v: taskRow.loggedHours, t: 'n', z: numberFormat.z, s: taskStyle }, { v: '', s: taskStyle }
                       ];
                       dataForExport.push(taskRowData);
@@ -507,18 +508,18 @@ export default function ReportsPage() {
           
           const wb = XLSX.utils.book_new();
 
-          const consolidatedHeaders = [t('member'), t('role'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
-          const consolidatedReportData = reports.consolidatedData.map(m => [m.name, m.role, m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
+          const consolidatedHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+          const consolidatedReportData = reports.consolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
           const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
           XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
 
-          const projectHeaders = [t('member'), t('role'), t('project'), t('loggedHours')];
-          const projectReportData = reports.projectReport.map(item => [item.member.name, item.member.role, item.projectName, item.loggedHours]);
+          const projectHeaders = [t('member'), t('role'), t('team'), t('project'), t('loggedHours')];
+          const projectReportData = reports.projectReport.map(item => [item.member.name, item.member.role, getTeamName(item.member.teamId), item.projectName, item.loggedHours]);
           const projectSheet = createStyledSheet(t('projectLevelReport'), projectHeaders, projectReportData);
           XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
           
-          const taskHeaders = [t('member'), t('role'), t('task'), t('loggedHours')];
-          const taskReportData = reports.taskReport.map(item => [item.member.name, item.member.role, item.taskName, item.loggedHours]);
+          const taskHeaders = [t('member'), t('role'), t('team'), t('task'), t('loggedHours')];
+          const taskReportData = reports.taskReport.map(item => [item.member.name, item.member.role, getTeamName(item.member.teamId), item.taskName, item.loggedHours]);
           const taskSheet = createStyledSheet(t('taskLevelReport'), taskHeaders, taskReportData);
           XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
 
@@ -658,13 +659,13 @@ export default function ReportsPage() {
                             <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-destructive' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={7} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
+                        {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}
                   {reportView === 'project' && (
                     <Table>
-                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead>{t('project')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead className="hidden md:table-cell">{t('team')}</TableHead><TableHead>{t('project')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {reports.projectReport.map(item => (
                           <TableRow key={item.key}>
@@ -675,17 +676,18 @@ export default function ReportsPage() {
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={item.member.role === 'Team Lead' || item.member.role === 'Super Admin' ? "default" : "secondary"}>{item.member.role}</Badge></TableCell>
+                            <TableCell className="hidden md:table-cell">{getTeamName(item.member.teamId)}</TableCell>
                             <TableCell className="font-medium">{item.projectName}</TableCell>
                             <TableCell className="text-right font-mono">{item.loggedHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.projectReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noProjectHours')}</TableCell></TableRow>)}
+                        {reports.projectReport.length === 0 && (<TableRow><TableCell colSpan={5} className="text-center h-24">{t('noProjectHours')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}
                    {reportView === 'task' && (
                     <Table>
-                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead>{t('task')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead className="hidden md:table-cell">{t('team')}</TableHead><TableHead>{t('task')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {reports.taskReport.map(item => (
                           <TableRow key={item.key}>
@@ -696,11 +698,12 @@ export default function ReportsPage() {
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={item.member.role === 'Team Lead' || item.member.role === 'Super Admin' ? "default" : "secondary"}>{item.member.role}</Badge></TableCell>
+                            <TableCell className="hidden md:table-cell">{getTeamName(item.member.teamId)}</TableCell>
                             <TableCell className="font-medium">{item.taskName}</TableCell>
                             <TableCell className="text-right font-mono">{item.loggedHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
-                        {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={4} className="text-center h-24">{t('noTaskHours')}</TableCell></TableRow>)}
+                        {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={5} className="text-center h-24">{t('noTaskHours')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}
