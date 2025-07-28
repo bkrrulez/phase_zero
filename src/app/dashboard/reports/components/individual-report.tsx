@@ -172,7 +172,9 @@ export function IndividualReport() {
 
     const { availableYears, availableMonths, minContractDate, maxContractDate } = React.useMemo(() => {
         if (!selectedUser || !selectedUser.contracts || selectedUser.contracts.length === 0) {
-            return { availableYears: [], availableMonths: [], minContractDate: null, maxContractDate: null };
+            const currentYear = new Date().getFullYear();
+            const yearsList = Array.from({ length: 5 }, (_, i) => currentYear - i);
+            return { availableYears: yearsList, availableMonths: months, minContractDate: null, maxContractDate: null };
         }
     
         const startDates = selectedUser.contracts.map(c => parseISO(c.startDate));
@@ -336,17 +338,20 @@ export function IndividualReport() {
         aoa.push([{v: title, s: titleStyle }]);
         aoa.push([]);
 
+        // Helper to round numbers
+        const round = (num: number) => parseFloat(num.toFixed(2));
+
         // Consolidated Info
         const summaryHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
         const summaryData = [
             selectedUser.name,
             selectedUser.role,
             getTeamName(selectedUser.teamId),
-            { v: monthlyData.totalAssigned, t: 'n', s: {...userRowStyle, ...numberFormat}},
-            { v: monthlyData.totalLeave, t: 'n', s: {...userRowStyle, ...numberFormat}},
-            { v: monthlyData.totalExpected, t: 'n', s: {...userRowStyle, ...numberFormat}},
-            { v: monthlyData.totalLogged, t: 'n', s: {...userRowStyle, ...numberFormat}},
-            { v: monthlyData.totalExpected - monthlyData.totalLogged, t: 'n', s: {...userRowStyle, ...numberFormat}}
+            { v: round(monthlyData.totalAssigned), t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: round(monthlyData.totalLeave), t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: round(monthlyData.totalExpected), t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: round(monthlyData.totalLogged), t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: round(monthlyData.totalExpected - monthlyData.totalLogged), t: 'n', s: {...userRowStyle, ...numberFormat}}
         ];
 
         aoa.push(summaryHeaders.map(h => ({v: h, s: headerStyle})));
@@ -369,7 +374,7 @@ export function IndividualReport() {
                 {v: task, s: dataRowStyle },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
-                {v: entry.duration, t: 'n', s: {...dataRowStyle, ...numberFormat} },
+                {v: round(entry.duration), t: 'n', s: {...dataRowStyle, ...numberFormat} },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
             ]);
