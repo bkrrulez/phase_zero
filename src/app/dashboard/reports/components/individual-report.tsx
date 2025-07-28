@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import * as XLSX from 'xlsx-js-style';
 import {
   Card,
   CardContent,
@@ -20,7 +21,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { User, TimeEntry } from '@/lib/types';
-import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, getYear, parseISO, isSameDay, min as minDate, max as maxDate, getMonth, endOfYear, startOfYear, endOfMonth } from 'date-fns';
+import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, getYear, parseISO, isSameDay, min as minDate, max as maxDate, getMonth, endOfYear, startOfYear, endOfMonth, format } from 'date-fns';
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
@@ -30,6 +31,9 @@ import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { LogTimeDialog, type LogTimeFormValues } from '../../components/log-time-dialog';
 import { DeleteTimeEntryDialog } from './delete-time-entry-dialog';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { FileUp } from 'lucide-react';
+import { useTeams } from '../../contexts/TeamsContext';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -111,6 +115,7 @@ export function IndividualReport() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { t } = useLanguage();
+    const { teams } = useTeams();
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
     const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
@@ -203,7 +208,7 @@ export function IndividualReport() {
 
 
   const monthlyData = React.useMemo(() => {
-    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {}, dailyExpected: {}, dailyHolidayNames: {} };
+    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {}, dailyExpected: {}, dailyHolidayNames: {}, totalLogged: 0, totalExpected: 0, totalAssigned: 0, totalLeave: 0 };
 
     const dailyTotals: Record<string, number> = {};
     const dailyEntries: Record<string, TimeEntry[]> = {};
@@ -227,6 +232,10 @@ export function IndividualReport() {
     
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
+
+    let totalAssigned = 0;
+    let totalExpected = 0;
+    let totalLeave = 0;
 
     for (let d = new Date(monthStart); d <= monthEnd; d = addDays(d, 1)) {
         const dayOfMonth = d.getDate();
@@ -253,7 +262,12 @@ export function IndividualReport() {
         if (activeContractsOnDay.length > 0) {
             const dailyContractHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
             const leaveHoursForDay = dailyLeaveCredit * dailyContractHours;
-            dailyExpected[dayOfMonth] = dailyContractHours - leaveHoursForDay;
+            const expected = dailyContractHours - leaveHoursForDay;
+            
+            dailyExpected[dayOfMonth] = expected;
+            totalAssigned += dailyContractHours;
+            totalLeave += leaveHoursForDay;
+            totalExpected += expected;
         }
     }
 
@@ -263,12 +277,14 @@ export function IndividualReport() {
                isSameMonth(entryDate, selectedDate);
     });
 
+    let totalLogged = 0;
     userTimeEntries.forEach(entry => {
         const day = parseISO(entry.date).getDate();
         if (!dailyTotals[day]) dailyTotals[day] = 0;
         if (!dailyEntries[day]) dailyEntries[day] = [];
         dailyTotals[day] += entry.duration;
         dailyEntries[day].push(entry);
+        totalLogged += entry.duration;
     });
     
     const personalLeaveDays = holidayRequests.filter(req => 
@@ -288,7 +304,7 @@ export function IndividualReport() {
     const publicHolidayDays = publicHolidaysInYear.map(h => parseISO(h.date));
     const customHolidayDays = userHolidaysInYear.filter(h => !publicHolidaysInYear.includes(h)).map(h => parseISO(h.date));
 
-    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries, dailyExpected, dailyHolidayNames };
+    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries, dailyExpected, dailyHolidayNames, totalLogged, totalExpected, totalAssigned, totalLeave };
   }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries, annualLeaveAllowance]);
     
     const canEditEntries = React.useMemo(() => {
@@ -299,6 +315,81 @@ export function IndividualReport() {
         return false;
     }, [currentUser, selectedUser]);
     
+    const getTeamName = (teamId?: string) => {
+        if (!teamId) return 'N/A';
+        return teams.find(t => t.id === teamId)?.name || 'N/A';
+    };
+
+    const handleExport = () => {
+        if (!selectedUser) return;
+        
+        const title = `Report for ${format(selectedDate, 'MMMM yyyy')}`;
+        const numberFormat = { z: '0.00' };
+        const titleStyle = { font: { bold: true, sz: 14 } };
+        const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+        const userRowStyle = { fill: { fgColor: { rgb: "DDEBF7" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+        const dataRowStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+        
+        const aoa: any[][] = [];
+        
+        // Title
+        aoa.push([{v: title, s: titleStyle }]);
+        aoa.push([]);
+
+        // Consolidated Info
+        const summaryHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+        const summaryData = [
+            selectedUser.name,
+            selectedUser.role,
+            getTeamName(selectedUser.teamId),
+            { v: monthlyData.totalAssigned, t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: monthlyData.totalLeave, t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: monthlyData.totalExpected, t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: monthlyData.totalLogged, t: 'n', s: {...userRowStyle, ...numberFormat}},
+            { v: monthlyData.totalExpected - monthlyData.totalLogged, t: 'n', s: {...userRowStyle, ...numberFormat}}
+        ];
+
+        aoa.push(summaryHeaders.map(h => ({v: h, s: headerStyle})));
+        aoa.push(summaryData.map((cell, i) => i < 3 ? {v: cell, s: userRowStyle} : cell));
+        aoa.push([]);
+
+        // Time Entries
+        const timeEntryHeaders = [t('date'), t('project'), t('task'), '', '', '', '', t('hours')];
+        aoa.push(timeEntryHeaders.map(h => ({v: h, s: headerStyle})));
+
+        const userEntriesForMonth = timeEntries.filter(entry => entry.userId === selectedUser.id && isSameMonth(parseISO(entry.date), selectedDate)).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        userEntriesForMonth.forEach(entry => {
+            const [project, ...taskParts] = entry.task.split(' - ');
+            const task = taskParts.join(' - ');
+            aoa.push([
+                {v: format(parseISO(entry.date), 'dd/MM/yyyy'), s: dataRowStyle },
+                {v: project, s: dataRowStyle },
+                {v: task, s: dataRowStyle },
+                {v: '', s: dataRowStyle },
+                {v: '', s: dataRowStyle },
+                {v: '', s: dataRowStyle },
+                {v: '', s: dataRowStyle },
+                {v: entry.duration, t: 'n', s: {...dataRowStyle, ...numberFormat} }
+            ]);
+        });
+        
+        const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+
+        // Calculate column widths
+        const colWidths = summaryHeaders.map((h, i) => ({
+            wch: Math.max(
+                h.length,
+                ...aoa.map(row => row[i]?.v?.toString().length || 0)
+            ) + 2
+        }));
+        worksheet['!cols'] = colWidths;
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Individual Report");
+        XLSX.writeFile(workbook, `individual_report_${selectedUser.name.replace(' ', '_')}_${format(selectedDate, 'MM-yyyy')}.xlsx`);
+    };
+
     const handleUserChange = (userId: string) => {
         const currentTab = searchParams.get('tab') || 'individual-report';
         router.push(`/dashboard/reports?tab=${currentTab}&userId=${userId}`);
@@ -383,6 +474,9 @@ export function IndividualReport() {
                 </div>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
+                <Button variant="outline" onClick={handleExport}>
+                    <FileUp className="mr-2 h-4 w-4" /> {t('export')}
+                </Button>
                 <Select onValueChange={handleUserChange} value={selectedUser.id} disabled={viewableUsers.length <= 1}>
                     <SelectTrigger className="w-full md:w-[180px]">
                         <SelectValue placeholder={t('selectUserPlaceholder')} />
