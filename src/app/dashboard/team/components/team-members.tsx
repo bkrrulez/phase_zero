@@ -49,14 +49,20 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
     }, [teams]);
 
     const handleTeamSelectionChange = (newSelection: string[]) => {
-        if (newSelection.includes('all') && selectedTeams.length < newSelection.length) {
-            setSelectedTeams(['all']);
-        } else if (newSelection.length > 1 && newSelection.includes('all')) {
-            setSelectedTeams(newSelection.filter(s => s !== 'all'));
-        }
-        else {
-            setSelectedTeams(newSelection);
-        }
+      // If "All" was just selected, it should be the only item.
+      // Or if the last item selected was "All".
+      if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
+        setSelectedTeams(['all']);
+      } 
+      // If "All" is in the selection but it wasn't the last one added,
+      // it means something else was added, so remove "All".
+      else if (newSelection.length > 1 && newSelection.includes('all')) {
+        setSelectedTeams(newSelection.filter(s => s !== 'all'));
+      } 
+      // Otherwise, just update with the new selection.
+      else {
+        setSelectedTeams(newSelection);
+      }
     };
 
 
@@ -71,11 +77,16 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
         }
 
         if (!selectedTeams.includes('all')) {
-            members = members.filter(member => {
+             members = members.filter(member => {
+                if (selectedTeams.length === 0) return true; // Show all if nothing is selected
+                let matches = false;
                 if (selectedTeams.includes('none') && !member.teamId) {
-                    return true;
+                    matches = true;
                 }
-                return member.teamId && selectedTeams.includes(member.teamId);
+                if (member.teamId && selectedTeams.includes(member.teamId)) {
+                    matches = true;
+                }
+                return matches;
             });
         }
         
