@@ -354,7 +354,7 @@ export function IndividualReport() {
         aoa.push([]);
 
         // Time Entries
-        const timeEntryHeaders = [t('date'), t('project'), t('task'), '', '', '', '', t('hours')];
+        const timeEntryHeaders = [t('date'), t('project'), t('task'), '', '', '', t('loggedHours'), ''];
         aoa.push(timeEntryHeaders.map(h => ({v: h, s: headerStyle})));
 
         const userEntriesForMonth = timeEntries.filter(entry => entry.userId === selectedUser.id && isSameMonth(parseISO(entry.date), selectedDate)).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -369,8 +369,8 @@ export function IndividualReport() {
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
+                {v: entry.duration, t: 'n', s: {...dataRowStyle, ...numberFormat} },
                 {v: '', s: dataRowStyle },
-                {v: entry.duration, t: 'n', s: {...dataRowStyle, ...numberFormat} }
             ]);
         });
         
