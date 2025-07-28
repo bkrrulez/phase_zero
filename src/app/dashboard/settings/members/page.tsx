@@ -54,8 +54,13 @@ export default function MembersSettingsPage() {
     }, [teams]);
 
     const handleTeamSelectionChange = (newSelection: string[]) => {
+      // If the new selection is empty, revert to "all"
+      if (newSelection.length === 0) {
+        setSelectedTeams(['all']);
+        return;
+      }
+      
       // If "All" was just selected, it should be the only item.
-      // Or if the last item selected was "All".
       if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
         setSelectedTeams(['all']);
       } 
@@ -194,14 +199,6 @@ export default function MembersSettingsPage() {
         return false;
     }
 
-    const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
-
-    const getTeamName = (teamId?: string) => {
-        if (!teamId) return 'N/A';
-        const team = teams.find(t => t.id === teamId);
-        return team?.name ?? 'N/A';
-    };
-
     const handleExport = () => {
         if (visibleMembers.length === 0) return;
     
@@ -230,6 +227,12 @@ export default function MembersSettingsPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const getTeamName = (teamId?: string) => {
+        if (!teamId) return 'N/A';
+        const team = teams.find(t => t.id === teamId);
+        return team?.name ?? 'N/A';
     };
 
   return (

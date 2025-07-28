@@ -49,8 +49,13 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
     }, [teams]);
 
     const handleTeamSelectionChange = (newSelection: string[]) => {
+      // If the new selection is empty, revert to "all"
+      if (newSelection.length === 0) {
+        setSelectedTeams(['all']);
+        return;
+      }
+      
       // If "All" was just selected, it should be the only item.
-      // Or if the last item selected was "All".
       if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
         setSelectedTeams(['all']);
       } 
