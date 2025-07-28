@@ -15,7 +15,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSystemLog } from '../contexts/SystemLogContext';
 import { useTeams } from '../contexts/TeamsContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function TeamPage() {
     const { toast } = useToast();
@@ -25,38 +24,8 @@ export default function TeamPage() {
     const { teams } = useTeams();
     const { t } = useLanguage();
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
-    const [selectedTeam, setSelectedTeam] = React.useState('all');
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
-
-    const visibleMembers = React.useMemo(() => {
-        let members: User[];
-        if (currentUser.role === 'Super Admin') {
-            members = teamMembers;
-        } else if (currentUser.role === 'Team Lead') {
-            members = teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
-        } else { // Employee
-            members = teamMembers.filter(member => member.id === currentUser.id);
-        }
-
-        if (selectedTeam !== 'all') {
-            if (selectedTeam === 'none') {
-                 members = members.filter(member => !member.teamId);
-            } else {
-                 members = members.filter(member => member.teamId === selectedTeam);
-            }
-        }
-        
-        const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
-        
-        uniqueMembers.sort((a, b) => {
-            if (a.id === currentUser.id) return -1;
-            if (b.id === currentUser.id) return 1;
-            return a.name.localeCompare(b.name);
-        });
-        
-        return uniqueMembers;
-    }, [teamMembers, currentUser, selectedTeam]);
 
     const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
         addMember(newUser);
@@ -104,10 +73,10 @@ export default function TeamPage() {
         };
     };
 
-    const handleExport = () => {
-        if (visibleMembers.length === 0) return;
+    const handleExport = (membersToExport: User[]) => {
+        if (membersToExport.length === 0) return;
     
-        const dataForExport = visibleMembers.map(member => {
+        const dataForExport = membersToExport.map(member => {
             const contractDetails = getAggregatedContractDetails(member);
             return {
                 [t('member')]: member.name,
@@ -135,32 +104,11 @@ export default function TeamPage() {
                         <h1 className="text-3xl font-bold font-headline">{t('team')}</h1>
                         <p className="text-muted-foreground">{t('teamPageSubtitle')}</p>
                     </div>
-                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                            <SelectTrigger className="w-full sm:w-[180px]">
-                                <SelectValue placeholder="Filter by team..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Teams</SelectItem>
-                                <SelectItem value="none">No Team</SelectItem>
-                                {teams.map(team => (
-                                    <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
-                                <FileUp className="mr-2 h-4 w-4" /> {t('export')}
-                            </Button>
-                            {canAddMember && (
-                                <Button onClick={() => setIsAddMemberDialogOpen(true)} className="w-full sm:w-auto">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
-                                </Button>
-                            )}
-                        </div>
-                    </div>
                 </div>
-                <TeamMembers visibleMembers={visibleMembers} />
+                <TeamMembers 
+                  onAddMemberClick={() => setIsAddMemberDialogOpen(true)}
+                  onExportClick={handleExport}
+                />
             </div>
             
             <AddMemberDialog

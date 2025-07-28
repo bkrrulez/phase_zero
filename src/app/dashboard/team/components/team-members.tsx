@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import { format, min as minDate, max as maxDate, isWithinInterval } from "date-fns";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +21,14 @@ import { useTeams } from "../../contexts/TeamsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TeamMembersProps {
-    visibleMembers: User[];
+    onAddMemberClick: () => void;
+    onExportClick: (members: User[]) => void;
 }
 
-export function TeamMembers({ visibleMembers }: TeamMembersProps) {
+export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProps) {
     const { toast } = useToast();
     const { teamMembers, updateMember } = useMembers();
     const { teams } = useTeams();
@@ -35,6 +38,38 @@ export function TeamMembers({ visibleMembers }: TeamMembersProps) {
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
+    const [selectedTeam, setSelectedTeam] = React.useState('all');
+
+    const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
+
+    const visibleMembers = React.useMemo(() => {
+        let members: User[];
+        if (currentUser.role === 'Super Admin') {
+            members = teamMembers;
+        } else if (currentUser.role === 'Team Lead') {
+            members = teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
+        } else { // Employee
+            members = teamMembers.filter(member => member.id === currentUser.id);
+        }
+
+        if (selectedTeam !== 'all') {
+            if (selectedTeam === 'none') {
+                 members = members.filter(member => !member.teamId);
+            } else {
+                 members = members.filter(member => member.teamId === selectedTeam);
+            }
+        }
+        
+        const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
+        
+        uniqueMembers.sort((a, b) => {
+            if (a.id === currentUser.id) return -1;
+            if (b.id === currentUser.id) return 1;
+            return a.name.localeCompare(b.name);
+        });
+        
+        return uniqueMembers;
+    }, [teamMembers, currentUser, selectedTeam]);
     
     const handleSaveDetails = async (originalUser: User, updatedData: EditMemberFormValues) => {
         if (!editingUser) return;
@@ -147,9 +182,33 @@ export function TeamMembers({ visibleMembers }: TeamMembersProps) {
   return (
     <>
       <Card>
-          <CardHeader>
-              <CardTitle>{t('teamMembers')}</CardTitle>
-              <CardDescription>{t('teamMembersTabDesc')}</CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+              <div>
+                <CardTitle>{t('teamMembers')}</CardTitle>
+                <CardDescription>{t('teamMembersTabDesc')}</CardDescription>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                 <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Filter by team..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Teams</SelectItem>
+                        <SelectItem value="none">No Team</SelectItem>
+                        {teams.map(team => (
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={() => onExportClick(visibleMembers)} className="w-full sm:w-auto">
+                    <FileUp className="mr-2 h-4 w-4" /> {t('export')}
+                </Button>
+                {canAddMember && (
+                    <Button onClick={onAddMemberClick} className="w-full sm:w-auto">
+                        <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
+                    </Button>
+                )}
+              </div>
           </CardHeader>
           <CardContent>
               <Table>
