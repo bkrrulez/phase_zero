@@ -530,6 +530,12 @@ export default function ReportsPage() {
       { id: 'no-team', name: 'No Team' },
       ...teams
   ], [teams]);
+  
+   const getTeamName = (teamId?: string) => {
+        if (!teamId) return 'N/A';
+        const team = teams.find(t => t.id === teamId);
+        return team?.name ?? 'N/A';
+    };
 
 
   if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin') {
@@ -626,6 +632,7 @@ export default function ReportsPage() {
                         <TableRow>
                           <TableHead>{t('member')}</TableHead>
                           <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
+                          <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
                           <TableHead className="text-right">{t('assignedHours')}</TableHead>
                           <TableHead className="text-right">{t('leaveHours')}</TableHead>
                           <TableHead className="text-right">{t('expected')}</TableHead>
@@ -643,6 +650,7 @@ export default function ReportsPage() {
                               </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge></TableCell>
+                            <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
                             <TableCell className="text-right font-mono">{member.assignedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
