@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -22,7 +21,11 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 
-export function TeamMembers() {
+interface TeamMembersProps {
+    visibleMembers: User[];
+}
+
+export function TeamMembers({ visibleMembers }: TeamMembersProps) {
     const { toast } = useToast();
     const { teamMembers, updateMember } = useMembers();
     const { teams } = useTeams();
@@ -32,27 +35,6 @@ export function TeamMembers() {
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
-    
-    const visibleMembers = React.useMemo(() => {
-        let members: User[];
-        if (currentUser.role === 'Super Admin') {
-            members = teamMembers;
-        } else if (currentUser.role === 'Team Lead') {
-            members = teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
-        } else { // Employee
-            members = teamMembers.filter(member => member.id === currentUser.id);
-        }
-        const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
-        
-        // Sort to bring current user to the top
-        uniqueMembers.sort((a, b) => {
-            if (a.id === currentUser.id) return -1;
-            if (b.id === currentUser.id) return 1;
-            return a.name.localeCompare(b.name); // Keep alphabetical sort for the rest
-        });
-        
-        return uniqueMembers;
-    }, [teamMembers, currentUser]);
     
     const handleSaveDetails = async (originalUser: User, updatedData: EditMemberFormValues) => {
         if (!editingUser) return;

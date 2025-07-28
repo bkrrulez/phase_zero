@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -15,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSystemLog } from '../contexts/SystemLogContext';
 import { useTeams } from '../contexts/TeamsContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function TeamPage() {
     const { toast } = useToast();
@@ -24,6 +24,7 @@ export default function TeamPage() {
     const { teams } = useTeams();
     const { t } = useLanguage();
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
+    const [selectedTeam, setSelectedTeam] = React.useState('all');
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
@@ -36,6 +37,15 @@ export default function TeamPage() {
         } else { // Employee
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
+
+        if (selectedTeam !== 'all') {
+            if (selectedTeam === 'none') {
+                 members = members.filter(member => !member.teamId);
+            } else {
+                 members = members.filter(member => member.teamId === selectedTeam);
+            }
+        }
+        
         const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
         
         uniqueMembers.sort((a, b) => {
@@ -45,7 +55,7 @@ export default function TeamPage() {
         });
         
         return uniqueMembers;
-    }, [teamMembers, currentUser]);
+    }, [teamMembers, currentUser, selectedTeam]);
 
     const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
         addMember(newUser);
@@ -124,18 +134,32 @@ export default function TeamPage() {
                         <h1 className="text-3xl font-bold font-headline">{t('team')}</h1>
                         <p className="text-muted-foreground">{t('teamPageSubtitle')}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                         <Button variant="outline" onClick={handleExport}>
-                            <FileUp className="mr-2 h-4 w-4" /> {t('export')}
-                        </Button>
-                        {canAddMember && (
-                            <Button onClick={() => setIsAddMemberDialogOpen(true)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
+                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Filter by team..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Teams</SelectItem>
+                                <SelectItem value="none">No Team</SelectItem>
+                                {teams.map(team => (
+                                    <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
+                                <FileUp className="mr-2 h-4 w-4" /> {t('export')}
                             </Button>
-                        )}
+                            {canAddMember && (
+                                <Button onClick={() => setIsAddMemberDialogOpen(true)} className="w-full sm:w-auto">
+                                    <PlusCircle className="mr-2 h-4 w-4" /> {t('addMember')}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <TeamMembers />
+                <TeamMembers visibleMembers={visibleMembers} />
             </div>
             
             <AddMemberDialog

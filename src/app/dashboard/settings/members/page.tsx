@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -28,6 +27,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MemberContractTab } from './components/member-contract-tab';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function MembersSettingsPage() {
     const { toast } = useToast();
@@ -41,6 +41,7 @@ export default function MembersSettingsPage() {
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
     const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
+    const [selectedTeam, setSelectedTeam] = React.useState('all');
     
     const visibleMembers = React.useMemo(() => {
         let members: User[];
@@ -51,6 +52,15 @@ export default function MembersSettingsPage() {
         } else { // Employee
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
+
+        if (selectedTeam !== 'all') {
+            if (selectedTeam === 'none') {
+                 members = members.filter(member => !member.teamId);
+            } else {
+                 members = members.filter(member => member.teamId === selectedTeam);
+            }
+        }
+        
         const uniqueMembers = Array.from(new Map(members.map(item => [item.id, item])).values());
         
         uniqueMembers.sort((a, b) => {
@@ -60,7 +70,7 @@ export default function MembersSettingsPage() {
         });
 
         return uniqueMembers;
-    }, [teamMembers, currentUser]);
+    }, [teamMembers, currentUser, selectedTeam]);
 
     const handleSaveDetails = async (updatedData: EditMemberFormValues) => {
         if (!editingUser) return;
@@ -215,9 +225,23 @@ export default function MembersSettingsPage() {
             </TabsList>
             <TabsContent value="all-members">
                 <Card>
-                <CardHeader>
-                    <CardTitle>{t('allMembers')}</CardTitle>
-                    <CardDescription>{t('allMembersDesc')}</CardDescription>
+                <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div>
+                        <CardTitle>{t('allMembers')}</CardTitle>
+                        <CardDescription>{t('allMembersDesc')}</CardDescription>
+                    </div>
+                    <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                            <SelectValue placeholder="Filter by team..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Teams</SelectItem>
+                            <SelectItem value="none">No Team</SelectItem>
+                            {teams.map(team => (
+                                <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </CardHeader>
                 <CardContent>
                     <Table>
