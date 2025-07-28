@@ -43,9 +43,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useProjects } from '../contexts/ProjectsContext';
 import { useTasks } from '../contexts/TasksContext';
-import { type User, type TimeEntry, type Contract } from '@/lib/types';
+import { type User, type TimeEntry, type Contract, type Team } from '@/lib/types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DetailedReport } from './components/detailed-report';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { useTeams } from '../contexts/TeamsContext';
 
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -103,6 +108,91 @@ export type DetailedReportData = {
     }[];
 }
 
+interface MultiSelectProps {
+    options: { id: string; name: string }[];
+    selected: string[];
+    onChange: (selected: string[]) => void;
+    placeholder: string;
+    className?: string;
+}
+
+const MultiSelect = ({ options, selected, onChange, placeholder, className }: MultiSelectProps) => {
+    const [open, setOpen] = React.useState(false);
+
+    const handleSelect = (value: string) => {
+        let newSelected: string[];
+
+        if (value === 'all-teams') {
+            newSelected = ['all-teams'];
+        } else {
+            const currentSelected = selected.filter(item => item !== 'all-teams');
+            if (currentSelected.includes(value)) {
+                newSelected = currentSelected.filter(item => item !== value);
+            } else {
+                newSelected = [...currentSelected, value];
+            }
+        }
+        onChange(newSelected);
+    };
+
+    const getDisplayValue = () => {
+        if (selected.includes('all-teams')) return 'All Teams';
+        if (selected.length === 0) return placeholder;
+        if (selected.length <= 2) {
+             return selected.map(id => options.find(opt => opt.id === id)?.name || id).join(', ');
+        }
+        return `${selected.length} teams selected`;
+    }
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn("w-full md:w-[200px] justify-between", className)}
+                >
+                    <span className="truncate">{getDisplayValue()}</span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+                className="w-[--radix-popover-trigger-width] p-0"
+                onWheel={(e) => e.stopPropagation()}
+            >
+                <Command>
+                    <CommandInput placeholder="Search teams..." />
+                    <CommandList>
+                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandGroup>
+                             <CommandItem onSelect={() => handleSelect('all-teams')}>
+                                <Check className={cn("mr-2 h-4 w-4", selected.includes('all-teams') ? "opacity-100" : "opacity-0")} />
+                                All Teams
+                            </CommandItem>
+                            {options.map(option => (
+                                <CommandItem
+                                    key={option.id}
+                                    value={option.name}
+                                    onSelect={() => handleSelect(option.id)}
+                                >
+                                    <Check
+                                        className={cn(
+                                            "mr-2 h-4 w-4",
+                                            selected.includes(option.id) && !selected.includes('all-teams') ? "opacity-100" : "opacity-0"
+                                        )}
+                                    />
+                                    {option.name}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -112,6 +202,7 @@ export default function ReportsPage() {
   const { publicHolidays, customHolidays, annualLeaveAllowance } = useHolidays();
   const { timeEntries } = useTimeTracking();
   const { t } = useLanguage();
+  const { teams } = useTeams();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
   const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('monthly');
@@ -119,6 +210,7 @@ export default function ReportsPage() {
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
   const [selectedWeekIndex, setSelectedWeekIndex] = React.useState<number>(0);
+  const [selectedTeams, setSelectedTeams] = React.useState<string[]>(['all-teams']);
 
   const weeksInMonth = React.useMemo(() => getWeeksForMonth(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
   
@@ -134,10 +226,16 @@ export default function ReportsPage() {
 
 
   const reports = React.useMemo(() => {
-    const visibleMembers = teamMembers.filter(member => {
+    const baseVisibleMembers = teamMembers.filter(member => {
       if (currentUser.role === 'Super Admin') return true;
       if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id || member.id === currentUser.id;
       return false;
+    });
+
+    const visibleMembers = baseVisibleMembers.filter(member => {
+        if (selectedTeams.includes('all-teams')) return true;
+        if (selectedTeams.includes('no-team') && !member.teamId) return true;
+        return member.teamId && selectedTeams.includes(member.teamId);
     });
 
     let periodStart: Date;
@@ -288,7 +386,7 @@ export default function ReportsPage() {
     })).sort((a,b) => a.user.name.localeCompare(b.user.name));
 
     return { consolidatedData, projectReport, taskReport, detailedReport };
-  }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth]);
+  }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth, selectedTeams]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
@@ -428,6 +526,11 @@ export default function ReportsPage() {
       }
   };
 
+  const teamOptions = React.useMemo(() => [
+      { id: 'no-team', name: 'No Team' },
+      ...teams
+  ], [teams]);
+
 
   if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin') {
       return (
@@ -495,15 +598,25 @@ export default function ReportsPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                     <RadioGroup value={reportView} onValueChange={(v) => setReportView(v as any)} className="flex items-center gap-4">
+                     <RadioGroup value={reportView} onValueChange={(v) => setReportView(v as any)} className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">{t('consolidated')}</Label></div>
                         <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">{t('projectLevel')}</Label></div>
                         <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">{t('taskLevel')}</Label></div>
                         <div className="flex items-center space-x-2"><RadioGroupItem value="detailed" id="r-detailed" /><Label htmlFor="r-detailed">{t('detailed')}</Label></div>
                     </RadioGroup>
-                     <Button variant="outline" onClick={handleExport}>
-                        <FileUp className="mr-2 h-4 w-4" /> {t('export')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {currentUser.role === 'Super Admin' && (
+                            <MultiSelect 
+                                options={teamOptions}
+                                selected={selectedTeams}
+                                onChange={setSelectedTeams}
+                                placeholder="Filter by team..."
+                            />
+                        )}
+                        <Button variant="outline" onClick={handleExport}>
+                            <FileUp className="mr-2 h-4 w-4" /> {t('export')}
+                        </Button>
+                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -596,3 +709,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
