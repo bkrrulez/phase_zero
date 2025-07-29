@@ -45,6 +45,8 @@ export default function MembersSettingsPage() {
     const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
     const [selectedTeams, setSelectedTeams] = React.useState<string[]>(['all']);
 
+    const canAddMember = currentUser.role === 'Super Admin';
+
     const teamOptions = React.useMemo(() => {
         return [
             { value: 'all', label: 'All Teams' },
