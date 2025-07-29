@@ -6,6 +6,7 @@ import { format, min as minDate, max as maxDate, isWithinInterval } from "date-f
 import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from 'xlsx-js-style';
+import { useSearchParams } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +39,21 @@ export default function MembersSettingsPage() {
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
     const { t } = useLanguage();
+    const searchParams = useSearchParams();
+
     const [editingUser, setEditingUser] = React.useState<User | null>(null);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = React.useState(false);
     const [changingPasswordUser, setChangingPasswordUser] = React.useState<User | null>(null);
     const [isSavingPassword, setIsSavingPassword] = React.useState(false);
     const [deletingUser, setDeletingUser] = React.useState<User | null>(null);
     const [selectedTeams, setSelectedTeams] = React.useState<string[]>(['all']);
+    
+    React.useEffect(() => {
+        const teamIdFromQuery = searchParams.get('teamId');
+        if (teamIdFromQuery) {
+            setSelectedTeams([teamIdFromQuery]);
+        }
+    }, [searchParams]);
 
     const canAddMember = currentUser.role === 'Super Admin';
 
@@ -56,17 +66,22 @@ export default function MembersSettingsPage() {
     }, [teams]);
 
     const handleTeamSelectionChange = (newSelection: string[]) => {
+      // If the new selection is empty, revert to "all"
       if (newSelection.length === 0) {
         setSelectedTeams(['all']);
         return;
       }
       
+      // If "All" was just selected, it should be the only item.
       if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
         setSelectedTeams(['all']);
       } 
+      // If "All" is in the selection but it wasn't the last one added,
+      // it means something else was added, so remove "All".
       else if (newSelection.length > 1 && newSelection.includes('all')) {
         setSelectedTeams(newSelection.filter(s => s !== 'all'));
       } 
+      // Otherwise, just update with the new selection.
       else {
         setSelectedTeams(newSelection);
       }

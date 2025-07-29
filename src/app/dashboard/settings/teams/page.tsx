@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -18,6 +19,8 @@ import { useProjects } from '../../contexts/ProjectsContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function TeamsSettingsPage() {
     const { toast } = useToast();
@@ -37,7 +40,7 @@ export default function TeamsSettingsPage() {
     const teamDetails = React.useMemo(() => {
         return teams.map(team => {
             const lead = teamMembers.find(u => u.teamId === team.id && u.role === 'Team Lead');
-            const members = teamMembers.filter(u => u.teamId === team.id && u.role === 'Employee');
+            const members = teamMembers.filter(u => u.teamId === team.id);
             const teamProjects = projects.filter(p => team.projectIds?.includes(p.id));
             return {
                 ...team,
@@ -79,6 +82,37 @@ export default function TeamsSettingsPage() {
         logAction(`User '${currentUser.name}' deleted team: '${deletingTeam.name}'.`);
         setDeletingTeam(null);
     }
+    
+    const TeamMembersCell = ({ members, teamId }: { members: User[], teamId: string }) => {
+        if (members.length === 0) {
+            return <span>0</span>;
+        }
+
+        return (
+            <Popover>
+                <PopoverTrigger asChild>
+                    <span className="font-medium text-primary hover:underline cursor-pointer">
+                        {members.length}
+                    </span>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0">
+                    <ScrollArea className="h-48">
+                        <div className="p-2">
+                            {members.map(member => (
+                                <Link
+                                    key={member.id}
+                                    href={`/dashboard/settings/members?teamId=${teamId}`}
+                                    className="block p-2 rounded-md hover:bg-accent text-sm"
+                                >
+                                    {member.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </PopoverContent>
+            </Popover>
+        )
+    }
 
     return (
         <>
@@ -115,7 +149,9 @@ export default function TeamsSettingsPage() {
                                     <TableRow key={team.id}>
                                         <TableCell className="font-medium">{team.name}</TableCell>
                                         <TableCell>{team.lead?.name || 'N/A'}</TableCell>
-                                        <TableCell>{team.members.length}</TableCell>
+                                        <TableCell>
+                                            <TeamMembersCell members={team.members} teamId={team.id} />
+                                        </TableCell>
                                         <TableCell className="max-w-[200px] truncate">
                                             {team.projects.map(p => p.name).join(', ') || 'N/A'}
                                         </TableCell>
