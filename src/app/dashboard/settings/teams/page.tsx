@@ -88,30 +88,36 @@ export default function TeamsSettingsPage() {
             return <span>0</span>;
         }
 
-        return (
-            <Popover>
-                <PopoverTrigger asChild>
-                    <span className="font-medium text-primary hover:underline cursor-pointer">
-                        {members.length}
-                    </span>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-0">
-                    <ScrollArea className="h-48">
-                        <div className="p-2">
-                            {members.map(member => (
-                                <Link
-                                    key={member.id}
-                                    href={`/dashboard/settings/members?teamId=${teamId}`}
-                                    className="block p-2 rounded-md hover:bg-accent text-sm"
-                                >
-                                    {member.name}
-                                </Link>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </PopoverContent>
-            </Popover>
-        )
+        // Only Super Admins get the popover
+        if (currentUser.role === 'Super Admin') {
+            return (
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <span className="font-medium text-primary hover:underline cursor-pointer">
+                            {members.length}
+                        </span>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-0">
+                        <ScrollArea className="h-48">
+                            <div className="p-2">
+                                {members.map(member => (
+                                    <Link
+                                        key={member.id}
+                                        href={`/dashboard/settings/members?teamId=${teamId}`}
+                                        className="block p-2 rounded-md hover:bg-accent text-sm"
+                                    >
+                                        {member.name}
+                                    </Link>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </PopoverContent>
+                </Popover>
+            );
+        }
+
+        // Other users see a plain number
+        return <span>{members.length}</span>;
     }
 
     return (
