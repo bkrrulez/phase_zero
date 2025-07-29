@@ -351,7 +351,7 @@ export function IndividualReport() {
             { v: round(monthlyData.totalLeave), t: 'n', s: {...userRowStyle, ...numberFormat}},
             { v: round(monthlyData.totalExpected), t: 'n', s: {...userRowStyle, ...numberFormat}},
             { v: round(monthlyData.totalLogged), t: 'n', s: {...userRowStyle, ...numberFormat}},
-            { v: round(monthlyData.totalLogged - monthlyData.totalExpected), t: 'n', s: {...userRowStyle, ...numberFormat}}
+            { v: round(monthlyData.totalExpected - monthlyData.totalLogged), t: 'n', s: {...userRowStyle, ...numberFormat}}
         ];
 
         aoa.push(summaryHeaders.map(h => ({v: h, s: headerStyle})));
@@ -602,3 +602,4 @@ export function IndividualReport() {
     </div>
   );
 }
+
