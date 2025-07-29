@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { format } from "date-fns";
+import { format, min as minDate, max as maxDate, isWithinInterval } from "date-fns";
 import { MoreHorizontal, PlusCircle, FileUp } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from 'xlsx-js-style';
@@ -28,7 +28,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MemberContractTab } from './components/member-contract-tab';
 import { cn } from '@/lib/utils';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 
 
 export default function MembersSettingsPage() {
@@ -47,7 +47,7 @@ export default function MembersSettingsPage() {
 
     const canAddMember = currentUser.role === 'Super Admin';
 
-    const teamOptions = React.useMemo(() => {
+    const teamOptions = React.useMemo<MultiSelectOption[]>(() => {
         return [
             { value: 'all', label: 'All Teams' },
             { value: 'none', label: 'No Team' },
@@ -56,22 +56,17 @@ export default function MembersSettingsPage() {
     }, [teams]);
 
     const handleTeamSelectionChange = (newSelection: string[]) => {
-      // If the new selection is empty, revert to "all"
       if (newSelection.length === 0) {
         setSelectedTeams(['all']);
         return;
       }
       
-      // If "All" was just selected, it should be the only item.
       if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
         setSelectedTeams(['all']);
       } 
-      // If "All" is in the selection but it wasn't the last one added,
-      // it means something else was added, so remove "All".
       else if (newSelection.length > 1 && newSelection.includes('all')) {
         setSelectedTeams(newSelection.filter(s => s !== 'all'));
       } 
-      // Otherwise, just update with the new selection.
       else {
         setSelectedTeams(newSelection);
       }
@@ -89,7 +84,6 @@ export default function MembersSettingsPage() {
 
         if (!selectedTeams.includes('all')) {
              members = members.filter(member => {
-                if (selectedTeams.length === 0) return true; // Show all if nothing is selected
                 let matches = false;
                 if (selectedTeams.includes('none') && !member.teamId) {
                     matches = true;
@@ -201,18 +195,52 @@ export default function MembersSettingsPage() {
         return false;
     }
 
+    const getAggregatedContractDetails = (member: User) => {
+        const now = new Date();
+        const activeContracts = member.contracts.filter(c => {
+            const start = new Date(c.startDate);
+            const end = c.endDate ? new Date(c.endDate) : new Date('9999-12-31');
+            return isWithinInterval(now, { start, end });
+        });
+
+        if (activeContracts.length === 0) {
+            const sortedContracts = [...member.contracts].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+            const mostRecent = sortedContracts[0] || member.contract; 
+            return {
+                weeklyHours: mostRecent.weeklyHours,
+                startDate: mostRecent.startDate,
+                endDate: mostRecent.endDate
+            };
+        }
+
+        const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
+        const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
+        
+        const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
+        const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
+
+        return {
+            weeklyHours: totalWeeklyHours,
+            startDate: format(earliestStartDate, 'yyyy-MM-dd'),
+            endDate: latestEndDate ? format(latestEndDate, 'yyyy-MM-dd') : null,
+        };
+    };
+
     const handleExport = () => {
         if (visibleMembers.length === 0) return;
     
-        const dataForExport = visibleMembers.map(member => ({
-            [t('member')]: member.name,
-            [t('email')]: member.email,
-            [t('role')]: member.role,
-            [t('team')]: getTeamName(member.teamId),
-            [t('weeklyHours')]: member.contract.weeklyHours,
-            [t('contractStart')]: format(new Date(member.contract.startDate), 'yyyy-MM-dd'),
-            [t('contractEnd')]: member.contract.endDate ? format(new Date(member.contract.endDate), 'yyyy-MM-dd') : 'N/A'
-        }));
+        const dataForExport = visibleMembers.map(member => {
+            const contractDetails = getAggregatedContractDetails(member);
+            return {
+                [t('member')]: member.name,
+                [t('email')]: member.email,
+                [t('role')]: member.role,
+                [t('team')]: getTeamName(member.teamId),
+                [t('weeklyHours')]: contractDetails.weeklyHours,
+                [t('contractStart')]: format(new Date(contractDetails.startDate), 'yyyy-MM-dd'),
+                [t('contractEnd')]: contractDetails.endDate ? format(new Date(contractDetails.endDate), 'yyyy-MM-dd') : 'Ongoing'
+            };
+        });
     
         const worksheet = XLSX.utils.json_to_sheet(dataForExport);
         const workbook = XLSX.utils.book_new();
@@ -290,7 +318,9 @@ export default function MembersSettingsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visibleMembers.map(member => (
+                            {visibleMembers.map(member => {
+                                const contractDetails = getAggregatedContractDetails(member);
+                                return (
                                 <TableRow key={member.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -308,9 +338,9 @@ export default function MembersSettingsPage() {
                                         <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
-                                    <TableCell className="hidden md:table-cell text-right font-mono">{member.contract.weeklyHours}h</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{format(new Date(member.contract.startDate), 'PP')}</TableCell>
-                                    <TableCell className="hidden lg:table-cell">{member.contract.endDate ? format(new Date(member.contract.endDate), 'PP') : 'N/A'}</TableCell>
+                                    <TableCell className="hidden md:table-cell text-right font-mono">{contractDetails.weeklyHours}h</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{format(new Date(contractDetails.startDate), 'PP')}</TableCell>
+                                    <TableCell className="hidden lg:table-cell">{contractDetails.endDate ? format(new Date(contractDetails.endDate), 'PP') : 'Ongoing'}</TableCell>
                                     <TableCell>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -353,7 +383,7 @@ export default function MembersSettingsPage() {
                                         </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )})}
                             {visibleMembers.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={7} className="h-24 text-center">{t('noMembers')}</TableCell>
