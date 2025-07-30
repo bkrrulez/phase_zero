@@ -415,23 +415,23 @@ function DataProviders({
           <TasksProvider>
              <NotificationsProvider>
                 <PushMessagesProvider>
-                  <AuthProvider>
-                    <SystemLogProvider>
-                      <SettingsProvider>
-                        <HolidaysProvider>
-                          <ContractsProvider>
-                             <MembersProvider>
+                  <ContractsProvider>
+                    <MembersProvider>
+                      <AuthProvider>
+                        <SystemLogProvider>
+                          <SettingsProvider>
+                            <HolidaysProvider>
                                 <TimeTrackingProvider>
                                   <AccessControlProvider>
                                     <LayoutContent>{children}</LayoutContent>
                                   </AccessControlProvider>
                                 </TimeTrackingProvider>
-                              </MembersProvider>
-                          </ContractsProvider>
-                        </HolidaysProvider>
-                      </SettingsProvider>
-                    </SystemLogProvider>
-                  </AuthProvider>
+                            </HolidaysProvider>
+                          </SettingsProvider>
+                        </SystemLogProvider>
+                      </AuthProvider>
+                    </MembersProvider>
+                  </ContractsProvider>
                 </PushMessagesProvider>
               </NotificationsProvider>
           </TasksProvider>
