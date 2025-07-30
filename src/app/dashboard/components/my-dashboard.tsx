@@ -251,7 +251,7 @@ export function MyDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{totalHours.toFixed(2)}h</div>
               <p className="text-xs text-muted-foreground">
-                {t('outOfExpected', { hours: expectedHoursSoFar.toFixed(2) })} Till Date
+                Out of {expectedHoursSoFar.toFixed(2)}h expected till date
               </p>
             </CardContent>
           </Card>
@@ -261,7 +261,7 @@ export function MyDashboard() {
               <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${overtime < 0 ? 'text-destructive' : ''}`}>
+              <div className={`text-2xl font-bold ${overtime < 0 ? 'text-destructive' : 'text-green-600'}`}>
                 {overtime >= 0 ? '+' : ''}{overtime.toFixed(2)}h
               </div>
               <p className="text-xs text-muted-foreground">
@@ -384,3 +384,5 @@ export function MyDashboard() {
     </>
   )
 }
+
+    
