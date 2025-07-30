@@ -78,7 +78,7 @@ import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContractsProvider } from "./contexts/ContractsContext";
+import { ContractsProvider, useContracts } from "./contexts/ContractsContext";
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -113,7 +113,8 @@ function LanguageToggle() {
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, logout, isLoading: isAuthLoading } = useAuth();
-  const { teamMembers } = useMembers();
+  const { teamMembers, fetchMembers } = useMembers();
+  const { fetchContracts } = useContracts();
   const { logTime } = useTimeTracking();
   const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   const { t } = useLanguage();
@@ -123,6 +124,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    // This effect ensures that contract data is consistent when member data changes.
+    fetchContracts();
+  }, [teamMembers, fetchContracts]);
+
 
   React.useEffect(() => {
     setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
@@ -406,19 +413,20 @@ function DataProviders({
       <TeamsProvider>
         <ProjectsProvider>
           <TasksProvider>
-            <MembersProvider>
-              <NotificationsProvider>
+             <NotificationsProvider>
                 <PushMessagesProvider>
                   <AuthProvider>
                     <SystemLogProvider>
                       <SettingsProvider>
                         <HolidaysProvider>
                           <ContractsProvider>
-                            <TimeTrackingProvider>
-                              <AccessControlProvider>
-                                <LayoutContent>{children}</LayoutContent>
-                              </AccessControlProvider>
-                            </TimeTrackingProvider>
+                             <MembersProvider>
+                                <TimeTrackingProvider>
+                                  <AccessControlProvider>
+                                    <LayoutContent>{children}</LayoutContent>
+                                  </AccessControlProvider>
+                                </TimeTrackingProvider>
+                              </MembersProvider>
                           </ContractsProvider>
                         </HolidaysProvider>
                       </SettingsProvider>
@@ -426,7 +434,6 @@ function DataProviders({
                   </AuthProvider>
                 </PushMessagesProvider>
               </NotificationsProvider>
-            </MembersProvider>
           </TasksProvider>
         </ProjectsProvider>
       </TeamsProvider>
