@@ -656,7 +656,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
-                            <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-destructive' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
+                            <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-green-600' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
