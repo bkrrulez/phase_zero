@@ -94,7 +94,7 @@ export function MyDashboard() {
 
   const userAllowance = getProratedAllowance(currentUser);
 
-  const { totalHours, expectedHours, overtime, takenDays, remainingDays } = React.useMemo(() => {
+  const { totalHours, expectedHoursSoFar, overtime, takenDays, remainingDays } = React.useMemo(() => {
     const today = new Date();
     const currentYear = today.getFullYear();
     const periodStart = startOfMonth(today);
@@ -187,7 +187,7 @@ export function MyDashboard() {
     const avgDailyHoursSoFar = workDaysSoFar > 0 ? assignedHoursSoFar / workDaysSoFar : 0;
     const leaveDaysSoFar = workDaysSoFar * dailyLeaveCredit;
     const leaveHoursSoFar = leaveDaysSoFar * avgDailyHoursSoFar;
-    const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
+    const expectedHoursSoFar = parseFloat((assignedHoursSoFar - leaveHoursSoFar).toFixed(2));
     const overtime = totalHours - expectedHoursSoFar;
 
     // Calculate Holiday Days Taken
@@ -197,7 +197,7 @@ export function MyDashboard() {
 
     const remainingDays = userAllowance - takenDays;
 
-    return { totalHours, expectedHours, overtime, takenDays, remainingDays };
+    return { totalHours, expectedHoursSoFar, overtime, takenDays, remainingDays };
   }, [timeEntries, publicHolidays, customHolidays, holidayRequests, userAllowance, currentUser, getProratedAllowance, annualLeaveAllowance, calculateDurationInWorkdays]);
 
   const upcomingHolidays = React.useMemo(() => {
@@ -251,7 +251,7 @@ export function MyDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{totalHours.toFixed(2)}h</div>
               <p className="text-xs text-muted-foreground">
-                {t('outOfExpected', { hours: expectedHours.toFixed(2) })}
+                {t('outOfExpected', { hours: expectedHoursSoFar.toFixed(2) })} Till Date
               </p>
             </CardContent>
           </Card>
