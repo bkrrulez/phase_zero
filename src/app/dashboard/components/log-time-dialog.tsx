@@ -404,3 +404,5 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     </Dialog>
   )
 }
+
+    
