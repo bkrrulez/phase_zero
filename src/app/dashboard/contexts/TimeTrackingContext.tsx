@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import type { TimeEntry, User } from "@/lib/types";
-import { format } from 'date-fns';
+import { format, isWithinInterval, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { LogTimeFormValues } from '../components/log-time-dialog';
 import { useSystemLog } from './SystemLogContext';
@@ -57,6 +58,25 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         return { success: false };
       }
 
+      const targetUser = allUsers.find(u => u.id === userId);
+      if (targetUser && targetUser.contracts.length > 0) {
+        const selectedDate = data.date;
+        const isDateInContract = targetUser.contracts.some(contract => {
+            const contractStart = parseISO(contract.startDate);
+            const contractEnd = contract.endDate ? parseISO(contract.endDate) : new Date('9999-12-31');
+            return isWithinInterval(selectedDate, { start: contractStart, end: contractEnd });
+        });
+
+        if (!isDateInContract) {
+            toast({
+                variant: 'destructive',
+                title: 'Date Out of Range',
+                description: "Selected date is not within the range of user's contract. Please check again.",
+            });
+            return { success: false };
+        }
+      }
+
       const newEntryData = {
         userId: userId,
         date: format(data.date, 'yyyy-MM-dd'),
@@ -75,7 +95,6 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
             title: "Time Logged Successfully",
             description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
         });
-        const targetUser = allUsers.find(u => u.id === userId);
         const logMessage = currentUser.id === userId 
             ? `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`
             : `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours on behalf of '${targetUser?.name || 'Unknown User'}'.`;
