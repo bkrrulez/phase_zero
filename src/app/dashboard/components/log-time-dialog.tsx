@@ -257,9 +257,13 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                                     placeholder="DD/MM/YYYY"
                                     value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
                                     onChange={(e) => {
-                                        const date = parse(e.target.value, 'dd/MM/yyyy', new Date());
-                                        if (!isNaN(date.getTime())) {
-                                            field.onChange(date);
+                                        try {
+                                            const parsedDate = parse(e.target.value, 'dd/MM/yyyy', new Date());
+                                            if (!isNaN(parsedDate.getTime())) {
+                                                field.onChange(parsedDate);
+                                            }
+                                        } catch (error) {
+                                            // Ignore parsing errors, user may be in the middle of typing
                                         }
                                     }}
                                     disabled={isEditMode}
@@ -289,6 +293,9 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                                         toDate={new Date()}
                                         disabled={(date) => date > new Date() || isDateFrozen(date)}
                                         initialFocus
+                                        captionLayout="dropdown-buttons"
+                                        fromYear={new Date().getFullYear() - 10}
+                                        toYear={new Date().getFullYear()}
                                     />
                                 </PopoverContent>
                             </Popover>
