@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -94,7 +94,7 @@ export default function ProfilePage() {
   };
 
   const handleOpenEditContractDialog = (contract: Contract) => {
-     if (contract.endDate && new Date(contract.endDate) < new Date()) {
+     if (contract.endDate && new Date(contract.endDate) < startOfDay(new Date())) {
         toast({
             variant: "destructive",
             title: "Cannot Edit Expired Contract",
@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
   const handleDeleteContract = async () => {
       if (!deletingContract) return;
-      if (deletingContract.endDate && new Date(deletingContract.endDate) < new Date()) {
+      if (deletingContract.endDate && new Date(deletingContract.endDate) < startOfDay(new Date())) {
         toast({
             variant: "destructive",
             title: "Cannot Delete Expired Contract",
@@ -212,7 +212,7 @@ export default function ProfilePage() {
                 </TableHeader>
                 <TableBody>
                     {sortedContracts.length > 0 ? sortedContracts.map((contract) => {
-                         const isPast = contract.endDate ? new Date(contract.endDate) < new Date() : false;
+                         const isPast = contract.endDate ? new Date(contract.endDate) < startOfDay(new Date()) : false;
                          return (
                             <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/50")}>
                                 <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>

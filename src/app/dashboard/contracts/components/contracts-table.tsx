@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, MoreHorizontal, PlusCircle } from 'lucide-react';
@@ -73,7 +73,7 @@ export function ContractsTable() {
     }
     
     const handleOpenEditDialog = (contract: Contract) => {
-        if (contract.endDate && new Date(contract.endDate) < new Date()) {
+        if (contract.endDate && new Date(contract.endDate) < startOfDay(new Date())) {
             toast({
                 variant: "destructive",
                 title: "Cannot Edit Expired Contract",
@@ -104,7 +104,7 @@ export function ContractsTable() {
 
     const handleDeleteContract = async () => {
         if (!deletingContract) return;
-        if (deletingContract.endDate && new Date(deletingContract.endDate) < new Date()) {
+        if (deletingContract.endDate && new Date(deletingContract.endDate) < startOfDay(new Date())) {
             toast({
                 variant: "destructive",
                 title: "Cannot Delete Expired Contract",
@@ -197,7 +197,7 @@ export function ContractsTable() {
                     </TableHeader>
                     <TableBody>
                         {filteredContracts.map(contract => {
-                            const isPast = contract.endDate ? new Date(contract.endDate) < new Date() : false;
+                            const isPast = contract.endDate ? new Date(contract.endDate) < startOfDay(new Date()) : false;
                             return (
                                 <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/20")}>
                                     <TableCell className="font-mono text-xs">{contract.id}</TableCell>
