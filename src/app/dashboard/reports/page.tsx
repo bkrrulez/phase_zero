@@ -377,7 +377,7 @@ export default function ReportsPage() {
 
       const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
       const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
-      const remainingHours = parseFloat((loggedHours - expectedHours).toFixed(2));
+      const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
       
       if (detailedAgg[member.id]) {
           detailedAgg[member.id].projects.forEach(p => p.loggedHours = parseFloat(p.loggedHours.toFixed(2)));
