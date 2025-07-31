@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -95,7 +96,7 @@ export function DetailedReport({ data }: DetailedReportProps) {
                   <TableCell className="text-right font-mono">{userRow.leaveHours.toFixed(2)}h</TableCell>
                   <TableCell className="text-right font-mono">{userRow.expectedHours.toFixed(2)}h</TableCell>
                   <TableCell className="text-right font-mono">{userRow.loggedHours.toFixed(2)}h</TableCell>
-                  <TableCell className={`text-right font-mono ${userRow.remainingHours < 0 ? 'text-destructive' : ''}`}>{userRow.remainingHours.toFixed(2)}h</TableCell>
+                  <TableCell className={`text-right font-mono ${userRow.remainingHours < 0 ? 'text-green-600' : ''}`}>{userRow.remainingHours.toFixed(2)}h</TableCell>
                 </TableRow>
                 {isUserOpen && userRow.projects.map(projectRow => {
                     const isProjectOpen = openStates[`${userRow.user.id}-${projectRow.name}`] ?? false;

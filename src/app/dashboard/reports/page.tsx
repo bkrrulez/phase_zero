@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx-js-style';
 import { FileUp, Minus, Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { format, addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay, parse, isValid } from 'date-fns';
+import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay, parse, isValid, format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import {
   Card,
@@ -453,7 +453,7 @@ export default function ReportsPage() {
                   { v: userRow.leaveHours, t: 'n', s: {...userStyle, ...numberFormat} },
                   { v: userRow.expectedHours, t: 'n', s: {...userStyle, ...numberFormat} }, 
                   { v: userRow.loggedHours, t: 'n', s: {...userStyle, ...numberFormat} },
-                  { v: userRow.remainingHours, t: 'n', s: { ...userStyle, ...numberFormat, font: { ...userStyle.font, color: { rgb: userRow.remainingHours < 0 ? "FF0000" : "000000" } } } }
+                  { v: userRow.remainingHours, t: 'n', s: { ...userStyle, ...numberFormat, font: { ...userStyle.font, color: { rgb: userRow.remainingHours < 0 ? "008000" : "000000" } } } }
               ];
               dataForExport.push(userRowData);
               
@@ -613,7 +613,7 @@ export default function ReportsPage() {
                                                 const value = e.target.value;
                                                 setFromInputValue(value);
                                                 const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
-                                                if (isValid(parsedDate)) {
+                                                if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
                                                     setCustomDateRange(prev => ({...prev, from: parsedDate}))
                                                 }
                                             }}
@@ -641,6 +641,9 @@ export default function ReportsPage() {
                                                         setFromInputValue(date ? format(date, 'dd/MM/yyyy') : '');
                                                         setIsFromPickerOpen(false);
                                                     }}
+                                                     captionLayout="dropdown-buttons"
+                                                    fromYear={new Date().getFullYear() - 10}
+                                                    toYear={new Date().getFullYear() + 10}
                                                 />
                                             </PopoverContent>
                                         </Popover>
@@ -654,7 +657,7 @@ export default function ReportsPage() {
                                                 const value = e.target.value;
                                                 setToInputValue(value);
                                                 const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
-                                                if (isValid(parsedDate)) {
+                                                if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
                                                     setCustomDateRange(prev => ({...prev, to: parsedDate}))
                                                 }
                                             }}
@@ -683,6 +686,9 @@ export default function ReportsPage() {
                                                         setIsToPickerOpen(false);
                                                     }}
                                                     disabled={{ before: customDateRange?.from }}
+                                                     captionLayout="dropdown-buttons"
+                                                    fromYear={new Date().getFullYear() - 10}
+                                                    toYear={new Date().getFullYear() + 10}
                                                 />
                                             </PopoverContent>
                                         </Popover>
@@ -770,7 +776,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
-                            <TableCell className={`text-right font-mono ${member.remainingHours > 0 ? 'text-green-600' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
+                            <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-green-600' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
