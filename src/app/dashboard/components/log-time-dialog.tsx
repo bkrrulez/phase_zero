@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -138,7 +138,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
 
 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>();
 
   const { projects } = useProjects();
   const { tasks: allTasks } = useTasks();
@@ -184,7 +183,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <fieldset disabled={isFormDisabled} className="space-y-4">
-              {!isEditMode && currentUser.role === 'Super Admin' && (
+              {!isEditMode && (currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead') && (
                 <FormField
                   control={form.control}
                   name="userId"
@@ -250,53 +249,52 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                 control={form.control}
                 name="date"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
-                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            onClick={() => {
-                                setTempDate(field.value);
-                                setIsDatePickerOpen(true);
-                            }}
-                            disabled={isEditMode} // Cannot change date in edit mode
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={tempDate}
-                          onSelect={setTempDate}
-                          toDate={new Date()}
-                          disabled={(date) => date > new Date() || isDateFrozen(date)}
-                          initialFocus
-                        />
-                        <div className="p-2 border-t flex justify-end">
-                              <Button size="sm" type="button" onClick={() => {
-                                  if (tempDate) {
-                                      field.onChange(tempDate);
-                                  }
-                                  setIsDatePickerOpen(false);
-                              }}>Ok</Button>
-                          </div>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Date</FormLabel>
+                        <div className="relative">
+                            <FormControl>
+                                <Input
+                                    placeholder="DD/MM/YYYY"
+                                    value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
+                                    onChange={(e) => {
+                                        const date = parse(e.target.value, 'dd/MM/yyyy', new Date());
+                                        if (!isNaN(date.getTime())) {
+                                            field.onChange(date);
+                                        }
+                                    }}
+                                    disabled={isEditMode}
+                                    className="pr-10"
+                                />
+                            </FormControl>
+                            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                        disabled={isEditMode}
+                                    >
+                                        <CalendarIcon className="h-4 w-4" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={(date) => {
+                                            if (date) field.onChange(date);
+                                            setIsDatePickerOpen(false);
+                                        }}
+                                        toDate={new Date()}
+                                        disabled={(date) => date > new Date() || isDateFrozen(date)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <FormMessage />
+                    </FormItem>
                 )}
               />
               <div className="grid grid-cols-2 gap-4">
