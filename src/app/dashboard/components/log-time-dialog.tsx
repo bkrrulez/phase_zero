@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAccessControl } from "../contexts/AccessControlContext";
@@ -188,20 +189,58 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                   control={form.control}
                   name="userId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>User</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a user" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {teamMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                    "justify-between",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value
+                                    ? teamMembers.find(
+                                        (member) => member.id === field.value
+                                        )?.name
+                                    : "Select a user"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0">
+                                <Command>
+                                <CommandInput placeholder="Search user..." />
+                                 <CommandList>
+                                    <CommandEmpty>No user found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {teamMembers.map((member) => (
+                                        <CommandItem
+                                            value={member.name}
+                                            key={member.id}
+                                            onSelect={() => {
+                                                form.setValue("userId", member.id)
+                                            }}
+                                        >
+                                            <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                member.id === field.value
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                            />
+                                            {member.name}
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
