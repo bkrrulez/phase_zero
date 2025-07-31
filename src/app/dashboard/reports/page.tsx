@@ -6,8 +6,9 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx-js-style';
-import { FileUp, Minus, Plus } from 'lucide-react';
+import { FileUp, Minus, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
 import {
   Card,
   CardContent,
@@ -51,6 +52,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { useTeams } from '../contexts/TeamsContext';
+import { Calendar } from '@/components/ui/calendar';
 
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -205,12 +207,16 @@ export default function ReportsPage() {
   const { teams } = useTeams();
   const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
 
-  const [periodType, setPeriodType] = React.useState<'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [periodType, setPeriodType] = React.useState<'custom' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task' | 'detailed'>('consolidated');
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
   const [selectedWeekIndex, setSelectedWeekIndex] = React.useState<number>(0);
   const [selectedTeams, setSelectedTeams] = React.useState<string[]>(['all-teams']);
+  const [customDateRange, setCustomDateRange] = React.useState<DateRange | undefined>({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+  });
 
   const weeksInMonth = React.useMemo(() => getWeeksForMonth(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
   
@@ -240,8 +246,11 @@ export default function ReportsPage() {
 
     let periodStart: Date;
     let periodEnd: Date;
-
-    if (periodType === 'weekly') {
+    
+    if (periodType === 'custom') {
+        periodStart = customDateRange?.from ? startOfDay(customDateRange.from) : new Date();
+        periodEnd = customDateRange?.to ? endOfDay(customDateRange.to) : new Date();
+    } else if (periodType === 'weekly') {
       const week = weeksInMonth[selectedWeekIndex];
       periodStart = week ? startOfDay(week.start) : startOfMonth(new Date(selectedYear, selectedMonth));
       periodEnd = week ? endOfDay(week.end) : endOfMonth(new Date(selectedYear, selectedMonth));
@@ -361,7 +370,7 @@ export default function ReportsPage() {
 
       const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
       const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
-      const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
+      const remainingHours = parseFloat((loggedHours - expectedHours).toFixed(2));
       
       if (detailedAgg[member.id]) {
           detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
@@ -386,13 +395,19 @@ export default function ReportsPage() {
     })).sort((a,b) => a.user.name.localeCompare(b.user.name));
 
     return { consolidatedData, projectReport, taskReport, detailedReport };
-  }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth, selectedTeams]);
+  }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth, selectedTeams, customDateRange]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
   };
 
   const getReportTitle = () => {
+    if (periodType === 'custom') {
+        if (customDateRange?.from && customDateRange?.to) {
+            return `Report for ${format(customDateRange.from, 'PP')} - ${format(customDateRange.to, 'PP')}`;
+        }
+        return 'Report for Custom Dates';
+    }
     if (periodType === 'yearly') return t('reportForYear', { year: selectedYear });
     if (periodType === 'monthly') return t('reportForMonth', { month: months.find(m => m.value === selectedMonth)?.label, year: selectedYear });
     if (periodType === 'weekly' && weeksInMonth[selectedWeekIndex]) {
@@ -572,11 +587,47 @@ export default function ReportsPage() {
                     </CardDescription>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as any)} className="flex items-center">
+                            <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id="custom" /><Label htmlFor="custom">Custom</Label></div>
                             <div className="flex items-center space-x-2"><RadioGroupItem value="weekly" id="weekly" /><Label htmlFor="weekly">{t('weekly')}</Label></div>
                             <div className="flex items-center space-x-2"><RadioGroupItem value="monthly" id="monthly" /><Label htmlFor="monthly">{t('monthly')}</Label></div>
                             <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">{t('yearly')}</Label></div>
                         </RadioGroup>
                         <div className="flex items-center gap-2">
+                            {periodType === 'custom' && (
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="date"
+                                            variant={"outline"}
+                                            className={cn("w-[300px] justify-start text-left font-normal",!customDateRange && "text-muted-foreground")}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {customDateRange?.from ? (
+                                                customDateRange.to ? (
+                                                    <>
+                                                        {format(customDateRange.from, "LLL dd, y")} -{" "}
+                                                        {format(customDateRange.to, "LLL dd, y")}
+                                                    </>
+                                                ) : (
+                                                    format(customDateRange.from, "LLL dd, y")
+                                                )
+                                            ) : (
+                                                <span>Pick a date</span>
+                                            )}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="range"
+                                            defaultMonth={customDateRange?.from}
+                                            selected={customDateRange}
+                                            onSelect={setCustomDateRange}
+                                            numberOfMonths={2}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                             )}
                              {periodType === 'weekly' && (
                                 <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
                                     <SelectTrigger className="w-full sm:w-[130px]">
@@ -591,16 +642,18 @@ export default function ReportsPage() {
                                     </SelectContent>
                                 </Select>
                              )}
-                            {periodType !== 'yearly' && (
+                            { (periodType === 'monthly' || periodType === 'weekly') && (
                                 <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(Number(value))}>
                                     <SelectTrigger className="w-[130px]"><SelectValue placeholder="Select month" /></SelectTrigger>
                                     <SelectContent>{months.map(month => (<SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>))}</SelectContent>
                                 </Select>
                             )}
-                            <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
-                                <SelectTrigger className="w-[100px]"><SelectValue placeholder="Select year" /></SelectTrigger>
-                                <SelectContent>{years.map(year => (<SelectItem key={year} value={String(year)}>{year}</SelectItem>))}</SelectContent>
-                            </Select>
+                            { (periodType !== 'custom') && (
+                                <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
+                                    <SelectTrigger className="w-[100px]"><SelectValue placeholder="Select year" /></SelectTrigger>
+                                    <SelectContent>{years.map(year => (<SelectItem key={year} value={String(year)}>{year}</SelectItem>))}</SelectContent>
+                                </Select>
+                            )}
                         </div>
                     </div>
                   </div>
@@ -656,7 +709,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
-                            <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-green-600' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
+                            <TableCell className={`text-right font-mono ${member.remainingHours > 0 ? 'text-green-600' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
