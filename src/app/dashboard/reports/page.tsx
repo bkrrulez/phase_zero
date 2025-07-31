@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx-js-style';
 import { FileUp, Minus, Plus, Calendar as CalendarIcon } from 'lucide-react';
-import { format, addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay } from 'date-fns';
+import { format, addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay, parse, isValid } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import {
   Card,
@@ -53,6 +53,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { useTeams } from '../contexts/TeamsContext';
 import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
 
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -217,6 +218,12 @@ export default function ReportsPage() {
       from: startOfMonth(new Date()),
       to: endOfMonth(new Date()),
   });
+
+  const [fromInputValue, setFromInputValue] = React.useState(customDateRange?.from ? format(customDateRange.from, 'dd/MM/yyyy') : '');
+  const [toInputValue, setToInputValue] = React.useState(customDateRange?.to ? format(customDateRange.to, 'dd/MM/yyyy') : '');
+  const [isFromPickerOpen, setIsFromPickerOpen] = React.useState(false);
+  const [isToPickerOpen, setIsToPickerOpen] = React.useState(false);
+
 
   const weeksInMonth = React.useMemo(() => getWeeksForMonth(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
   
@@ -595,49 +602,91 @@ export default function ReportsPage() {
                             <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">{t('yearly')}</Label></div>
                         </RadioGroup>
                         <div className="flex items-center gap-2">
-                            {periodType === 'custom' && (
-                               <div className="flex items-center gap-2">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
+                             {periodType === 'custom' && (
+                                <div className="flex items-center gap-2">
+                                     <div className="relative">
+                                        <Input
                                             id="from"
-                                            variant={"outline"}
-                                            className={cn("w-[150px] justify-start text-left font-normal", !customDateRange?.from && "text-muted-foreground")}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {customDateRange?.from ? format(customDateRange.from, "LLL dd, y") : <span>From Date</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            initialFocus
-                                            mode="single"
-                                            selected={customDateRange?.from}
-                                            onSelect={(date) => setCustomDateRange(prev => ({...prev, from: date}))}
+                                            placeholder="DD/MM/YYYY"
+                                            value={fromInputValue}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                setFromInputValue(value);
+                                                const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
+                                                if (isValid(parsedDate)) {
+                                                    setCustomDateRange(prev => ({...prev, from: parsedDate}))
+                                                }
+                                            }}
+                                            onBlur={() => setFromInputValue(customDateRange?.from ? format(customDateRange.from, 'dd/MM/yyyy') : '')}
+                                            className="w-[150px] pr-10"
                                         />
-                                    </PopoverContent>
-                                </Popover>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
+                                        <Popover open={isFromPickerOpen} onOpenChange={setIsFromPickerOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                                >
+                                                    <CalendarIcon className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    initialFocus
+                                                    mode="single"
+                                                    selected={customDateRange?.from}
+                                                    onSelect={(date) => {
+                                                        setCustomDateRange(prev => ({...prev, from: date}));
+                                                        setFromInputValue(date ? format(date, 'dd/MM/yyyy') : '');
+                                                        setIsFromPickerOpen(false);
+                                                    }}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                    <div className="relative">
+                                         <Input
                                             id="to"
-                                            variant={"outline"}
-                                            className={cn("w-[150px] justify-start text-left font-normal", !customDateRange?.to && "text-muted-foreground")}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {customDateRange?.to ? format(customDateRange.to, "LLL dd, y") : <span>To Date</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            initialFocus
-                                            mode="single"
-                                            selected={customDateRange?.to}
-                                            onSelect={(date) => setCustomDateRange(prev => ({...prev, to: date}))}
-                                            disabled={{ before: customDateRange?.from }}
+                                            placeholder="DD/MM/YYYY"
+                                            value={toInputValue}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                setToInputValue(value);
+                                                const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
+                                                if (isValid(parsedDate)) {
+                                                    setCustomDateRange(prev => ({...prev, to: parsedDate}))
+                                                }
+                                            }}
+                                            onBlur={() => setToInputValue(customDateRange?.to ? format(customDateRange.to, 'dd/MM/yyyy') : '')}
+                                            className="w-[150px] pr-10"
                                         />
-                                    </PopoverContent>
-                                </Popover>
+                                        <Popover open={isToPickerOpen} onOpenChange={setIsToPickerOpen}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                                >
+                                                    <CalendarIcon className="h-4 w-4" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    initialFocus
+                                                    mode="single"
+                                                    selected={customDateRange?.to}
+                                                    onSelect={(date) => {
+                                                        setCustomDateRange(prev => ({...prev, to: date}));
+                                                        setToInputValue(date ? format(date, 'dd/MM/yyyy') : '');
+                                                        setIsToPickerOpen(false);
+                                                    }}
+                                                    disabled={{ before: customDateRange?.from }}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
                                </div>
                              )}
                              {periodType === 'weekly' && (
