@@ -71,6 +71,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   const targetUser = teamMembers.find(m => m.id === (isEditMode ? userId : selectedUserId));
   
   const { freezeRules } = useAccessControl();
+  const [isUserComboboxOpen, setIsUserComboboxOpen] = useState(false);
 
   const isDateFrozen = (date: Date) => {
     if (!targetUser) return false;
@@ -190,7 +191,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>User</FormLabel>
-                        <Popover>
+                        <Popover open={isUserComboboxOpen} onOpenChange={setIsUserComboboxOpen}>
                             <PopoverTrigger asChild>
                                 <FormControl>
                                 <Button
@@ -221,7 +222,8 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                                             value={member.name}
                                             key={member.id}
                                             onSelect={() => {
-                                                form.setValue("userId", member.id)
+                                                form.setValue("userId", member.id);
+                                                setIsUserComboboxOpen(false);
                                             }}
                                         >
                                             <Check
@@ -404,5 +406,3 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     </Dialog>
   )
 }
-
-    
