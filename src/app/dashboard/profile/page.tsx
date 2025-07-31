@@ -94,7 +94,7 @@ export default function ProfilePage() {
   };
 
   const handleOpenEditContractDialog = (contract: Contract) => {
-     if (contract.endDate && new Date(contract.endDate) < startOfDay(new Date())) {
+     if (currentUser.role !== 'Super Admin' && contract.endDate && new Date(contract.endDate) < startOfDay(new Date())) {
         toast({
             variant: "destructive",
             title: "Cannot Edit Expired Contract",
@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
   const handleDeleteContract = async () => {
       if (!deletingContract) return;
-      if (deletingContract.endDate && new Date(deletingContract.endDate) < startOfDay(new Date())) {
+      if (currentUser.role !== 'Super Admin' && deletingContract.endDate && new Date(deletingContract.endDate) < startOfDay(new Date())) {
         toast({
             variant: "destructive",
             title: "Cannot Delete Expired Contract",
@@ -213,6 +213,7 @@ export default function ProfilePage() {
                 <TableBody>
                     {sortedContracts.length > 0 ? sortedContracts.map((contract) => {
                          const isPast = contract.endDate ? new Date(contract.endDate) < startOfDay(new Date()) : false;
+                         const canModify = currentUser.role === 'Super Admin' || !isPast;
                          return (
                             <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/50")}>
                                 <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>
@@ -225,8 +226,8 @@ export default function ProfilePage() {
                                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
-                                                <DropdownMenuItem onClick={() => handleOpenEditContractDialog(contract as Contract)} disabled={isPast}>Edit</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => setDeletingContract(contract as Contract)} className={cn(isPast ? "text-muted-foreground focus:text-muted-foreground" : "text-destructive focus:text-destructive")} disabled={isPast}>Delete</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleOpenEditContractDialog(contract as Contract)} disabled={!canModify}>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => setDeletingContract(contract as Contract)} className={cn(!canModify ? "text-muted-foreground focus:text-muted-foreground" : "text-destructive focus:text-destructive")} disabled={!canModify}>Delete</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
