@@ -373,6 +373,8 @@ export default function ReportsPage() {
       const remainingHours = parseFloat((loggedHours - expectedHours).toFixed(2));
       
       if (detailedAgg[member.id]) {
+          detailedAgg[member.id].projects.forEach(p => p.loggedHours = parseFloat(p.loggedHours.toFixed(2)));
+          detailedAgg[member.id].projects.forEach(p => p.tasks.forEach(t => t.loggedHours = parseFloat(t.loggedHours.toFixed(2))));
           detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
       }
 
@@ -594,39 +596,49 @@ export default function ReportsPage() {
                         </RadioGroup>
                         <div className="flex items-center gap-2">
                             {periodType === 'custom' && (
+                               <div className="flex items-center gap-2">
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
-                                            id="date"
+                                            id="from"
                                             variant={"outline"}
-                                            className={cn("w-[300px] justify-start text-left font-normal",!customDateRange && "text-muted-foreground")}
+                                            className={cn("w-[150px] justify-start text-left font-normal", !customDateRange?.from && "text-muted-foreground")}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {customDateRange?.from ? (
-                                                customDateRange.to ? (
-                                                    <>
-                                                        {format(customDateRange.from, "LLL dd, y")} -{" "}
-                                                        {format(customDateRange.to, "LLL dd, y")}
-                                                    </>
-                                                ) : (
-                                                    format(customDateRange.from, "LLL dd, y")
-                                                )
-                                            ) : (
-                                                <span>Pick a date</span>
-                                            )}
+                                            {customDateRange?.from ? format(customDateRange.from, "LLL dd, y") : <span>From Date</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <Calendar
                                             initialFocus
-                                            mode="range"
-                                            defaultMonth={customDateRange?.from}
-                                            selected={customDateRange}
-                                            onSelect={setCustomDateRange}
-                                            numberOfMonths={2}
+                                            mode="single"
+                                            selected={customDateRange?.from}
+                                            onSelect={(date) => setCustomDateRange(prev => ({...prev, from: date}))}
                                         />
                                     </PopoverContent>
                                 </Popover>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            id="to"
+                                            variant={"outline"}
+                                            className={cn("w-[150px] justify-start text-left font-normal", !customDateRange?.to && "text-muted-foreground")}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {customDateRange?.to ? format(customDateRange.to, "LLL dd, y") : <span>To Date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="single"
+                                            selected={customDateRange?.to}
+                                            onSelect={(date) => setCustomDateRange(prev => ({...prev, to: date}))}
+                                            disabled={{ before: customDateRange?.from }}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                               </div>
                              )}
                              {periodType === 'weekly' && (
                                 <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
