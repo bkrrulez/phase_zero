@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format, parse } from "date-fns";
+import { format, parse, isValid, getYear } from "date-fns";
 import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   
   const { freezeRules } = useAccessControl();
   const [isUserComboboxOpen, setIsUserComboboxOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
   const isDateFrozen = (date: Date) => {
     if (!targetUser) return false;
@@ -109,6 +110,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         task: task.trim(),
         remarks: entryToEdit.remarks || '',
       });
+      setInputValue(format(entryDate, 'dd/MM/yyyy'));
       
       if (isDateFrozen(entryDate)) {
         setIsFormDisabled(true);
@@ -127,6 +129,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         task: '',
         remarks: '',
       });
+       setInputValue(format(new Date(), 'dd/MM/yyyy'));
     }
   }, [entryToEdit, isOpen, form, isEditMode, currentUser.id]);
 
@@ -257,17 +260,16 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                             <FormControl>
                                 <Input
                                     placeholder="DD/MM/YYYY"
-                                    value={field.value ? format(field.value, 'dd/MM/yyyy') : ''}
+                                    value={inputValue}
                                     onChange={(e) => {
-                                        try {
-                                            const parsedDate = parse(e.target.value, 'dd/MM/yyyy', new Date());
-                                            if (!isNaN(parsedDate.getTime())) {
-                                                field.onChange(parsedDate);
-                                            }
-                                        } catch (error) {
-                                            // Ignore parsing errors, user may be in the middle of typing
+                                        const value = e.target.value;
+                                        setInputValue(value);
+                                        const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
+                                        if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
+                                            field.onChange(parsedDate);
                                         }
                                     }}
+                                    onBlur={() => setInputValue(field.value ? format(field.value, 'dd/MM/yyyy') : '')}
                                     disabled={isEditMode}
                                     className="pr-10"
                                 />
@@ -289,7 +291,10 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                                         mode="single"
                                         selected={field.value}
                                         onSelect={(date) => {
-                                            if (date) field.onChange(date);
+                                            if (date) {
+                                                field.onChange(date);
+                                                setInputValue(format(date, 'dd/MM/yyyy'));
+                                            }
                                             setIsDatePickerOpen(false);
                                         }}
                                         toDate={new Date()}
@@ -406,3 +411,5 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     </Dialog>
   )
 }
+
+    
