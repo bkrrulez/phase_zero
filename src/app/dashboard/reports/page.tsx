@@ -206,7 +206,7 @@ export default function ReportsPage() {
   const { timeEntries } = useTimeTracking();
   const { t } = useLanguage();
   const { teams } = useTeams();
-  const tab = searchParams.get('tab') || (currentUser.role === 'Employee' ? 'individual-report' : 'team-report');
+  const tab = searchParams.get('tab') || 'team-report';
 
   const [periodType, setPeriodType] = React.useState<'custom' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task' | 'detailed'>('consolidated');
@@ -563,15 +563,10 @@ export default function ReportsPage() {
     };
 
 
-  if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin' && tab !== 'individual-report') {
-      return (
-        <div className="space-y-6">
-           <h1 className="text-3xl font-bold font-headline">{t('myReport')}</h1>
-           <p className="text-muted-foreground">{t('myReportDesc')}</p>
-           <IndividualReport />
-        </div>
-      )
-  }
+  const availableTabs = [
+      { value: 'team-report', label: t('teamReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] },
+      { value: 'individual-report', label: t('individualReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] }
+  ].filter(t => t.roles.includes(currentUser.role));
 
   return (
     <div className="space-y-6">
@@ -582,9 +577,8 @@ export default function ReportsPage() {
         </div>
       </div>
       <Tabs value={tab} onValueChange={onTabChange}>
-            <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-                <TabsTrigger value="team-report">{t('teamReport')}</TabsTrigger>
-                <TabsTrigger value="individual-report">{t('individualReport')}</TabsTrigger>
+            <TabsList className={cn("grid w-full", availableTabs.length === 2 ? "grid-cols-2 md:w-[400px]" : "grid-cols-1 md:w-[200px]")}>
+                {availableTabs.map(t => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
             </TabsList>
             <TabsContent value="team-report" className="mt-4">
               <Card>
@@ -776,7 +770,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
-                            <TableCell className={`text-right font-mono ${member.remainingHours < 0 ? 'text-green-600' : ''}`}>{member.remainingHours.toFixed(2)}h</TableCell>
+                            <TableCell className={cn("text-right font-mono", member.remainingHours < 0 && "text-green-600")}>{member.remainingHours.toFixed(2)}h</TableCell>
                           </TableRow>
                         ))}
                         {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
