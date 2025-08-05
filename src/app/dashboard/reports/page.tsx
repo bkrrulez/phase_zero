@@ -242,7 +242,7 @@ export default function ReportsPage() {
     const baseVisibleMembers = teamMembers.filter(member => {
       if (currentUser.role === 'Super Admin') return true;
       if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id || member.id === currentUser.id;
-      return false;
+      return member.id === currentUser.id;
     });
 
     const visibleMembers = baseVisibleMembers.filter(member => {
@@ -563,7 +563,7 @@ export default function ReportsPage() {
     };
 
 
-  if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin') {
+  if (currentUser.role !== 'Team Lead' && currentUser.role !== 'Super Admin' && tab !== 'individual-report') {
       return (
         <div className="space-y-6">
            <h1 className="text-3xl font-bold font-headline">{t('myReport')}</h1>

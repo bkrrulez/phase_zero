@@ -210,16 +210,14 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {(currentUser.role === 'Team Lead' || currentUser.role === 'Super Admin') && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/reports")}>
-                  <Link href="/dashboard/reports">
-                    <BarChartHorizontal />
-                    {t('reports')}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )}
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/reports")}>
+                <Link href="/dashboard/reports">
+                  <BarChartHorizontal />
+                  {t('reports')}
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
              {currentUser.role === 'Super Admin' && (
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/contracts")}>
