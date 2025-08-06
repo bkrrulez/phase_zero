@@ -5,7 +5,6 @@ import * as React from 'react';
 import { useMemo } from 'react';
 import { differenceInDays, getDaysInYear, isWithinInterval, parseISO } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { type Project, type TimeEntry } from '@/lib/types';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -18,7 +17,6 @@ interface ProjectReportProps {
   selectedWeekIndex: number;
   weeksInMonth: { start: Date; end: Date }[];
   customDateRange?: { from?: Date; to?: Date };
-  getReportTitle: () => string;
 }
 
 export function ProjectReport({ 
@@ -29,8 +27,7 @@ export function ProjectReport({
     selectedMonth, 
     selectedWeekIndex, 
     weeksInMonth, 
-    customDateRange,
-    getReportTitle
+    customDateRange
 }: ProjectReportProps) {
   const { t } = useLanguage();
 
@@ -80,40 +77,32 @@ export function ProjectReport({
   }, [projects, timeEntries, periodType, selectedYear, selectedMonth, selectedWeekIndex, weeksInMonth, customDateRange]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('projectReport')}</CardTitle>
-        <CardDescription>{getReportTitle()}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('project')}</TableHead>
-              <TableHead className="text-right">{t('intendedHours')}</TableHead>
-              <TableHead className="text-right">{t('actualHours')}</TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('project')}</TableHead>
+            <TableHead className="text-right">{t('intendedHours')}</TableHead>
+            <TableHead className="text-right">{t('actualHours')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {reportData.map(project => (
+            <TableRow key={project.id}>
+              <TableCell className="font-medium">{project.name}</TableCell>
+              <TableCell className="text-right font-mono">
+                {project.intendedHours > 0 ? `${project.intendedHours.toFixed(2)}h` : 'N/A'}
+              </TableCell>
+              <TableCell className="text-right font-mono">
+                {project.actualHours.toFixed(2)}h
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reportData.map(project => (
-              <TableRow key={project.id}>
-                <TableCell className="font-medium">{project.name}</TableCell>
-                <TableCell className="text-right font-mono">
-                  {project.intendedHours > 0 ? `${project.intendedHours.toFixed(2)}h` : 'N/A'}
-                </TableCell>
-                <TableCell className="text-right font-mono">
-                  {project.actualHours.toFixed(2)}h
-                </TableCell>
+          ))}
+          {reportData.length === 0 && (
+              <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
               </TableRow>
-            ))}
-            {reportData.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
-                </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+          )}
+        </TableBody>
+      </Table>
   );
 }
