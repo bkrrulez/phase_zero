@@ -575,140 +575,142 @@ export default function ReportsPage() {
 
   const renderReportControls = () => (
     <CardHeader>
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        {tab === 'team-report' && <CardTitle>{t('teamHoursSummary')}</CardTitle>}
-        <CardDescription>
-            {getReportTitle()}
-        </CardDescription>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as any)} className="flex items-center">
-                <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id="custom" /><Label htmlFor="custom">Custom</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="weekly" id="weekly" /><Label htmlFor="weekly">{t('weekly')}</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="monthly" id="monthly" /><Label htmlFor="monthly">{t('monthly')}</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">{t('yearly')}</Label></div>
-            </RadioGroup>
-            <div className="flex items-center gap-2">
-                    {periodType === 'custom' && (
-                    <div className="flex items-center gap-2">
-                            <div className="relative">
-                            <Input
-                                id="from"
-                                placeholder="DD/MM/YYYY"
-                                value={fromInputValue}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    setFromInputValue(value);
-                                    const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
-                                    if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
-                                        setCustomDateRange(prev => ({...prev, from: parsedDate}))
-                                    }
-                                }}
-                                onBlur={() => setFromInputValue(customDateRange?.from ? format(customDateRange.from, 'dd/MM/yyyy') : '')}
-                                className="w-[150px] pr-10"
-                            />
-                            <Popover open={isFromPickerOpen} onOpenChange={setIsFromPickerOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
-                                    >
-                                        <CalendarIcon className="h-4 w-4" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        initialFocus
-                                        mode="single"
-                                        selected={customDateRange?.from}
-                                        onSelect={(date) => {
-                                            setCustomDateRange(prev => ({...prev, from: date}));
-                                            setFromInputValue(date ? format(date, 'dd/MM/yyyy') : '');
-                                            setIsFromPickerOpen(false);
-                                        }}
-                                            captionLayout="dropdown-buttons"
-                                        fromYear={new Date().getFullYear() - 10}
-                                        toYear={new Date().getFullYear() + 10}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="relative">
+        <div className="flex flex-col gap-4">
+            {tab === 'team-report' && 
+                <div>
+                    <CardTitle>{t('teamHoursSummary')}</CardTitle>
+                    <CardDescription>{getReportTitle()}</CardDescription>
+                </div>
+            }
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
+                <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as any)} className="flex items-center">
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id="custom" /><Label htmlFor="custom">Custom</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="weekly" id="weekly" /><Label htmlFor="weekly">{t('weekly')}</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="monthly" id="monthly" /><Label htmlFor="monthly">{t('monthly')}</Label></div>
+                    <div className="flex items-center space-x-2"><RadioGroupItem value="yearly" id="yearly" /><Label htmlFor="yearly">{t('yearly')}</Label></div>
+                </RadioGroup>
+                <div className="flex items-center gap-2">
+                        {periodType === 'custom' && (
+                        <div className="flex items-center gap-2">
+                                <div className="relative">
                                 <Input
-                                id="to"
-                                placeholder="DD/MM/YYYY"
-                                value={toInputValue}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    setToInputValue(value);
-                                    const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
-                                    if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
-                                        setCustomDateRange(prev => ({...prev, to: parsedDate}))
-                                    }
-                                }}
-                                onBlur={() => setToInputValue(customDateRange?.to ? format(customDateRange.to, 'dd/MM/yyyy') : '')}
-                                className="w-[150px] pr-10"
-                            />
-                            <Popover open={isToPickerOpen} onOpenChange={setIsToPickerOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
-                                    >
-                                        <CalendarIcon className="h-4 w-4" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        initialFocus
-                                        mode="single"
-                                        selected={customDateRange?.to}
-                                        onSelect={(date) => {
-                                            setCustomDateRange(prev => ({...prev, to: date}));
-                                            setToInputValue(date ? format(date, 'dd/MM/yyyy') : '');
-                                            setIsToPickerOpen(false);
-                                        }}
-                                        disabled={{ before: customDateRange?.from }}
-                                            captionLayout="dropdown-buttons"
-                                        fromYear={new Date().getFullYear() - 10}
-                                        toYear={new Date().getFullYear() + 10}
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                                    id="from"
+                                    placeholder="DD/MM/YYYY"
+                                    value={fromInputValue}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setFromInputValue(value);
+                                        const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
+                                        if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
+                                            setCustomDateRange(prev => ({...prev, from: parsedDate}))
+                                        }
+                                    }}
+                                    onBlur={() => setFromInputValue(customDateRange?.from ? format(customDateRange.from, 'dd/MM/yyyy') : '')}
+                                    className="w-[150px] pr-10"
+                                />
+                                <Popover open={isFromPickerOpen} onOpenChange={setIsFromPickerOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                        >
+                                            <CalendarIcon className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="single"
+                                            selected={customDateRange?.from}
+                                            onSelect={(date) => {
+                                                setCustomDateRange(prev => ({...prev, from: date}));
+                                                setFromInputValue(date ? format(date, 'dd/MM/yyyy') : '');
+                                                setIsFromPickerOpen(false);
+                                            }}
+                                                captionLayout="dropdown-buttons"
+                                            fromYear={new Date().getFullYear() - 10}
+                                            toYear={new Date().getFullYear() + 10}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div className="relative">
+                                    <Input
+                                    id="to"
+                                    placeholder="DD/MM/YYYY"
+                                    value={toInputValue}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        setToInputValue(value);
+                                        const parsedDate = parse(value, 'dd/MM/yyyy', new Date());
+                                        if (isValid(parsedDate) && getYear(parsedDate) > 1000) {
+                                            setCustomDateRange(prev => ({...prev, to: parsedDate}))
+                                        }
+                                    }}
+                                    onBlur={() => setToInputValue(customDateRange?.to ? format(customDateRange.to, 'dd/MM/yyyy') : '')}
+                                    className="w-[150px] pr-10"
+                                />
+                                <Popover open={isToPickerOpen} onOpenChange={setIsToPickerOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                                        >
+                                            <CalendarIcon className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            initialFocus
+                                            mode="single"
+                                            selected={customDateRange?.to}
+                                            onSelect={(date) => {
+                                                setCustomDateRange(prev => ({...prev, to: date}));
+                                                setToInputValue(date ? format(date, 'dd/MM/yyyy') : '');
+                                                setIsToPickerOpen(false);
+                                            }}
+                                            disabled={{ before: customDateRange?.from }}
+                                                captionLayout="dropdown-buttons"
+                                            fromYear={new Date().getFullYear() - 10}
+                                            toYear={new Date().getFullYear() + 10}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         </div>
-                    </div>
+                        )}
+                        {periodType === 'weekly' && (
+                        <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
+                            <SelectTrigger className="w-full sm:w-[130px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {weeksInMonth.map((week, index) => (
+                                    <SelectItem key={index} value={String(index)}>
+                                        W{index + 1} ({getDate(week.start)}-{getDate(week.end)})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        )}
+                    { (periodType === 'monthly' || periodType === 'weekly') && (
+                        <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(Number(value))}>
+                            <SelectTrigger className="w-[130px]"><SelectValue placeholder="Select month" /></SelectTrigger>
+                            <SelectContent>{months.map(month => (<SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>))}</SelectContent>
+                        </Select>
                     )}
-                    {periodType === 'weekly' && (
-                    <Select value={String(selectedWeekIndex)} onValueChange={(v) => setSelectedWeekIndex(Number(v))}>
-                        <SelectTrigger className="w-full sm:w-[130px]">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {weeksInMonth.map((week, index) => (
-                                <SelectItem key={index} value={String(index)}>
-                                    W{index + 1} ({getDate(week.start)}-{getDate(week.end)})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    { (periodType !== 'custom') && (
+                        <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
+                            <SelectTrigger className="w-[100px]"><SelectValue placeholder="Select year" /></SelectTrigger>
+                            <SelectContent>{years.map(year => (<SelectItem key={year} value={String(year)}>{year}</SelectItem>))}</SelectContent>
+                        </Select>
                     )}
-                { (periodType === 'monthly' || periodType === 'weekly') && (
-                    <Select value={String(selectedMonth)} onValueChange={(value) => setSelectedMonth(Number(value))}>
-                        <SelectTrigger className="w-[130px]"><SelectValue placeholder="Select month" /></SelectTrigger>
-                        <SelectContent>{months.map(month => (<SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>))}</SelectContent>
-                    </Select>
-                )}
-                { (periodType !== 'custom') && (
-                    <Select value={String(selectedYear)} onValueChange={(value) => setSelectedYear(Number(value))}>
-                        <SelectTrigger className="w-[100px]"><SelectValue placeholder="Select year" /></SelectTrigger>
-                        <SelectContent>{years.map(year => (<SelectItem key={year} value={String(year)}>{year}</SelectItem>))}</SelectContent>
-                    </Select>
-                )}
+                </div>
             </div>
-        </div>
         </div>
         <div className="flex items-center justify-between mt-4 pt-4 border-t">
             {tab === 'team-report' && (
@@ -861,6 +863,7 @@ export default function ReportsPage() {
     </div>
   );
 }
+
 
 
 
