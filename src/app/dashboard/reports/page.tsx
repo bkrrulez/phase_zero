@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -573,14 +572,8 @@ export default function ReportsPage() {
       { value: 'project-report', label: t('projectReport'), roles: ['Super Admin'] },
   ].filter(t => !t.roles || t.roles.includes(currentUser.role));
 
-  const renderReportControls = () => (
-    <CardHeader>
-      <div className="flex flex-col gap-4">
-        <div>
-            {tab === 'team-report' && <CardTitle>{t('teamHoursSummary')}</CardTitle>}
-            {tab === 'project-report' && <CardTitle>{t('projectReport')}</CardTitle>}
-            <CardDescription>{getReportTitle()}</CardDescription>
-        </div>
+  const renderSharedControls = () => (
+    <>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
             <RadioGroup value={periodType} onValueChange={(v) => setPeriodType(v as any)} className="flex items-center">
                 <div className="flex items-center space-x-2"><RadioGroupItem value="custom" id="custom" /><Label htmlFor="custom">Custom</Label></div>
@@ -710,31 +703,30 @@ export default function ReportsPage() {
                 )}
             </div>
         </div>
-      </div>
-      <div className="flex items-center justify-between mt-4 pt-4 border-t">
+        <div className="flex items-center justify-between mt-4 pt-4 border-t">
         {tab === 'team-report' && (
             <RadioGroup value={reportView} onValueChange={(v) => setReportView(v as any)} className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">{t('consolidated')}</Label></div>
-            <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">{t('projectLevel')}</Label></div>
-            <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">{t('taskLevel')}</Label></div>
-            <div className="flex items-center space-x-2"><RadioGroupItem value="detailed" id="r-detailed" /><Label htmlFor="r-detailed">{t('detailed')}</Label></div>
-        </RadioGroup>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">{t('consolidated')}</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">{t('projectLevel')}</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">{t('taskLevel')}</Label></div>
+                <div className="flex items-center space-x-2"><RadioGroupItem value="detailed" id="r-detailed" /><Label htmlFor="r-detailed">{t('detailed')}</Label></div>
+            </RadioGroup>
         )}
-      <div className={cn("flex items-center gap-2", tab !== 'team-report' && "w-full justify-end")}>
-          {currentUser.role === 'Super Admin' && tab === 'team-report' && (
-              <MultiSelect 
-                  options={teamOptions}
-                  selected={selectedTeams}
-                  onChange={setSelectedTeams}
-                  placeholder="Filter by team..."
-              />
-          )}
-          <Button variant="outline" onClick={handleExport}>
-              <FileUp className="mr-2 h-4 w-4" /> {t('export')}
-          </Button>
-          </div>
-      </div>
-    </CardHeader>
+        <div className={cn("flex items-center gap-2", tab !== 'team-report' && "w-full justify-end")}>
+            {currentUser.role === 'Super Admin' && tab === 'team-report' && (
+                <MultiSelect 
+                    options={teamOptions}
+                    selected={selectedTeams}
+                    onChange={setSelectedTeams}
+                    placeholder="Filter by team..."
+                />
+            )}
+            <Button variant="outline" onClick={handleExport}>
+                <FileUp className="mr-2 h-4 w-4" /> {t('export')}
+            </Button>
+            </div>
+        </div>
+    </>
   )
 
   return (
@@ -751,7 +743,15 @@ export default function ReportsPage() {
             </TabsList>
             <TabsContent value="team-report" className="mt-4">
               <Card>
-                {renderReportControls()}
+                <CardHeader>
+                    <div className="space-y-1.5">
+                        <CardTitle>{t('teamHoursSummary')}</CardTitle>
+                        <CardDescription>{getReportTitle()}</CardDescription>
+                    </div>
+                    <div className="pt-4">
+                      {renderSharedControls()}
+                    </div>
+                </CardHeader>
                 <CardContent>
                   {reportView === 'consolidated' && (
                     <Table>
@@ -841,7 +841,15 @@ export default function ReportsPage() {
             </TabsContent>
             <TabsContent value="project-report" className="mt-4">
               <Card>
-                {renderReportControls()}
+                 <CardHeader>
+                    <div className="space-y-1.5">
+                        <CardTitle>{t('projectReport')}</CardTitle>
+                        <CardDescription>{getReportTitle()}</CardDescription>
+                    </div>
+                    <div className="pt-4">
+                      {renderSharedControls()}
+                    </div>
+                </CardHeader>
                 <CardContent>
                     <ProjectReport 
                       projects={projects}
