@@ -177,33 +177,44 @@ export function IndividualReport() {
             return { availableYears: yearsList, availableMonths: months, minContractDate: null, maxContractDate: null };
         }
     
-        const startDates = selectedUser.contracts.map(c => parseISO(c.startDate));
-        const endDates = selectedUser.contracts.map(c => c.endDate ? parseISO(c.endDate) : new Date());
+        const allStartDates = selectedUser.contracts.map(c => parseISO(c.startDate));
+        const allEndDates = selectedUser.contracts.map(c => c.endDate ? parseISO(c.endDate) : new Date());
     
-        const minDateVal = minDate(startDates);
-        const maxDateVal = maxDate(endDates);
+        const minDateVal = minDate(allStartDates);
+        const maxDateVal = maxDate(allEndDates);
         
-        const startYear = getYear(minDateVal);
-        const endYear = getYear(maxDateVal);
+        const overallStartYear = getYear(minDateVal);
+        const overallEndYear = getYear(maxDateVal);
         
         const yearsList = [];
-        for (let i = endYear; i >= startYear; i--) {
+        for (let i = overallEndYear; i >= overallStartYear; i--) {
             yearsList.push(i);
         }
     
         const year = selectedDate.getFullYear();
     
-        let startMonth = 0;
-        if (year === startYear) {
-            startMonth = getMonth(minDateVal);
+        // Determine the start and end month for the selected year based on all contracts
+        const contractsInYear = selectedUser.contracts.filter(c => {
+            const contractStartYear = getYear(parseISO(c.startDate));
+            const contractEndYear = c.endDate ? getYear(parseISO(c.endDate)) : year;
+            return year >= contractStartYear && year <= contractEndYear;
+        });
+
+        if (contractsInYear.length === 0) {
+             return { availableYears: yearsList, availableMonths: [], minContractDate: minDateVal, maxContractDate: maxDateVal };
         }
-        
-        let endMonth = 11;
-        if (year === endYear) {
-            endMonth = getMonth(maxDateVal);
-        }
-    
-        const monthsList = months.filter(m => m.value >= startMonth && m.value <= endMonth);
+
+        const startMonthsInYear = contractsInYear.map(c => 
+            getYear(parseISO(c.startDate)) === year ? getMonth(parseISO(c.startDate)) : 0
+        );
+        const endMonthsInYear = contractsInYear.map(c => 
+            c.endDate && getYear(parseISO(c.endDate)) === year ? getMonth(parseISO(c.endDate)) : 11
+        );
+
+        const startMonthForYear = Math.min(...startMonthsInYear);
+        const endMonthForYear = Math.max(...endMonthsInYear);
+
+        const monthsList = months.filter(m => m.value >= startMonthForYear && m.value <= endMonthForYear);
     
         return { availableYears: yearsList, availableMonths: monthsList, minContractDate: minDateVal, maxContractDate: maxDateVal };
     }, [selectedUser, selectedDate]);
