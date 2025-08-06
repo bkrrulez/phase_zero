@@ -43,7 +43,7 @@
     "welcome": "Willkommen, {{name}}!",
     "welcomeSubtitle": "Hier ist Ihre Zeiterfassungsübersicht für diesen Monat.",
     "hoursThisMonth": "Stunden diesen Monat",
-    "outOfExpected": "von {{hours}}h erwartet",
+    "outOfExpected": "von {{hours}}h erwartet bis heute",
     "overtime": "Überstunden / Defizit",
     "basedOnContract": "Basierend auf {{hours}}h/Woche Vertrag",
     "holidaysTaken": "Genommene Urlaubstage",
