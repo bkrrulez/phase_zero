@@ -1,4 +1,5 @@
 
+
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -78,6 +79,7 @@
     "reportsSubtitle": "Team- und Einzelleistung anzeigen.",
     "teamReport": "Team-Bericht",
     "individualReport": "Einzelbericht",
+    "projectReport": "Projektbericht",
     "teamHoursSummary": "Team-Stunden-Zusammenfassung",
     "weekly": "Wöchentlich",
     "monthly": "Monatlich",
@@ -284,6 +286,9 @@
     "notificationRuleDeletedDesc": "Die Benachrichtigungsregel wurde erfolgreich gelöscht.",
     "notificationsSent": "Benachrichtigungen gesendet",
     "notificationsSentDesc": "Benachrichtigungen wurden für {{count}} Benutzer ausgelöst.",
-    "notificationsSentError": "Benachrichtigungen konnten nicht verarbeitet werden."
+    "notificationsSentError": "Benachrichtigungen konnten nicht verarbeitet werden.",
+    "intendedHours": "Soll-Stunden",
+    "actualHours": "Ist-Stunden"
 }
+
 

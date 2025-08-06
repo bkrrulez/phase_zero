@@ -1,4 +1,5 @@
 
+
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -43,7 +44,7 @@
     "welcome": "Welcome, {{name}}!",
     "welcomeSubtitle": "Here's your time tracking summary for this month.",
     "hoursThisMonth": "Hours this month",
-    "outOfExpected": "out of {{hours}}h expected",
+    "outOfExpected": "out of {{hours}}h expected till date",
     "overtime": "Overtime / Deficit",
     "basedOnContract": "Based on {{hours}}h/week contract",
     "holidaysTaken": "Holidays Taken",
@@ -78,6 +79,7 @@
     "reportsSubtitle": "View team and individual performance.",
     "teamReport": "Team Report",
     "individualReport": "Individual Report",
+    "projectReport": "Project Report",
     "teamHoursSummary": "Team Hours Summary",
     "weekly": "Weekly",
     "monthly": "Monthly",
@@ -284,6 +286,9 @@
     "notificationRuleDeletedDesc": "The notification rule has been successfully deleted.",
     "notificationsSent": "Notifications Sent",
     "notificationsSentDesc": "Notifications were triggered for {{count}} users.",
-    "notificationsSentError": "Could not process notifications."
+    "notificationsSentError": "Could not process notifications.",
+    "intendedHours": "Intended Hours",
+    "actualHours": "Actual Hours"
 }
+
 

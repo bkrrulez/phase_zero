@@ -54,6 +54,7 @@ import { cn } from '@/lib/utils';
 import { useTeams } from '../contexts/TeamsContext';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { ProjectReport } from './components/project-report';
 
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
@@ -206,6 +207,7 @@ export default function ReportsPage() {
   const { timeEntries } = useTimeTracking();
   const { t } = useLanguage();
   const { teams } = useTeams();
+  const { projects } = useProjects();
   const tab = searchParams.get('tab') || 'team-report';
 
   const [periodType, setPeriodType] = React.useState<'custom' | 'weekly' | 'monthly' | 'yearly'>('monthly');
@@ -237,6 +239,27 @@ export default function ReportsPage() {
     }
   }, [selectedYear, selectedMonth, weeksInMonth]);
 
+  const { periodStart, periodEnd } = React.useMemo(() => {
+    let start: Date;
+    let end: Date;
+    
+    if (periodType === 'custom') {
+        start = customDateRange?.from ? startOfDay(customDateRange.from) : startOfDay(new Date());
+        end = customDateRange?.to ? endOfDay(customDateRange.to) : endOfDay(new Date());
+    } else if (periodType === 'weekly') {
+      const week = weeksInMonth[selectedWeekIndex];
+      start = week ? startOfDay(week.start) : startOfMonth(new Date(selectedYear, selectedMonth));
+      end = week ? endOfDay(week.end) : endOfMonth(new Date(selectedYear, selectedMonth));
+    } else if (periodType === 'monthly') {
+      start = startOfMonth(new Date(selectedYear, selectedMonth));
+      end = endOfMonth(new Date(selectedYear, selectedMonth));
+    } else { // yearly
+      start = startOfYear(new Date(selectedYear, 0, 1));
+      end = endOfYear(new Date(selectedYear, 11, 31));
+    }
+    return { periodStart: start, periodEnd: end };
+  }, [periodType, customDateRange, selectedYear, selectedMonth, selectedWeekIndex, weeksInMonth]);
+
 
   const reports = React.useMemo(() => {
     const baseVisibleMembers = teamMembers.filter(member => {
@@ -250,24 +273,6 @@ export default function ReportsPage() {
         if (selectedTeams.includes('no-team') && !member.teamId) return true;
         return member.teamId && selectedTeams.includes(member.teamId);
     });
-
-    let periodStart: Date;
-    let periodEnd: Date;
-    
-    if (periodType === 'custom') {
-        periodStart = customDateRange?.from ? startOfDay(customDateRange.from) : new Date();
-        periodEnd = customDateRange?.to ? endOfDay(customDateRange.to) : new Date();
-    } else if (periodType === 'weekly') {
-      const week = weeksInMonth[selectedWeekIndex];
-      periodStart = week ? startOfDay(week.start) : startOfMonth(new Date(selectedYear, selectedMonth));
-      periodEnd = week ? endOfDay(week.end) : endOfMonth(new Date(selectedYear, selectedMonth));
-    } else if (periodType === 'monthly') {
-      periodStart = startOfMonth(new Date(selectedYear, selectedMonth));
-      periodEnd = endOfMonth(new Date(selectedYear, selectedMonth));
-    } else { // yearly
-      periodStart = startOfYear(new Date(selectedYear, 0, 1));
-      periodEnd = endOfYear(new Date(selectedYear, 11, 31));
-    }
     
     const visibleMemberIds = visibleMembers.map(m => m.id);
     const filteredTimeEntries = timeEntries.filter(entry => {
@@ -404,7 +409,7 @@ export default function ReportsPage() {
     })).sort((a,b) => a.user.name.localeCompare(b.user.name));
 
     return { consolidatedData, projectReport, taskReport, detailedReport };
-  }, [selectedYear, selectedMonth, selectedWeekIndex, teamMembers, publicHolidays, customHolidays, currentUser, timeEntries, periodType, annualLeaveAllowance, weeksInMonth, selectedTeams, customDateRange]);
+  }, [teamMembers, currentUser, selectedTeams, timeEntries, periodStart, periodEnd, selectedYear, publicHolidays, customHolidays, annualLeaveAllowance]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
@@ -565,6 +570,7 @@ export default function ReportsPage() {
 
   const availableTabs = [
       { value: 'team-report', label: t('teamReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] },
+      { value: 'project-report', label: t('projectReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] },
       { value: 'individual-report', label: t('individualReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] }
   ].filter(t => t.roles.includes(currentUser.role));
 
@@ -577,7 +583,7 @@ export default function ReportsPage() {
         </div>
       </div>
       <Tabs value={tab} onValueChange={onTabChange}>
-            <TabsList className={cn("grid w-full", availableTabs.length === 2 ? "grid-cols-2 md:w-[400px]" : "grid-cols-1 md:w-[200px]")}>
+            <TabsList className={cn("grid w-full", `grid-cols-${availableTabs.length}`, "md:w-[600px]")}>
                 {availableTabs.map(t => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
             </TabsList>
             <TabsContent value="team-report" className="mt-4">
@@ -827,6 +833,19 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+            <TabsContent value="project-report" className="mt-4">
+              <ProjectReport 
+                projects={projects}
+                timeEntries={timeEntries}
+                periodType={periodType}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+                selectedWeekIndex={selectedWeekIndex}
+                weeksInMonth={weeksInMonth}
+                customDateRange={customDateRange}
+                getReportTitle={getReportTitle}
+              />
+            </TabsContent>
             <TabsContent value="individual-report" className="mt-4">
                 <IndividualReport />
             </TabsContent>
@@ -834,3 +853,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
