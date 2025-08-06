@@ -80,7 +80,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject, allTasks 
                 <FormItem>
                   <FormLabel>Budget ($)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="50000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
+                    <Input type="number" placeholder="50000" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -93,7 +93,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject, allTasks 
                 <FormItem>
                   <FormLabel>Hours per Year</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="1200" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
+                    <Input type="number" placeholder="1200" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
