@@ -263,8 +263,7 @@ export default function ReportsPage() {
 
   const reports = React.useMemo(() => {
     const baseVisibleMembers = teamMembers.filter(member => {
-      if (currentUser.role === 'Super Admin') return true;
-      if (currentUser.role === 'Team Lead') return member.reportsTo === currentUser.id || member.id === currentUser.id;
+      if (currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead') return true;
       return member.id === currentUser.id;
     });
 
@@ -569,14 +568,15 @@ export default function ReportsPage() {
 
 
   const availableTabs = [
-      { value: 'team-report', label: t('teamReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] },
-      { value: 'individual-report', label: t('individualReport'), roles: ['Super Admin', 'Team Lead', 'Employee'] },
+      { value: 'team-report', label: t('teamReport')},
+      { value: 'individual-report', label: t('individualReport')},
       { value: 'project-report', label: t('projectReport'), roles: ['Super Admin'] },
-  ].filter(t => t.roles.includes(currentUser.role));
+  ].filter(t => !t.roles || t.roles.includes(currentUser.role));
 
   const renderReportControls = () => (
     <CardHeader>
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        {tab === 'team-report' && <CardTitle>{t('teamHoursSummary')}</CardTitle>}
         <CardDescription>
             {getReportTitle()}
         </CardDescription>
@@ -861,5 +861,6 @@ export default function ReportsPage() {
     </div>
   );
 }
+
 
 
