@@ -89,6 +89,7 @@ const mapDbProjectToProject = (dbProject: any): Project => ({
   id: dbProject.id,
   name: dbProject.name,
   budget: dbProject.budget ? Number(dbProject.budget) : undefined,
+  hoursPerYear: dbProject.hours_per_year ? Number(dbProject.hours_per_year) : undefined,
   details: dbProject.details,
   taskIds: dbProject.task_ids || [],
 });
@@ -764,12 +765,15 @@ export async function getProjects(): Promise<Project[]> {
 }
 
 export async function addProject(projectData: Omit<Project, 'id'>): Promise<void> {
-    const { name, budget, details, taskIds } = projectData;
+    const { name, budget, hoursPerYear, details, taskIds } = projectData;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
         const id = `proj-${Date.now()}`;
-        await client.query('INSERT INTO projects (id, name, budget, details) VALUES ($1, $2, $3, $4)', [id, name, budget, details]);
+        await client.query(
+            'INSERT INTO projects (id, name, budget, hours_per_year, details) VALUES ($1, $2, $3, $4, $5)',
+            [id, name, budget, hoursPerYear, details]
+        );
         if (taskIds && taskIds.length > 0) {
             for (const taskId of taskIds) {
                 await client.query('INSERT INTO project_tasks (project_id, task_id) VALUES ($1, $2)', [id, taskId]);
@@ -786,11 +790,14 @@ export async function addProject(projectData: Omit<Project, 'id'>): Promise<void
 }
 
 export async function updateProject(projectId: string, data: Omit<Project, 'id'>): Promise<void> {
-    const { name, budget, details, taskIds } = data;
+    const { name, budget, hoursPerYear, details, taskIds } = data;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
-        await client.query('UPDATE projects SET name = $1, budget = $2, details = $3 WHERE id = $4', [name, budget, details, projectId]);
+        await client.query(
+            'UPDATE projects SET name = $1, budget = $2, hours_per_year = $3, details = $4 WHERE id = $5',
+            [name, budget, hoursPerYear, details, projectId]
+        );
         await client.query('DELETE FROM project_tasks WHERE project_id = $1', [projectId]);
         if (taskIds && taskIds.length > 0) {
             for (const taskId of taskIds) {

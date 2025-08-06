@@ -107,6 +107,7 @@ export default function ProjectsSettingsPage() {
                                     <TableHead className="w-[200px]">{t('project')}</TableHead>
                                     <TableHead>{t('tasks')}</TableHead>
                                     <TableHead>{t('budget')}</TableHead>
+                                    <TableHead>Hours/Year</TableHead>
                                     <TableHead>{t('details')}</TableHead>
                                     {canManageProjects && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
@@ -119,6 +120,7 @@ export default function ProjectsSettingsPage() {
                                             {project.tasks.map(t => t.name).join(', ') || 'N/A'}
                                         </TableCell>
                                         <TableCell>{formatCurrency(project.budget)}</TableCell>
+                                        <TableCell>{project.hoursPerYear || 'N/A'}</TableCell>
                                         <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
                                             {project.details || 'N/A'}
                                         </TableCell>
@@ -150,7 +152,7 @@ export default function ProjectsSettingsPage() {
                                 ))}
                                 {projectDetails.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
+                                        <TableCell colSpan={6} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

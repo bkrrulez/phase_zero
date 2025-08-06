@@ -45,6 +45,7 @@ Stores project information.
 -   `id` (PK, TEXT): Unique identifier for the project (e.g., 'proj-1').
 -   `name` (TEXT, NOT NULL): The name of the project.
 -   `budget` (NUMERIC): The budget for the project.
+-   `hours_per_year` (NUMERIC): The budgeted hours per year for the project.
 -   `details` (TEXT): A short description of the project.
 
 ### `tasks`

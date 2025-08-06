@@ -17,6 +17,7 @@ const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required.'),
   taskIds: z.array(z.string()).optional(),
   budget: z.coerce.number().min(0, { message: 'Budget cannot be a negative number.' }).optional(),
+  hoursPerYear: z.coerce.number().min(0, { message: 'Hours cannot be a negative number.' }).optional(),
   details: z.string().max(100, 'Details cannot exceed 100 characters.').optional(),
 });
 
@@ -36,6 +37,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject, allTasks 
       name: '',
       taskIds: [],
       budget: undefined,
+      hoursPerYear: undefined,
       details: '',
     },
   });
@@ -79,6 +81,19 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject, allTasks 
                   <FormLabel>Budget ($)</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="50000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="hoursPerYear"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Hours per Year</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="1200" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

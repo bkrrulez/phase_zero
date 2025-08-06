@@ -52,6 +52,7 @@ export type Project = {
   name: string;
   taskIds?: string[];
   budget?: number;
+  hoursPerYear?: number;
   details?: string;
 };
 
