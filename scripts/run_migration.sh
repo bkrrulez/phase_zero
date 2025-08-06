@@ -14,7 +14,7 @@ fi
 # ==============================================================================
 # IMPORTANT: Manually set the migration file you want to run here.
 # ==============================================================================
-MIGRATION_FILE="scripts/migrations/002_add_sent_notifications_table.sql"
+MIGRATION_FILE="scripts/migrations/001_add_hours_per_year_to_projects.sql"
 # ==============================================================================
 
 
