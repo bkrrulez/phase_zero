@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format, parse, isValid, getYear } from "date-fns";
+import { format, parse, isValid, getYear, startOfToday } from "date-fns";
 import { Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,9 @@ const logTimeSchema = z.object({
 }).refine(data => data.endTime > data.startTime, {
   message: "End time cannot be earlier than start time.",
   path: ["endTime"],
+}).refine(data => data.date <= startOfToday(), {
+    message: "Time logging is not allowed on future dates. Contact your Admin.",
+    path: ["date"],
 });
 
 export type LogTimeFormValues = z.infer<typeof logTimeSchema>;
