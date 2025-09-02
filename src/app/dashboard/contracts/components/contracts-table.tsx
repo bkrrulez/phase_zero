@@ -3,9 +3,7 @@
 
 import * as React from 'react';
 import { format, startOfDay, isAfter } from 'date-fns';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown, MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +21,9 @@ import { useSystemLog } from '../../contexts/SystemLogContext';
 import { addContract as addContractAction, updateContract as updateContractAction, deleteContract as deleteContractAction } from '../../actions';
 import { Badge } from '@/components/ui/badge';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 
 type ContractStatus = 'Upcoming' | 'Active' | 'Expired';
@@ -55,14 +56,14 @@ export function ContractsTable() {
 
     const [openCombobox, setOpenCombobox] = React.useState(false);
     const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null);
-    const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>(['all']);
+    const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>(['all-status']);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingContract, setEditingContract] = React.useState<Contract | null>(null);
     const [deletingContract, setDeletingContract] = React.useState<Contract | null>(null);
     const [selectedUserIdForNew, setSelectedUserIdForNew] = React.useState<string | undefined>(undefined);
 
     const statusOptions: MultiSelectOption[] = [
-        { value: 'all', label: 'All Status' },
+        { value: 'all-status', label: 'All Status' },
         { value: 'Upcoming', label: 'Upcoming' },
         { value: 'Active', label: 'Active' },
         { value: 'Expired', label: 'Expired' },
@@ -70,14 +71,14 @@ export function ContractsTable() {
 
     const handleStatusSelectionChange = (newSelection: string[]) => {
       if (newSelection.length === 0) {
-        setSelectedStatuses(['all']);
+        setSelectedStatuses(['all-status']);
         return;
       }
-      if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
-        setSelectedStatuses(['all']);
+      if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all-status') {
+        setSelectedStatuses(['all-status']);
       } 
-      else if (newSelection.length > 1 && newSelection.includes('all')) {
-        setSelectedStatuses(newSelection.filter(s => s !== 'all'));
+      else if (newSelection.length > 1 && newSelection.includes('all-status')) {
+        setSelectedStatuses(newSelection.filter(s => s !== 'all-status'));
       } 
       else {
         setSelectedStatuses(newSelection);
@@ -107,7 +108,7 @@ export function ContractsTable() {
     const filteredContracts = React.useMemo(() => {
         let userFiltered = selectedMemberId ? sortedContracts.filter(c => c.userId === selectedMemberId) : sortedContracts;
         
-        if (selectedStatuses.includes('all')) {
+        if (selectedStatuses.includes('all-status')) {
             return userFiltered;
         }
 
@@ -258,7 +259,7 @@ export function ContractsTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredContracts.map(contract => {
+                        {filteredContracts.length > 0 ? filteredContracts.map(contract => {
                             const isPast = contract.endDate ? new Date(contract.endDate) < startOfDay(new Date()) : false;
                             const canModify = currentUser.role === 'Super Admin' || !isPast;
                             const status = getContractStatus(contract);
@@ -286,10 +287,11 @@ export function ContractsTable() {
                                     </TableCell>
                                 </TableRow>
                             )
-                        })}
-                         {filteredContracts.length === 0 && (
+                        }) : (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">{t('noContractsFound')}</TableCell>
+                                <TableCell colSpan={8} className="h-24 text-center">
+                                    {selectedMemberId ? "No contracts found for the selected user." : "No contracts found for the selected status."}
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
