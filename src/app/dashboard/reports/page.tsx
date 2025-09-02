@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -265,6 +266,11 @@ export default function ReportsPage() {
     return { periodStart: start, periodEnd: end };
   }, [periodType, customDateRange, selectedYear, selectedMonth, selectedWeekIndex, weeksInMonth]);
 
+  const getTeamName = React.useCallback((teamId?: string) => {
+      if (!teamId) return 'N/A';
+      const team = teams.find(t => t.id === teamId);
+      return team?.name ?? 'N/A';
+  }, [teams]);
 
   const reports = React.useMemo(() => {
     const baseVisibleMembers = teamMembers.filter(member => {
@@ -446,7 +452,7 @@ export default function ReportsPage() {
         }
         return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [reports.consolidatedData, sortColumn, sortDirection]);
+  }, [reports.consolidatedData, sortColumn, sortDirection, getTeamName]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
@@ -598,19 +604,6 @@ export default function ReportsPage() {
       ...teams
   ], [teams]);
   
-   const getTeamName = (teamId?: string) => {
-        if (!teamId) return 'N/A';
-        const team = teams.find(t => t.id === teamId);
-        return team?.name ?? 'N/A';
-    };
-
-
-  const availableTabs = [
-      { value: 'team-report', label: t('teamReport')},
-      { value: 'individual-report', label: t('individualReport')},
-      { value: 'project-report', label: t('projectReport'), roles: ['Super Admin'] },
-  ].filter(t => !t.roles || t.roles.includes(currentUser.role));
-
   const handleSort = (column: SortableColumn) => {
     setSortDirection(prevDirection => (sortColumn === column && prevDirection === 'asc' ? 'desc' : 'asc'));
     setSortColumn(column);
@@ -779,6 +772,12 @@ export default function ReportsPage() {
         </div>
     </>
   )
+
+  const availableTabs = [
+      { value: 'team-report', label: t('teamReport')},
+      { value: 'individual-report', label: t('individualReport')},
+      { value: 'project-report', label: t('projectReport'), roles: ['Super Admin'] },
+  ].filter(t => !t.roles || t.roles.includes(currentUser.role));
 
   return (
     <div className="space-y-6">
