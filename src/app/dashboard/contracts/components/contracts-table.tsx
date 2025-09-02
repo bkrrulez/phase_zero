@@ -22,6 +22,28 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { addContract as addContractAction, updateContract as updateContractAction, deleteContract as deleteContractAction } from '../../actions';
 import { Badge } from '@/components/ui/badge';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+
+
+type ContractStatus = 'Upcoming' | 'Active' | 'Expired';
+
+const getContractStatus = (contract: Contract): ContractStatus => {
+    const today = startOfDay(new Date());
+    const startDate = new Date(contract.startDate);
+
+    if (isAfter(startDate, today)) {
+        return 'Upcoming';
+    }
+    
+    if (contract.endDate) {
+        const endDate = new Date(contract.endDate);
+        if (isAfter(today, endDate)) {
+            return 'Expired';
+        }
+    }
+    
+    return 'Active';
+};
 
 export function ContractsTable() {
     const { teamMembers, fetchMembers } = useMembers();
@@ -33,10 +55,35 @@ export function ContractsTable() {
 
     const [openCombobox, setOpenCombobox] = React.useState(false);
     const [selectedMemberId, setSelectedMemberId] = React.useState<string | null>(null);
+    const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>(['all']);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
     const [editingContract, setEditingContract] = React.useState<Contract | null>(null);
     const [deletingContract, setDeletingContract] = React.useState<Contract | null>(null);
     const [selectedUserIdForNew, setSelectedUserIdForNew] = React.useState<string | undefined>(undefined);
+
+    const statusOptions: MultiSelectOption[] = [
+        { value: 'all', label: 'All' },
+        { value: 'Upcoming', label: 'Upcoming' },
+        { value: 'Active', label: 'Active' },
+        { value: 'Expired', label: 'Expired' },
+    ];
+
+    const handleStatusSelectionChange = (newSelection: string[]) => {
+      if (newSelection.length === 0) {
+        setSelectedStatuses(['all']);
+        return;
+      }
+      if (newSelection.length > 1 && newSelection[newSelection.length - 1] === 'all') {
+        setSelectedStatuses(['all']);
+      } 
+      else if (newSelection.length > 1 && newSelection.includes('all')) {
+        setSelectedStatuses(newSelection.filter(s => s !== 'all'));
+      } 
+      else {
+        setSelectedStatuses(newSelection);
+      }
+    };
+
 
     const getUserName = (userId: string) => {
         return teamMembers.find(m => m.id === userId)?.name || userId;
@@ -58,32 +105,20 @@ export function ContractsTable() {
     }, [contracts, teamMembers]);
 
     const filteredContracts = React.useMemo(() => {
-        if (!selectedMemberId) return sortedContracts;
-        return sortedContracts.filter(c => c.userId === selectedMemberId);
-    }, [sortedContracts, selectedMemberId]);
+        let userFiltered = selectedMemberId ? sortedContracts.filter(c => c.userId === selectedMemberId) : sortedContracts;
+        
+        if (selectedStatuses.includes('all')) {
+            return userFiltered;
+        }
+
+        return userFiltered.filter(c => selectedStatuses.includes(getContractStatus(c)));
+
+    }, [sortedContracts, selectedMemberId, selectedStatuses]);
 
 
     const getUserEmail = (userId: string) => {
         return teamMembers.find(m => m.id === userId)?.email || 'N/A';
     }
-
-    const getContractStatus = (contract: Contract): { text: 'Active' | 'Upcoming' | 'Expired'; variant: 'default' | 'secondary' | 'destructive' } => {
-        const today = startOfDay(new Date());
-        const startDate = new Date(contract.startDate);
-
-        if (isAfter(startDate, today)) {
-            return { text: 'Upcoming', variant: 'secondary' };
-        }
-        
-        if (contract.endDate) {
-            const endDate = new Date(contract.endDate);
-            if (isAfter(today, endDate)) {
-                return { text: 'Expired', variant: 'destructive' };
-            }
-        }
-        
-        return { text: 'Active', variant: 'default' };
-    };
 
     const handleOpenAddDialog = () => {
         setEditingContract(null);
@@ -127,7 +162,7 @@ export function ContractsTable() {
             toast({
                 variant: "destructive",
                 title: "Cannot Delete Expired Contract",
-                description: "Contract Expired. Edit/Delete operation is not possible.",
+                description: "This contract has expired and cannot be deleted.",
             });
             setDeletingContract(null);
             return;
@@ -151,6 +186,13 @@ export function ContractsTable() {
                     <CardDescription>{t('allContractsDesc')}</CardDescription>
                 </div>
                 <div className="flex w-full md:w-auto gap-2">
+                    <MultiSelect
+                        options={statusOptions}
+                        selected={selectedStatuses}
+                        onChange={handleStatusSelectionChange}
+                        placeholder="Filter by Status..."
+                        className="w-full md:w-[200px]"
+                    />
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
                             <Button
@@ -228,7 +270,7 @@ export function ContractsTable() {
                                     <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>
                                     <TableCell>{contract.endDate ? format(new Date(contract.endDate), 'PP') : 'Ongoing'}</TableCell>
                                     <TableCell>
-                                        <Badge variant={status.variant} className={cn(status.variant === 'default' && 'bg-green-600')}>{status.text}</Badge>
+                                        <Badge variant={status === 'Active' ? 'default' : status === 'Upcoming' ? 'secondary' : 'destructive'} className={cn(status === 'Active' && 'bg-green-600')}>{status}</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">{contract.weeklyHours}h</TableCell>
                                     <TableCell className="text-right">
