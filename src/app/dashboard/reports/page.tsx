@@ -5,7 +5,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as XLSX from 'xlsx-js-style';
-import { FileUp, Minus, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { FileUp, Minus, Plus, Calendar as CalendarIcon, ArrowUpDown } from 'lucide-react';
 import { addDays, endOfDay, startOfDay, startOfYear, endOfYear, startOfMonth, endOfMonth, isWithinInterval, getDaysInMonth, differenceInCalendarDays, max, min, getDay, getMonth, getYear, getDate, startOfWeek, endOfWeek, isLeapYear, parseISO, isSameDay, parse, isValid, format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import {
@@ -197,6 +197,9 @@ const MultiSelect = ({ options, selected, onChange, placeholder, className }: Mu
 };
 
 
+type SortableColumn = 'member' | 'role' | 'team' | 'assignedHours' | 'leaveHours' | 'expectedHours' | 'loggedHours' | 'remainingHours';
+
+
 export default function ReportsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -224,6 +227,9 @@ export default function ReportsPage() {
   const [toInputValue, setToInputValue] = React.useState(customDateRange?.to ? format(customDateRange.to, 'dd/MM/yyyy') : '');
   const [isFromPickerOpen, setIsFromPickerOpen] = React.useState(false);
   const [isToPickerOpen, setIsToPickerOpen] = React.useState(false);
+
+  const [sortColumn, setSortColumn] = React.useState<SortableColumn>('member');
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
 
 
   const weeksInMonth = React.useMemo(() => getWeeksForMonth(selectedYear, selectedMonth), [selectedYear, selectedMonth]);
@@ -408,6 +414,39 @@ export default function ReportsPage() {
 
     return { consolidatedData, projectReport, taskReport, detailedReport };
   }, [teamMembers, currentUser, selectedTeams, timeEntries, periodStart, periodEnd, selectedYear, publicHolidays, customHolidays, annualLeaveAllowance]);
+  
+  const sortedConsolidatedData = React.useMemo(() => {
+    return [...reports.consolidatedData].sort((a, b) => {
+        let comparison = 0;
+        switch (sortColumn) {
+            case 'member':
+                comparison = a.name.localeCompare(b.name);
+                break;
+            case 'role':
+                comparison = a.role.localeCompare(b.role);
+                break;
+            case 'team':
+                comparison = (getTeamName(a.teamId) || '').localeCompare(getTeamName(b.teamId) || '');
+                break;
+            case 'assignedHours':
+                comparison = a.assignedHours - b.assignedHours;
+                break;
+            case 'leaveHours':
+                comparison = a.leaveHours - b.leaveHours;
+                break;
+            case 'expectedHours':
+                comparison = a.expectedHours - b.expectedHours;
+                break;
+            case 'loggedHours':
+                comparison = a.loggedHours - b.loggedHours;
+                break;
+            case 'remainingHours':
+                comparison = a.remainingHours - b.remainingHours;
+                break;
+        }
+        return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [reports.consolidatedData, sortColumn, sortDirection]);
 
   const onTabChange = (value: string) => {
     router.push(`/dashboard/reports?tab=${value}`);
@@ -536,7 +575,7 @@ export default function ReportsPage() {
           const wb = XLSX.utils.book_new();
 
           const consolidatedHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
-          const consolidatedReportData = reports.consolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
+          const consolidatedReportData = sortedConsolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
           const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
           XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
 
@@ -571,6 +610,18 @@ export default function ReportsPage() {
       { value: 'individual-report', label: t('individualReport')},
       { value: 'project-report', label: t('projectReport'), roles: ['Super Admin'] },
   ].filter(t => !t.roles || t.roles.includes(currentUser.role));
+
+  const handleSort = (column: SortableColumn) => {
+    setSortDirection(prevDirection => (sortColumn === column && prevDirection === 'asc' ? 'desc' : 'asc'));
+    setSortColumn(column);
+  };
+  
+  const renderSortArrow = (column: SortableColumn) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground/50" />;
+    }
+    return sortDirection === 'asc' ? <ArrowUpDown className="ml-2 h-4 w-4" /> : <ArrowUpDown className="ml-2 h-4 w-4" />;
+  };
 
   const renderSharedControls = () => (
     <>
@@ -757,18 +808,34 @@ export default function ReportsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('member')}</TableHead>
-                          <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
-                          <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
-                          <TableHead className="text-right">{t('assignedHours')}</TableHead>
-                          <TableHead className="text-right">{t('leaveHours')}</TableHead>
-                          <TableHead className="text-right">{t('expected')}</TableHead>
-                          <TableHead className="text-right">{t('logged')}</TableHead>
-                          <TableHead className="text-right">{t('remaining')}</TableHead>
+                          <TableHead className={currentUser.role === 'Super Admin' ? 'cursor-pointer' : ''} onClick={() => currentUser.role === 'Super Admin' && handleSort('member')}>
+                            <div className="flex items-center">{t('member')}{currentUser.role === 'Super Admin' && renderSortArrow('member')}</div>
+                          </TableHead>
+                          <TableHead className={cn("hidden md:table-cell", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('role')}>
+                             <div className="flex items-center">{t('role')}{currentUser.role === 'Super Admin' && renderSortArrow('role')}</div>
+                          </TableHead>
+                          <TableHead className={cn("hidden md:table-cell", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('team')}>
+                            <div className="flex items-center">{t('team')}{currentUser.role === 'Super Admin' && renderSortArrow('team')}</div>
+                          </TableHead>
+                          <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('assignedHours')}>
+                            <div className="flex items-center justify-end">{t('assignedHours')}{currentUser.role === 'Super Admin' && renderSortArrow('assignedHours')}</div>
+                          </TableHead>
+                           <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('leaveHours')}>
+                            <div className="flex items-center justify-end">{t('leaveHours')}{currentUser.role === 'Super Admin' && renderSortArrow('leaveHours')}</div>
+                          </TableHead>
+                          <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('expectedHours')}>
+                            <div className="flex items-center justify-end">{t('expected')}{currentUser.role === 'Super Admin' && renderSortArrow('expectedHours')}</div>
+                          </TableHead>
+                          <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('loggedHours')}>
+                            <div className="flex items-center justify-end">{t('logged')}{currentUser.role === 'Super Admin' && renderSortArrow('loggedHours')}</div>
+                          </TableHead>
+                          <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('remainingHours')}>
+                            <div className="flex items-center justify-end">{t('remaining')}{currentUser.role === 'Super Admin' && renderSortArrow('remainingHours')}</div>
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {reports.consolidatedData.map(member => (
+                        {sortedConsolidatedData.map(member => (
                           <TableRow key={member.id}>
                             <TableCell>
                               <div className="flex items-center gap-3">
