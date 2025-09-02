@@ -2,8 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { format, startOfDay, isAfter } from 'date-fns';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { format, startOfDay, isAfter, parseISO } from 'date-fns';
+import { MoreHorizontal, PlusCircle, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 
 type ContractStatus = 'Upcoming' | 'Active' | 'Expired';
+type SortableColumn = 'name' | 'email' | 'startDate' | 'endDate' | 'status' | 'weeklyHours';
 
 const getContractStatus = (contract: Contract): ContractStatus => {
     const today = startOfDay(new Date());
@@ -61,6 +62,9 @@ export function ContractsTable() {
     const [editingContract, setEditingContract] = React.useState<Contract | null>(null);
     const [deletingContract, setDeletingContract] = React.useState<Contract | null>(null);
     const [selectedUserIdForNew, setSelectedUserIdForNew] = React.useState<string | undefined>(undefined);
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn>('name');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+
 
     const statusOptions: MultiSelectOption[] = [
         { value: 'all-status', label: 'All Status' },
@@ -93,17 +97,40 @@ export function ContractsTable() {
     const sortedContracts = React.useMemo(() => {
         return [...contracts].sort((a, b) => {
             const nameA = getUserName(a.userId).toLowerCase();
-            const nameB = getUserName(b.userId).toLowerCase();
-            
-            if (nameA < nameB) return -1;
-            if (nameA > nameB) return 1;
+            const emailA = teamMembers.find(m => m.id === a.userId)?.email.toLowerCase() || '';
+            const statusA = getContractStatus(a);
 
-            const dateA = a.endDate ? new Date(a.endDate).getTime() : Infinity;
-            const dateB = b.endDate ? new Date(b.endDate).getTime() : Infinity;
+            const nameB = getUserName(b.userId).toLowerCase();
+            const emailB = teamMembers.find(m => m.id === b.userId)?.email.toLowerCase() || '';
+            const statusB = getContractStatus(b);
             
-            return dateB - dateA;
+            let comparison = 0;
+            switch (sortColumn) {
+                case 'name':
+                    comparison = nameA.localeCompare(nameB);
+                    break;
+                case 'email':
+                    comparison = emailA.localeCompare(emailB);
+                    break;
+                case 'startDate':
+                    comparison = parseISO(a.startDate).getTime() - parseISO(b.startDate).getTime();
+                    break;
+                case 'endDate':
+                    const dateA = a.endDate ? parseISO(a.endDate).getTime() : Infinity;
+                    const dateB = b.endDate ? parseISO(b.endDate).getTime() : Infinity;
+                    comparison = dateA - dateB;
+                    break;
+                case 'status':
+                    comparison = statusA.localeCompare(statusB);
+                    break;
+                case 'weeklyHours':
+                    comparison = a.weeklyHours - b.weeklyHours;
+                    break;
+            }
+
+            return sortDirection === 'asc' ? comparison : -comparison;
         });
-    }, [contracts, teamMembers]);
+    }, [contracts, teamMembers, sortColumn, sortDirection, getUserName]);
 
     const filteredContracts = React.useMemo(() => {
         let userFiltered = selectedMemberId ? sortedContracts.filter(c => c.userId === selectedMemberId) : sortedContracts;
@@ -115,6 +142,24 @@ export function ContractsTable() {
         return userFiltered.filter(c => selectedStatuses.includes(getContractStatus(c)));
 
     }, [sortedContracts, selectedMemberId, selectedStatuses]);
+
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    const renderSortArrow = (column: SortableColumn) => {
+        if (sortColumn !== column) {
+            return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground/50" />;
+        }
+        return sortDirection === 'asc' ? 
+            <ArrowUpDown className="ml-2 h-4 w-4" /> : 
+            <ArrowUpDown className="ml-2 h-4 w-4" />;
+    };
 
 
     const getUserEmail = (userId: string) => {
@@ -249,12 +294,42 @@ export function ContractsTable() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>ID</TableHead>
-                            <TableHead>{t('nameColumn')}</TableHead>
-                            <TableHead>{t('email')}</TableHead>
-                            <TableHead>{t('startDate')}</TableHead>
-                            <TableHead>{t('endDate')}</TableHead>
-                            <TableHead>{t('status')}</TableHead>
-                            <TableHead className="text-right">{t('weeklyHours')}</TableHead>
+                             <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                                <div className="flex items-center">
+                                    {t('nameColumn')}
+                                    {renderSortArrow('name')}
+                                </div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer" onClick={() => handleSort('email')}>
+                                <div className="flex items-center">
+                                    {t('email')}
+                                    {renderSortArrow('email')}
+                                </div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer" onClick={() => handleSort('startDate')}>
+                                <div className="flex items-center">
+                                    {t('startDate')}
+                                    {renderSortArrow('startDate')}
+                                </div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer" onClick={() => handleSort('endDate')}>
+                                <div className="flex items-center">
+                                    {t('endDate')}
+                                    {renderSortArrow('endDate')}
+                                </div>
+                            </TableHead>
+                            <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
+                                <div className="flex items-center">
+                                    {t('status')}
+                                    {renderSortArrow('status')}
+                                </div>
+                            </TableHead>
+                            <TableHead className="text-right cursor-pointer" onClick={() => handleSort('weeklyHours')}>
+                                <div className="flex items-center justify-end">
+                                    {t('weeklyHours')}
+                                    {renderSortArrow('weeklyHours')}
+                                </div>
+                            </TableHead>
                             <TableHead className="text-right">{t('actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
