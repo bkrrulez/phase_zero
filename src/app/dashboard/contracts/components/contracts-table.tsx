@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, isAfter } from 'date-fns';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, MoreHorizontal, PlusCircle } from 'lucide-react';
@@ -21,6 +21,7 @@ import { DeleteContractDialog } from './delete-contract-dialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { addContract as addContractAction, updateContract as updateContractAction, deleteContract as deleteContractAction } from '../../actions';
+import { Badge } from '@/components/ui/badge';
 
 export function ContractsTable() {
     const { teamMembers, fetchMembers } = useMembers();
@@ -65,6 +66,24 @@ export function ContractsTable() {
     const getUserEmail = (userId: string) => {
         return teamMembers.find(m => m.id === userId)?.email || 'N/A';
     }
+
+    const getContractStatus = (contract: Contract): { text: 'Active' | 'Upcoming' | 'Expired'; variant: 'default' | 'secondary' | 'destructive' } => {
+        const today = startOfDay(new Date());
+        const startDate = new Date(contract.startDate);
+
+        if (isAfter(startDate, today)) {
+            return { text: 'Upcoming', variant: 'secondary' };
+        }
+        
+        if (contract.endDate) {
+            const endDate = new Date(contract.endDate);
+            if (isAfter(today, endDate)) {
+                return { text: 'Expired', variant: 'destructive' };
+            }
+        }
+        
+        return { text: 'Active', variant: 'default' };
+    };
 
     const handleOpenAddDialog = () => {
         setEditingContract(null);
@@ -191,6 +210,7 @@ export function ContractsTable() {
                             <TableHead>{t('email')}</TableHead>
                             <TableHead>{t('startDate')}</TableHead>
                             <TableHead>{t('endDate')}</TableHead>
+                            <TableHead>{t('status')}</TableHead>
                             <TableHead className="text-right">{t('weeklyHours')}</TableHead>
                             <TableHead className="text-right">{t('actions')}</TableHead>
                         </TableRow>
@@ -199,6 +219,7 @@ export function ContractsTable() {
                         {filteredContracts.map(contract => {
                             const isPast = contract.endDate ? new Date(contract.endDate) < startOfDay(new Date()) : false;
                             const canModify = currentUser.role === 'Super Admin' || !isPast;
+                            const status = getContractStatus(contract);
                             return (
                                 <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/20")}>
                                     <TableCell className="font-mono text-xs">{contract.id}</TableCell>
@@ -206,6 +227,9 @@ export function ContractsTable() {
                                     <TableCell>{getUserEmail(contract.userId)}</TableCell>
                                     <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>
                                     <TableCell>{contract.endDate ? format(new Date(contract.endDate), 'PP') : 'Ongoing'}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={status.variant} className={cn(status.variant === 'default' && 'bg-green-600')}>{status.text}</Badge>
+                                    </TableCell>
                                     <TableCell className="text-right">{contract.weeklyHours}h</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
@@ -223,7 +247,7 @@ export function ContractsTable() {
                         })}
                          {filteredContracts.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">{t('noContractsFound')}</TableCell>
+                                <TableCell colSpan={8} className="h-24 text-center">{t('noContractsFound')}</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
