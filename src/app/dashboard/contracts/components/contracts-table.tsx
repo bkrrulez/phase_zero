@@ -62,7 +62,7 @@ export function ContractsTable() {
     const [selectedUserIdForNew, setSelectedUserIdForNew] = React.useState<string | undefined>(undefined);
 
     const statusOptions: MultiSelectOption[] = [
-        { value: 'all', label: 'All' },
+        { value: 'all', label: 'All Status' },
         { value: 'Upcoming', label: 'Upcoming' },
         { value: 'Active', label: 'Active' },
         { value: 'Expired', label: 'Expired' },
