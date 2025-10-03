@@ -553,17 +553,19 @@ export default function ReportsPage() {
           const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
           const cellStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
           const numberCellStyle = { ...cellStyle, z: numberFormat.z };
+          const percentageCellStyle = { ...cellStyle, z: '0.00"%"' };
 
           const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
               const worksheetData = [
                   [{ v: title, s: titleStyle }],
                   [],
                   headers.map(h => ({ v: h, s: headerStyle })),
-                  ...data.map(row => row.map(cell => {
+                  ...data.map(row => row.map((cell, index) => {
                       const isNumber = typeof cell === 'number';
+                      const isPercentage = headers[index] === 'In Office %';
                       return {
-                          v: cell,
-                          s: isNumber ? numberCellStyle : cellStyle,
+                          v: isPercentage ? cell / 100 : cell,
+                          s: isNumber ? (isPercentage ? percentageCellStyle : numberCellStyle) : cellStyle,
                           t: isNumber ? 'n' : 's'
                       };
                   }))
@@ -588,8 +590,8 @@ export default function ReportsPage() {
           
           const wb = XLSX.utils.book_new();
 
-          const consolidatedHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
-          const consolidatedReportData = sortedConsolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours]);
+          const consolidatedHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining'), 'In Office %'];
+          const consolidatedReportData = sortedConsolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours, m.inOfficePercentage]);
           const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
           XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
 
