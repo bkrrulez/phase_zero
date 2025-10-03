@@ -562,10 +562,10 @@ export default function ReportsPage() {
                   headers.map(h => ({ v: h, s: headerStyle })),
                   ...data.map(row => row.map((cell, index) => {
                       const isNumber = typeof cell === 'number';
-                      const isPercentage = headers[index] === 'In Office %';
+                      const isPercentageColumn = headers[index] === 'In Office %';
                       return {
-                          v: isPercentage ? cell / 100 : cell,
-                          s: isNumber ? (isPercentage ? percentageCellStyle : numberCellStyle) : cellStyle,
+                          v: isPercentageColumn ? cell / 100 : cell,
+                          s: isNumber ? (isPercentageColumn ? percentageCellStyle : numberCellStyle) : cellStyle,
                           t: isNumber ? 'n' : 's'
                       };
                   }))
