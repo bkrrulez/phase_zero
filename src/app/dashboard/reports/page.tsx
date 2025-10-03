@@ -551,10 +551,9 @@ export default function ReportsPage() {
       } else {
           const titleStyle = { font: { bold: true } };
           const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
-          const cellStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
-          const numberCellStyle = { ...cellStyle, z: numberFormat.z };
-          const percentageCellStyle = { ...cellStyle, z: '0.00"%"' };
-
+          const userRowStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
+          const numberCellStyle = { ...userRowStyle, z: numberFormat.z };
+          
           const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
               const worksheetData = [
                   [{ v: title, s: titleStyle }],
@@ -563,9 +562,12 @@ export default function ReportsPage() {
                   ...data.map(row => row.map((cell, index) => {
                       const isNumber = typeof cell === 'number';
                       const isPercentageColumn = headers[index] === 'In Office %';
+                      if (isPercentageColumn) {
+                          return { v: `${cell.toFixed(2)} %`, s: userRowStyle, t: 's' };
+                      }
                       return {
-                          v: isPercentageColumn ? cell / 100 : cell,
-                          s: isNumber ? (isPercentageColumn ? percentageCellStyle : numberCellStyle) : cellStyle,
+                          v: cell,
+                          s: isNumber ? numberCellStyle : userRowStyle,
                           t: isNumber ? 'n' : 's'
                       };
                   }))
