@@ -198,7 +198,7 @@ const MultiSelect = ({ options, selected, onChange, placeholder, className }: Mu
 };
 
 
-type SortableColumn = 'member' | 'role' | 'team' | 'assignedHours' | 'leaveHours' | 'expectedHours' | 'loggedHours' | 'remainingHours';
+type SortableColumn = 'member' | 'role' | 'team' | 'assignedHours' | 'leaveHours' | 'expectedHours' | 'loggedHours' | 'remainingHours' | 'inOfficePercentage';
 
 
 export default function ReportsPage() {
@@ -391,7 +391,12 @@ export default function ReportsPage() {
       const leaveHours = parseFloat((leaveDaysInPeriod * avgDailyHoursInPeriod).toFixed(2));
 
       const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
-      const loggedHours = parseFloat(filteredTimeEntries.filter(e => e.userId === member.id).reduce((acc, e) => acc + e.duration, 0).toFixed(2));
+      
+      const memberTimeEntries = filteredTimeEntries.filter(e => e.userId === member.id);
+      const loggedHours = parseFloat(memberTimeEntries.reduce((acc, e) => acc + e.duration, 0).toFixed(2));
+      const inOfficeHours = memberTimeEntries.filter(e => e.placeOfWork === 'In Office').reduce((acc, e) => acc + e.duration, 0);
+      const inOfficePercentage = loggedHours > 0 ? (inOfficeHours / loggedHours) * 100 : 0;
+
       const remainingHours = parseFloat((expectedHours - loggedHours).toFixed(2));
       
       if (detailedAgg[member.id]) {
@@ -400,7 +405,7 @@ export default function ReportsPage() {
           detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
       }
 
-      return { ...member, assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
+      return { ...member, assignedHours, leaveHours, expectedHours, loggedHours, remainingHours, inOfficePercentage };
     });
 
     const projectReport = Object.values(projectAgg).map(item => ({ ...item, loggedHours: parseFloat(item.loggedHours.toFixed(2))})).sort((a, b) => a.member.name.localeCompare(b.member.name));
@@ -448,6 +453,9 @@ export default function ReportsPage() {
                 break;
             case 'remainingHours':
                 comparison = a.remainingHours - b.remainingHours;
+                break;
+            case 'inOfficePercentage':
+                comparison = a.inOfficePercentage - b.inOfficePercentage;
                 break;
         }
         return sortDirection === 'asc' ? comparison : -comparison;
@@ -831,6 +839,9 @@ export default function ReportsPage() {
                           <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('remainingHours')}>
                             <div className="flex items-center justify-end">{t('remaining')}{currentUser.role === 'Super Admin' && renderSortArrow('remainingHours')}</div>
                           </TableHead>
+                           <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('inOfficePercentage')}>
+                            <div className="flex items-center justify-end">In Office %{currentUser.role === 'Super Admin' && renderSortArrow('inOfficePercentage')}</div>
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -849,6 +860,7 @@ export default function ReportsPage() {
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
                             <TableCell className={cn("text-right font-mono", member.remainingHours < 0 && "text-green-600")}>{member.remainingHours.toFixed(2)}h</TableCell>
+                            <TableCell className="text-right font-mono">{member.inOfficePercentage.toFixed(2)}%</TableCell>
                           </TableRow>
                         ))}
                         {reports.consolidatedData.length === 0 && (<TableRow><TableCell colSpan={8} className="text-center h-24">{t('noTeamMembers')}</TableCell></TableRow>)}
