@@ -34,6 +34,7 @@ export type TimeEntry = {
   endTime: string;
   task: string;
   duration: number; // in hours
+  placeOfWork: 'Home Office' | 'In Office';
   remarks?: string;
 };
 
@@ -149,3 +150,5 @@ export type InitialData = {
   systemLogs: LogEntry[];
   annualLeaveAllowance: number;
 };
+
+    

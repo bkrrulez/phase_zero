@@ -84,6 +84,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         endTime: data.endTime,
         projectId: data.project,
         taskId: data.task,
+        placeOfWork: data.placeOfWork,
         remarks: data.remarks,
       };
 
@@ -122,6 +123,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         endTime: data.endTime,
         projectId: data.project,
         taskId: data.task,
+        placeOfWork: data.placeOfWork,
         remarks: data.remarks,
       };
       
@@ -184,3 +186,5 @@ export const useTimeTracking = () => {
   }
   return context;
 };
+
+    

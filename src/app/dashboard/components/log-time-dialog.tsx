@@ -33,7 +33,8 @@ const logTimeSchema = z.object({
   endTime: z.string().min(1, { message: "End time is required." }),
   project: z.string().min(1, { message: "Please select a project." }),
   task: z.string().min(1, { message: "Please select a task." }),
-  remarks: z.string().optional(),
+  placeOfWork: z.enum(['Home Office', 'In Office']),
+  remarks: z.string().min(1, { message: "Remarks are required." }),
 }).refine(data => data.endTime > data.startTime, {
   message: "End time cannot be earlier than start time.",
   path: ["endTime"],
@@ -66,6 +67,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
       endTime: '',
       project: '',
       task: '',
+      placeOfWork: 'Home Office',
       remarks: '',
     }
   });
@@ -111,6 +113,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         endTime: entryToEdit.endTime,
         project: project.trim(),
         task: task.trim(),
+        placeOfWork: entryToEdit.placeOfWork || 'Home Office',
         remarks: entryToEdit.remarks || '',
       });
       setInputValue(format(entryDate, 'dd/MM/yyyy'));
@@ -130,6 +133,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         endTime: '',
         project: '',
         task: '',
+        placeOfWork: 'Home Office',
         remarks: '',
       });
        setInputValue(format(new Date(), 'dd/MM/yyyy'));
@@ -392,10 +396,31 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
               />
               <FormField
                 control={form.control}
+                name="placeOfWork"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Place of Work</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select place of work" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Home Office">Home Office</SelectItem>
+                        <SelectItem value="In Office">In Office</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="remarks"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Remarks <span className="text-muted-foreground">(Optional)</span></FormLabel>
+                    <FormLabel>Remarks</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Add any extra details..." {...field} />
                     </FormControl>
@@ -414,3 +439,5 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     </Dialog>
   )
 }
+
+    

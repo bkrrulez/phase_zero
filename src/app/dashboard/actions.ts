@@ -467,12 +467,13 @@ export async function getTimeEntries(): Promise<TimeEntry[]> {
       endTime: row.end_time,
       task: `${row.project_name} - ${row.task_name}`,
       duration: Number(row.duration),
+      placeOfWork: row.place_of_work,
       remarks: row.remarks
     }));
 }
 
 export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {projectId: string, taskId: string}): Promise<TimeEntry | null> {
-    const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, remarks } = entry;
+    const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, placeOfWork, remarks } = entry;
     const client = await db.connect();
     try {
         const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
@@ -490,9 +491,9 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
 
         const id = `te-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO time_entries (id, user_id, project_id, task_id, date, start_time, end_time, duration, remarks)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [id, userId, projectId, taskId, date, startTime, endTime, duration, remarks]
+            `INSERT INTO time_entries (id, user_id, project_id, task_id, date, start_time, end_time, duration, place_of_work, remarks)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+            [id, userId, projectId, taskId, date, startTime, endTime, duration, placeOfWork, remarks]
         );
         revalidatePath('/dashboard');
         
@@ -505,6 +506,7 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
             endTime: inserted.end_time,
             task: `${projectName} - ${taskName}`,
             duration: Number(inserted.duration),
+            placeOfWork: inserted.place_of_work,
             remarks: inserted.remarks,
         };
     } catch (error) {
@@ -516,7 +518,7 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
 }
 
 export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'id' | 'duration'> & { projectId: string; taskId: string }): Promise<TimeEntry | null> {
-  const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, remarks } = entry;
+  const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, placeOfWork, remarks } = entry;
   const client = await db.connect();
   try {
     const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
@@ -534,9 +536,9 @@ export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'i
 
     const result = await client.query(
       `UPDATE time_entries 
-       SET project_id = $1, task_id = $2, date = $3, start_time = $4, end_time = $5, duration = $6, remarks = $7
-       WHERE id = $8 RETURNING *`,
-      [projectId, taskId, date, startTime, endTime, duration, remarks, entryId]
+       SET project_id = $1, task_id = $2, date = $3, start_time = $4, end_time = $5, duration = $6, place_of_work = $7, remarks = $8
+       WHERE id = $9 RETURNING *`,
+      [projectId, taskId, date, startTime, endTime, duration, placeOfWork, remarks, entryId]
     );
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/reports');
@@ -550,6 +552,7 @@ export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'i
       endTime: updated.end_time,
       task: `${projectName} - ${taskName}`,
       duration: Number(updated.duration),
+      placeOfWork: updated.place_of_work,
       remarks: updated.remarks,
     };
   } catch (error) {
@@ -1348,3 +1351,5 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
+
+    
