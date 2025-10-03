@@ -552,7 +552,8 @@ export default function ReportsPage() {
           const titleStyle = { font: { bold: true } };
           const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
           const userRowStyle = { border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } } };
-          const numberCellStyle = { ...userRowStyle, z: numberFormat.z };
+          const numberCellStyle = { ...userRowStyle, z: numberFormat.z, alignment: { horizontal: 'right' } };
+          const percentageCellStyle = { ...userRowStyle, alignment: { horizontal: 'right' } };
           
           const createStyledSheet = (title: string, headers: string[], data: any[][]) => {
               const worksheetData = [
@@ -563,7 +564,7 @@ export default function ReportsPage() {
                       const isNumber = typeof cell === 'number';
                       const isPercentageColumn = headers[index] === 'In Office %';
                       if (isPercentageColumn) {
-                          return { v: `${cell.toFixed(2)} %`, s: userRowStyle, t: 's' };
+                          return { v: `${cell.toFixed(2)} %`, s: percentageCellStyle, t: 's' };
                       }
                       return {
                           v: cell,
