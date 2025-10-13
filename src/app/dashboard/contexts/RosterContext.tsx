@@ -36,8 +36,8 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   const addAbsence = async (absence: Omit<Absence, 'id'>) => {
     const newAbsence = await addAbsenceAction(absence);
     if (newAbsence) {
-      setAbsences(prev => [...prev, newAbsence]);
-       toast({ title: 'Absence Marked', description: 'The absence has been successfully recorded.' });
+      await fetchRosterData(); // Re-fetch data to ensure UI consistency
+      toast({ title: 'Absence Marked', description: 'The absence has been successfully recorded.' });
     } else {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not mark absence.' });
     }
@@ -46,7 +46,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
   const updateAbsence = async (absenceId: string, absence: Omit<Absence, 'id'>) => {
     const updatedAbsence = await updateAbsenceAction(absenceId, absence);
     if(updatedAbsence) {
-        setAbsences(prev => prev.map(a => a.id === absenceId ? updatedAbsence : a));
+        await fetchRosterData(); // Re-fetch data to ensure UI consistency
         toast({ title: 'Absence Updated', description: 'The absence has been successfully updated.' });
     } else {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update absence.' });

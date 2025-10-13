@@ -12,13 +12,14 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, parseISO, addDays, isSameDay } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown } from 'lucide-react';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import { User, Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
+import { parseISO } from 'date-fns';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -29,8 +30,8 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 type SortableColumn = 'name' | 'email' | 'team';
 
 const parseUTCDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
+    const date = parseISO(dateString);
+    return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 };
 
 export function TeamRoster() {
@@ -100,7 +101,7 @@ export function TeamRoster() {
         return sortDirection === 'asc' ? <ArrowUpDown className="ml-2 h-4 w-4" /> : <ArrowUpDown className="ml-2 h-4 w-4" />;
     };
 
-    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
+    const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
@@ -121,9 +122,9 @@ export function TeamRoster() {
         }
         
         if (absenceIdToUpdate) {
-            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
+            await updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         } else {
-            addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
+            await addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         }
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
@@ -185,7 +186,7 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
-                    day_today: 'bg-transparent text-foreground'
+                    day_today: 'bg-transparent text-foreground ring-1 ring-primary'
                 }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",
