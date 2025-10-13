@@ -122,6 +122,7 @@ export function TeamRoster() {
         }
 
         const existingAbsence = absences.find(a => {
+            if (a.id === absenceIdToUpdate) return false;
             const start = parseUTCDate(a.startDate);
             const end = parseUTCDate(a.endDate);
             return a.userId === userId && 
