@@ -114,9 +114,19 @@ export function MyRoster() {
             });
             return;
         }
+
+        const existingAbsence = absences.find(a => {
+            const start = parseUTCDate(a.startDate);
+            const end = parseUTCDate(a.endDate);
+            return a.userId === userId && 
+                   (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
+                    isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
+        });
         
-        if (absenceIdToUpdate) {
-            await updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
+        const idToUpdate = absenceIdToUpdate || existingAbsence?.id;
+        
+        if (idToUpdate) {
+            await updateAbsence(idToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         } else {
             await addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         }
@@ -200,7 +210,7 @@ export function MyRoster() {
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}
                 onOpenChange={setIsAbsenceDialogOpen}
-                onSave={(from, to, type) => handleAbsenceSave(from, to, type, currentUser.id, editingAbsence?.id)}
+                onSave={handleAbsenceSave}
                 userId={currentUser.id}
                 absence={editingAbsence}
             />
