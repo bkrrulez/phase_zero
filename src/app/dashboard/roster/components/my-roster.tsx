@@ -35,8 +35,8 @@ export function MyRoster() {
             const currentYear = new Date().getFullYear();
             return { availableYears: [currentYear], minContractDate: null, maxContractDate: null };
         }
-        const startDates = currentUser.contracts.map(c => new Date(c.startDate));
-        const endDates = currentUser.contracts.map(c => c.endDate ? new Date(c.endDate) : new Date());
+        const startDates = currentUser.contracts.map(c => parseISO(c.startDate));
+        const endDates = currentUser.contracts.map(c => c.endDate ? parseISO(c.endDate) : new Date());
 
         const minDate = min(startDates);
         const maxDate = max(endDates);
@@ -54,8 +54,8 @@ export function MyRoster() {
     const calendarData = React.useMemo(() => {
         const workDays = new Set<string>();
         timeEntries.forEach(entry => {
-            if (entry.userId === currentUser.id && isSameMonth(new Date(entry.date), selectedDate)) {
-                workDays.add(new Date(entry.date).toDateString());
+            if (entry.userId === currentUser.id && isSameMonth(parseISO(entry.date), selectedDate)) {
+                workDays.add(parseISO(entry.date).toDateString());
             }
         });
 
@@ -63,7 +63,7 @@ export function MyRoster() {
         const sickLeaveDays = new Set<string>();
         absences.forEach(absence => {
             if (absence.userId === currentUser.id) {
-                 for (let d = new Date(absence.startDate); d <= new Date(absence.endDate); d.setDate(d.getDate() + 1)) {
+                 for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d = addDays(d, 1)) {
                     if (isSameMonth(d, selectedDate)) {
                         if (absence.type === 'General Absence') {
                             generalAbsenceDays.add(d.toDateString());
@@ -90,7 +90,7 @@ export function MyRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = new Date(entry.date);
+                const entryDate = parseISO(entry.date);
                 if(isWithinInterval(entryDate, { start: from, end: to })) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
@@ -117,7 +117,7 @@ export function MyRoster() {
 
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: new Date(a.startDate), end: new Date(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -160,7 +160,7 @@ export function MyRoster() {
                     onDayDoubleClick={handleDayDoubleClick}
                     modifiers={{
                         weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
-                        publicHoliday: publicHolidays.map(h => new Date(h.date)),
+                        publicHoliday: publicHolidays.map(h => parseISO(h.date)),
                         workDay: Array.from(calendarData.workDays).map(d => new Date(d)),
                         generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
                         sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
