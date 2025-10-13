@@ -141,6 +141,7 @@ export function TeamRoster() {
         return (
             <Calendar
                 month={selectedDate}
+                weekStartsOn={1}
                 modifiers={{
                     weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                     publicHoliday: publicHolidays.map(h => new Date(h.date)),
@@ -263,4 +264,3 @@ export function TeamRoster() {
         </Card>
     );
 }
-
