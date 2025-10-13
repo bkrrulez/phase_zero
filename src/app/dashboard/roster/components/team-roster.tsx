@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, getYear, isWithinInterval, parseISO, addDays } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, parseISO, addDays, isSameDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown } from 'lucide-react';
@@ -27,6 +27,11 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
+
+const parseUTCDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+};
 
 export function TeamRoster() {
     const { currentUser } = useAuth();
@@ -99,7 +104,7 @@ export function TeamRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = parseISO(entry.date);
+                const entryDate = parseUTCDate(entry.date);
                 if(isWithinInterval(entryDate, { start: from, end: to })) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
@@ -116,9 +121,9 @@ export function TeamRoster() {
         }
         
         if (absenceIdToUpdate) {
-            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         } else {
-            addAbsence({ userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+            addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         }
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
@@ -126,7 +131,7 @@ export function TeamRoster() {
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: parseUTCDate(a.endDate) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -138,8 +143,8 @@ export function TeamRoster() {
         const { workDays, generalAbsenceDays, sickLeaveDays } = React.useMemo(() => {
             const workDays = new Set<string>();
             timeEntries.forEach(entry => {
-                if (entry.userId === userId && isSameMonth(parseISO(entry.date), selectedDate)) {
-                    workDays.add(parseISO(entry.date).toDateString());
+                if (entry.userId === userId && isSameMonth(parseUTCDate(entry.date), selectedDate)) {
+                    workDays.add(parseUTCDate(entry.date).toDateString());
                 }
             });
 
@@ -147,7 +152,9 @@ export function TeamRoster() {
             const sickLeaveDays = new Set<string>();
             absences.forEach(absence => {
                 if (absence.userId === userId) {
-                    for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d = addDays(d, 1)) {
+                    const startDate = parseUTCDate(absence.startDate);
+                    const endDate = parseUTCDate(absence.endDate);
+                    for (let d = startDate; d <= endDate; d = addDays(d, 1)) {
                         if (isSameMonth(d, selectedDate)) {
                            if (absence.type === 'General Absence') {
                                 generalAbsenceDays.add(d.toDateString());
@@ -167,7 +174,7 @@ export function TeamRoster() {
                 onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
                 modifiers={{
                     weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
-                    publicHoliday: publicHolidays.map(h => parseISO(h.date)),
+                    publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
                     workDay: Array.from(workDays).map(d => new Date(d)),
                     generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
                     sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
@@ -184,7 +191,7 @@ export function TeamRoster() {
                   row: "flex w-full mt-0 border-t",
                   cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
                   head_row: "flex",
-                  head_cell: "text-muted-foreground rounded-md w-full font-normal text-[10px]",
+                  head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
                   day: "h-20 w-full p-1",
                   months: "w-full",
                   month: "w-full space-y-0",

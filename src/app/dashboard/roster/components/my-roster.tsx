@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, parseISO, addDays } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, parseISO, addDays, isSameDay } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -19,6 +19,11 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
+
+const parseUTCDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+};
 
 export function MyRoster() {
     const { currentUser } = useAuth();
@@ -54,8 +59,8 @@ export function MyRoster() {
     const calendarData = React.useMemo(() => {
         const workDays = new Set<string>();
         timeEntries.forEach(entry => {
-            if (entry.userId === currentUser.id && isSameMonth(parseISO(entry.date), selectedDate)) {
-                workDays.add(parseISO(entry.date).toDateString());
+            if (entry.userId === currentUser.id && isSameMonth(parseUTCDate(entry.date), selectedDate)) {
+                workDays.add(parseUTCDate(entry.date).toDateString());
             }
         });
 
@@ -63,7 +68,9 @@ export function MyRoster() {
         const sickLeaveDays = new Set<string>();
         absences.forEach(absence => {
             if (absence.userId === currentUser.id) {
-                 for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d = addDays(d, 1)) {
+                const startDate = parseUTCDate(absence.startDate);
+                const endDate = parseUTCDate(absence.endDate);
+                 for (let d = startDate; d <= endDate; d = addDays(d, 1)) {
                     if (isSameMonth(d, selectedDate)) {
                         if (absence.type === 'General Absence') {
                             generalAbsenceDays.add(d.toDateString());
@@ -90,7 +97,7 @@ export function MyRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = parseISO(entry.date);
+                const entryDate = parseUTCDate(entry.date);
                 if(isWithinInterval(entryDate, { start: from, end: to })) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
@@ -107,9 +114,9 @@ export function MyRoster() {
         }
         
         if (absenceIdToUpdate) {
-            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         } else {
-            addAbsence({ userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+            addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         }
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
@@ -117,7 +124,7 @@ export function MyRoster() {
 
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: parseUTCDate(a.endDate) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -160,7 +167,7 @@ export function MyRoster() {
                     onDayDoubleClick={handleDayDoubleClick}
                     modifiers={{
                         weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
-                        publicHoliday: publicHolidays.map(h => parseISO(h.date)),
+                        publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
                         workDay: Array.from(calendarData.workDays).map(d => new Date(d)),
                         generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
                         sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
@@ -171,7 +178,7 @@ export function MyRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
-                        day_today: 'bg-transparent text-foreground'
+                        day_today: 'bg-transparent text-foreground',
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",
