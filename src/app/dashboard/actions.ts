@@ -19,6 +19,7 @@ import {
   type LogEntry,
   type Contract,
   type ContractEndNotification,
+  type Absence,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -124,6 +125,13 @@ const mapDbContractEndNotification = (row: any): ContractEndNotification => ({
     thresholdDays: row.threshold_days.map(Number) // Ensure numbers
 });
 
+const mapDbAbsence = (row: any): Absence => ({
+    id: row.id,
+    userId: row.user_id,
+    startDate: new Date(row.start_date).toISOString(),
+    endDate: new Date(row.end_date).toISOString(),
+    type: row.type,
+});
 
 // ========== Users & Auth ==========
 
@@ -430,7 +438,7 @@ export async function resetUserPassword(email: string, newPassword: string): Pro
         let teamLead: User | null = null;
         if (updatedUser.reportsTo) {
             const teamLeadResult = await client.query('SELECT * FROM users WHERE id = $1', [updatedUser.reportsTo]);
-            if (teamLeadResult.rows.length > 0) {
+            if(teamLeadResult.rows.length > 0) {
                 teamLead = mapDbUserToUser(teamLeadResult.rows[0]);
             }
         }
@@ -1088,6 +1096,37 @@ export async function deleteHolidayRequest(requestId: string): Promise<void> {
     await db.query('DELETE FROM holiday_requests WHERE id = $1', [requestId]);
     revalidatePath('/dashboard/holidays');
 }
+
+// ========== Roster / Absences ==========
+export async function getAbsences(): Promise<Absence[]> {
+    try {
+        const result = await db.query('SELECT * FROM absences');
+        return result.rows.map(mapDbAbsence);
+    } catch (error: any) {
+        if (error.code === '42P01') { // table does not exist
+            console.warn('Absences table not found, returning empty array.');
+            return [];
+        }
+        throw error;
+    }
+}
+
+export async function addAbsence(absence: Omit<Absence, 'id'>): Promise<Absence | null> {
+    const id = `abs-${Date.now()}`;
+    const { userId, startDate, endDate, type } = absence;
+    try {
+        const result = await db.query(
+            `INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [id, userId, startDate, endDate, type]
+        );
+        revalidatePath('/dashboard/roster');
+        return mapDbAbsence(result.rows[0]);
+    } catch (error) {
+        console.error("Failed to add absence", error);
+        return null;
+    }
+}
+
 
 // ========== Access Control ==========
 
