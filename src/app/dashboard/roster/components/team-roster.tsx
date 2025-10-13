@@ -156,17 +156,6 @@ export function TeamRoster() {
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
                 }}
-                components={{
-                    Day: ({ date }) => {
-                        const isWeekendOrHoliday = getDay(date) === 0 || getDay(date) === 6 || publicHolidays.some(h => isSameDay(new Date(h.date), date));
-                        return (
-                            <div className="relative h-16 w-full flex flex-col justify-between p-1 text-xs">
-                                <span className="self-end">{date.getDate()}</span>
-                                {!isWeekendOrHoliday && <div className="h-6 w-full bg-white dark:bg-card"></div>}
-                            </div>
-                        );
-                    }
-                }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",
                   cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
