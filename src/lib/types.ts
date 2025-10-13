@@ -8,6 +8,14 @@ export type Contract = {
   weeklyHours: number;
 };
 
+export type Absence = {
+  id: string;
+  userId: string;
+  startDate: string;
+  endDate: string;
+  type: 'General Absence' | 'Sick Leave';
+};
+
 export type User = {
   id: string;
   name: string;
@@ -149,6 +157,5 @@ export type InitialData = {
   notifications: AppNotification[];
   systemLogs: LogEntry[];
   annualLeaveAllowance: number;
+  absences: Absence[];
 };
-
-    
