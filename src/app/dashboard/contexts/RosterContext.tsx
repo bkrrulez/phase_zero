@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { type Absence } from "@/lib/types";
-import { getAbsences, addAbsence as addAbsenceAction, updateAbsence as updateAbsenceAction } from '../actions';
+import { addAbsence as addAbsenceAction, updateAbsence as updateAbsenceAction, getAbsences } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 
 export type AbsenceType = 'General Absence' | 'Sick Leave';

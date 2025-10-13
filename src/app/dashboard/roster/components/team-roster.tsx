@@ -96,23 +96,25 @@ export function TeamRoster() {
     };
 
     const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
-        const workDays = new Set<string>();
+        const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
-            if (entry.userId === userId) {
-                workDays.add(new Date(entry.date).toDateString());
+            if(entry.userId === userId) {
+                const entryDate = new Date(entry.date);
+                if(isWithinInterval(entryDate, { start: from, end: to })) {
+                    workDaysInPeriod.add(entryDate.toDateString());
+                }
             }
         });
         
-        for (let d = new Date(from); d <= new Date(to); d.setDate(d.getDate() + 1)) {
-            if (workDays.has(d.toDateString())) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Logged Work Conflict',
-                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
-                });
-                return;
-            }
+        if (workDaysInPeriod.size > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Logged Work Conflict',
+                description: 'Selected date range contains logged work and cannot be marked as an absence.'
+            });
+            return;
         }
+        
         if (absenceIdToUpdate) {
             updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
         } else {
@@ -124,10 +126,10 @@ export function TeamRoster() {
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const absence = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: new Date(a.startDate), end: new Date(a.endDate) }));
 
-        if (absence) {
-            setEditingAbsence(absence);
+        if (absenceOnDate) {
+            setEditingAbsence(absenceOnDate);
             setIsAbsenceDialogOpen(true);
         }
     };
@@ -176,7 +178,7 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
-                    day_today: '',
+                    day_today: 'bg-transparent text-foreground'
                 }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",

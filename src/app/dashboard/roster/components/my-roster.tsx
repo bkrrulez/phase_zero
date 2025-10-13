@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, isSameDay, getMonth, getYear, min, max, isWithinInterval, parseISO, addDays } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, parseISO, addDays } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -87,34 +87,40 @@ export function MyRoster() {
     };
 
     const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
-        // Validation check
-        for (let d = new Date(from); d <= new Date(to); d.setDate(d.getDate() + 1)) {
-            if (calendarData.workDays.has(d.toDateString())) {
-                 toast({
-                    variant: 'destructive',
-                    title: 'Logged Work Conflict',
-                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
-                });
-                return;
+        const workDaysInPeriod = new Set<string>();
+        timeEntries.forEach(entry => {
+            if(entry.userId === userId) {
+                const entryDate = new Date(entry.date);
+                if(isWithinInterval(entryDate, { start: from, end: to })) {
+                    workDaysInPeriod.add(entryDate.toDateString());
+                }
             }
+        });
+
+        if (workDaysInPeriod.size > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Logged Work Conflict',
+                description: 'Selected date range contains logged work and cannot be marked as an absence.'
+            });
+            return;
         }
         
         if (absenceIdToUpdate) {
-            updateAbsence(absenceIdToUpdate, { userId: currentUser.id, startDate: from.toISOString(), endDate: to.toISOString(), type });
+            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
         } else {
-            addAbsence({ userId: currentUser.id, startDate: from.toISOString(), endDate: to.toISOString(), type });
+            addAbsence({ userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
         }
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
     };
 
     const handleDayDoubleClick = (date: Date) => {
-        const clickedDateStr = date.toDateString();
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absence = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: new Date(a.startDate), end: new Date(a.endDate) }));
 
-        if (absence) {
-            setEditingAbsence(absence);
+        if (absenceOnDate) {
+            setEditingAbsence(absenceOnDate);
             setIsAbsenceDialogOpen(true);
         }
     };
@@ -165,7 +171,7 @@ export function MyRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
-                        day_today: ''
+                        day_today: 'bg-transparent text-foreground'
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",
@@ -185,7 +191,7 @@ export function MyRoster() {
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}
                 onOpenChange={setIsAbsenceDialogOpen}
-                onSave={(from, to, type, userId, absenceId) => handleAbsenceSave(from, to, type, absenceId)}
+                onSave={(from, to, type) => handleAbsenceSave(from, to, type, currentUser.id, editingAbsence?.id)}
                 userId={currentUser.id}
                 absence={editingAbsence}
             />
