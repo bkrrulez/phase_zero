@@ -21,7 +21,7 @@ import {
   type ContractEndNotification,
   type Absence,
 } from '@/lib/types';
-import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday } from 'date-fns';
+import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
@@ -31,27 +31,29 @@ const mapDbUserToUser = (dbUser: any): User => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const allContracts = (dbUser.contracts || []);
+    const allContracts = (dbUser.contracts || []).map((c: any) => ({
+        id: c.id,
+        startDate: format(new Date(c.start_date), 'yyyy-MM-dd'),
+        endDate: c.end_date ? format(new Date(c.end_date), 'yyyy-MM-dd') : null,
+        weeklyHours: c.weekly_hours,
+    }));
 
     const activeContracts = allContracts.filter((c: any) => {
-        const startDate = new Date(c.start_date);
-        const endDate = c.end_date ? new Date(c.end_date) : new Date('9999-12-31');
+        const startDate = new Date(c.startDate);
+        const endDate = c.endDate ? new Date(c.endDate) : new Date('9999-12-31');
         return isWithinInterval(today, { start: startDate, end: endDate });
     });
 
     let primaryContract;
     if (activeContracts.length > 0) {
-        // If there are active contracts, use the one that started most recently.
-        primaryContract = activeContracts.sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime())[0];
+        primaryContract = activeContracts.sort((a: any, b: any) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
     } else {
-        // If no active contract, find the most recent one (past or future).
-        // This is a sensible fallback for display purposes.
         const sortedContracts = allContracts.sort((a: any, b: any) => {
-            if (a.end_date === null) return -1;
-            if (b.end_date === null) return 1;
-            return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+            if (!a.endDate) return -1; // null end dates (ongoing) come first
+            if (!b.endDate) return 1;
+            return new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
         });
-        primaryContract = sortedContracts[0] || { start_date: new Date().toISOString(), end_date: null, weekly_hours: 0 };
+        primaryContract = sortedContracts[0] || { startDate: new Date().toISOString(), endDate: null, weeklyHours: 0 };
     }
     
     return {
@@ -64,16 +66,11 @@ const mapDbUserToUser = (dbUser: any): User => {
         teamId: dbUser.team_id,
         associatedProjectIds: dbUser.associated_project_ids || [],
         contract: {
-            startDate: format(new Date(primaryContract.start_date), 'yyyy-MM-dd'),
-            endDate: primaryContract.end_date ? format(new Date(primaryContract.end_date), 'yyyy-MM-dd') : null,
-            weeklyHours: primaryContract.weekly_hours,
+            startDate: primaryContract.startDate,
+            endDate: primaryContract.endDate,
+            weeklyHours: primaryContract.weeklyHours,
         },
-        contracts: allContracts.map((c: any) => ({
-             id: c.id,
-             startDate: format(new Date(c.start_date), 'yyyy-MM-dd'),
-             endDate: c.end_date ? format(new Date(c.end_date), 'yyyy-MM-dd') : null,
-             weeklyHours: c.weekly_hours,
-        })),
+        contracts: allContracts,
         contractPdf: dbUser.contract_pdf,
     };
 };
@@ -1127,6 +1124,20 @@ export async function addAbsence(absence: Omit<Absence, 'id'>): Promise<Absence 
     }
 }
 
+export async function updateAbsence(absenceId: string, absence: Omit<Absence, 'id'>): Promise<Absence | null> {
+    const { userId, startDate, endDate, type } = absence;
+    try {
+        const result = await db.query(
+            `UPDATE absences SET user_id = $1, start_date = $2, end_date = $3, type = $4 WHERE id = $5 RETURNING *`,
+            [userId, startDate, endDate, type, absenceId]
+        );
+        revalidatePath('/dashboard/roster');
+        return mapDbAbsence(result.rows[0]);
+    } catch (error) {
+        console.error("Failed to update absence", error);
+        return null;
+    }
+}
 
 // ========== Access Control ==========
 

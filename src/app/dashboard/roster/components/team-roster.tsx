@@ -12,12 +12,13 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isSameDay, getYear } from 'date-fns';
+import { isSameMonth, getDay, isSameDay, getYear, isWithinInterval, parseISO } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown } from 'lucide-react';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
-import { User } from '@/lib/types';
+import { User, Absence } from '@/lib/types';
+import { toast } from '@/hooks/use-toast';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -32,7 +33,7 @@ export function TeamRoster() {
     const { teamMembers } = useMembers();
     const { timeEntries } = useTimeTracking();
     const { publicHolidays } = useHolidays();
-    const { absences, addAbsence } = useRoster();
+    const { absences, addAbsence, updateAbsence } = useRoster();
     const { teams } = useTeams();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -41,6 +42,7 @@ export function TeamRoster() {
     const [sortColumn, setSortColumn] = React.useState<SortableColumn>('name');
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = React.useState(false);
+    const [editingAbsence, setEditingAbsence] = React.useState<Absence | null>(null);
     
     const visibleMembers = React.useMemo(() => {
         let members: User[];
@@ -93,7 +95,7 @@ export function TeamRoster() {
         return sortDirection === 'asc' ? <ArrowUpDown className="ml-2 h-4 w-4" /> : <ArrowUpDown className="ml-2 h-4 w-4" />;
     };
 
-    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, userId: string) => {
+    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
         const workDays = new Set<string>();
         timeEntries.forEach(entry => {
             if (entry.userId === userId) {
@@ -103,12 +105,31 @@ export function TeamRoster() {
         
         for (let d = new Date(from); d <= new Date(to); d.setDate(d.getDate() + 1)) {
             if (workDays.has(d.toDateString())) {
-                alert("Selected Date Range contains logged work and can not be modified. Please verify.");
+                toast({
+                    variant: 'destructive',
+                    title: 'Logged Work Conflict',
+                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
+                });
                 return;
             }
         }
-        addAbsence({ userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+        if (absenceIdToUpdate) {
+            updateAbsence(absenceIdToUpdate, { userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+        } else {
+            addAbsence({ userId, startDate: from.toISOString(), endDate: to.toISOString(), type });
+        }
         setIsAbsenceDialogOpen(false);
+        setEditingAbsence(null);
+    };
+
+    const handleDayDoubleClick = (date: Date, userId: string) => {
+        const userAbsences = absences.filter(a => a.userId === userId);
+        const absence = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
+
+        if (absence) {
+            setEditingAbsence(absence);
+            setIsAbsenceDialogOpen(true);
+        }
     };
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
@@ -124,7 +145,7 @@ export function TeamRoster() {
             const sickLeaveDays = new Set<string>();
             absences.forEach(absence => {
                 if (absence.userId === userId) {
-                    for (let d = new Date(absence.startDate); d <= new Date(absence.endDate); d.setDate(d.getDate() + 1)) {
+                    for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d.setDate(d.getDate() + 1)) {
                         if (isSameMonth(d, selectedDate)) {
                            if (absence.type === 'General Absence') {
                                 generalAbsenceDays.add(d.toDateString());
@@ -141,7 +162,7 @@ export function TeamRoster() {
         return (
             <Calendar
                 month={selectedDate}
-                weekStartsOn={1}
+                onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
                 modifiers={{
                     weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                     publicHoliday: publicHolidays.map(h => new Date(h.date)),
@@ -161,11 +182,12 @@ export function TeamRoster() {
                   cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
                   head_row: "flex",
                   head_cell: "text-muted-foreground rounded-md w-full font-normal text-[10px]",
-                  day: "h-20 w-full p-0",
+                  day: "h-20 w-full p-1",
                   months: "w-full",
                   month: "w-full space-y-0",
                   caption: "hidden"
                 }}
+                weekStartsOn={1}
             />
         );
     };
@@ -179,7 +201,7 @@ export function TeamRoster() {
                         <CardDescription>View your team's roster and mark absences.</CardDescription>
                     </div>
                      <div className="flex gap-2 items-center">
-                        <Button onClick={() => setIsAbsenceDialogOpen(true)}>Update Roster</Button>
+                        <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
                         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by Team" />
@@ -249,6 +271,7 @@ export function TeamRoster() {
                 onSave={handleAbsenceSave}
                 members={visibleMembers}
                 isTeamView={true}
+                absence={editingAbsence}
             />
         </Card>
     );

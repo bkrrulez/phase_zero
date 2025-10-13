@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { User } from '@/lib/types';
+import { User, Absence } from '@/lib/types';
 import { AbsenceType } from '../../contexts/RosterContext';
 
 const absenceSchema = z.object({
@@ -32,13 +32,14 @@ type AbsenceFormValues = z.infer<typeof absenceSchema>;
 interface MarkAbsenceDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (from: Date, to: Date, type: AbsenceType, userId: string) => void;
+  onSave: (from: Date, to: Date, type: AbsenceType, userId: string, absenceId?: string) => void;
   userId?: string;
   members?: User[];
   isTeamView?: boolean;
+  absence?: Absence | null;
 }
 
-export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, members, isTeamView = false }: MarkAbsenceDialogProps) {
+export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, members, isTeamView = false, absence = null }: MarkAbsenceDialogProps) {
   const form = useForm<AbsenceFormValues>({
     resolver: zodResolver(absenceSchema),
     defaultValues: {
@@ -49,24 +50,31 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
   });
 
   const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
-  const [tempDateRange, setTempDateRange] = React.useState<DateRange | undefined>(form.getValues('date'));
   
   React.useEffect(() => {
-    if (!isOpen) {
-        form.reset({
-            userId: isTeamView ? '' : userId,
-            date: { from: new Date(), to: new Date() },
-            type: 'General Absence'
-        });
-        setTempDateRange({ from: new Date(), to: new Date() });
+    if (isOpen) {
+        if (absence) {
+            form.reset({
+                userId: absence.userId,
+                date: { from: new Date(absence.startDate), to: new Date(absence.endDate) },
+                type: absence.type
+            });
+        } else {
+            form.reset({
+                userId: isTeamView ? '' : userId,
+                date: { from: new Date(), to: new Date() },
+                type: 'General Absence'
+            });
+        }
     }
-  }, [isOpen, form, isTeamView, userId]);
+  }, [isOpen, absence, form, isTeamView, userId]);
 
+  const tempDateRange = form.watch('date');
 
   function onSubmit(data: AbsenceFormValues) {
     const targetUserId = isTeamView ? data.userId : userId;
     if (data.date.from && data.date.to && targetUserId) {
-      onSave(data.date.from, data.date.to, data.type, targetUserId);
+      onSave(data.date.from, data.date.to, data.type, targetUserId, absence?.id);
     }
   }
 
@@ -74,7 +82,7 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Mark Absence</DialogTitle>
+          <DialogTitle>{absence ? 'Update' : 'Mark'} Absence</DialogTitle>
           <DialogDescription>
             Select a date range and absence type to mark on the roster.
           </DialogDescription>
@@ -88,7 +96,7 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Member</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!!absence}>
                             <FormControl>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a member" />
@@ -117,10 +125,7 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                         <Button
                           variant={"outline"}
                           className={cn("w-full justify-start text-left font-normal", !field.value?.from && "text-muted-foreground")}
-                           onClick={() => {
-                            setTempDateRange(field.value);
-                            setIsDatePickerOpen(true);
-                          }}
+                           onClick={() => setIsDatePickerOpen(true)}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {field.value?.from ? (
@@ -143,17 +148,9 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                         mode="range"
                         defaultMonth={tempDateRange?.from}
                         selected={tempDateRange}
-                        onSelect={setTempDateRange}
+                        onSelect={field.onChange}
                         numberOfMonths={2}
                       />
-                       <div className="p-2 border-t flex justify-end">
-                            <Button size="sm" onClick={() => {
-                                if (tempDateRange?.from && tempDateRange?.to) {
-                                    field.onChange(tempDateRange);
-                                }
-                                setIsDatePickerOpen(false);
-                            }}>Ok</Button>
-                        </div>
                     </PopoverContent>
                   </Popover>
                   <FormMessage />

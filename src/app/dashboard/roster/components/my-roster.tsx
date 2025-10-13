@@ -10,8 +10,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, isSameDay, getMonth, getYear, min, max } from 'date-fns';
+import { isSameMonth, getDay, isSameDay, getMonth, getYear, min, max, isWithinInterval, parseISO } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
+import type { Absence } from '@/lib/types';
+import { toast } from '@/hooks/use-toast';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -21,11 +23,12 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
-    const { publicHolidays } = useHolidays();
-    const { absences, addAbsence } = useRoster();
+    const { publicHolidays, customHolidays } = useHolidays();
+    const { absences, addAbsence, updateAbsence } = useRoster();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
     const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = React.useState(false);
+    const [editingAbsence, setEditingAbsence] = React.useState<Absence | null>(null);
 
     const { availableYears, minContractDate, maxContractDate } = React.useMemo(() => {
         if (!currentUser || !currentUser.contracts || currentUser.contracts.length === 0) {
@@ -60,7 +63,7 @@ export function MyRoster() {
         const sickLeaveDays = new Set<string>();
         absences.forEach(absence => {
             if (absence.userId === currentUser.id) {
-                for (let d = new Date(absence.startDate); d <= new Date(absence.endDate); d.setDate(d.getDate() + 1)) {
+                 for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d.setDate(d.getDate() + 1)) {
                     if (isSameMonth(d, selectedDate)) {
                         if (absence.type === 'General Absence') {
                             generalAbsenceDays.add(d.toDateString());
@@ -73,7 +76,7 @@ export function MyRoster() {
         });
 
         return { workDays, generalAbsenceDays, sickLeaveDays };
-    }, [timeEntries, absences, selectedDate, currentUser]);
+    }, [timeEntries, absences, selectedDate, currentUser.id]);
 
     const handleMonthChange = (month: string) => {
         setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(month), 1));
@@ -83,16 +86,37 @@ export function MyRoster() {
         setSelectedDate(new Date(parseInt(year), selectedDate.getMonth(), 1));
     };
 
-    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType) => {
+    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, absenceIdToUpdate?: string) => {
         // Validation check
         for (let d = new Date(from); d <= new Date(to); d.setDate(d.getDate() + 1)) {
             if (calendarData.workDays.has(d.toDateString())) {
-                alert("Selected Date Range contains logged work and can not be modified. Please verify.");
+                 toast({
+                    variant: 'destructive',
+                    title: 'Logged Work Conflict',
+                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
+                });
                 return;
             }
         }
-        addAbsence({ userId: currentUser.id, startDate: from.toISOString(), endDate: to.toISOString(), type });
+        
+        if (absenceIdToUpdate) {
+            updateAbsence(absenceIdToUpdate, { userId: currentUser.id, startDate: from.toISOString(), endDate: to.toISOString(), type });
+        } else {
+            addAbsence({ userId: currentUser.id, startDate: from.toISOString(), endDate: to.toISOString(), type });
+        }
         setIsAbsenceDialogOpen(false);
+        setEditingAbsence(null);
+    };
+
+    const handleDayDoubleClick = (date: Date) => {
+        const clickedDateStr = date.toDateString();
+        const userAbsences = absences.filter(a => a.userId === currentUser.id);
+        const absence = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: parseISO(a.endDate) }));
+
+        if (absence) {
+            setEditingAbsence(absence);
+            setIsAbsenceDialogOpen(true);
+        }
     };
 
     return (
@@ -100,7 +124,7 @@ export function MyRoster() {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>My Roster</CardTitle>
                 <div className="flex gap-2 items-center">
-                    <Button onClick={() => setIsAbsenceDialogOpen(true)}>Mark Absence</Button>
+                    <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Mark Absence</Button>
                     <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select month" />
@@ -127,6 +151,7 @@ export function MyRoster() {
                 <Calendar
                     month={selectedDate}
                     onMonthChange={setSelectedDate}
+                    onDayDoubleClick={handleDayDoubleClick}
                     modifiers={{
                         weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                         publicHoliday: publicHolidays.map(h => new Date(h.date)),
@@ -141,27 +166,17 @@ export function MyRoster() {
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
                     }}
-                    components={{
-                      Day: ({ date }) => {
-                          const isWeekendOrHoliday = getDay(date) === 0 || getDay(date) === 6 || publicHolidays.some(h => isSameDay(new Date(h.date), date));
-                          return (
-                              <div className="relative h-20 w-full flex flex-col justify-between p-1">
-                                  <span className="self-end">{date.getDate()}</span>
-                                  {!isWeekendOrHoliday && <div className="h-8 w-full bg-white dark:bg-card"></div>}
-                              </div>
-                          );
-                      }
-                    }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",
                       cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
                       head_row: "flex",
                       head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
-                      day: "h-24 w-full p-0",
+                      day: "h-24 w-full p-1",
                       months: "w-full",
                       month: "w-full space-y-0",
                       caption_label: "hidden"
                     }}
+                    weekStartsOn={1}
                     fromDate={minContractDate || undefined}
                     toDate={maxContractDate || undefined}
                 />
@@ -171,6 +186,7 @@ export function MyRoster() {
                 onOpenChange={setIsAbsenceDialogOpen}
                 onSave={handleAbsenceSave}
                 userId={currentUser.id}
+                absence={editingAbsence}
             />
         </Card>
     );
