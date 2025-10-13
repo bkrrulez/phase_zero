@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -10,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, isSameDay, getMonth, getYear, min, max, isWithinInterval, parseISO } from 'date-fns';
+import { isSameMonth, getDay, isSameDay, getMonth, getYear, min, max, isWithinInterval, parseISO, addDays } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -23,7 +22,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
-    const { publicHolidays, customHolidays } = useHolidays();
+    const { publicHolidays } = useHolidays();
     const { absences, addAbsence, updateAbsence } = useRoster();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -63,7 +62,7 @@ export function MyRoster() {
         const sickLeaveDays = new Set<string>();
         absences.forEach(absence => {
             if (absence.userId === currentUser.id) {
-                 for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d.setDate(d.getDate() + 1)) {
+                 for (let d = new Date(absence.startDate); d <= new Date(absence.endDate); d.setDate(d.getDate() + 1)) {
                     if (isSameMonth(d, selectedDate)) {
                         if (absence.type === 'General Absence') {
                             generalAbsenceDays.add(d.toDateString());
@@ -86,7 +85,7 @@ export function MyRoster() {
         setSelectedDate(new Date(parseInt(year), selectedDate.getMonth(), 1));
     };
 
-    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, absenceIdToUpdate?: string) => {
+    const handleAbsenceSave = (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
         // Validation check
         for (let d = new Date(from); d <= new Date(to); d.setDate(d.getDate() + 1)) {
             if (calendarData.workDays.has(d.toDateString())) {
@@ -165,6 +164,7 @@ export function MyRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
+                        day_today: ''
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",
@@ -184,7 +184,7 @@ export function MyRoster() {
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}
                 onOpenChange={setIsAbsenceDialogOpen}
-                onSave={handleAbsenceSave}
+                onSave={(from, to, type, userId, absenceId) => handleAbsenceSave(from, to, type, absenceId)}
                 userId={currentUser.id}
                 absence={editingAbsence}
             />

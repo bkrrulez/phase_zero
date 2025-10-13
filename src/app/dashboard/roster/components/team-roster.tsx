@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -12,7 +11,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isSameDay, getYear, isWithinInterval, parseISO } from 'date-fns';
+import { isSameMonth, getDay, isSameDay, getYear, isWithinInterval, parseISO, addDays } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown } from 'lucide-react';
@@ -145,7 +144,7 @@ export function TeamRoster() {
             const sickLeaveDays = new Set<string>();
             absences.forEach(absence => {
                 if (absence.userId === userId) {
-                    for (let d = parseISO(absence.startDate); d <= parseISO(absence.endDate); d.setDate(d.getDate() + 1)) {
+                    for (let d = new Date(absence.startDate); d <= new Date(absence.endDate); d.setDate(d.getDate() + 1)) {
                         if (isSameMonth(d, selectedDate)) {
                            if (absence.type === 'General Absence') {
                                 generalAbsenceDays.add(d.toDateString());
@@ -176,6 +175,7 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
+                    day_today: '',
                 }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",
