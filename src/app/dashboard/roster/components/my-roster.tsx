@@ -198,6 +198,11 @@ export function MyRoster() {
         return content;
     }
 
+    const yearsList = React.useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return availableYears.length > 0 ? availableYears : [currentYear];
+    }, [availableYears]);
+
     return (
         <Card>
             <CardHeader>
@@ -223,7 +228,7 @@ export function MyRoster() {
                                 <SelectValue placeholder="Select year" />
                             </SelectTrigger>
                             <SelectContent>
-                                {availableYears.map(year => (
+                                {yearsList.map(year => (
                                     <SelectItem key={year} value={String(year)}>{year}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -252,17 +257,15 @@ export function MyRoster() {
                             formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                             modifiers={{
                                 today: new Date(),
-                                workDay: Object.keys(calendarData.workDays).map(d => new Date(d)),
-                                generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
-                                sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
-                                publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
+                                workDay: (date) => !!calendarData.workDays[date.toDateString()],
+                                generalAbsence: (date) => calendarData.generalAbsenceDays.has(date.toDateString()),
+                                sickLeave: (date) => calendarData.sickLeaveDays.has(date.toDateString()),
+                                publicHoliday: (date) => publicHolidays.some(h => isSameDay(parseUTCDate(h.date), date)),
                                 weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
                             }}
-                            modifiersStyles={{
-                                weekend: { backgroundColor: '#ffe8cc' },
-                                publicHoliday: { backgroundColor: '#ffe8cc' },
-                            }}
                             modifiersClassNames={{
+                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                                publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
                                 today: 'bg-muted',
                                 workDay: 'bg-sky-200 dark:bg-sky-800',
                                 generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',

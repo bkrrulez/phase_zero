@@ -254,17 +254,15 @@ export function TeamRoster() {
                         formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                         modifiers={{
                             today: new Date(),
-                            workDay: Object.keys(workDays).map(d => new Date(d)),
-                            generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
-                            sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
-                            publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
+                            workDay: (date) => !!workDays[date.toDateString()],
+                            generalAbsence: (date) => generalAbsenceDays.has(date.toDateString()),
+                            sickLeave: (date) => sickLeaveDays.has(date.toDateString()),
+                            publicHoliday: (date) => publicHolidays.some(h => isSameDay(parseUTCDate(h.date), date)),
                             weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
                         }}
-                        modifiersStyles={{
-                            weekend: { backgroundColor: '#ffe8cc' },
-                            publicHoliday: { backgroundColor: '#ffe8cc' },
-                        }}
-                         modifiersClassNames={{
+                        modifiersClassNames={{
+                            weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                            publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
                             today: 'bg-muted',
                             workDay: 'bg-sky-200 dark:bg-sky-800',
                             generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
