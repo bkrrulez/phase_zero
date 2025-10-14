@@ -196,7 +196,6 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
-                    day_today: 'day-today'
                 }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",
@@ -204,6 +203,7 @@ export function TeamRoster() {
                   head_row: "flex",
                   head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
                   day: "h-20 w-full p-1",
+                  day_today: "bg-muted text-muted-foreground",
                   months: "w-full",
                   month: "w-full space-y-0",
                   caption: "hidden"
