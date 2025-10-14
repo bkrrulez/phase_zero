@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -11,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, DayPicker } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown } from 'lucide-react';
@@ -240,17 +241,17 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
-                    day_today: 'bg-muted text-muted-foreground',
                 }}
                 classNames={{
-                  row: "flex w-full mt-0 border-t",
-                  cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
-                  head_row: "flex",
-                  head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
-                  day: "h-20 w-full p-1",
-                  months: "w-full",
-                  month: "w-full space-y-0",
-                  caption: "hidden"
+                    day_today: 'bg-muted text-muted-foreground',
+                    row: "flex w-full mt-0 border-t",
+                    cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
+                    head_row: "flex",
+                    head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
+                    day: "h-20 w-full p-1",
+                    months: "w-full",
+                    month: "w-full space-y-0",
+                    caption: "hidden"
                 }}
                 weekStartsOn={1}
                 components={{ Day }}
@@ -341,5 +342,4 @@ export function TeamRoster() {
             />
         </Card>
     );
-
-    
+}
