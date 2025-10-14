@@ -234,7 +234,7 @@ export function TeamRoster() {
         }
         
         return (
-            <div className="border rounded-lg relative">
+             <div className="border rounded-lg p-4 relative">
                 <Button variant="outline" size="icon" onClick={handlePrevMonth} className="absolute top-1/2 -translate-y-1/2 -left-4 rounded-full z-10 bg-background hover:bg-muted">
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -257,8 +257,8 @@ export function TeamRoster() {
                         day_today: 'bg-muted text-muted-foreground',
                     }}
                     classNames={{
-                        row: "flex w-full mt-0",
-                        cell: "flex-1 text-center text-sm p-0 m-0 border relative min-h-[3rem]",
+                        row: "flex w-full mt-0 border-t",
+                        cell: "flex-1 text-center text-sm p-0 m-0 border-t-0 border-b-0 border-l-0 border-r border-border last:border-r-0 min-h-[3rem]",
                         head_row: "flex border-b",
                         head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs p-2",
                         day: "h-full w-full p-1",
@@ -289,14 +289,6 @@ export function TeamRoster() {
                     </div>
                      <div className="flex gap-2 items-center">
                         <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
-                        <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
-                            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
-                            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                        </Select>
                         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by Team" />
@@ -305,6 +297,14 @@ export function TeamRoster() {
                                 <SelectItem value="all">All Teams</SelectItem>
                                 {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
                             </SelectContent>
+                        </Select>
+                        <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
+                            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
+                            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                 </div>
