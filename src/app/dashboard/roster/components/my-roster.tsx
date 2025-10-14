@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -231,53 +232,55 @@ export function MyRoster() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="border rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-4 px-2">
-                        <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted">
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <h3 className="text-center font-bold text-xl">
-                            {format(selectedDate, 'MMMM yyyy')}
-                        </h3>
-                        <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted">
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                <div className="border rounded-lg">
+                    <div className="p-3">
+                        <div className="flex justify-between items-center mb-4 px-2">
+                            <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted">
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <h3 className="text-center font-bold text-xl">
+                                {format(selectedDate, 'MMMM yyyy')}
+                            </h3>
+                            <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted">
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <Calendar
+                            month={selectedDate}
+                            onMonthChange={setSelectedDate}
+                            onDayDoubleClick={handleDayDoubleClick}
+                            formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
+                            modifiers={{
+                                weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
+                                publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
+                                workDay: Object.keys(calendarData.workDays).map(d => new Date(d)),
+                                generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
+                                sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
+                            }}
+                            modifiersClassNames={{
+                                day_today: 'bg-muted',
+                                day_weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                                day_publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
+                                day_workDay: 'bg-sky-200 dark:bg-sky-800',
+                                day_generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
+                                day_sickLeave: 'bg-red-300 dark:bg-red-800',
+                            }}
+                            classNames={{
+                                row: "flex w-full mt-0",
+                                cell: "flex-1 text-center text-sm p-0 m-0 h-[50px] border",
+                                head_row: "flex",
+                                head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
+                                day: "h-full w-full p-1 hover:bg-muted",
+                                months: "w-full",
+                                month: "w-full space-y-0",
+                                caption: "hidden"
+                            }}
+                            weekStartsOn={1}
+                            fromDate={minContractDate || undefined}
+                            toDate={maxContractDate || undefined}
+                            components={{ Day }}
+                        />
                     </div>
-                    <Calendar
-                        month={selectedDate}
-                        onMonthChange={setSelectedDate}
-                        onDayDoubleClick={handleDayDoubleClick}
-                        formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
-                        modifiers={{
-                            weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
-                            publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
-                            workDay: Object.keys(calendarData.workDays).map(d => new Date(d)),
-                            generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
-                            sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
-                        }}
-                        modifiersClassNames={{
-                            day_today: 'bg-muted',
-                            day_weekend: 'bg-orange-100 dark:bg-orange-900/50',
-                            day_publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
-                            day_workDay: 'bg-sky-200 dark:bg-sky-800',
-                            day_generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
-                            day_sickLeave: 'bg-red-300 dark:bg-red-800',
-                        }}
-                        classNames={{
-                            row: "flex w-full mt-0",
-                            cell: "flex-1 text-center text-sm p-0 m-0 min-h-[5rem] border",
-                            head_row: "flex",
-                            head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
-                            day: "h-full w-full p-1",
-                            months: "w-full",
-                            month: "w-full space-y-0",
-                            caption: "hidden"
-                        }}
-                        weekStartsOn={1}
-                        fromDate={minContractDate || undefined}
-                        toDate={maxContractDate || undefined}
-                        components={{ Day }}
-                    />
                 </div>
             </CardContent>
             <MarkAbsenceDialog
