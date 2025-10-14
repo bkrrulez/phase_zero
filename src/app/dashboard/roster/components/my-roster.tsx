@@ -204,34 +204,33 @@ export function MyRoster() {
                 <CardTitle>My Roster</CardTitle>
                 <div className="flex gap-2 items-center">
                     <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
+                    <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {months.map(month => (
+                                <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="Select year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableYears.map(year => (
+                                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="border rounded-lg">
-                    <div className="flex justify-end gap-2 items-center p-4">
-                        <Button variant="outline" size="icon" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
-                        <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select month" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {months.map(month => (
-                                    <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Select year" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableYears.map(year => (
-                                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button variant="outline" size="icon" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
-                    </div>
+                <div className="border rounded-lg p-4 relative">
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth} className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 rounded-full z-10 bg-background hover:bg-muted">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
                     <Calendar
                         month={selectedDate}
                         onMonthChange={setSelectedDate}
@@ -266,6 +265,9 @@ export function MyRoster() {
                         toDate={maxContractDate || undefined}
                         components={{ Day }}
                     />
+                    <Button variant="outline" size="icon" onClick={handleNextMonth} className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 rounded-full z-10 bg-background hover:bg-muted">
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
                     <div className="text-center p-2 border-t font-medium text-muted-foreground text-sm">
                         {format(selectedDate, 'MMMM yyyy')}
                     </div>
