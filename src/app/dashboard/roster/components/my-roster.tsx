@@ -10,11 +10,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, parseISO } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
-import { parseISO } from 'date-fns';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -23,9 +22,8 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 const parseUTCDate = (dateString: string) => {
     const date = parseISO(dateString);
-    return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 };
-
 
 export function MyRoster() {
     const { currentUser } = useAuth();
@@ -191,7 +189,7 @@ export function MyRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
-                        day_today: 'bg-muted',
+                        day_today: 'day-today',
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",

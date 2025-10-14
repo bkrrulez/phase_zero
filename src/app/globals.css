@@ -99,3 +99,12 @@
 .ReactCrop__crop-selection {
   border: 2px dashed hsl(var(--primary));
 }
+
+@layer utilities {
+  .day-today {
+    background-color: #d3d3d3; /* light gray */
+  }
+  .dark .day-today {
+    background-color: #4a4a4a; /* A darker gray for dark mode */
+  }
+}
