@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -234,19 +233,19 @@ export function TeamRoster() {
         }
         
         return (
-             <div className="relative p-4">
-                <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between items-center px-8 pointer-events-none">
-                    <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted pointer-events-auto">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted pointer-events-auto">
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
+            <div className="p-4">
                 <div className="border rounded-lg p-3">
-                     <h3 className="text-center font-bold text-xl mb-4">
-                        {format(selectedDate, 'MMMM yyyy')}
-                    </h3>
+                    <div className="flex justify-between items-center mb-4 px-2">
+                        <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted">
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <h3 className="text-center font-bold text-xl">
+                            {format(selectedDate, 'MMMM yyyy')}
+                        </h3>
+                        <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted">
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                     <Calendar
                         month={selectedDate}
                         onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
@@ -268,7 +267,7 @@ export function TeamRoster() {
                         }}
                         classNames={{
                             row: "flex w-full mt-0",
-                            cell: "flex-1 text-center text-sm p-0 m-0 min-h-[3rem] border",
+                            cell: "flex-1 text-center text-sm p-0 m-0 min-h-[5rem] border",
                             head_row: "flex",
                             head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
                             day: "h-full w-full p-1",
@@ -279,7 +278,6 @@ export function TeamRoster() {
                         weekStartsOn={1}
                         components={{ Day }}
                     />
-                    <div className="text-center text-sm text-muted-foreground mt-2">{format(selectedDate, 'MMMM yyyy')}</div>
                 </div>
             </div>
         );
