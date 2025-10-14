@@ -269,10 +269,10 @@ export function TeamRoster() {
                         }}
                         classNames={{
                             row: "flex w-full mt-0",
-                            cell: "flex-1 text-center text-sm p-0 m-0 border",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border h-[50px]",
                             head_row: "flex",
                             head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
-                            day: "h-full w-full p-1 hover:bg-muted h-[50px]",
+                            day: "h-full w-full p-1 hover:bg-muted",
                             months: "w-full",
                             month: "w-full space-y-0",
                             caption: "hidden"
