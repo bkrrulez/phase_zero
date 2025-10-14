@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -24,7 +23,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
-});
+}));
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
@@ -208,7 +207,7 @@ export function TeamRoster() {
                 tooltipContent = 'Saturday';
             }
     
-            const content = <button type="button" style={{ height: '100%', width: '100%'}}>{format(props.date, 'd')}</button>;
+            const content = <button type="button" className="w-full h-full p-0 m-0">{format(props.date, 'd')}</button>;
 
             if (tooltipContent) {
                 return (
@@ -241,9 +240,9 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
+                    day_today: 'bg-muted text-muted-foreground',
                 }}
                 classNames={{
-                  day_today: 'bg-muted text-muted-foreground',
                   row: "flex w-full mt-0 border-t",
                   cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
                   head_row: "flex",
@@ -342,4 +341,5 @@ export function TeamRoster() {
             />
         </Card>
     );
-}
+
+    
