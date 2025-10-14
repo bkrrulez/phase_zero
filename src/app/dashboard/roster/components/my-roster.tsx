@@ -173,7 +173,9 @@ export function MyRoster() {
             tooltipContent = 'Saturday';
         }
 
-        const content = <DayPicker.Day {...props} />;
+        const DefaultDay = DayPicker.defaultProps.components?.Day;
+        if (!DefaultDay) return <></>;
+        const content = <DefaultDay {...props} />;
         
         if (tooltipContent) {
             return (
