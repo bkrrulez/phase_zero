@@ -234,47 +234,49 @@ export function TeamRoster() {
         }
         
         return (
-             <div className="border rounded-lg p-4 relative">
-                <Button variant="outline" size="icon" onClick={handlePrevMonth} className="absolute top-1/2 -translate-y-1/2 -left-4 rounded-full z-10 bg-background hover:bg-muted">
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Calendar
-                    month={selectedDate}
-                    onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
-                    formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
-                    modifiers={{
-                        weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
-                        publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
-                        workDay: Object.keys(workDays).map(d => new Date(d)),
-                        generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
-                        sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
-                    }}
-                    modifiersClassNames={{
-                        weekend: 'bg-orange-100 dark:bg-orange-900/50',
-                        publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
-                        workDay: 'bg-sky-200 dark:bg-sky-800',
-                        generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
-                        sickLeave: 'bg-red-300 dark:bg-red-800',
-                        today: 'day-today',
-                    }}
-                    classNames={{
-                        row: "flex w-full mt-0 border-t",
-                        cell: "flex-1 text-center text-sm p-0 m-0 border-r min-h-[3rem]",
-                        head_row: "flex border-b",
-                        head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2",
-                        day: "h-full w-full p-1",
-                        months: "w-full",
-                        month: "w-full space-y-0",
-                        caption: "hidden"
-                    }}
-                    weekStartsOn={1}
-                    components={{ Day }}
-                />
-                 <Button variant="outline" size="icon" onClick={handleNextMonth} className="absolute top-1/2 -translate-y-1/2 -right-4 rounded-full z-10 bg-background hover:bg-muted">
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-                <div className="text-center p-2 border-t font-medium text-muted-foreground text-sm">
-                    {format(selectedDate, 'MMMM yyyy')}
+             <div className="relative">
+                <div className="flex justify-between items-center mb-4 px-2">
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <h3 className="text-center font-medium text-lg">
+                        {format(selectedDate, 'MMMM yyyy')}
+                    </h3>
+                    <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted">
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+                <div className="border rounded-lg">
+                    <Calendar
+                        month={selectedDate}
+                        onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
+                        formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
+                        modifiers={{
+                            weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
+                            publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
+                            workDay: Object.keys(workDays).map(d => new Date(d)),
+                            generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
+                            sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
+                        }}
+                        classNames={{
+                            day_today: "day-today",
+                            day_weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                            day_publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
+                            day_workDay: 'bg-sky-200 dark:bg-sky-800',
+                            day_generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
+                            day_sickLeave: 'bg-red-300 dark:bg-red-800',
+                            row: "flex w-full mt-0 border-t first:border-t-0",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 min-h-[3rem]",
+                            head_row: "flex border-b",
+                            head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2",
+                            day: "h-full w-full p-1",
+                            months: "w-full",
+                            month: "w-full space-y-0",
+                            caption: "hidden"
+                        }}
+                        weekStartsOn={1}
+                        components={{ Day }}
+                    />
                 </div>
             </div>
         );
