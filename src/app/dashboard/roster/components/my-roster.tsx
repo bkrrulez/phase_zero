@@ -256,7 +256,6 @@ export function MyRoster() {
                                 generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
                                 sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
                                 publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
-                                weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                             }}
                             modifiersClassNames={{
                                 today: 'bg-muted',
@@ -264,7 +263,8 @@ export function MyRoster() {
                                 generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                                 sickLeave: 'bg-red-300 dark:bg-red-800',
                                 publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
-                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                                saturday: 'bg-orange-100 dark:bg-orange-900/50',
+                                sunday: 'bg-orange-100 dark:bg-orange-900/50',
                             }}
                             classNames={{
                                 row: "flex w-full mt-0",
