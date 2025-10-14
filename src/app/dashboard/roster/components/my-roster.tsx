@@ -228,13 +228,14 @@ export function MyRoster() {
             </CardHeader>
             <CardContent>
                 <div className="border rounded-lg p-4 relative">
-                    <Button variant="outline" size="icon" onClick={handlePrevMonth} className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 rounded-full z-10 bg-background hover:bg-muted">
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth} className="absolute top-1/2 -translate-y-1/2 -left-4 rounded-full z-10 bg-background hover:bg-muted">
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <Calendar
                         month={selectedDate}
                         onMonthChange={setSelectedDate}
                         onDayDoubleClick={handleDayDoubleClick}
+                        formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                         modifiers={{
                             weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                             publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
@@ -251,10 +252,10 @@ export function MyRoster() {
                             day_today: 'bg-muted text-muted-foreground',
                         }}
                         classNames={{
-                            row: "flex w-full mt-0",
-                            cell: "flex-1 text-center text-sm p-0 m-0 border relative min-h-[3rem]",
+                            row: "flex w-full mt-0 border-l",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border-t border-r relative min-h-[3rem]",
                             head_row: "flex border-b",
-                            head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs p-2",
+                            head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2",
                             day: "h-full w-full p-1",
                             months: "w-full",
                             month: "w-full space-y-0",
@@ -265,7 +266,7 @@ export function MyRoster() {
                         toDate={maxContractDate || undefined}
                         components={{ Day }}
                     />
-                    <Button variant="outline" size="icon" onClick={handleNextMonth} className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 rounded-full z-10 bg-background hover:bg-muted">
+                    <Button variant="outline" size="icon" onClick={handleNextMonth} className="absolute top-1/2 -translate-y-1/2 -right-4 rounded-full z-10 bg-background hover:bg-muted">
                         <ChevronRight className="h-4 w-4" />
                     </Button>
                     <div className="text-center p-2 border-t font-medium text-muted-foreground text-sm">

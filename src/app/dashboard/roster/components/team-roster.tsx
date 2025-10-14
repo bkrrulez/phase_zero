@@ -241,6 +241,7 @@ export function TeamRoster() {
                 <Calendar
                     month={selectedDate}
                     onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
+                    formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                     modifiers={{
                         weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                         publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
@@ -257,10 +258,10 @@ export function TeamRoster() {
                         day_today: 'bg-muted text-muted-foreground',
                     }}
                     classNames={{
-                        row: "flex w-full mt-0 border-t",
-                        cell: "flex-1 text-center text-sm p-0 m-0 border-t-0 border-b-0 border-l-0 border-r border-border last:border-r-0 min-h-[3rem]",
+                        row: "flex w-full mt-0 border-l",
+                        cell: "flex-1 text-center text-sm p-0 m-0 border-t border-r relative min-h-[3rem]",
                         head_row: "flex border-b",
-                        head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs p-2",
+                        head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2",
                         day: "h-full w-full p-1",
                         months: "w-full",
                         month: "w-full space-y-0",
