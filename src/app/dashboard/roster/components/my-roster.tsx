@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, DayPicker } from '@/components/ui/calendar';
+import { Calendar } from '@/components/ui/calendar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
@@ -172,7 +172,7 @@ export function MyRoster() {
             tooltipContent = 'Saturday';
         }
         
-        const content = <button type="button" className="w-full h-full p-0 m-0">{format(props.date, 'd')}</button>;
+        const content = <button type="button" className="w-full h-full p-0 m-0 flex items-center justify-center">{format(props.date, 'd')}</button>;
 
         if (tooltipContent) {
             return (
@@ -217,40 +217,45 @@ export function MyRoster() {
                 </div>
             </CardHeader>
             <CardContent>
-                <Calendar
-                    month={selectedDate}
-                    onMonthChange={setSelectedDate}
-                    onDayDoubleClick={handleDayDoubleClick}
-                    modifiers={{
-                        weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
-                        publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
-                        workDay: Object.keys(calendarData.workDays).map(d => new Date(d)),
-                        generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
-                        sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
-                    }}
-                    modifiersClassNames={{
-                        weekend: 'bg-orange-100 dark:bg-orange-900/50',
-                        publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
-                        workDay: 'bg-sky-200 dark:bg-sky-800',
-                        generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
-                        sickLeave: 'bg-red-300 dark:bg-red-800',
-                        day_today: 'bg-muted text-muted-foreground',
-                    }}
-                    classNames={{
-                      row: "flex w-full mt-0 border-t",
-                      cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative min-h-[3rem]",
-                      head_row: "flex",
-                      head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
-                      day: "h-full w-full p-1",
-                      months: "w-full",
-                      month: "w-full space-y-0",
-                      caption_label: "hidden"
-                    }}
-                    weekStartsOn={1}
-                    fromDate={minContractDate || undefined}
-                    toDate={maxContractDate || undefined}
-                    components={{ Day }}
-                />
+                <div className="border rounded-lg">
+                    <Calendar
+                        month={selectedDate}
+                        onMonthChange={setSelectedDate}
+                        onDayDoubleClick={handleDayDoubleClick}
+                        modifiers={{
+                            weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
+                            publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
+                            workDay: Object.keys(calendarData.workDays).map(d => new Date(d)),
+                            generalAbsence: Array.from(calendarData.generalAbsenceDays).map(d => new Date(d)),
+                            sickLeave: Array.from(calendarData.sickLeaveDays).map(d => new Date(d)),
+                        }}
+                        modifiersClassNames={{
+                            weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                            publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
+                            workDay: 'bg-sky-200 dark:bg-sky-800',
+                            generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
+                            sickLeave: 'bg-red-300 dark:bg-red-800',
+                            day_today: 'bg-muted text-muted-foreground',
+                        }}
+                        classNames={{
+                            row: "flex w-full mt-0 border-t",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border-l relative min-h-[3rem]",
+                            head_row: "flex",
+                            head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs p-2 border-b",
+                            day: "h-full w-full p-1",
+                            months: "w-full",
+                            month: "w-full space-y-0",
+                            caption: "hidden"
+                        }}
+                        weekStartsOn={1}
+                        fromDate={minContractDate || undefined}
+                        toDate={maxContractDate || undefined}
+                        components={{ Day }}
+                    />
+                    <div className="text-center p-2 border-t font-medium text-muted-foreground text-sm">
+                        {format(selectedDate, 'MMMM yyyy')}
+                    </div>
+                </div>
             </CardContent>
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}
