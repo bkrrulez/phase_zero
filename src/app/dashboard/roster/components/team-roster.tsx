@@ -283,29 +283,31 @@ export function TeamRoster() {
                     </div>
                      <div className="flex gap-2 items-center">
                         <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
-                        <Button variant="outline" size="icon" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
-                        <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
-                            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
-                            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Button variant="outline" size="icon" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
-                         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by Team" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Teams</SelectItem>
-                                {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
+                <div className="flex justify-end gap-2 items-center mb-4">
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
+                    <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
+                        <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
+                        <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button variant="outline" size="icon" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
+                    <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Filter by Team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Teams</SelectItem>
+                            {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <Table>
                     <TableHeader>
                         <TableRow>
