@@ -20,6 +20,7 @@ import { MarkAbsenceDialog } from './mark-absence-dialog';
 import { User, Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -268,10 +269,10 @@ export function TeamRoster() {
                         }}
                         classNames={{
                             row: "flex w-full mt-0",
-                            cell: "flex-1 text-center text-sm p-0 m-0 h-[50px] border",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border",
                             head_row: "flex",
                             head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
-                            day: "h-full w-full p-1 hover:bg-muted",
+                            day: "h-full w-full p-1 hover:bg-muted h-[50px]",
                             months: "w-full",
                             month: "w-full space-y-0",
                             caption: "hidden"
@@ -346,7 +347,7 @@ export function TeamRoster() {
                                     <TableCell>{teams.find(t => t.id === member.teamId)?.name || 'N/A'}</TableCell>
                                 </TableRow>
                                 {expandedUser === member.id && (
-                                    <TableRow>
+                                    <TableRow className="hover:bg-transparent">
                                         <TableCell colSpan={3}>
                                             <RosterCalendar userId={member.id} />
                                         </TableCell>
