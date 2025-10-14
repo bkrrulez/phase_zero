@@ -150,7 +150,7 @@ export function MyRoster() {
             <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>My Roster</CardTitle>
                 <div className="flex gap-2 items-center">
-                    <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Mark Absence</Button>
+                    <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
                     <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select month" />
@@ -191,7 +191,7 @@ export function MyRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
-                        day_today: 'bg-transparent text-foreground ring-1 ring-primary',
+                        day_today: 'bg-muted',
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",

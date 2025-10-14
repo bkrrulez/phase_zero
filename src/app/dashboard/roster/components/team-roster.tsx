@@ -197,7 +197,7 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
-                    day_today: 'bg-transparent text-foreground ring-1 ring-primary'
+                    day_today: 'bg-muted'
                 }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",
