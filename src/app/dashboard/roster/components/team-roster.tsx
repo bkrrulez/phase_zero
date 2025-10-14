@@ -15,7 +15,7 @@ import { useTeams } from '../../contexts/TeamsContext';
 import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import { User, Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -151,6 +151,15 @@ export function TeamRoster() {
             setIsAbsenceDialogOpen(true);
         }
     };
+    
+    const handlePrevMonth = () => {
+        setSelectedDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setSelectedDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
+    };
+
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
         const { workDays, generalAbsenceDays, sickLeaveDays } = React.useMemo(() => {
@@ -274,15 +283,7 @@ export function TeamRoster() {
                     </div>
                      <div className="flex gap-2 items-center">
                         <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
-                        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by Team" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Teams</SelectItem>
-                                {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
+                        <Button variant="outline" size="icon" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
                         <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
                             <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
                             <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
@@ -290,6 +291,16 @@ export function TeamRoster() {
                         <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
                             <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
                             <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Button variant="outline" size="icon" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
+                         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filter by Team" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Teams</SelectItem>
+                                {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                            </SelectContent>
                         </Select>
                     </div>
                 </div>

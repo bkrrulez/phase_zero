@@ -15,6 +15,7 @@ import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -98,6 +99,15 @@ export function MyRoster() {
     const handleYearChange = (year: string) => {
         setSelectedDate(new Date(parseInt(year), selectedDate.getMonth(), 1));
     };
+    
+    const handlePrevMonth = () => {
+        setSelectedDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setSelectedDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
+    };
+
 
     const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
         const workDaysInPeriod = new Set<string>();
@@ -194,6 +204,7 @@ export function MyRoster() {
                 <CardTitle>My Roster</CardTitle>
                 <div className="flex gap-2 items-center">
                     <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
+                    <Button variant="outline" size="icon" onClick={handlePrevMonth}><ChevronLeft className="h-4 w-4" /></Button>
                     <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select month" />
@@ -214,6 +225,7 @@ export function MyRoster() {
                             ))}
                         </SelectContent>
                     </Select>
+                    <Button variant="outline" size="icon" onClick={handleNextMonth}><ChevronRight className="h-4 w-4" /></Button>
                 </div>
             </CardHeader>
             <CardContent>
