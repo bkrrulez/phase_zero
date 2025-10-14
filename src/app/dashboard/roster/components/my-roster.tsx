@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayPicker, DayProps } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -238,10 +238,10 @@ export function MyRoster() {
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",
-                      cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
+                      cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative min-h-[5rem]",
                       head_row: "flex",
                       head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
-                      day: "h-20 w-full p-1",
+                      day: "h-full w-full p-1",
                       months: "w-full",
                       month: "w-full space-y-0",
                       caption_label: "hidden"
