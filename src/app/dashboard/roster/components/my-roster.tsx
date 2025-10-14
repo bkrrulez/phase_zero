@@ -172,8 +172,8 @@ export function MyRoster() {
             tooltipContent = 'Saturday';
         }
         
-        const content = <button type="button" style={{ height: '100%', width: '100%'}}>{format(props.date, 'd')}</button>;
-        
+        const content = <button type="button" className="w-full h-full p-0 m-0">{format(props.date, 'd')}</button>;
+
         if (tooltipContent) {
             return (
                 <TooltipProvider delayDuration={0}>
@@ -234,9 +234,9 @@ export function MyRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
+                        day_today: 'bg-muted text-muted-foreground',
                     }}
                     classNames={{
-                      day_today: 'bg-muted text-muted-foreground',
                       row: "flex w-full mt-0 border-t",
                       cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
                       head_row: "flex",
