@@ -241,7 +241,7 @@ export function MyRoster() {
                       cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative",
                       head_row: "flex",
                       head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
-                      day: "h-24 w-full p-1",
+                      day: "h-20 w-full p-1",
                       months: "w-full",
                       month: "w-full space-y-0",
                       caption_label: "hidden"
