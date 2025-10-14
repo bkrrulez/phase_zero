@@ -102,9 +102,9 @@
 
 @layer utilities {
   .day-today {
-    background-color: #d3d3d3; /* light gray */
+    background-color: hsl(var(--muted));
   }
   .dark .day-today {
-    background-color: #4a4a4a; /* A darker gray for dark mode */
+    background-color: hsl(var(--muted));
   }
 }

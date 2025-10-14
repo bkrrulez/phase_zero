@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
@@ -200,30 +200,35 @@ export function MyRoster() {
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>My Roster</CardTitle>
-                <div className="flex gap-2 items-center">
-                    <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
-                    <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select month" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {months.map(month => (
-                                <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
-                        <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="Select year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableYears.map(year => (
-                                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <CardTitle>My Roster</CardTitle>
+                        <CardDescription>A monthly overview of your logged time and absences.</CardDescription>
+                    </div>
+                     <div className="flex gap-2 items-center">
+                        <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
+                        <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {months.map(month => (
+                                    <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
+                            <SelectTrigger className="w-[120px]">
+                                <SelectValue placeholder="Select year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableYears.map(year => (
+                                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -249,11 +254,11 @@ export function MyRoster() {
                             workDay: 'bg-sky-200 dark:bg-sky-800',
                             generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                             sickLeave: 'bg-red-300 dark:bg-red-800',
-                            day_today: 'bg-muted text-muted-foreground',
+                            today: 'day-today',
                         }}
                         classNames={{
-                            row: "flex w-full mt-0 border-l",
-                            cell: "flex-1 text-center text-sm p-0 m-0 border-t border-r relative min-h-[3rem]",
+                            row: "flex w-full mt-0 border-t",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border-r min-h-[3rem]",
                             head_row: "flex border-b",
                             head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2",
                             day: "h-full w-full p-1",

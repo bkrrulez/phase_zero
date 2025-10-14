@@ -255,11 +255,11 @@ export function TeamRoster() {
                         workDay: 'bg-sky-200 dark:bg-sky-800',
                         generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                         sickLeave: 'bg-red-300 dark:bg-red-800',
-                        day_today: 'bg-muted text-muted-foreground',
+                        today: 'day-today',
                     }}
                     classNames={{
-                        row: "flex w-full mt-0 border-l",
-                        cell: "flex-1 text-center text-sm p-0 m-0 border-t border-r relative min-h-[3rem]",
+                        row: "flex w-full mt-0 border-t",
+                        cell: "flex-1 text-center text-sm p-0 m-0 border-r min-h-[3rem]",
                         head_row: "flex border-b",
                         head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2",
                         day: "h-full w-full p-1",
@@ -290,7 +290,7 @@ export function TeamRoster() {
                     </div>
                      <div className="flex gap-2 items-center">
                         <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
-                        <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="Filter by Team" />
                             </SelectTrigger>
