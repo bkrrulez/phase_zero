@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
+import { Calendar, DayPicker } from '@/components/ui/calendar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
@@ -238,7 +238,7 @@ export function MyRoster() {
                     }}
                     classNames={{
                       row: "flex w-full mt-0 border-t",
-                      cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative min-h-[5rem]",
+                      cell: "flex-1 text-center text-sm p-0 m-0 border-r last:border-r-0 relative min-h-[3rem]",
                       head_row: "flex",
                       head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
                       day: "h-full w-full p-1",
