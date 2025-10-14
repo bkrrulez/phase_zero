@@ -12,13 +12,14 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, parseISO } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, DayPicker } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown } from 'lucide-react';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import { User, Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -29,8 +30,9 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 type SortableColumn = 'name' | 'email' | 'team';
 
 const parseUTCDate = (dateString: string) => {
-    const date = parseISO(dateString);
-    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    if (!dateString) return new Date();
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
 };
 
 export function TeamRoster() {
@@ -38,7 +40,7 @@ export function TeamRoster() {
     const { teamMembers } = useMembers();
     const { timeEntries } = useTimeTracking();
     const { publicHolidays } = useHolidays();
-    const { absences, addAbsence, updateAbsence } = useRoster();
+    const { absences, addAbsence, updateAbsence, fetchRosterData } = useRoster();
     const { teams } = useTeams();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -111,7 +113,7 @@ export function TeamRoster() {
             }
         });
         
-        if (workDaysInPeriod.size > 0) {
+        if (workDaysInPeriod.size > 0 && absenceIdToUpdate === undefined) {
             toast({
                 variant: 'destructive',
                 title: 'Logged Work Conflict',
@@ -136,6 +138,7 @@ export function TeamRoster() {
         } else {
             await addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
         }
+        await fetchRosterData();
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
     };
@@ -152,10 +155,14 @@ export function TeamRoster() {
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
         const { workDays, generalAbsenceDays, sickLeaveDays } = React.useMemo(() => {
-            const workDays = new Set<string>();
+            const workDays: Record<string, number> = {};
             timeEntries.forEach(entry => {
                 if (entry.userId === userId && isSameMonth(parseUTCDate(entry.date), selectedDate)) {
-                    workDays.add(parseUTCDate(entry.date).toDateString());
+                    const dateKey = parseUTCDate(entry.date).toDateString();
+                    if (!workDays[dateKey]) {
+                        workDays[dateKey] = 0;
+                    }
+                    workDays[dateKey] += entry.duration;
                 }
             });
 
@@ -178,6 +185,45 @@ export function TeamRoster() {
             });
             return { workDays, generalAbsenceDays, sickLeaveDays };
         }, [userId, selectedDate]);
+
+        function Day(props: DayProps) {
+            const dayString = props.date.toDateString();
+            const dayOfWeek = getDay(props.date);
+            
+            const publicHoliday = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date));
+            const hoursLogged = workDays[dayString];
+            
+            let tooltipContent: React.ReactNode = null;
+            
+            if (hoursLogged > 0) {
+                tooltipContent = `${hoursLogged.toFixed(2)}h Logged`;
+            } else if (sickLeaveDays.has(dayString)) {
+                tooltipContent = 'Sick Leave';
+            } else if (generalAbsenceDays.has(dayString)) {
+                tooltipContent = 'General Absence';
+            } else if (publicHoliday) {
+                tooltipContent = publicHoliday.name;
+            } else if (dayOfWeek === 0) {
+                tooltipContent = 'Sunday';
+            } else if (dayOfWeek === 6) {
+                tooltipContent = 'Saturday';
+            }
+    
+            const content = <DayPicker.Day {...props} />;
+            
+            if (tooltipContent) {
+                return (
+                    <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>{content}</TooltipTrigger>
+                            <TooltipContent><p>{tooltipContent}</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )
+            }
+            
+            return content;
+        }
         
         return (
             <Calendar
@@ -186,7 +232,7 @@ export function TeamRoster() {
                 modifiers={{
                     weekend: (date) => getDay(date) === 0 || getDay(date) === 6,
                     publicHoliday: publicHolidays.map(h => parseUTCDate(h.date)),
-                    workDay: Array.from(workDays).map(d => new Date(d)),
+                    workDay: Object.keys(workDays).map(d => new Date(d)),
                     generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
                     sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
                 }}
@@ -196,6 +242,7 @@ export function TeamRoster() {
                     workDay: 'bg-sky-200 dark:bg-sky-800',
                     generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                     sickLeave: 'bg-red-300 dark:bg-red-800',
+                    day_today: 'bg-muted text-muted-foreground'
                 }}
                 classNames={{
                   row: "flex w-full mt-0 border-t",
@@ -203,12 +250,12 @@ export function TeamRoster() {
                   head_row: "flex",
                   head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs",
                   day: "h-20 w-full p-1",
-                  day_today: "bg-muted text-muted-foreground",
                   months: "w-full",
                   month: "w-full space-y-0",
                   caption: "hidden"
                 }}
                 weekStartsOn={1}
+                components={{ Day }}
             />
         );
     };
