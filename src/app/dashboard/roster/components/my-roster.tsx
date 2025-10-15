@@ -255,7 +255,7 @@ export function MyRoster() {
                             onMonthChange={setSelectedDate}
                             onDayDoubleClick={handleDayDoubleClick}
                             formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
-                            modifiers={{
+                           modifiers={{
                                 today: new Date(),
                                 workDay: (date) => !!calendarData.workDays[date.toDateString()],
                                 generalAbsence: (date) => calendarData.generalAbsenceDays.has(date.toDateString()) && !calendarData.workDays[date.toDateString()],
@@ -264,12 +264,12 @@ export function MyRoster() {
                                 weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
                             }}
                             modifiersClassNames={{
-                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
-                                publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
                                 today: 'bg-muted',
                                 workDay: 'bg-sky-200 dark:bg-sky-800',
                                 generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
                                 sickLeave: 'bg-red-300 dark:bg-red-800',
+                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                                publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
                             }}
                             classNames={{
                                 row: "flex w-full mt-0",
