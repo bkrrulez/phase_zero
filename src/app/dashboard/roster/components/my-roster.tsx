@@ -16,6 +16,7 @@ import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -136,21 +137,25 @@ export function MyRoster() {
 
     function Day(props: DayProps) {
         let tooltipContent: React.ReactNode = null;
-        
-        if (modifiers.workDay(props.date)) {
-            tooltipContent = 'Work Logged';
-        } else if (modifiers.sickLeave(props.date)) {
-            tooltipContent = 'Sick Leave';
-        } else if (modifiers.generalAbsence(props.date)) {
-            tooltipContent = 'General Absence';
-        } else if (modifiers.publicHoliday(props.date)) {
-            const publicHoliday = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date));
-            tooltipContent = publicHoliday?.name;
-        } else if (modifiers.weekend(props.date)) {
-            tooltipContent = 'Weekend';
+        let dayClassName = "w-full h-full p-0 m-0 flex items-center justify-center";
+
+        if (modifiers.weekend(props.date) || modifiers.publicHoliday(props.date)) {
+            dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
+            tooltipContent = modifiers.weekend(props.date) ? 'Weekend' : publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date))?.name;
         }
         
-        const content = <button type="button" className="w-full h-full p-0 m-0 flex items-center justify-center">{format(props.date, 'd')}</button>;
+        if (modifiers.sickLeave(props.date)) {
+            dayClassName = cn(dayClassName, "bg-red-300 dark:bg-red-800");
+            tooltipContent = 'Sick Leave';
+        } else if (modifiers.generalAbsence(props.date)) {
+            dayClassName = cn(dayClassName, "bg-yellow-200 dark:bg-yellow-800");
+            tooltipContent = 'General Absence';
+        } else if (modifiers.workDay(props.date)) {
+            dayClassName = cn(dayClassName, "bg-sky-200 dark:bg-sky-800");
+            tooltipContent = 'Work Logged';
+        }
+        
+        const content = <button type="button" className={dayClassName}>{format(props.date, 'd')}</button>;
 
         if (tooltipContent) {
             return (
@@ -223,13 +228,7 @@ export function MyRoster() {
                             onMonthChange={setSelectedDate}
                             onDayDoubleClick={handleDayDoubleClick}
                             formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
-                           modifiers={modifiers}
                            modifiersClassNames={{
-                                workDay: 'bg-sky-200 dark:bg-sky-800',
-                                generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
-                                sickLeave: 'bg-red-300 dark:bg-red-800',
-                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
-                                publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
                                 today: 'bg-muted'
                            }}
                             classNames={{
