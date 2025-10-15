@@ -30,6 +30,15 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
+const isDateInAbsence = (date: Date, absence: Absence) => {
+    // Normalize all dates to local midnight to avoid timezone issues.
+    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const startDate = new Date(new Date(absence.startDate).getFullYear(), new Date(absence.startDate).getMonth(), new Date(absence.startDate).getDate()).getTime();
+    const endDate = new Date(new Date(absence.endDate).getFullYear(), new Date(absence.endDate).getMonth(), new Date(absence.endDate).getDate()).getTime();
+    
+    return checkDate >= startDate && checkDate <= endDate;
+};
+
 export function TeamRoster() {
     const { currentUser } = useAuth();
     const { teamMembers } = useMembers();
@@ -147,12 +156,6 @@ export function TeamRoster() {
         setEditingAbsence(null);
     };
 
-    const isDateInAbsence = (date: Date, absence: Absence) => {
-        const checkDate = startOfDay(date);
-        const startDate = startOfDay(parseISO(absence.startDate));
-        const endDate = startOfDay(parseISO(absence.endDate));
-        return checkDate >= startDate && checkDate <= endDate;
-    };
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
@@ -355,5 +358,3 @@ export function TeamRoster() {
         </Card>
     );
 }
-
-    

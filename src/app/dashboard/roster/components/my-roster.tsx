@@ -23,6 +23,16 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
 
+const isDateInAbsence = (date: Date, absence: Absence) => {
+    // Normalize all dates to local midnight to avoid timezone issues.
+    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const startDate = new Date(new Date(absence.startDate).getFullYear(), new Date(absence.startDate).getMonth(), new Date(absence.startDate).getDate()).getTime();
+    const endDate = new Date(new Date(absence.endDate).getFullYear(), new Date(absence.endDate).getMonth(), new Date(absence.endDate).getDate()).getTime();
+    
+    return checkDate >= startDate && checkDate <= endDate;
+};
+
+
 export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
@@ -53,13 +63,6 @@ export function MyRoster() {
         }
         return { availableYears: years, minContractDate: minDate, maxContractDate: maxDate };
     }, [currentUser]);
-    
-    const isDateInAbsence = (date: Date, absence: Absence) => {
-        const checkDate = startOfDay(date);
-        const startDate = startOfDay(parseISO(absence.startDate));
-        const endDate = startOfDay(parseISO(absence.endDate));
-        return checkDate >= startDate && checkDate <= endDate;
-    };
 
 
     const modifiers = React.useMemo(() => ({
@@ -285,5 +288,3 @@ export function MyRoster() {
         </Card>
     );
 }
-
-    
