@@ -3,15 +3,16 @@
 
 import * as React from 'react';
 import { type Absence } from "@/lib/types";
-import { addAbsence as addAbsenceAction, updateAbsence as updateAbsenceAction, getAbsences } from '../actions';
+import { addAbsence as addAbsenceAction, updateAbsence as updateAbsenceAction, getAbsences, deleteAbsencesInRange as deleteAbsencesInRangeAction } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 
-export type AbsenceType = 'General Absence' | 'Sick Leave';
+export type AbsenceType = 'General Absence' | 'Sick Leave' | 'Clear Absence';
 
 interface RosterContextType {
   absences: Absence[];
   addAbsence: (absence: Omit<Absence, 'id'>) => Promise<void>;
   updateAbsence: (absenceId: string, absence: Omit<Absence, 'id'>) => Promise<void>;
+  deleteAbsencesInRange: (userId: string, startDate: string, endDate: string) => Promise<void>;
 }
 
 const RosterContext = React.createContext<RosterContextType | undefined>(undefined);
@@ -52,9 +53,19 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not update absence.' });
     }
   };
+  
+  const deleteAbsencesInRange = async (userId: string, startDate: string, endDate: string) => {
+    const deletedCount = await deleteAbsencesInRangeAction(userId, startDate, endDate);
+    if (deletedCount > 0) {
+        await fetchRosterData();
+        toast({ title: 'Absence Cleared', description: `${deletedCount} absence record(s) have been cleared.` });
+    } else {
+        toast({ variant: 'default', title: 'No Absences Found', description: 'No absences were found in the selected range to clear.' });
+    }
+  }
 
   return (
-    <RosterContext.Provider value={{ absences, addAbsence, updateAbsence }}>
+    <RosterContext.Provider value={{ absences, addAbsence, updateAbsence, deleteAbsencesInRange }}>
       {children}
     </RosterContext.Provider>
   );

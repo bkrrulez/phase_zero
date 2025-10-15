@@ -24,7 +24,7 @@ const absenceSchema = z.object({
     from: z.date({ required_error: 'A start date is required.' }),
     to: z.date({ required_error: 'An end date is required.' }),
   }),
-  type: z.enum(['General Absence', 'Sick Leave']),
+  type: z.enum(['General Absence', 'Sick Leave', 'Clear Absence']),
 });
 
 type AbsenceFormValues = z.infer<typeof absenceSchema>;
@@ -187,6 +187,7 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                       <SelectContent>
                         <SelectItem value="General Absence">General Absence</SelectItem>
                         <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                        <SelectItem value="Clear Absence">Clear Absence</SelectItem>
                       </SelectContent>
                     </Select>
                   <FormMessage />

@@ -35,7 +35,7 @@ export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
     const { publicHolidays } = useHolidays();
-    const { absences, addAbsence, updateAbsence } = useRoster();
+    const { absences, addAbsence, updateAbsence, deleteAbsencesInRange } = useRoster();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
     const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = React.useState(false);
@@ -87,6 +87,16 @@ export function MyRoster() {
 
 
     const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
+        const startDateStr = from.toISOString().split('T')[0];
+        const endDateStr = to.toISOString().split('T')[0];
+
+        if (type === 'Clear Absence') {
+            await deleteAbsencesInRange(userId, startDateStr, endDateStr);
+            setIsAbsenceDialogOpen(false);
+            setEditingAbsence(null);
+            return;
+        }
+
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
@@ -118,9 +128,9 @@ export function MyRoster() {
         const idToUpdate = absenceIdToUpdate || existingAbsence?.id;
         
         if (idToUpdate) {
-            await updateAbsence(idToUpdate, { userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
+            await updateAbsence(idToUpdate, { userId, startDate: startDateStr, endDate: endDateStr, type });
         } else {
-            await addAbsence({ userId, startDate: from.toISOString().split('T')[0], endDate: to.toISOString().split('T')[0], type });
+            await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type });
         }
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
