@@ -16,6 +16,7 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  modifiersClassNames,
   ...props
 }: CalendarProps) {
 
@@ -127,6 +128,7 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
+      modifiersClassNames={modifiersClassNames}
       components={{
         Caption: props.captionLayout === 'dropdown-buttons' ? CustomCaption : undefined,
       }}
