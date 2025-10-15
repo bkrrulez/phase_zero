@@ -35,7 +35,8 @@ const parseUTCDate = (dateString: string) => {
     // Handles both 'YYYY-MM-DD' and full ISO strings by splitting at 'T'
     const datePart = dateString.split('T')[0];
     const [year, month, day] = datePart.split('-').map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
+    // Use local time parsing which will correctly represent the date intended by the user
+    return new Date(year, month - 1, day);
 };
 
 export function TeamRoster() {
