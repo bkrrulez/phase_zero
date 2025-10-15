@@ -1144,8 +1144,9 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
     const client = await db.connect();
     try {
       await client.query('BEGIN');
+      // Corrected query to find any overlapping absence
       const overlappingAbsencesRes = await client.query(
-        'SELECT * FROM absences WHERE user_id = $1 AND start_date <= $2 AND end_date >= $3',
+        'SELECT * FROM absences WHERE user_id = $1 AND start_date <= $2 AND end_date >= $1',
         [userId, endDate, startDate]
       );
   
@@ -1469,4 +1470,5 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     
 
     
+
 
