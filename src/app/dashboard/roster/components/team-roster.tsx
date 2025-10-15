@@ -174,10 +174,15 @@ export function TeamRoster() {
         function Day(props: DayProps) {
             let tooltipContent: React.ReactNode = null;
             let dayClassName = "w-full h-full p-0 m-0 flex items-center justify-center";
-
-            if (modifiers.weekend(props.date) || modifiers.publicHoliday(props.date)) {
+            const dayOfWeek = getDay(props.date);
+    
+            if (modifiers.publicHoliday(props.date)) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = modifiers.weekend(props.date) ? 'Weekend' : publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date))?.name;
+                tooltipContent = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date))?.name;
+            } else if (modifiers.weekend(props.date)) {
+                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
+                if (dayOfWeek === 6) tooltipContent = 'Saturday';
+                if (dayOfWeek === 0) tooltipContent = 'Sunday';
             }
             
             if (modifiers.sickLeave(props.date)) {
