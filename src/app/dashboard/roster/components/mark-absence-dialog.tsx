@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -50,7 +49,6 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
   });
 
   const [isDatePickerOpen, setIsDatePickerOpen] = React.useState(false);
-  const [tempDateRange, setTempDateRange] = React.useState<DateRange | undefined>();
   
   React.useEffect(() => {
     if (isOpen) {
@@ -62,14 +60,12 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                 date: { from: fromDate, to: toDate },
                 type: absence.type
             });
-            setTempDateRange({ from: fromDate, to: toDate });
         } else {
             form.reset({
                 userId: isTeamView ? '' : userId,
                 date: { from: new Date(), to: new Date() },
                 type: 'General Absence'
             });
-            setTempDateRange({ from: new Date(), to: new Date() });
         }
     }
   }, [isOpen, absence, form, isTeamView, userId]);
@@ -81,6 +77,15 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
       onSave(data.date.from, data.date.to, data.type, targetUserId, absence?.id);
     }
   }
+
+  const handleDateSelect = (range: DateRange | undefined) => {
+    if(range?.from && !range.to) {
+        form.setValue('date', {from: range.from, to: range.from});
+    } else if (range?.from && range?.to) {
+        form.setValue('date', {from: range.from, to: range.to});
+    }
+  }
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -129,10 +134,7 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                         <Button
                           variant={"outline"}
                           className={cn("w-full justify-start text-left font-normal", !field.value?.from && "text-muted-foreground")}
-                           onClick={() => {
-                                setTempDateRange(field.value);
-                                setIsDatePickerOpen(true);
-                           }}
+                           onClick={() => setIsDatePickerOpen(true)}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {field.value?.from ? (
@@ -153,19 +155,11 @@ export function MarkAbsenceDialog({ isOpen, onOpenChange, onSave, userId, member
                        <Calendar
                         initialFocus
                         mode="range"
-                        defaultMonth={tempDateRange?.from}
-                        selected={tempDateRange}
-                        onSelect={setTempDateRange}
+                        defaultMonth={field.value?.from}
+                        selected={{from: field.value.from, to: field.value.to}}
+                        onSelect={handleDateSelect}
                         numberOfMonths={2}
                       />
-                      <div className="p-2 border-t flex justify-end">
-                            <Button size="sm" onClick={() => {
-                                if (tempDateRange?.from && tempDateRange?.to) {
-                                    field.onChange(tempDateRange);
-                                }
-                                setIsDatePickerOpen(false);
-                            }}>Ok</Button>
-                        </div>
                     </PopoverContent>
                   </Popover>
                   <FormMessage />

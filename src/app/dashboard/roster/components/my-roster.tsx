@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -22,6 +21,16 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
+
+// A robust way to parse YYYY-MM-DD strings without timezone issues
+const parseLocalDate = (input: string | Date): Date => {
+  if (input instanceof Date) {
+    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+  }
+  if (!input) return new Date();
+  const [year, month, day] = input.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
 
 export function MyRoster() {
     const { currentUser } = useAuth();
@@ -76,40 +85,28 @@ export function MyRoster() {
 
         if (type === 'Clear Absence') {
             await deleteAbsencesInRange(userId, startDateStr, endDateStr);
-            setIsAbsenceDialogOpen(false);
-            setEditingAbsence(null);
-            return;
-        }
-
-        const workDaysInPeriod = timeEntries.some(entry => {
-            if (entry.userId === userId) {
-                const entryDayStr = entry.date.split('T')[0];
-                return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
-            }
-            return false;
-        });
-
-        if (workDaysInPeriod && !absenceIdToUpdate) {
-            toast({
-                variant: 'destructive',
-                title: 'Logged Work Conflict',
-                description: 'Selected date range contains logged work and cannot be marked as an absence.'
-            });
-            return;
-        }
-
-        const overlappingAbsence = absences.find(a => {
-            if (a.id === absenceIdToUpdate) return false;
-            return a.userId === userId && a.startDate <= endDateStr && a.endDate >= startDateStr;
-        });
-        
-        const idToUpdate = absenceIdToUpdate || overlappingAbsence?.id;
-        
-        if (idToUpdate) {
-            await updateAbsence(idToUpdate, { userId, startDate: startDateStr, endDate: endDateStr, type });
         } else {
+            const workDaysInPeriod = timeEntries.some(entry => {
+                if (entry.userId === userId) {
+                    const entryDayStr = entry.date.split('T')[0];
+                    return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
+                }
+                return false;
+            });
+
+            if (workDaysInPeriod) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Logged Work Conflict',
+                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
+                });
+                return; // Stop execution if conflict exists
+            }
+            
+            await deleteAbsencesInRange(userId, startDateStr, endDateStr);
             await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type });
         }
+        
         setIsAbsenceDialogOpen(false);
         setEditingAbsence(null);
     };

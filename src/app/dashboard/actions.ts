@@ -125,8 +125,8 @@ const mapDbContractEndNotification = (row: any): ContractEndNotification => ({
 const mapDbAbsence = (row: any): Absence => ({
     id: row.id,
     userId: row.user_id,
-    startDate: new Date(row.start_date).toISOString(),
-    endDate: new Date(row.end_date).toISOString(),
+    startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
+    endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
     type: row.type,
 });
 
@@ -1151,8 +1151,8 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
       let affectedRows = 0;
   
       for (const row of overlappingAbsencesRes.rows) {
-        const absenceStartStr = format(new Date(row.start_date), 'yyyy-MM-dd');
-        const absenceEndStr = format(new Date(row.end_date), 'yyyy-MM-dd');
+        const absenceStartStr = row.start_date.split('T')[0];
+        const absenceEndStr = row.end_date.split('T')[0];
 
         // Case 1: Clear range completely covers the absence
         if (startDate <= absenceStartStr && endDate >= absenceEndStr) {
