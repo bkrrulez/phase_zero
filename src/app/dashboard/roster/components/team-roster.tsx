@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { getDay, format, DayProps } from 'date-fns';
+import { getDay, format, DayProps, isSameDay, addDays } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -36,7 +36,7 @@ export function TeamRoster() {
     const { currentUser } = useAuth();
     const { teamMembers } = useMembers();
     const { timeEntries } = useTimeTracking();
-    const { publicHolidays } = useHolidays();
+    const { publicHolidays, customHolidays } = useHolidays();
     const { absences, addAbsence, deleteAbsencesInRange } = useRoster();
     const { teams } = useTeams();
 
@@ -112,25 +112,64 @@ export function TeamRoster() {
             return;
         }
 
-        const saveAction = async (force: boolean = false) => {
-            const workDaysInPeriod = timeEntries.some(entry => {
-                if (entry.userId === userId) {
-                    const entryDayStr = entry.date.split('T')[0];
-                    return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
+        const absenceChunks: { from: Date, to: Date }[] = [];
+        let currentChunkStart: Date | null = null;
+        const allHolidays = [...publicHolidays, ...customHolidays];
+
+        for (let dt = new Date(from); dt <= to; dt = addDays(dt, 1)) {
+            const dayOfWeek = getDay(dt);
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isHoliday = allHolidays.some(h => isSameDay(new Date(h.date), dt));
+            const isWorkingDay = !isWeekend && !isHoliday;
+
+            if (isWorkingDay) {
+                if (currentChunkStart === null) {
+                    currentChunkStart = dt;
                 }
-                return false;
-            });
-            
-            if (workDaysInPeriod) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Logged Work Conflict',
-                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
-                });
-                return;
+            } else {
+                if (currentChunkStart !== null) {
+                    absenceChunks.push({ from: currentChunkStart, to: addDays(dt, -1) });
+                    currentChunkStart = null;
+                }
             }
-            
-            await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type }, force);
+        }
+        if (currentChunkStart !== null) {
+            absenceChunks.push({ from: currentChunkStart, to: to });
+        }
+
+        if (absenceChunks.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Working Days',
+                description: 'The selected date range contains no working days to mark as an absence.'
+            });
+            return;
+        }
+
+        const saveAction = async (force: boolean = false) => {
+            for (const chunk of absenceChunks) {
+                const chunkStartStr = format(chunk.from, 'yyyy-MM-dd');
+                const chunkEndStr = format(chunk.to, 'yyyy-MM-dd');
+
+                const workDaysInPeriod = timeEntries.some(entry => {
+                    if (entry.userId === userId) {
+                        const entryDayStr = entry.date.split('T')[0];
+                        return entryDayStr >= chunkStartStr && entryDayStr <= chunkEndStr;
+                    }
+                    return false;
+                });
+                
+                if (workDaysInPeriod) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Logged Work Conflict',
+                        description: `Range ${chunkStartStr} to ${chunkEndStr} contains logged work and cannot be marked as an absence.`
+                    });
+                    continue;
+                }
+                
+                await addAbsence({ userId, startDate: chunkStartStr, endDate: chunkEndStr, type }, force);
+            }
             setIsAbsenceDialogOpen(false);
             setEditingAbsence(null);
         };

@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { getDay, getYear, min, max, format, DayProps } from 'date-fns';
+import { getDay, getYear, min, max, format, DayProps, isSameDay, addDays } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -28,7 +28,7 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
-    const { publicHolidays } = useHolidays();
+    const { publicHolidays, customHolidays } = useHolidays();
     const { absences, addAbsence, deleteAbsencesInRange } = useRoster();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -85,28 +85,67 @@ export function MyRoster() {
             return;
         }
 
-        const saveAction = async (force: boolean = false) => {
-            const workDaysInPeriod = timeEntries.some(entry => {
-                if (entry.userId === userId) {
-                    const entryDayStr = entry.date.split('T')[0];
-                    return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
-                }
-                return false;
-            });
+        const absenceChunks: { from: Date, to: Date }[] = [];
+        let currentChunkStart: Date | null = null;
+        const allHolidays = [...publicHolidays, ...customHolidays];
 
-            if (workDaysInPeriod) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Logged Work Conflict',
-                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
-                });
-                return;
+        for (let dt = new Date(from); dt <= to; dt = addDays(dt, 1)) {
+            const dayOfWeek = getDay(dt);
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isHoliday = allHolidays.some(h => isSameDay(new Date(h.date), dt));
+            const isWorkingDay = !isWeekend && !isHoliday;
+
+            if (isWorkingDay) {
+                if (currentChunkStart === null) {
+                    currentChunkStart = dt;
+                }
+            } else {
+                if (currentChunkStart !== null) {
+                    absenceChunks.push({ from: currentChunkStart, to: addDays(dt, -1) });
+                    currentChunkStart = null;
+                }
             }
-            
-            await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type }, force);
+        }
+        if (currentChunkStart !== null) {
+            absenceChunks.push({ from: currentChunkStart, to: to });
+        }
+        
+        if (absenceChunks.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Working Days',
+                description: 'The selected date range contains no working days to mark as an absence.'
+            });
+            return;
+        }
+
+        const saveAction = async (force: boolean = false) => {
+            for (const chunk of absenceChunks) {
+                const chunkStartStr = format(chunk.from, 'yyyy-MM-dd');
+                const chunkEndStr = format(chunk.to, 'yyyy-MM-dd');
+
+                const workDaysInPeriod = timeEntries.some(entry => {
+                    if (entry.userId === userId) {
+                        const entryDayStr = entry.date.split('T')[0];
+                        return entryDayStr >= chunkStartStr && entryDayStr <= chunkEndStr;
+                    }
+                    return false;
+                });
+
+                if (workDaysInPeriod) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Logged Work Conflict',
+                        description: `Range ${chunkStartStr} to ${chunkEndStr} contains logged work and cannot be marked as an absence.`
+                    });
+                    continue; // Skip this chunk but try to save others
+                }
+                
+                await addAbsence({ userId, startDate: chunkStartStr, endDate: chunkEndStr, type }, force);
+            }
             setIsAbsenceDialogOpen(false);
             setEditingAbsence(null);
-        }
+        };
 
         const overlappingAbsences = absences.filter(a => {
             if (a.userId !== userId) return false;
