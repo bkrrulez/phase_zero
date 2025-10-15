@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -54,15 +54,22 @@ export function MyRoster() {
         return { availableYears: years, minContractDate: minDate, maxContractDate: maxDate };
     }, [currentUser]);
     
+    const isDateInAbsence = (date: Date, absence: Absence) => {
+        const start = startOfDay(parseISO(absence.startDate));
+        const end = startOfDay(parseISO(absence.endDate));
+        const checkDate = startOfDay(date);
+        return checkDate >= start && checkDate <= end;
+    };
+
     const modifiers = React.useMemo(() => ({
         workDay: (date: Date) => timeEntries.some(entry => 
             entry.userId === currentUser.id && isSameDay(parseISO(entry.date), date)
         ),
         generalAbsence: (date: Date) => absences.some(absence => 
-            absence.userId === currentUser.id && absence.type === 'General Absence' && isWithinInterval(date, { start: parseISO(absence.startDate), end: endOfDay(parseISO(absence.endDate)) })
+            absence.userId === currentUser.id && absence.type === 'General Absence' && isDateInAbsence(date, absence)
         ),
         sickLeave: (date: Date) => absences.some(absence => 
-            absence.userId === currentUser.id && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseISO(absence.startDate), end: endOfDay(parseISO(absence.endDate)) })
+            absence.userId === currentUser.id && absence.type === 'Sick Leave' && isDateInAbsence(date, absence)
         ),
         publicHoliday: (date: Date) => publicHolidays.some(ph => 
             isSameDay(parseISO(ph.date), date)
@@ -138,7 +145,7 @@ export function MyRoster() {
 
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: endOfDay(parseISO(a.endDate)) }));
+        const absenceOnDate = userAbsences.find(a => isDateInAbsence(date, a));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
