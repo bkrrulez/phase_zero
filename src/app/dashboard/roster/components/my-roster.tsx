@@ -56,14 +56,8 @@ export function MyRoster() {
     
     const isDateInAbsence = (date: Date, absence: Absence) => {
         const checkDate = startOfDay(date);
-        
-        // Parse date strings as local dates by splitting them to avoid timezone issues.
-        const [startYear, startMonth, startDay] = absence.startDate.split('-').map(Number);
-        const startDate = new Date(startYear, startMonth - 1, startDay);
-        
-        const [endYear, endMonth, endDay] = absence.endDate.split('-').map(Number);
-        const endDate = new Date(endYear, endMonth - 1, endDay);
-
+        const startDate = startOfDay(parseISO(absence.startDate));
+        const endDate = startOfDay(parseISO(absence.endDate));
         return checkDate >= startDate && checkDate <= endDate;
     };
 
@@ -291,3 +285,5 @@ export function MyRoster() {
         </Card>
     );
 }
+
+    
