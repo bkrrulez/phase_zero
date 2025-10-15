@@ -30,15 +30,21 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
+// ✅ interpret date string as a plain local date (no timezone conversion)
 const parseLocalDate = (input: string | Date): Date => {
-  if (!input) return new Date();
-  if (input instanceof Date) {
-    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
-  }
-  const datePart = input.split('T')[0];
-  const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day);
+    if (!input) return new Date();
+
+    // If it's already a Date, normalize it to local midnight
+    if (input instanceof Date) {
+        return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+    }
+
+    // Handle full ISO strings safely
+    const datePart = input.split('T')[0]; // take only "YYYY-MM-DD"
+    const [year, month, day] = datePart.split('-').map(Number);
+    return new Date(year, month - 1, day); // <-- no UTC anywhere
 };
+
 
 export function TeamRoster() {
     const { currentUser } = useAuth();
@@ -163,15 +169,10 @@ export function TeamRoster() {
         setEditingAbsence(null);
     };
 
-    const dateToNumber = (input: string | Date) => {
-        const d = parseLocalDate(input);
-        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-    };
-
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const dateNum = dateToNumber(date);
-        const absenceOnDate = userAbsences.find(a => dateNum >= dateToNumber(a.startDate) && dateNum <= dateToNumber(a.endDate));
+        const dayStr = format(date, 'yyyy-MM-dd');
+        const absenceOnDate = userAbsences.find(a => dayStr >= a.startDate.split('T')[0] && dayStr <= a.endDate.split('T')[0]);
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -188,72 +189,72 @@ export function TeamRoster() {
     };
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
+        const dateInAbsence = (date: Date, absence: Absence) => {
+            const dayStr = format(date, 'yyyy-MM-dd');
+            const startStr = absence.startDate.split('T')[0];
+            const endStr = absence.endDate.split('T')[0];
+            return dayStr >= startStr && dayStr <= endStr;
+        };
+
         const modifiers = React.useMemo(() => ({
-            workDay: (date: Date) => {
-                const dNum = dateToNumber(date);
-                return timeEntries.some(e => e.userId === userId && dateToNumber(e.date) === dNum);
-            },
-            generalAbsence: (date: Date) => {
-                const dNum = dateToNumber(date);
-                return absences.some(a => a.userId === userId && a.type === 'General Absence' &&
-                    dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
-                );
-            },
-            sickLeave: (date: Date) => {
-                const dNum = dateToNumber(date);
-                return absences.some(a => a.userId === userId && a.type === 'Sick Leave' &&
-                    dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
-                );
-            },
-            publicHoliday: (date: Date) => {
-                const dNum = dateToNumber(date);
-                return publicHolidays.some(ph => dateToNumber(ph.date) === dNum);
-            },
+            workDay: (date: Date) => timeEntries.some(entry => 
+                entry.userId === userId &&
+                entry.date.split('T')[0] === format(date, 'yyyy-MM-dd')
+            ),
+            generalAbsence: (date: Date) => absences.some(absence => 
+                absence.userId === userId &&
+                absence.type === 'General Absence' &&
+                dateInAbsence(date, absence)
+            ),
+            sickLeave: (date: Date) => absences.some(absence => 
+                absence.userId === userId &&
+                absence.type === 'Sick Leave' &&
+                dateInAbsence(date, absence)
+            ),
+            publicHoliday: (date: Date) => publicHolidays.some(ph => 
+                ph.date.split('T')[0] === format(date, 'yyyy-MM-dd')
+            ),
         }), [userId]);
 
         function Day(props: DayProps) {
-            let tooltipContent: React.ReactNode = null;
-            let dayClassName = "w-full h-full p-0 m-0 flex items-center justify-center";
-            const dayOfWeek = getDay(props.date);
+            const dayStr = format(props.date, 'yyyy-MM-dd');
+            let className = "w-full h-full p-0 m-0 flex items-center justify-center";
+            let tooltip = '';
     
             if (modifiers.publicHoliday(props.date)) {
-                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = publicHolidays.find(h => dateToNumber(h.date) === dateToNumber(props.date))?.name || 'Public Holiday';
-            } else if (dayOfWeek === 6) {
-                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = 'Saturday';
-            } else if (dayOfWeek === 0) {
-                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = 'Sunday';
+                className = cn(className, "bg-orange-100 dark:bg-orange-900/50");
+                tooltip = publicHolidays.find(ph => ph.date.split('T')[0] === dayStr)?.name || 'Public Holiday';
+            } else if ([0,6].includes(getDay(props.date))) {
+                className = cn(className, "bg-orange-100 dark:bg-orange-900/50");
+                tooltip = getDay(props.date) === 0 ? 'Sunday' : 'Saturday';
             }
-            
+    
             if (modifiers.sickLeave(props.date)) {
-                dayClassName = cn(dayClassName, "bg-red-300 dark:bg-red-800");
-                tooltipContent = 'Sick Leave';
+                className = cn(className, "bg-red-300 dark:bg-red-800");
+                tooltip = 'Sick Leave';
             } else if (modifiers.generalAbsence(props.date)) {
-                dayClassName = cn(dayClassName, "bg-yellow-200 dark:bg-yellow-800");
-                tooltipContent = 'General Absence';
+                className = cn(className, "bg-yellow-200 dark:bg-yellow-800");
+                tooltip = 'General Absence';
             } else if (modifiers.workDay(props.date)) {
-                dayClassName = cn(dayClassName, "bg-sky-200 dark:bg-sky-800");
-                tooltipContent = 'Work Logged';
+                className = cn(className, "bg-sky-200 dark:bg-sky-800");
+                tooltip = 'Work Logged';
             }
-            
-            const content = <button type="button" className={dayClassName}>{format(props.date, 'd')}</button>;
-
-            if (tooltipContent) {
+    
+            const content = <button type="button" className={className}>{format(props.date, 'd')}</button>;
+            if (tooltip) {
                 return (
                     <TooltipProvider delayDuration={0}>
                         <Tooltip>
                             <TooltipTrigger asChild>{content}</TooltipTrigger>
-                            <TooltipContent><p>{tooltipContent}</p></TooltipContent>
+                            <TooltipContent><p>{tooltip}</p></TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                )
+                );
             }
-            
+    
             return content;
         }
-        
+
         return (
             <div className="p-4">
                 <div className="border rounded-lg p-3">
