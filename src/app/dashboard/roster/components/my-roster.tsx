@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -58,54 +59,13 @@ export function MyRoster() {
         return { availableYears: years, minContractDate: minDate, maxContractDate: maxDate };
     }, [currentUser]);
     
-    const { workDays, generalAbsenceDays, sickLeaveDays, weekendDays, publicHolidayDays } = React.useMemo(() => {
-        const workDays: Set<string> = new Set();
-        timeEntries.forEach(entry => {
-            if (entry.userId === currentUser.id && isSameMonth(parseUTCDate(entry.date), selectedDate)) {
-                workDays.add(parseUTCDate(entry.date).toDateString());
-            }
-        });
-
-        const generalAbsenceDays = new Set<string>();
-        const sickLeaveDays = new Set<string>();
-        absences.forEach(absence => {
-            if (absence.userId === currentUser.id) {
-                const startDate = parseUTCDate(absence.startDate);
-                const endDate = parseUTCDate(absence.endDate);
-                 for (let d = startDate; d <= endDate; d = addDays(d, 1)) {
-                    if (isSameMonth(d, selectedDate)) {
-                        if (absence.type === 'General Absence') {
-                            generalAbsenceDays.add(d.toDateString());
-                        } else {
-                            sickLeaveDays.add(d.toDateString());
-                        }
-                    }
-                }
-            }
-        });
-
-        const weekendDays = new Set<string>();
-        const publicHolidayDays = new Set<string>();
-        const year = selectedDate.getFullYear();
-        const month = selectedDate.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        for(let i = 1; i <= daysInMonth; i++) {
-            const date = new Date(year, month, i);
-            const dayOfWeek = getDay(date);
-            if(dayOfWeek === 0 || dayOfWeek === 6) {
-                weekendDays.add(date.toDateString());
-            }
-        }
-        publicHolidays.forEach(ph => {
-            const phDate = parseUTCDate(ph.date);
-            if(isSameMonth(phDate, selectedDate)) {
-                publicHolidayDays.add(phDate.toDateString());
-            }
-        });
-
-
-        return { workDays, generalAbsenceDays, sickLeaveDays, weekendDays, publicHolidayDays };
-    }, [timeEntries, absences, selectedDate, currentUser.id, publicHolidays]);
+    const modifiers = React.useMemo(() => ({
+        workDay: (date: Date) => timeEntries.some(entry => entry.userId === currentUser.id && isSameDay(parseUTCDate(entry.date), date)),
+        generalAbsence: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
+        sickLeave: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
+        publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseUTCDate(ph.date), date)),
+        weekend: (date: Date) => date.getDay() === 0 || date.getDay() === 6,
+    }), [timeEntries, absences, publicHolidays, currentUser.id]);
 
     const handleMonthChange = (month: string) => {
         setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(month), 1));
@@ -175,21 +135,18 @@ export function MyRoster() {
     };
 
     function Day(props: DayProps) {
-        const dayString = props.date.toDateString();
-        
-        const publicHoliday = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date));
-        
         let tooltipContent: React.ReactNode = null;
         
-        if (workDays.has(dayString)) {
-            tooltipContent = `Work Logged`;
-        } else if (sickLeaveDays.has(dayString)) {
+        if (modifiers.workDay(props.date)) {
+            tooltipContent = 'Work Logged';
+        } else if (modifiers.sickLeave(props.date)) {
             tooltipContent = 'Sick Leave';
-        } else if (generalAbsenceDays.has(dayString)) {
+        } else if (modifiers.generalAbsence(props.date)) {
             tooltipContent = 'General Absence';
-        } else if (publicHoliday) {
-            tooltipContent = publicHoliday.name;
-        } else if (weekendDays.has(dayString)) {
+        } else if (modifiers.publicHoliday(props.date)) {
+            const publicHoliday = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date));
+            tooltipContent = publicHoliday?.name;
+        } else if (modifiers.weekend(props.date)) {
             tooltipContent = 'Weekend';
         }
         
@@ -266,13 +223,7 @@ export function MyRoster() {
                             onMonthChange={setSelectedDate}
                             onDayDoubleClick={handleDayDoubleClick}
                             formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
-                           modifiers={{
-                                workDay: Array.from(workDays).map(d => new Date(d)),
-                                generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
-                                sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
-                                weekend: Array.from(weekendDays).map(d => new Date(d)),
-                                publicHoliday: Array.from(publicHolidayDays).map(d => new Date(d)),
-                           }}
+                           modifiers={modifiers}
                            modifiersClassNames={{
                                 workDay: 'bg-sky-200 dark:bg-sky-800',
                                 generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
