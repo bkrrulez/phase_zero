@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { getDay, addDays, format, DayProps, startOfDay, endOfDay } from 'date-fns';
+import { getDay, format, DayProps } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -29,22 +29,6 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
-
-// ✅ interpret date string as a plain local date (no timezone conversion)
-const parseLocalDate = (input: string | Date): Date => {
-    if (!input) return new Date();
-
-    // If it's already a Date, normalize it to local midnight
-    if (input instanceof Date) {
-        return new Date(input.getFullYear(), input.getMonth(), input.getDate());
-    }
-
-    // Handle full ISO strings safely
-    const datePart = input.split('T')[0]; // take only "YYYY-MM-DD"
-    const [year, month, day] = datePart.split('-').map(Number);
-    return new Date(year, month - 1, day); // <-- no UTC anywhere
-};
-
 
 export function TeamRoster() {
     const { currentUser } = useAuth();
@@ -114,8 +98,8 @@ export function TeamRoster() {
     };
 
     const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
-        const startDateStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
-        const endDateStr = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`;
+        const startDateStr = format(from, 'yyyy-MM-dd');
+        const endDateStr = format(to, 'yyyy-MM-dd');
 
         if (type === 'Clear Absence') {
             await deleteAbsencesInRange(userId, startDateStr, endDateStr);
@@ -124,17 +108,15 @@ export function TeamRoster() {
             return;
         }
 
-        const workDaysInPeriod = new Set<string>();
-        timeEntries.forEach(entry => {
-            if(entry.userId === userId) {
-                const entryDate = parseLocalDate(entry.date);
-                if(entryDate >= startOfDay(from) && entryDate <= endOfDay(to)) {
-                    workDaysInPeriod.add(entryDate.toDateString());
-                }
+        const workDaysInPeriod = timeEntries.some(entry => {
+            if (entry.userId === userId) {
+                const entryDayStr = entry.date.split('T')[0];
+                return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
             }
+            return false;
         });
         
-        if (workDaysInPeriod.size > 0 && absenceIdToUpdate === undefined) {
+        if (workDaysInPeriod && !absenceIdToUpdate) {
             toast({
                 variant: 'destructive',
                 title: 'Logged Work Conflict',
@@ -143,22 +125,12 @@ export function TeamRoster() {
             return;
         }
 
-        const fromDateNumber = from.getFullYear() * 10000 + (from.getMonth() + 1) * 100 + from.getDate();
-        const toDateNumber = to.getFullYear() * 10000 + (to.getMonth() + 1) * 100 + to.getDate();
-        
-        const existingAbsence = absences.find(a => {
+        const overlappingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-        
-            const existingStart = parseLocalDate(a.startDate);
-            const existingEnd = parseLocalDate(a.endDate);
-            const existingStartNum = existingStart.getFullYear() * 10000 + (existingStart.getMonth() + 1) * 100 + existingStart.getDate();
-            const existingEndNum = existingEnd.getFullYear() * 10000 + (existingEnd.getMonth() + 1) * 100 + existingEnd.getDate();
-        
-            return a.userId === userId && 
-                   (Math.max(fromDateNumber, existingStartNum) <= Math.min(toDateNumber, existingEndNum));
+            return a.userId === userId && Math.max(Number(startDateStr.replace(/-/g, '')), Number(a.startDate.replace(/-/g, ''))) <= Math.min(Number(endDateStr.replace(/-/g, '')), Number(a.endDate.replace(/-/g, '')));
         });
         
-        const idToUpdate = absenceIdToUpdate || existingAbsence?.id;
+        const idToUpdate = absenceIdToUpdate || overlappingAbsence?.id;
         
         if (idToUpdate) {
             await updateAbsence(idToUpdate, { userId, startDate: startDateStr, endDate: endDateStr, type });
@@ -170,9 +142,11 @@ export function TeamRoster() {
     };
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
-        const userAbsences = absences.filter(a => a.userId === userId);
         const dayStr = format(date, 'yyyy-MM-dd');
-        const absenceOnDate = userAbsences.find(a => dayStr >= a.startDate.split('T')[0] && dayStr <= a.endDate.split('T')[0]);
+        const absenceOnDate = absences.find(a =>
+            a.userId === userId &&
+            dayStr >= a.startDate.split('T')[0] && dayStr <= a.endDate.split('T')[0]
+        );
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -189,11 +163,10 @@ export function TeamRoster() {
     };
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
-        const dateInAbsence = (date: Date, absence: Absence) => {
-            const dayStr = format(date, 'yyyy-MM-dd');
+        const isDateInAbsence = (day: string, absence: Absence) => {
             const startStr = absence.startDate.split('T')[0];
             const endStr = absence.endDate.split('T')[0];
-            return dayStr >= startStr && dayStr <= endStr;
+            return day >= startStr && day <= endStr;
         };
 
         const modifiers = React.useMemo(() => ({
@@ -204,12 +177,12 @@ export function TeamRoster() {
             generalAbsence: (date: Date) => absences.some(absence => 
                 absence.userId === userId &&
                 absence.type === 'General Absence' &&
-                dateInAbsence(date, absence)
+                isDateInAbsence(format(date, 'yyyy-MM-dd'), absence)
             ),
             sickLeave: (date: Date) => absences.some(absence => 
                 absence.userId === userId &&
                 absence.type === 'Sick Leave' &&
-                dateInAbsence(date, absence)
+                isDateInAbsence(format(date, 'yyyy-MM-dd'), absence)
             ),
             publicHoliday: (date: Date) => publicHolidays.some(ph => 
                 ph.date.split('T')[0] === format(date, 'yyyy-MM-dd')
@@ -378,5 +351,3 @@ export function TeamRoster() {
         </Card>
     );
 }
-
-    
