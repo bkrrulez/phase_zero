@@ -256,27 +256,17 @@ export function MyRoster() {
                             onDayDoubleClick={handleDayDoubleClick}
                             formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                            modifiers={{
-                                today: new Date(),
-                                workDay: (date) => !!calendarData.workDays[date.toDateString()],
-                                generalAbsence: (date) => calendarData.generalAbsenceDays.has(date.toDateString()) && !calendarData.workDays[date.toDateString()],
-                                sickLeave: (date) => calendarData.sickLeaveDays.has(date.toDateString()) && !calendarData.workDays[date.toDateString()],
-                                publicHoliday: (date) => publicHolidays.some(h => isSameDay(parseUTCDate(h.date), date)),
                                 weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
                             }}
                             modifiersClassNames={{
-                                today: 'bg-muted',
-                                workDay: 'bg-sky-200 dark:bg-sky-800',
-                                generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
-                                sickLeave: 'bg-red-300 dark:bg-red-800',
-                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
-                                publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
+                                weekend: 'bg-orange-300',
                             }}
                             classNames={{
                                 row: "flex w-full mt-0",
                                 cell: "flex-1 text-center text-sm p-0 m-0 border h-[50px]",
                                 head_row: "flex",
                                 head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
-                                day: "h-full w-full p-1 hover:bg-muted",
+                                day: "h-full w-full p-1",
                                 months: "w-full",
                                 month: "w-full space-y-0",
                                 caption: "hidden"
