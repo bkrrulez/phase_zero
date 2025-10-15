@@ -1139,6 +1139,20 @@ export async function updateAbsence(absenceId: string, absence: Omit<Absence, 'i
     }
 }
 
+export async function deleteAbsencesInRange(userId: string, startDate: string, endDate: string): Promise<number> {
+    try {
+        const result = await db.query(
+            `DELETE FROM absences WHERE user_id = $1 AND start_date <= $2 AND end_date >= $3`,
+            [userId, endDate, startDate]
+        );
+        revalidatePath('/dashboard/roster');
+        return result.rowCount || 0;
+    } catch (error) {
+        console.error("Failed to delete absences", error);
+        return 0;
+    }
+}
+
 // ========== Access Control ==========
 
 export async function getFreezeRules(): Promise<FreezeRule[]> {
