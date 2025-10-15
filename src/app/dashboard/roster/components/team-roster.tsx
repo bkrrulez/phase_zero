@@ -30,15 +30,6 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
-const parseUTCDate = (dateString: string) => {
-    if (!dateString) return new Date();
-    // Handles both 'YYYY-MM-DD' and full ISO strings by splitting at 'T'
-    const datePart = dateString.split('T')[0];
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Use local time parsing which will correctly represent the date intended by the user
-    return new Date(year, month - 1, day);
-};
-
 export function TeamRoster() {
     const { currentUser } = useAuth();
     const { teamMembers } = useMembers();
@@ -120,7 +111,7 @@ export function TeamRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = parseUTCDate(entry.date);
+                const entryDate = new Date(entry.date);
                 if(isWithinInterval(entryDate, { start: from, end: to })) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
@@ -138,8 +129,8 @@ export function TeamRoster() {
 
         const existingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            const start = parseUTCDate(a.startDate);
-            const end = parseUTCDate(a.endDate);
+            const start = new Date(a.startDate);
+            const end = new Date(a.endDate);
             return a.userId === userId && 
                    (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
                     isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
@@ -158,7 +149,7 @@ export function TeamRoster() {
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: endOfDay(parseUTCDate(a.endDate)) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: new Date(a.startDate), end: endOfDay(new Date(a.endDate)) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -177,10 +168,10 @@ export function TeamRoster() {
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
         const modifiers = React.useMemo(() => ({
-            workDay: (date: Date) => timeEntries.some(entry => entry.userId === userId && isSameDay(parseUTCDate(entry.date), date)),
-            generalAbsence: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: endOfDay(parseUTCDate(absence.endDate)) })),
-            sickLeave: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: endOfDay(parseUTCDate(absence.endDate)) })),
-            publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseUTCDate(ph.date), date)),
+            workDay: (date: Date) => timeEntries.some(entry => entry.userId === userId && isSameDay(new Date(entry.date), date)),
+            generalAbsence: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'General Absence' && isWithinInterval(date, { start: new Date(absence.startDate), end: endOfDay(new Date(absence.endDate)) })),
+            sickLeave: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: new Date(absence.startDate), end: endOfDay(new Date(absence.endDate)) })),
+            publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(new Date(ph.date), date)),
         }), [userId]);
 
         function Day(props: DayProps) {
@@ -190,11 +181,11 @@ export function TeamRoster() {
     
             if (modifiers.publicHoliday(props.date)) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date))?.name || 'Public Holiday';
-            } else if (dayOfWeek === 6) { // Saturday
+                tooltipContent = publicHolidays.find(h => isSameDay(new Date(h.date), props.date))?.name || 'Public Holiday';
+            } else if (dayOfWeek === 6) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
                 tooltipContent = 'Saturday';
-            } else if (dayOfWeek === 0) { // Sunday
+            } else if (dayOfWeek === 0) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
                 tooltipContent = 'Sunday';
             }
