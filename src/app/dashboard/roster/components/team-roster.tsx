@@ -30,13 +30,20 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
+const parseLocalDate = (dateString: string | Date): Date => {
+    if (dateString instanceof Date) {
+        return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
+    }
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
 const isDateInAbsence = (date: Date, absence: Absence) => {
-    // Normalize all dates to local midnight to avoid timezone issues.
-    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-    const startDate = new Date(new Date(absence.startDate).getFullYear(), new Date(absence.startDate).getMonth(), new Date(absence.startDate).getDate()).getTime();
-    const endDate = new Date(new Date(absence.endDate).getFullYear(), new Date(absence.endDate).getMonth(), new Date(absence.endDate).getDate()).getTime();
+    const localDate = parseLocalDate(date);
+    const startDate = parseLocalDate(absence.startDate);
+    const endDate = parseLocalDate(absence.endDate);
     
-    return checkDate >= startDate && checkDate <= endDate;
+    return localDate.getTime() >= startDate.getTime() && localDate.getTime() <= endDate.getTime();
 };
 
 export function TeamRoster() {
@@ -120,8 +127,8 @@ export function TeamRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = parseISO(entry.date);
-                if(isWithinInterval(entryDate, { start: from, end: to })) {
+                const entryDate = parseLocalDate(entry.date);
+                if(entryDate >= startOfDay(from) && entryDate <= endOfDay(to)) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
             }
@@ -138,8 +145,8 @@ export function TeamRoster() {
 
         const existingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            const start = parseISO(a.startDate);
-            const end = endOfDay(parseISO(a.endDate));
+            const start = parseLocalDate(a.startDate);
+            const end = endOfDay(parseLocalDate(a.endDate));
             return a.userId === userId && 
                    (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
                     isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
@@ -179,7 +186,7 @@ export function TeamRoster() {
     const RosterCalendar = ({ userId }: { userId: string }) => {
         const modifiers = React.useMemo(() => ({
             workDay: (date: Date) => timeEntries.some(entry => 
-                entry.userId === userId && isSameDay(parseISO(entry.date), date)
+                entry.userId === userId && isSameDay(parseLocalDate(entry.date), date)
             ),
             generalAbsence: (date: Date) => absences.some(absence => 
                 absence.userId === userId && absence.type === 'General Absence' && isDateInAbsence(date, absence)
@@ -188,7 +195,7 @@ export function TeamRoster() {
                 absence.userId === userId && absence.type === 'Sick Leave' && isDateInAbsence(date, absence)
             ),
             publicHoliday: (date: Date) => publicHolidays.some(ph => 
-                isSameDay(parseISO(ph.date), date)
+                isSameDay(parseLocalDate(ph.date), date)
             ),
         }), [userId]);
 
@@ -199,7 +206,7 @@ export function TeamRoster() {
     
             if (modifiers.publicHoliday(props.date)) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = publicHolidays.find(h => isSameDay(parseISO(h.date), props.date))?.name || 'Public Holiday';
+                tooltipContent = publicHolidays.find(h => isSameDay(parseLocalDate(h.date), props.date))?.name || 'Public Holiday';
             } else if (dayOfWeek === 6) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
                 tooltipContent = 'Saturday';

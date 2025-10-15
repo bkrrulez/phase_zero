@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay, isBefore, isAfter } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay, isBefore, isAfter, isDate } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -23,15 +23,23 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
 
-const isDateInAbsence = (date: Date, absence: Absence) => {
-    // Normalize all dates to local midnight to avoid timezone issues.
-    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-    const startDate = new Date(new Date(absence.startDate).getFullYear(), new Date(absence.startDate).getMonth(), new Date(absence.startDate).getDate()).getTime();
-    const endDate = new Date(new Date(absence.endDate).getFullYear(), new Date(absence.endDate).getMonth(), new Date(absence.endDate).getDate()).getTime();
-    
-    return checkDate >= startDate && checkDate <= endDate;
+// Helper to parse a date string as a local date, avoiding timezone shifts.
+const parseLocalDate = (dateString: string | Date): Date => {
+    if (dateString instanceof Date) {
+        return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
+    }
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    return new Date(year, month - 1, day);
 };
 
+const isDateInAbsence = (date: Date, absence: Absence) => {
+    const localDate = parseLocalDate(date);
+    const startDate = parseLocalDate(absence.startDate);
+    const endDate = parseLocalDate(absence.endDate);
+    
+    // getTime() returns timestamp, which is a reliable way to compare dates.
+    return localDate.getTime() >= startDate.getTime() && localDate.getTime() <= endDate.getTime();
+};
 
 export function MyRoster() {
     const { currentUser } = useAuth();
@@ -67,7 +75,7 @@ export function MyRoster() {
 
     const modifiers = React.useMemo(() => ({
         workDay: (date: Date) => timeEntries.some(entry => 
-            entry.userId === currentUser.id && isSameDay(parseISO(entry.date), date)
+            entry.userId === currentUser.id && isSameDay(parseLocalDate(entry.date), date)
         ),
         generalAbsence: (date: Date) => absences.some(absence => 
             absence.userId === currentUser.id && absence.type === 'General Absence' && isDateInAbsence(date, absence)
@@ -76,7 +84,7 @@ export function MyRoster() {
             absence.userId === currentUser.id && absence.type === 'Sick Leave' && isDateInAbsence(date, absence)
         ),
         publicHoliday: (date: Date) => publicHolidays.some(ph => 
-            isSameDay(parseISO(ph.date), date)
+            isSameDay(parseLocalDate(ph.date), date)
         ),
     }), [timeEntries, absences, publicHolidays, currentUser.id]);
 
@@ -111,8 +119,8 @@ export function MyRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = parseISO(entry.date);
-                if(isWithinInterval(entryDate, { start: from, end: to })) {
+                const entryDate = parseLocalDate(entry.date);
+                if(entryDate >= startOfDay(from) && entryDate <= endOfDay(to)) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
             }
@@ -129,8 +137,8 @@ export function MyRoster() {
 
         const existingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            const start = parseISO(a.startDate);
-            const end = endOfDay(parseISO(a.endDate));
+            const start = parseLocalDate(a.startDate);
+            const end = endOfDay(parseLocalDate(a.endDate));
             return a.userId === userId && 
                    (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
                     isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
@@ -164,7 +172,7 @@ export function MyRoster() {
 
         if (modifiers.publicHoliday(props.date)) {
             dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            tooltipContent = publicHolidays.find(h => isSameDay(parseISO(h.date), props.date))?.name || 'Public Holiday';
+            tooltipContent = publicHolidays.find(h => isSameDay(parseLocalDate(h.date), props.date))?.name || 'Public Holiday';
         } else if (dayOfWeek === 6) {
             dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
             tooltipContent = 'Saturday';
