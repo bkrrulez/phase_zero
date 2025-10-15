@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -157,7 +157,7 @@ export function TeamRoster() {
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: parseUTCDate(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: endOfDay(parseUTCDate(a.endDate)) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -177,8 +177,8 @@ export function TeamRoster() {
     const RosterCalendar = ({ userId }: { userId: string }) => {
         const modifiers = React.useMemo(() => ({
             workDay: (date: Date) => timeEntries.some(entry => entry.userId === userId && isSameDay(parseUTCDate(entry.date), date)),
-            generalAbsence: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
-            sickLeave: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
+            generalAbsence: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: endOfDay(parseUTCDate(absence.endDate)) })),
+            sickLeave: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: endOfDay(parseUTCDate(absence.endDate)) })),
             publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseUTCDate(ph.date), date)),
         }), [userId]);
 

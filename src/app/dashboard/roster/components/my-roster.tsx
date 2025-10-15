@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -64,8 +64,8 @@ export function MyRoster() {
     
     const modifiers = React.useMemo(() => ({
         workDay: (date: Date) => timeEntries.some(entry => entry.userId === currentUser.id && isSameDay(parseUTCDate(entry.date), date)),
-        generalAbsence: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
-        sickLeave: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
+        generalAbsence: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: endOfDay(parseUTCDate(absence.endDate)) })),
+        sickLeave: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: endOfDay(parseUTCDate(absence.endDate)) })),
         publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseUTCDate(ph.date), date)),
     }), [timeEntries, absences, publicHolidays, currentUser.id]);
 
@@ -138,7 +138,7 @@ export function MyRoster() {
 
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: parseUTCDate(a.endDate) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseUTCDate(a.startDate), end: endOfDay(parseUTCDate(a.endDate)) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
