@@ -258,8 +258,8 @@ export function MyRoster() {
                             modifiers={{
                                 today: new Date(),
                                 workDay: (date) => !!calendarData.workDays[date.toDateString()],
-                                generalAbsence: (date) => calendarData.generalAbsenceDays.has(date.toDateString()),
-                                sickLeave: (date) => calendarData.sickLeaveDays.has(date.toDateString()),
+                                generalAbsence: (date) => calendarData.generalAbsenceDays.has(date.toDateString()) && !calendarData.workDays[date.toDateString()],
+                                sickLeave: (date) => calendarData.sickLeaveDays.has(date.toDateString()) && !calendarData.workDays[date.toDateString()],
                                 publicHoliday: (date) => publicHolidays.some(h => isSameDay(parseUTCDate(h.date), date)),
                                 weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
                             }}

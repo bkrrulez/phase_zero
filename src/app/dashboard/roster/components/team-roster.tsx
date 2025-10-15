@@ -255,8 +255,8 @@ export function TeamRoster() {
                         modifiers={{
                             today: new Date(),
                             workDay: (date) => !!workDays[date.toDateString()],
-                            generalAbsence: (date) => generalAbsenceDays.has(date.toDateString()),
-                            sickLeave: (date) => sickLeaveDays.has(date.toDateString()),
+                            generalAbsence: (date) => generalAbsenceDays.has(date.toDateString()) && !workDays[date.toDateString()],
+                            sickLeave: (date) => sickLeaveDays.has(date.toDateString()) && !workDays[date.toDateString()],
                             publicHoliday: (date) => publicHolidays.some(h => isSameDay(parseUTCDate(h.date), date)),
                             weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
                         }}
