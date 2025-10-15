@@ -70,35 +70,6 @@ export function MyRoster() {
         return { availableYears: years, minContractDate: minDate, maxContractDate: maxDate };
     }, [currentUser]);
 
-    // ✅ Convert any date to a pure "yyyymmdd" number for safe comparison
-    const dateToNumber = (input: string | Date) => {
-        const d = parseLocalDate(input);
-        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-    };
-
-    const modifiers = React.useMemo(() => ({
-        workDay: (date: Date) => {
-            const dNum = dateToNumber(date);
-            return timeEntries.some(e => e.userId === currentUser.id && dateToNumber(e.date) === dNum);
-        },
-        generalAbsence: (date: Date) => {
-            const dNum = dateToNumber(date);
-            return absences.some(a => a.userId === currentUser.id && a.type === 'General Absence' &&
-                dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
-            );
-        },
-        sickLeave: (date: Date) => {
-            const dNum = dateToNumber(date);
-            return absences.some(a => a.userId === currentUser.id && a.type === 'Sick Leave' &&
-                dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
-            );
-        },
-        publicHoliday: (date: Date) => {
-            const dNum = dateToNumber(date);
-            return publicHolidays.some(ph => dateToNumber(ph.date) === dNum);
-        },
-    }), [timeEntries, absences, publicHolidays, currentUser.id]);
-
     const handleMonthChange = (month: string) => {
         setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(month), 1));
     };
@@ -165,6 +136,11 @@ export function MyRoster() {
         setEditingAbsence(null);
     };
 
+    const dateToNumber = (input: string | Date) => {
+        const d = parseLocalDate(input);
+        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    };
+
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
         const absenceOnDate = userAbsences.find(a => dateToNumber(date) >= dateToNumber(a.startDate) && dateToNumber(date) <= dateToNumber(a.endDate));
@@ -174,50 +150,115 @@ export function MyRoster() {
             setIsAbsenceDialogOpen(true);
         }
     };
+    
+    const RosterCalendar = ({ userId }: { userId: string }) => {
+        const modifiers = React.useMemo(() => ({
+            workDay: (date: Date) => {
+                const dNum = dateToNumber(date);
+                return timeEntries.some(e => e.userId === userId && dateToNumber(e.date) === dNum);
+            },
+            generalAbsence: (date: Date) => {
+                const dNum = dateToNumber(date);
+                return absences.some(a => a.userId === userId && a.type === 'General Absence' &&
+                    dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
+                );
+            },
+            sickLeave: (date: Date) => {
+                const dNum = dateToNumber(date);
+                return absences.some(a => a.userId === userId && a.type === 'Sick Leave' &&
+                    dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
+                );
+            },
+            publicHoliday: (date: Date) => {
+                const dNum = dateToNumber(date);
+                return publicHolidays.some(ph => dateToNumber(ph.date) === dNum);
+            },
+        }), [userId, timeEntries, absences, publicHolidays]);
 
-    function Day(props: DayProps) {
-        let tooltipContent: React.ReactNode = null;
-        let dayClassName = "w-full h-full p-0 m-0 flex items-center justify-center";
-        const dayOfWeek = getDay(props.date);
+        function Day(props: DayProps) {
+            let tooltipContent: React.ReactNode = null;
+            let dayClassName = "w-full h-full p-0 m-0 flex items-center justify-center";
+            const dayOfWeek = getDay(props.date);
 
-        if (modifiers.publicHoliday(props.date)) {
-            dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            tooltipContent = publicHolidays.find(h => dateToNumber(h.date) === dateToNumber(props.date))?.name || 'Public Holiday';
-        } else if (dayOfWeek === 6) {
-            dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            tooltipContent = 'Saturday';
-        } else if (dayOfWeek === 0) {
-            dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            tooltipContent = 'Sunday';
-        }
-        
-        if (modifiers.sickLeave(props.date)) {
-            dayClassName = cn(dayClassName, "bg-red-300 dark:bg-red-800");
-            tooltipContent = 'Sick Leave';
-        } else if (modifiers.generalAbsence(props.date)) {
-            dayClassName = cn(dayClassName, "bg-yellow-200 dark:bg-yellow-800");
-            tooltipContent = 'General Absence';
-        } else if (modifiers.workDay(props.date)) {
-            dayClassName = cn(dayClassName, "bg-sky-200 dark:bg-sky-800");
-            tooltipContent = 'Work Logged';
-        }
-        
-        const content = <button type="button" className={dayClassName}>{format(props.date, 'd')}</button>;
+            if (modifiers.publicHoliday(props.date)) {
+                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
+                tooltipContent = publicHolidays.find(h => dateToNumber(h.date) === dateToNumber(props.date))?.name || 'Public Holiday';
+            } else if (dayOfWeek === 6) {
+                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
+                tooltipContent = 'Saturday';
+            } else if (dayOfWeek === 0) {
+                dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
+                tooltipContent = 'Sunday';
+            }
+            
+            if (modifiers.sickLeave(props.date)) {
+                dayClassName = cn(dayClassName, "bg-red-300 dark:bg-red-800");
+                tooltipContent = 'Sick Leave';
+            } else if (modifiers.generalAbsence(props.date)) {
+                dayClassName = cn(dayClassName, "bg-yellow-200 dark:bg-yellow-800");
+                tooltipContent = 'General Absence';
+            } else if (modifiers.workDay(props.date)) {
+                dayClassName = cn(dayClassName, "bg-sky-200 dark:bg-sky-800");
+                tooltipContent = 'Work Logged';
+            }
+            
+            const content = <button type="button" className={dayClassName}>{format(props.date, 'd')}</button>;
 
-        if (tooltipContent) {
-            return (
-                <TooltipProvider delayDuration={0}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>{content}</TooltipTrigger>
-                        <TooltipContent><p>{tooltipContent}</p></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )
+            if (tooltipContent) {
+                return (
+                    <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>{content}</TooltipTrigger>
+                            <TooltipContent><p>{tooltipContent}</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )
+            }
+            
+            return content;
         }
-        
-        return content;
+
+        return (
+            <div className="p-4">
+                <div className="border rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-4 px-2">
+                        <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted">
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <h3 className="text-center font-bold text-xl">
+                            {format(selectedDate, 'MMMM yyyy')}
+                        </h3>
+                        <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted">
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <Calendar
+                        month={selectedDate}
+                        onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
+                        formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
+                        modifiersClassNames={{
+                            today: 'bg-muted'
+                        }}
+                        classNames={{
+                            row: "flex w-full mt-0",
+                            cell: "flex-1 text-center text-sm p-0 m-0 border h-[50px]",
+                            head_row: "flex",
+                            head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
+                            day: "h-full w-full p-1 hover:bg-muted",
+                            months: "w-full",
+                            month: "w-full space-y-0",
+                            caption: "hidden"
+                        }}
+                        weekStartsOn={1}
+                        fromDate={minContractDate || undefined}
+                        toDate={maxContractDate || undefined}
+                        components={{ Day }}
+                    />
+                </div>
+            </div>
+        );
     }
-
+    
     const yearsList = React.useMemo(() => {
         const currentYear = new Date().getFullYear();
         return availableYears.length > 0 ? availableYears : [currentYear];
@@ -257,44 +298,7 @@ export function MyRoster() {
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="border rounded-lg">
-                    <div className="p-3">
-                        <div className="flex justify-between items-center mb-4 px-2">
-                            <Button variant="outline" size="icon" onClick={handlePrevMonth} className="z-10 bg-background hover:bg-muted">
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <h3 className="text-center font-bold text-xl">
-                                {format(selectedDate, 'MMMM yyyy')}
-                            </h3>
-                            <Button variant="outline" size="icon" onClick={handleNextMonth} className="z-10 bg-background hover:bg-muted">
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        <Calendar
-                            month={selectedDate}
-                            onMonthChange={setSelectedDate}
-                            onDayDoubleClick={handleDayDoubleClick}
-                            formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
-                           modifiersClassNames={{
-                                today: 'bg-muted'
-                           }}
-                            classNames={{
-                                row: "flex w-full mt-0",
-                                cell: "flex-1 text-center text-sm p-0 m-0 border h-[50px]",
-                                head_row: "flex",
-                                head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
-                                day: "h-full w-full p-1 hover:bg-muted",
-                                months: "w-full",
-                                month: "w-full space-y-0",
-                                caption: "hidden"
-                            }}
-                            weekStartsOn={1}
-                            fromDate={minContractDate || undefined}
-                            toDate={maxContractDate || undefined}
-                            components={{ Day }}
-                        />
-                    </div>
-                </div>
+               <RosterCalendar userId={currentUser.id} />
             </CardContent>
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}

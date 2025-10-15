@@ -162,6 +162,10 @@ export function TeamRoster() {
         setEditingAbsence(null);
     };
 
+    const dateToNumber = (input: string | Date) => {
+        const d = parseLocalDate(input);
+        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    };
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
@@ -179,12 +183,6 @@ export function TeamRoster() {
 
     const handleNextMonth = () => {
         setSelectedDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
-    };
-
-    // ✅ Convert any date to a pure "yyyymmdd" number for safe comparison
-    const dateToNumber = (input: string | Date) => {
-        const d = parseLocalDate(input);
-        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
     };
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
