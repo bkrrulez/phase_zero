@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, startOfDay, isWithinInterval } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, startOfDay } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -38,17 +38,6 @@ const parseLocalDate = (input: string | Date): Date => {
   return new Date(year, month - 1, day); // <-- no UTC anywhere
 };
 
-const dateToNumber = (d: Date | string) => {
-    const local = parseLocalDate(d);
-    return local.getFullYear() * 10000 + (local.getMonth() + 1) * 100 + local.getDate();
-};
-
-const isDateInAbsence = (date: Date, absence: Absence) => {
-    const d = dateToNumber(date);
-    const start = dateToNumber(absence.startDate);
-    const end = dateToNumber(absence.endDate);
-    return d >= start && d <= end;
-};
 
 export function MyRoster() {
     const { currentUser } = useAuth();
@@ -81,20 +70,34 @@ export function MyRoster() {
         return { availableYears: years, minContractDate: minDate, maxContractDate: maxDate };
     }, [currentUser]);
 
+    // ✅ Convert any date to a pure "yyyymmdd" number for safe comparison
+    const dateToNumber = (input: string | Date) => {
+        const d = parseLocalDate(input);
+        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    };
 
-    const modifiers = React.useMemo(() => {
-        const workDays = new Set(timeEntries.filter(e => e.userId === currentUser.id).map(e => dateToNumber(e.date)));
-        const generalAbsences = absences.filter(a => a.userId === currentUser.id && a.type === 'General Absence');
-        const sickLeaves = absences.filter(a => a.userId === currentUser.id && a.type === 'Sick Leave');
-        const publicHolidayDates = new Set(publicHolidays.map(ph => dateToNumber(ph.date)));
-
-        return {
-            workDay: (date: Date) => workDays.has(dateToNumber(date)),
-            generalAbsence: (date: Date) => generalAbsences.some(a => isDateInAbsence(date, a)),
-            sickLeave: (date: Date) => sickLeaves.some(a => isDateInAbsence(date, a)),
-            publicHoliday: (date: Date) => publicHolidayDates.has(dateToNumber(date)),
-        }
-    }, [timeEntries, absences, publicHolidays, currentUser.id]);
+    const modifiers = React.useMemo(() => ({
+        workDay: (date: Date) => {
+            const dNum = dateToNumber(date);
+            return timeEntries.some(e => e.userId === currentUser.id && dateToNumber(e.date) === dNum);
+        },
+        generalAbsence: (date: Date) => {
+            const dNum = dateToNumber(date);
+            return absences.some(a => a.userId === currentUser.id && a.type === 'General Absence' &&
+                dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
+            );
+        },
+        sickLeave: (date: Date) => {
+            const dNum = dateToNumber(date);
+            return absences.some(a => a.userId === currentUser.id && a.type === 'Sick Leave' &&
+                dateToNumber(a.startDate) <= dNum && dateToNumber(a.endDate) >= dNum
+            );
+        },
+        publicHoliday: (date: Date) => {
+            const dNum = dateToNumber(date);
+            return publicHolidays.some(ph => dateToNumber(ph.date) === dNum);
+        },
+    }), [timeEntries, absences, publicHolidays, currentUser.id]);
 
     const handleMonthChange = (month: string) => {
         setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(month), 1));
@@ -164,7 +167,7 @@ export function MyRoster() {
 
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absenceOnDate = userAbsences.find(a => isDateInAbsence(date, a));
+        const absenceOnDate = userAbsences.find(a => dateToNumber(date) >= dateToNumber(a.startDate) && dateToNumber(date) <= dateToNumber(a.endDate));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -303,5 +306,3 @@ export function MyRoster() {
         </Card>
     );
 }
-
-    
