@@ -88,8 +88,8 @@ export function MyRoster() {
 
 
     const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
-        const startDateStr = from.toISOString().split('T')[0];
-        const endDateStr = to.toISOString().split('T')[0];
+        const startDateStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
+        const endDateStr = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`;
 
         if (type === 'Clear Absence') {
             await deleteAbsencesInRange(userId, startDateStr, endDateStr);
@@ -234,7 +234,7 @@ export function MyRoster() {
                     </div>
                     <Calendar
                         month={selectedDate}
-                        onDayDoubleClick={(date) => handleDayDoubleClick(date, userId)}
+                        onDayDoubleClick={(date) => handleDayDoubleClick(date)}
                         formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                         modifiersClassNames={{
                             today: 'bg-muted'
