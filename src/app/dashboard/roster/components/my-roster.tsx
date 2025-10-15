@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, startOfDay } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, addDays, format, DayProps, startOfDay, endOfDay } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -23,21 +23,15 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
 
-// ✅ interpret date string as a plain local date (no timezone conversion)
 const parseLocalDate = (input: string | Date): Date => {
   if (!input) return new Date();
-
-  // If it's already a Date, normalize it to local midnight
   if (input instanceof Date) {
     return new Date(input.getFullYear(), input.getMonth(), input.getDate());
   }
-
-  // Handle full ISO strings safely
-  const datePart = input.split('T')[0]; // take only "YYYY-MM-DD"
+  const datePart = input.split('T')[0];
   const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day); // <-- no UTC anywhere
+  return new Date(year, month - 1, day);
 };
-
 
 export function MyRoster() {
     const { currentUser } = useAuth();
@@ -54,8 +48,8 @@ export function MyRoster() {
             const currentYear = new Date().getFullYear();
             return { availableYears: [currentYear], minContractDate: null, maxContractDate: null };
         }
-        const startDates = currentUser.contracts.map(c => new Date(c.startDate));
-        const endDates = currentUser.contracts.map(c => c.endDate ? new Date(c.endDate) : new Date());
+        const startDates = currentUser.contracts.map(c => parseLocalDate(c.startDate));
+        const endDates = currentUser.contracts.map(c => c.endDate ? parseLocalDate(c.endDate) : new Date());
 
         const minDate = min(startDates);
         const maxDate = max(endDates);
@@ -117,12 +111,19 @@ export function MyRoster() {
             return;
         }
 
+        const fromDateNumber = from.getFullYear() * 10000 + (from.getMonth() + 1) * 100 + from.getDate();
+        const toDateNumber = to.getFullYear() * 10000 + (to.getMonth() + 1) * 100 + to.getDate();
+        
         const existingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            const start = parseLocalDate(a.startDate);
-            const end = endOfDay(parseLocalDate(a.endDate));
+        
+            const existingStart = parseLocalDate(a.startDate);
+            const existingEnd = parseLocalDate(a.endDate);
+            const existingStartNum = existingStart.getFullYear() * 10000 + (existingStart.getMonth() + 1) * 100 + existingStart.getDate();
+            const existingEndNum = existingEnd.getFullYear() * 10000 + (existingEnd.getMonth() + 1) * 100 + existingEnd.getDate();
+        
             return a.userId === userId && 
-                   ((from >= start && from <= end) || (to >= start && to <= end) || (start >= from && start <= to) || (end >= from && end <= to));
+                   (Math.max(fromDateNumber, existingStartNum) <= Math.min(toDateNumber, existingEndNum));
         });
         
         const idToUpdate = absenceIdToUpdate || existingAbsence?.id;
@@ -143,7 +144,8 @@ export function MyRoster() {
 
     const handleDayDoubleClick = (date: Date) => {
         const userAbsences = absences.filter(a => a.userId === currentUser.id);
-        const absenceOnDate = userAbsences.find(a => dateToNumber(date) >= dateToNumber(a.startDate) && dateToNumber(date) <= dateToNumber(a.endDate));
+        const dateNum = dateToNumber(date);
+        const absenceOnDate = userAbsences.find(a => dateNum >= dateToNumber(a.startDate) && dateNum <= dateToNumber(a.endDate));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -173,7 +175,7 @@ export function MyRoster() {
                 const dNum = dateToNumber(date);
                 return publicHolidays.some(ph => dateToNumber(ph.date) === dNum);
             },
-        }), [userId, timeEntries, absences, publicHolidays]);
+        }), [userId]);
 
         function Day(props: DayProps) {
             let tooltipContent: React.ReactNode = null;
@@ -310,3 +312,5 @@ export function MyRoster() {
         </Card>
     );
 }
+
+    

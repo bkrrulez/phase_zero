@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { getDay, addDays, format, DayProps, endOfDay, startOfDay } from 'date-fns';
+import { getDay, addDays, format, DayProps, startOfDay, endOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -30,21 +30,15 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
-// ✅ interpret date string as a plain local date (no timezone conversion)
 const parseLocalDate = (input: string | Date): Date => {
   if (!input) return new Date();
-
-  // If it's already a Date, normalize it to local midnight
   if (input instanceof Date) {
     return new Date(input.getFullYear(), input.getMonth(), input.getDate());
   }
-
-  // Handle full ISO strings safely
-  const datePart = input.split('T')[0]; // take only "YYYY-MM-DD"
+  const datePart = input.split('T')[0];
   const [year, month, day] = datePart.split('-').map(Number);
-  return new Date(year, month - 1, day); // <-- no UTC anywhere
+  return new Date(year, month - 1, day);
 };
-
 
 export function TeamRoster() {
     const { currentUser } = useAuth();
@@ -143,12 +137,19 @@ export function TeamRoster() {
             return;
         }
 
+        const fromDateNumber = from.getFullYear() * 10000 + (from.getMonth() + 1) * 100 + from.getDate();
+        const toDateNumber = to.getFullYear() * 10000 + (to.getMonth() + 1) * 100 + to.getDate();
+        
         const existingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            const start = parseLocalDate(a.startDate);
-            const end = endOfDay(parseLocalDate(a.endDate));
+        
+            const existingStart = parseLocalDate(a.startDate);
+            const existingEnd = parseLocalDate(a.endDate);
+            const existingStartNum = existingStart.getFullYear() * 10000 + (existingStart.getMonth() + 1) * 100 + existingStart.getDate();
+            const existingEndNum = existingEnd.getFullYear() * 10000 + (existingEnd.getMonth() + 1) * 100 + existingEnd.getDate();
+        
             return a.userId === userId && 
-                   ((from >= start && from <= end) || (to >= start && to <= end) || (start >= from && start <= to) || (end >= from && end <= to));
+                   (Math.max(fromDateNumber, existingStartNum) <= Math.min(toDateNumber, existingEndNum));
         });
         
         const idToUpdate = absenceIdToUpdate || existingAbsence?.id;
@@ -169,7 +170,8 @@ export function TeamRoster() {
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const absenceOnDate = userAbsences.find(a => dateToNumber(date) >= dateToNumber(a.startDate) && dateToNumber(date) <= dateToNumber(a.endDate));
+        const dateNum = dateToNumber(date);
+        const absenceOnDate = userAbsences.find(a => dateNum >= dateToNumber(a.startDate) && dateNum <= dateToNumber(a.endDate));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -375,3 +377,5 @@ export function TeamRoster() {
         </Card>
     );
 }
+
+    
