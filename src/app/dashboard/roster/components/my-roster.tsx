@@ -55,12 +55,18 @@ export function MyRoster() {
     }, [currentUser]);
     
     const isDateInAbsence = (date: Date, absence: Absence) => {
-        const startDate = parseISO(absence.startDate);
-        const endDate = parseISO(absence.endDate);
         const checkDate = startOfDay(date);
         
-        return isSameDay(checkDate, startDate) || isSameDay(checkDate, endDate) || (isAfter(checkDate, startDate) && isBefore(checkDate, endDate));
+        // Parse date strings as local dates by splitting them to avoid timezone issues.
+        const [startYear, startMonth, startDay] = absence.startDate.split('-').map(Number);
+        const startDate = new Date(startYear, startMonth - 1, startDay);
+        
+        const [endYear, endMonth, endDay] = absence.endDate.split('-').map(Number);
+        const endDate = new Date(endYear, endMonth - 1, endDay);
+
+        return checkDate >= startDate && checkDate <= endDate;
     };
+
 
     const modifiers = React.useMemo(() => ({
         workDay: (date: Date) => timeEntries.some(entry => 
