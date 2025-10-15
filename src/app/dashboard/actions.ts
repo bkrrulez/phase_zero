@@ -1102,8 +1102,8 @@ export async function getAbsences(): Promise<Absence[]> {
         return result.rows.map(row => ({
             id: row.id,
             userId: row.user_id,
-            startDate: row.start_date.split('T')[0],
-            endDate: row.end_date.split('T')[0],
+            startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
+            endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
             type: row.type
         }));
     } catch (error: any) {
@@ -1159,8 +1159,8 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
       let affectedRows = 0;
   
       for (const row of overlappingAbsencesRes.rows) {
-        const absenceStart = row.start_date.split('T')[0];
-        const absenceEnd = row.end_date.split('T')[0];
+        const absenceStart = format(new Date(row.start_date), 'yyyy-MM-dd');
+        const absenceEnd = format(new Date(row.end_date), 'yyyy-MM-dd');
 
         // Case 1: Clear range completely covers the absence
         if (startDate <= absenceStart && endDate >= absenceEnd) {
@@ -1477,6 +1477,7 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     
 
     
+
 
 
 
