@@ -1099,13 +1099,7 @@ export async function deleteHolidayRequest(requestId: string): Promise<void> {
 export async function getAbsences(): Promise<Absence[]> {
     try {
         const result = await db.query('SELECT * FROM absences');
-        return result.rows.map(row => ({
-            id: row.id,
-            userId: row.user_id,
-            startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
-            endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
-            type: row.type
-        }));
+        return result.rows.map(mapDbAbsence);
     } catch (error: any) {
         if (error.code === '42P01') { // table does not exist
             console.warn('Absences table not found, returning empty array.');
@@ -1477,6 +1471,7 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     
 
     
+
 
 
 

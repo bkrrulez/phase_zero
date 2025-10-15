@@ -101,4 +101,8 @@ export const initialData: InitialData = {
     { id: 'log-1', timestamp: new Date().toISOString(), message: 'System initialized.'}
   ],
   annualLeaveAllowance: 25,
+  absences: [
+    { id: 'abs-1', userId: 'user-1', startDate: '2024-07-10', endDate: '2024-07-10', type: 'Sick Leave' },
+    { id: 'abs-2', userId: 'user-2', startDate: '2024-07-15', endDate: '2024-07-16', type: 'General Absence' },
+  ],
 };
