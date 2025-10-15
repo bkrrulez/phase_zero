@@ -23,11 +23,12 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
 
-// Helper to parse a date string as a local date, avoiding timezone shifts.
+// ✅ interpret date string as a plain local date (no timezone conversion)
 const parseLocalDate = (dateString: string | Date): Date => {
     if (dateString instanceof Date) {
         return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
     }
+    if (!dateString) return new Date();
     const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
     return new Date(year, month - 1, day);
 };

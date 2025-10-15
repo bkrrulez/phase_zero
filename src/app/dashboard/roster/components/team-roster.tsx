@@ -30,10 +30,12 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
+// ✅ interpret date string as a plain local date (no timezone conversion)
 const parseLocalDate = (dateString: string | Date): Date => {
     if (dateString instanceof Date) {
         return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
     }
+    if (!dateString) return new Date();
     const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
     return new Date(year, month - 1, day);
 };
