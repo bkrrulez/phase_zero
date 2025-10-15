@@ -127,7 +127,7 @@ export function TeamRoster() {
 
         const overlappingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            return a.userId === userId && Math.max(Number(startDateStr.replace(/-/g, '')), Number(a.startDate.replace(/-/g, ''))) <= Math.min(Number(endDateStr.replace(/-/g, '')), Number(a.endDate.replace(/-/g, '')));
+            return a.userId === userId && a.startDate <= endDateStr && a.endDate >= startDateStr;
         });
         
         const idToUpdate = absenceIdToUpdate || overlappingAbsence?.id;

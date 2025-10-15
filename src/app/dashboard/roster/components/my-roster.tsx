@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { getDay, getYear, min, max, addDays, format, DayProps } from 'date-fns';
+import { getDay, getYear, min, max, format, DayProps } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -100,7 +100,7 @@ export function MyRoster() {
 
         const overlappingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            return a.userId === userId && Math.max(Number(startDateStr.replace(/-/g, '')), Number(a.startDate.replace(/-/g, ''))) <= Math.min(Number(endDateStr.replace(/-/g, '')), Number(a.endDate.replace(/-/g, '')));
+            return a.userId === userId && a.startDate <= endDateStr && a.endDate >= startDateStr;
         });
         
         const idToUpdate = absenceIdToUpdate || overlappingAbsence?.id;
