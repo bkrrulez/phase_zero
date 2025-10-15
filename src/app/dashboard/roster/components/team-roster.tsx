@@ -142,11 +142,11 @@ export function TeamRoster() {
             return (startDateStr <= existingEnd && endDateStr >= existingStart);
         });
 
-        if (overlappingAbsences.length > 0 && type !== 'Clear Absence') {
-            const details = overlappingAbsences.map(a => `Dates ${format(new Date(a.startDate), 'dd MMM')} to ${format(new Date(a.endDate), 'dd MMM')} are marked as ${a.type}.`).join(' ');
+        if (overlappingAbsences.length > 0) {
+            const overlappingTypes = Array.from(new Set(overlappingAbsences.map(a => a.type)));
             setOverwriteConfirmation({
                 show: true,
-                message: `${details} Do you want to overwrite?`,
+                message: `This range overlaps with existing absences (${overlappingTypes.join(', ')}). Do you want to overwrite?`,
                 onConfirm: () => {
                     saveAction(true);
                     setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} });
@@ -203,7 +203,7 @@ export function TeamRoster() {
             publicHoliday: (date: Date) => publicHolidays.some(ph => 
                 ph.date.split('T')[0] === format(date, 'yyyy-MM-dd')
             ),
-        }), [userId]);
+        }), [userId, timeEntries, absences, publicHolidays]);
 
         function Day(props: DayProps) {
             const dayStr = format(props.date, 'yyyy-MM-dd');

@@ -53,7 +53,7 @@ export function RosterProvider({ children }: { children: React.ReactNode }) {
     if (deletedCount > 0) {
         await fetchRosterData();
         if (!quiet) {
-            toast({ title: 'Absence Cleared', description: `${deletedCount} absence record(s) have been cleared.` });
+            toast({ title: 'Absence Cleared', description: `The absence record(s) in the selected range have been cleared.` });
         }
     } else {
         if (!quiet) {

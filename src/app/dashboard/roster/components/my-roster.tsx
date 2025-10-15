@@ -25,16 +25,6 @@ const months = Array.from({ length: 12 }, (_, i) => ({
   label: new Date(0, i).toLocaleString('default', { month: 'long' }),
 }));
 
-// A robust way to parse YYYY-MM-DD strings without timezone issues
-const parseLocalDate = (input: string | Date): Date => {
-  if (input instanceof Date) {
-    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
-  }
-  if (!input) return new Date();
-  const [year, month, day] = input.split('T')[0].split('-').map(Number);
-  return new Date(year, month - 1, day);
-};
-
 export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
@@ -89,7 +79,7 @@ export function MyRoster() {
         const endDateStr = format(to, 'yyyy-MM-dd');
         
         if (type === 'Clear Absence') {
-            await deleteAbsencesInRange(userId, startDateStr, endDateStr, false); // Pass false for quiet
+            await deleteAbsencesInRange(userId, startDateStr, endDateStr, false);
             setIsAbsenceDialogOpen(false);
             setEditingAbsence(null);
             return;
@@ -125,11 +115,11 @@ export function MyRoster() {
             return (startDateStr <= existingEnd && endDateStr >= existingStart);
         });
 
-        if (overlappingAbsences.length > 0 && type !== 'Clear Absence') {
-            const details = overlappingAbsences.map(a => `Dates ${format(new Date(a.startDate), 'dd MMM')} to ${format(new Date(a.endDate), 'dd MMM')} are marked as ${a.type}.`).join(' ');
+        if (overlappingAbsences.length > 0) {
+            const overlappingTypes = Array.from(new Set(overlappingAbsences.map(a => a.type)));
             setOverwriteConfirmation({
                 show: true,
-                message: `${details} Do you want to overwrite?`,
+                message: `This range overlaps with existing absences (${overlappingTypes.join(', ')}). Do you want to overwrite?`,
                 onConfirm: () => {
                     saveAction(true);
                     setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} });
@@ -178,7 +168,7 @@ export function MyRoster() {
             publicHoliday: (date: Date) => publicHolidays.some(ph => 
                 ph.date.split('T')[0] === format(date, 'yyyy-MM-dd')
             ),
-        }), [userId]);
+        }), [userId, timeEntries, absences, publicHolidays]);
     
         function Day(props: DayProps) {
             const dayStr = format(props.date, 'yyyy-MM-dd');
