@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay, isBefore, isAfter } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -55,10 +55,11 @@ export function MyRoster() {
     }, [currentUser]);
     
     const isDateInAbsence = (date: Date, absence: Absence) => {
-        const start = startOfDay(parseISO(absence.startDate));
-        const end = startOfDay(parseISO(absence.endDate));
+        const startDate = parseISO(absence.startDate);
+        const endDate = parseISO(absence.endDate);
         const checkDate = startOfDay(date);
-        return checkDate >= start && checkDate <= end;
+        
+        return isSameDay(checkDate, startDate) || isSameDay(checkDate, endDate) || (isAfter(checkDate, startDate) && isBefore(checkDate, endDate));
     };
 
     const modifiers = React.useMemo(() => ({

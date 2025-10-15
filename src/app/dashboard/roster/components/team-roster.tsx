@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay, isBefore, isAfter } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -148,10 +148,11 @@ export function TeamRoster() {
     };
 
     const isDateInAbsence = (date: Date, absence: Absence) => {
-        const start = startOfDay(parseISO(absence.startDate));
-        const end = startOfDay(parseISO(absence.endDate));
+        const startDate = parseISO(absence.startDate);
+        const endDate = parseISO(absence.endDate);
         const checkDate = startOfDay(date);
-        return checkDate >= start && checkDate <= end;
+        
+        return isSameDay(checkDate, startDate) || isSameDay(checkDate, endDate) || (isAfter(checkDate, startDate) && isBefore(checkDate, endDate));
     };
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
