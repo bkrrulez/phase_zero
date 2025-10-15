@@ -25,7 +25,9 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 const parseUTCDate = (dateString: string) => {
     if (!dateString) return new Date();
-    const [year, month, day] = dateString.split('-').map(Number);
+    // Handles both 'YYYY-MM-DD' and full ISO strings by splitting at 'T'
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
     return new Date(Date.UTC(year, month - 1, day));
 };
 
