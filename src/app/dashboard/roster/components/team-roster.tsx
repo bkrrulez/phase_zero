@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -104,38 +105,40 @@ export function TeamRoster() {
         const startDateStr = format(from, 'yyyy-MM-dd');
         const endDateStr = format(to, 'yyyy-MM-dd');
         
+        if (type === 'Clear Absence') {
+            await deleteAbsencesInRange(userId, startDateStr, endDateStr, false);
+            setIsAbsenceDialogOpen(false);
+            setEditingAbsence(null);
+            return;
+        }
+
         const saveAction = async (force: boolean = false) => {
-            if (type === 'Clear Absence') {
-                await deleteAbsencesInRange(userId, startDateStr, endDateStr, true);
-            } else {
-                const workDaysInPeriod = timeEntries.some(entry => {
-                    if (entry.userId === userId) {
-                        const entryDayStr = entry.date.split('T')[0];
-                        return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
-                    }
-                    return false;
-                });
-                
-                if (workDaysInPeriod) {
-                    toast({
-                        variant: 'destructive',
-                        title: 'Logged Work Conflict',
-                        description: 'Selected date range contains logged work and cannot be marked as an absence.'
-                    });
-                    return;
+            const workDaysInPeriod = timeEntries.some(entry => {
+                if (entry.userId === userId) {
+                    const entryDayStr = entry.date.split('T')[0];
+                    return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
                 }
-                
-                await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type }, force);
+                return false;
+            });
+            
+            if (workDaysInPeriod) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Logged Work Conflict',
+                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
+                });
+                return;
             }
+            
+            await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type }, force);
             setIsAbsenceDialogOpen(false);
             setEditingAbsence(null);
         };
         
-        // Check for overlap
         const overlappingAbsences = absences.filter(a => {
             if (a.userId !== userId) return false;
-            const existingStart = a.startDate;
-            const existingEnd = a.endDate;
+            const existingStart = a.startDate.split('T')[0];
+            const existingEnd = a.endDate.split('T')[0];
             return (startDateStr <= existingEnd && endDateStr >= existingStart);
         });
 
