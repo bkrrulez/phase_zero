@@ -25,28 +25,29 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 
 // ✅ interpret date string as a plain local date (no timezone conversion)
 const parseLocalDate = (input: string | Date): Date => {
-    if (!input) return new Date();
+  if (!input) return new Date();
 
-    // If it's already a Date, normalize it to local midnight
-    if (input instanceof Date) {
-        return new Date(input.getFullYear(), input.getMonth(), input.getDate());
-    }
+  // If it's already a Date, normalize it to local midnight
+  if (input instanceof Date) {
+    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+  }
 
-    // Handle full ISO strings safely by taking only the "YYYY-MM-DD" part
-    const datePart = input.split('T')[0];
-    const [year, month, day] = datePart.split('-').map(Number);
-    
-    // Create a new Date object using local time, not UTC
-    return new Date(year, month - 1, day);
+  // Handle full ISO strings safely
+  const datePart = input.split('T')[0]; // take only "YYYY-MM-DD"
+  const [year, month, day] = datePart.split('-').map(Number);
+  return new Date(year, month - 1, day); // <-- no UTC anywhere
+};
+
+const dateToNumber = (d: Date | string) => {
+    const local = parseLocalDate(d);
+    return local.getFullYear() * 10000 + (local.getMonth() + 1) * 100 + local.getDate();
 };
 
 const isDateInAbsence = (date: Date, absence: Absence) => {
-    const localDate = parseLocalDate(date);
-    const startDate = parseLocalDate(absence.startDate);
-    const endDate = parseLocalDate(absence.endDate);
-    
-    // getTime() returns timestamp, which is a reliable way to compare dates.
-    return localDate.getTime() >= startDate.getTime() && localDate.getTime() <= endDate.getTime();
+    const d = dateToNumber(date);
+    const start = dateToNumber(absence.startDate);
+    const end = dateToNumber(absence.endDate);
+    return d >= start && d <= end;
 };
 
 export function MyRoster() {
@@ -81,20 +82,19 @@ export function MyRoster() {
     }, [currentUser]);
 
 
-    const modifiers = React.useMemo(() => ({
-        workDay: (date: Date) => timeEntries.some(entry => 
-            entry.userId === currentUser.id && isSameDay(parseLocalDate(entry.date), date)
-        ),
-        generalAbsence: (date: Date) => absences.some(absence => 
-            absence.userId === currentUser.id && absence.type === 'General Absence' && isDateInAbsence(date, absence)
-        ),
-        sickLeave: (date: Date) => absences.some(absence => 
-            absence.userId === currentUser.id && absence.type === 'Sick Leave' && isDateInAbsence(date, absence)
-        ),
-        publicHoliday: (date: Date) => publicHolidays.some(ph => 
-            isSameDay(parseLocalDate(ph.date), date)
-        ),
-    }), [timeEntries, absences, publicHolidays, currentUser.id]);
+    const modifiers = React.useMemo(() => {
+        const workDays = new Set(timeEntries.filter(e => e.userId === currentUser.id).map(e => dateToNumber(e.date)));
+        const generalAbsences = absences.filter(a => a.userId === currentUser.id && a.type === 'General Absence');
+        const sickLeaves = absences.filter(a => a.userId === currentUser.id && a.type === 'Sick Leave');
+        const publicHolidayDates = new Set(publicHolidays.map(ph => dateToNumber(ph.date)));
+
+        return {
+            workDay: (date: Date) => workDays.has(dateToNumber(date)),
+            generalAbsence: (date: Date) => generalAbsences.some(a => isDateInAbsence(date, a)),
+            sickLeave: (date: Date) => sickLeaves.some(a => isDateInAbsence(date, a)),
+            publicHoliday: (date: Date) => publicHolidayDates.has(dateToNumber(date)),
+        }
+    }, [timeEntries, absences, publicHolidays, currentUser.id]);
 
     const handleMonthChange = (month: string) => {
         setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(month), 1));
@@ -179,7 +179,7 @@ export function MyRoster() {
 
         if (modifiers.publicHoliday(props.date)) {
             dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            tooltipContent = publicHolidays.find(h => isSameDay(parseLocalDate(h.date), props.date))?.name || 'Public Holiday';
+            tooltipContent = publicHolidays.find(h => dateToNumber(h.date) === dateToNumber(props.date))?.name || 'Public Holiday';
         } else if (dayOfWeek === 6) {
             dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
             tooltipContent = 'Saturday';
@@ -303,3 +303,5 @@ export function MyRoster() {
         </Card>
     );
 }
+
+    
