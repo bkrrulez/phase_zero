@@ -65,7 +65,6 @@ export function MyRoster() {
         generalAbsence: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'General Absence' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
         sickLeave: (date: Date) => absences.some(absence => absence.userId === currentUser.id && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
         publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseUTCDate(ph.date), date)),
-        weekend: (date: Date) => date.getDay() === 0 || date.getDay() === 6,
     }), [timeEntries, absences, publicHolidays, currentUser.id]);
 
     const handleMonthChange = (month: string) => {
@@ -142,11 +141,13 @@ export function MyRoster() {
 
         if (modifiers.publicHoliday(props.date)) {
             dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            tooltipContent = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date))?.name;
-        } else if (modifiers.weekend(props.date)) {
+            tooltipContent = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date))?.name || 'Public Holiday';
+        } else if (dayOfWeek === 6) { // Saturday
             dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-            if (dayOfWeek === 6) tooltipContent = 'Saturday';
-            if (dayOfWeek === 0) tooltipContent = 'Sunday';
+            tooltipContent = 'Saturday';
+        } else if (dayOfWeek === 0) { // Sunday
+            dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
+            tooltipContent = 'Sunday';
         }
         
         if (modifiers.sickLeave(props.date)) {
