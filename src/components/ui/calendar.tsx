@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -16,7 +15,6 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  modifiersClassNames,
   ...props
 }: CalendarProps) {
 
@@ -128,11 +126,16 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      modifiersClassNames={modifiersClassNames}
-      components={{
-        Caption: props.captionLayout === 'dropdown-buttons' ? CustomCaption : undefined,
+      modifiersClassNames={{
+        weekend: 'bg-orange-100 dark:bg-orange-900/50',
+        publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
+        ...props.modifiersClassNames
       }}
       {...props}
+      components={{
+        Caption: props.captionLayout === 'dropdown-buttons' ? CustomCaption : undefined,
+        ...props.components
+      }}
     />
   )
 }

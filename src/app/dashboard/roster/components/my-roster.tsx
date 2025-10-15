@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -59,15 +58,11 @@ export function MyRoster() {
         return { availableYears: years, minContractDate: minDate, maxContractDate: maxDate };
     }, [currentUser]);
     
-    const calendarData = React.useMemo(() => {
-        const workDays: Record<string, number> = {};
+    const { workDays, generalAbsenceDays, sickLeaveDays, weekendDays, publicHolidayDays } = React.useMemo(() => {
+        const workDays: Set<string> = new Set();
         timeEntries.forEach(entry => {
             if (entry.userId === currentUser.id && isSameMonth(parseUTCDate(entry.date), selectedDate)) {
-                const dateKey = parseUTCDate(entry.date).toDateString();
-                if (!workDays[dateKey]) {
-                    workDays[dateKey] = 0;
-                }
-                workDays[dateKey] += entry.duration;
+                workDays.add(parseUTCDate(entry.date).toDateString());
             }
         });
 
@@ -89,8 +84,28 @@ export function MyRoster() {
             }
         });
 
-        return { workDays, generalAbsenceDays, sickLeaveDays };
-    }, [timeEntries, absences, selectedDate, currentUser.id]);
+        const weekendDays = new Set<string>();
+        const publicHolidayDays = new Set<string>();
+        const year = selectedDate.getFullYear();
+        const month = selectedDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for(let i = 1; i <= daysInMonth; i++) {
+            const date = new Date(year, month, i);
+            const dayOfWeek = getDay(date);
+            if(dayOfWeek === 0 || dayOfWeek === 6) {
+                weekendDays.add(date.toDateString());
+            }
+        }
+        publicHolidays.forEach(ph => {
+            const phDate = parseUTCDate(ph.date);
+            if(isSameMonth(phDate, selectedDate)) {
+                publicHolidayDays.add(phDate.toDateString());
+            }
+        });
+
+
+        return { workDays, generalAbsenceDays, sickLeaveDays, weekendDays, publicHolidayDays };
+    }, [timeEntries, absences, selectedDate, currentUser.id, publicHolidays]);
 
     const handleMonthChange = (month: string) => {
         setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(month), 1));
@@ -161,25 +176,21 @@ export function MyRoster() {
 
     function Day(props: DayProps) {
         const dayString = props.date.toDateString();
-        const dayOfWeek = getDay(props.date);
         
         const publicHoliday = publicHolidays.find(h => isSameDay(parseUTCDate(h.date), props.date));
-        const hoursLogged = calendarData.workDays[dayString];
         
         let tooltipContent: React.ReactNode = null;
         
-        if (hoursLogged > 0) {
-            tooltipContent = `${hoursLogged.toFixed(2)}h Logged`;
-        } else if (calendarData.sickLeaveDays.has(dayString)) {
+        if (workDays.has(dayString)) {
+            tooltipContent = `Work Logged`;
+        } else if (sickLeaveDays.has(dayString)) {
             tooltipContent = 'Sick Leave';
-        } else if (calendarData.generalAbsenceDays.has(dayString)) {
+        } else if (generalAbsenceDays.has(dayString)) {
             tooltipContent = 'General Absence';
         } else if (publicHoliday) {
             tooltipContent = publicHoliday.name;
-        } else if (dayOfWeek === 0) {
-            tooltipContent = 'Sunday';
-        } else if (dayOfWeek === 6) {
-            tooltipContent = 'Saturday';
+        } else if (weekendDays.has(dayString)) {
+            tooltipContent = 'Weekend';
         }
         
         const content = <button type="button" className="w-full h-full p-0 m-0 flex items-center justify-center">{format(props.date, 'd')}</button>;
@@ -256,17 +267,26 @@ export function MyRoster() {
                             onDayDoubleClick={handleDayDoubleClick}
                             formatters={{ formatWeekdayName: (day) => format(day, 'EEE') }}
                            modifiers={{
-                                weekend: (date) => date.getDay() === 0 || date.getDay() === 6,
-                            }}
-                            modifiersClassNames={{
-                                weekend: 'bg-orange-300',
-                            }}
+                                workDay: Array.from(workDays).map(d => new Date(d)),
+                                generalAbsence: Array.from(generalAbsenceDays).map(d => new Date(d)),
+                                sickLeave: Array.from(sickLeaveDays).map(d => new Date(d)),
+                                weekend: Array.from(weekendDays).map(d => new Date(d)),
+                                publicHoliday: Array.from(publicHolidayDays).map(d => new Date(d)),
+                           }}
+                           modifiersClassNames={{
+                                workDay: 'bg-sky-200 dark:bg-sky-800',
+                                generalAbsence: 'bg-yellow-200 dark:bg-yellow-800',
+                                sickLeave: 'bg-red-300 dark:bg-red-800',
+                                weekend: 'bg-orange-100 dark:bg-orange-900/50',
+                                publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
+                                today: 'bg-muted'
+                           }}
                             classNames={{
                                 row: "flex w-full mt-0",
                                 cell: "flex-1 text-center text-sm p-0 m-0 border h-[50px]",
                                 head_row: "flex",
                                 head_cell: "text-muted-foreground rounded-md w-full font-bold text-xs p-2 border",
-                                day: "h-full w-full p-1",
+                                day: "h-full w-full p-1 hover:bg-muted",
                                 months: "w-full",
                                 month: "w-full space-y-0",
                                 caption: "hidden"
