@@ -1099,7 +1099,13 @@ export async function deleteHolidayRequest(requestId: string): Promise<void> {
 export async function getAbsences(): Promise<Absence[]> {
     try {
         const result = await db.query('SELECT * FROM absences');
-        return result.rows.map(mapDbAbsence);
+        return result.rows.map(row => ({
+            id: row.id,
+            userId: row.user_id,
+            startDate: row.start_date.split('T')[0],
+            endDate: row.end_date.split('T')[0],
+            type: row.type
+        }));
     } catch (error: any) {
         if (error.code === '42P01') { // table does not exist
             console.warn('Absences table not found, returning empty array.');
@@ -1144,7 +1150,7 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-      // Correctly find any overlapping absence
+      
       const overlappingAbsencesRes = await client.query(
         'SELECT * FROM absences WHERE user_id = $1 AND start_date <= $2 AND end_date >= $3',
         [userId, endDate, startDate]
@@ -1158,33 +1164,34 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
 
         // Case 1: Clear range completely covers the absence
         if (startDate <= absenceStart && endDate >= absenceEnd) {
-          await client.query('DELETE FROM absences WHERE id = $1', [row.id]);
-          affectedRows++;
+          const res = await client.query('DELETE FROM absences WHERE id = $1', [row.id]);
+          affectedRows += res.rowCount || 0;
         }
         // Case 2: Clear range is in the middle of the absence, splitting it
         else if (startDate > absenceStart && endDate < absenceEnd) {
-          const newEnd1 = format(addDays(parseISO(startDate), -1), 'yyyy-MM-dd');
-          await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEnd1, row.id]);
+          const newEnd1 = format(addDays(parse(startDate, 'yyyy-MM-dd', new Date()), -1), 'yyyy-MM-dd');
+          const res1 = await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEnd1, row.id]);
+          affectedRows += res1.rowCount || 0;
           
-          const newStart2 = format(addDays(parseISO(endDate), 1), 'yyyy-MM-dd');
+          const newStart2 = format(addDays(parse(endDate, 'yyyy-MM-dd', new Date()), 1), 'yyyy-MM-dd');
           const newId = `abs-${Date.now()}-${Math.random()}`;
-          await client.query(
+          const res2 = await client.query(
             'INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5)',
             [newId, userId, newStart2, absenceEnd, row.type]
           );
-          affectedRows++;
+          affectedRows += res2.rowCount || 0;
         }
         // Case 3: Clear range trims the end of the absence
         else if (startDate <= absenceEnd && startDate > absenceStart) {
-          const newEndDate = format(addDays(parseISO(startDate), -1), 'yyyy-MM-dd');
-          await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEndDate, row.id]);
-          affectedRows++;
+          const newEndDate = format(addDays(parse(startDate, 'yyyy-MM-dd', new Date()), -1), 'yyyy-MM-dd');
+          const res = await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEndDate, row.id]);
+          affectedRows += res.rowCount || 0;
         }
         // Case 4: Clear range trims the start of the absence
         else if (endDate >= absenceStart && endDate < absenceEnd) {
-          const newStartDate = format(addDays(parseISO(endDate), 1), 'yyyy-MM-dd');
-          await client.query('UPDATE absences SET start_date = $1 WHERE id = $2', [newStartDate, row.id]);
-          affectedRows++;
+          const newStartDate = format(addDays(parse(endDate, 'yyyy-MM-dd', new Date()), 1), 'yyyy-MM-dd');
+          const res = await client.query('UPDATE absences SET start_date = $1 WHERE id = $2', [newStartDate, row.id]);
+          affectedRows += res.rowCount || 0;
         }
       }
   
@@ -1470,6 +1477,7 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     
 
     
+
 
 
 
