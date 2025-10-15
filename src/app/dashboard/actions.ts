@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -1151,36 +1152,36 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
       let affectedRows = 0;
   
       for (const row of overlappingAbsencesRes.rows) {
-        const absenceStartStr = row.start_date.split('T')[0];
-        const absenceEndStr = row.end_date.split('T')[0];
+        const absenceStart = row.start_date.split('T')[0];
+        const absenceEnd = row.end_date.split('T')[0];
 
         // Case 1: Clear range completely covers the absence
-        if (startDate <= absenceStartStr && endDate >= absenceEndStr) {
+        if (startDate <= absenceStart && endDate >= absenceEnd) {
           await client.query('DELETE FROM absences WHERE id = $1', [row.id]);
           affectedRows++;
         }
         // Case 2: Clear range is in the middle of the absence, splitting it
-        else if (startDate > absenceStartStr && endDate < absenceEndStr) {
-          const newEnd1 = format(addDays(new Date(startDate), -1), 'yyyy-MM-dd');
+        else if (startDate > absenceStart && endDate < absenceEnd) {
+          const newEnd1 = format(addDays(parseISO(startDate), -1), 'yyyy-MM-dd');
           await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEnd1, row.id]);
           
-          const newStart2 = format(addDays(new Date(endDate), 1), 'yyyy-MM-dd');
+          const newStart2 = format(addDays(parseISO(endDate), 1), 'yyyy-MM-dd');
           const newId = `abs-${Date.now()}-${Math.random()}`;
           await client.query(
             'INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5)',
-            [newId, userId, newStart2, absenceEndStr, row.type]
+            [newId, userId, newStart2, absenceEnd, row.type]
           );
           affectedRows++;
         }
         // Case 3: Clear range trims the end of the absence
-        else if (startDate <= absenceEndStr) {
-          const newEndDate = format(addDays(new Date(startDate), -1), 'yyyy-MM-dd');
+        else if (startDate <= absenceEnd && startDate > absenceStart) {
+          const newEndDate = format(addDays(parseISO(startDate), -1), 'yyyy-MM-dd');
           await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEndDate, row.id]);
           affectedRows++;
         }
         // Case 4: Clear range trims the start of the absence
-        else if (endDate >= absenceStartStr) {
-          const newStartDate = format(addDays(new Date(endDate), 1), 'yyyy-MM-dd');
+        else if (endDate >= absenceStart && endDate < absenceEnd) {
+          const newStartDate = format(addDays(parseISO(endDate), 1), 'yyyy-MM-dd');
           await client.query('UPDATE absences SET start_date = $1 WHERE id = $2', [newStartDate, row.id]);
           affectedRows++;
         }
@@ -1468,3 +1469,4 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     
 
     
+
