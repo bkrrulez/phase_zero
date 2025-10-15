@@ -127,15 +127,10 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      modifiersClassNames={{
-        weekend: 'bg-orange-100 dark:bg-orange-900/50',
-        publicHoliday: 'bg-orange-100 dark:bg-orange-900/50',
-        ...props.modifiersClassNames
-      }}
       {...props}
       components={{
         Caption: props.captionLayout === 'dropdown-buttons' ? CustomCaption : undefined,
-        ...props.components
+        ...props.components,
       }}
     />
   )

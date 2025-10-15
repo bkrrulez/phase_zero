@@ -169,7 +169,7 @@ export function TeamRoster() {
             sickLeave: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseUTCDate(absence.startDate), end: parseUTCDate(absence.endDate) })),
             publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseUTCDate(ph.date), date)),
             weekend: (date: Date) => date.getDay() === 0 || date.getDay() === 6,
-        }), [userId, selectedDate]);
+        }), [userId]);
 
         function Day(props: DayProps) {
             let tooltipContent: React.ReactNode = null;
