@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -111,7 +111,7 @@ export function TeamRoster() {
         const workDaysInPeriod = new Set<string>();
         timeEntries.forEach(entry => {
             if(entry.userId === userId) {
-                const entryDate = parseISO(entry.date);
+                const entryDate = new Date(entry.date);
                 if(isWithinInterval(entryDate, { start: from, end: to })) {
                     workDaysInPeriod.add(entryDate.toDateString());
                 }
@@ -129,8 +129,8 @@ export function TeamRoster() {
 
         const existingAbsence = absences.find(a => {
             if (a.id === absenceIdToUpdate) return false;
-            const start = parseISO(a.startDate);
-            const end = parseISO(a.endDate);
+            const start = new Date(a.startDate);
+            const end = new Date(a.endDate);
             return a.userId === userId && 
                    (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
                     isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
@@ -149,7 +149,7 @@ export function TeamRoster() {
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
         const userAbsences = absences.filter(a => a.userId === userId);
-        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: parseISO(a.startDate), end: endOfDay(parseISO(a.endDate)) }));
+        const absenceOnDate = userAbsences.find(a => isWithinInterval(date, { start: new Date(a.startDate), end: endOfDay(new Date(a.endDate)) }));
 
         if (absenceOnDate) {
             setEditingAbsence(absenceOnDate);
@@ -168,10 +168,30 @@ export function TeamRoster() {
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
         const modifiers = React.useMemo(() => ({
-            workDay: (date: Date) => timeEntries.some(entry => entry.userId === userId && isSameDay(parseISO(entry.date), date)),
-            generalAbsence: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'General Absence' && isWithinInterval(date, { start: parseISO(absence.startDate), end: endOfDay(parseISO(absence.endDate)) })),
-            sickLeave: (date: Date) => absences.some(absence => absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: parseISO(absence.startDate), end: endOfDay(parseISO(absence.endDate)) })),
-            publicHoliday: (date: Date) => publicHolidays.some(ph => isSameDay(parseISO(ph.date), date)),
+            workDay: (date: Date) => timeEntries.some(entry => {
+                const [year, month, day] = entry.date.split('-').map(Number);
+                const entryDate = new Date(year, month - 1, day);
+                return entry.userId === userId && isSameDay(entryDate, date)
+            }),
+            generalAbsence: (date: Date) => absences.some(absence => {
+                const [startYear, startMonth, startDay] = absence.startDate.split('-').map(Number);
+                const [endYear, endMonth, endDay] = absence.endDate.split('-').map(Number);
+                const startDate = new Date(startYear, startMonth - 1, startDay);
+                const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59);
+                return absence.userId === userId && absence.type === 'General Absence' && isWithinInterval(date, { start: startDate, end: endDate })
+            }),
+            sickLeave: (date: Date) => absences.some(absence => {
+                const [startYear, startMonth, startDay] = absence.startDate.split('-').map(Number);
+                const [endYear, endMonth, endDay] = absence.endDate.split('-').map(Number);
+                const startDate = new Date(startYear, startMonth - 1, startDay);
+                const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59);
+                return absence.userId === userId && absence.type === 'Sick Leave' && isWithinInterval(date, { start: startDate, end: endDate })
+            }),
+            publicHoliday: (date: Date) => publicHolidays.some(ph => {
+                const [year, month, day] = ph.date.split('-').map(Number);
+                const holidayDate = new Date(year, month - 1, day);
+                return isSameDay(holidayDate, date)
+            }),
         }), [userId]);
 
         function Day(props: DayProps) {
@@ -181,7 +201,7 @@ export function TeamRoster() {
     
             if (modifiers.publicHoliday(props.date)) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
-                tooltipContent = publicHolidays.find(h => isSameDay(parseISO(h.date), props.date))?.name || 'Public Holiday';
+                tooltipContent = publicHolidays.find(h => isSameDay(new Date(h.date), props.date))?.name || 'Public Holiday';
             } else if (dayOfWeek === 6) {
                 dayClassName = cn(dayClassName, "bg-orange-100 dark:bg-orange-900/50");
                 tooltipContent = 'Saturday';
