@@ -20,6 +20,8 @@ import { User, Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -29,22 +31,12 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 type SortableColumn = 'name' | 'email' | 'team';
 
-// A robust way to parse YYYY-MM-DD strings without timezone issues
-const parseLocalDate = (input: string | Date): Date => {
-  if (input instanceof Date) {
-    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
-  }
-  if (!input) return new Date();
-  const [year, month, day] = input.split('T')[0].split('-').map(Number);
-  return new Date(year, month - 1, day);
-};
-
 export function TeamRoster() {
     const { currentUser } = useAuth();
     const { teamMembers } = useMembers();
     const { timeEntries } = useTimeTracking();
     const { publicHolidays } = useHolidays();
-    const { absences, addAbsence, updateAbsence, deleteAbsencesInRange } = useRoster();
+    const { absences, addAbsence, deleteAbsencesInRange } = useRoster();
     const { teams } = useTeams();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -54,6 +46,8 @@ export function TeamRoster() {
     const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = React.useState(false);
     const [editingAbsence, setEditingAbsence] = React.useState<Absence | null>(null);
+    const [overwriteConfirmation, setOverwriteConfirmation] = React.useState<{ show: boolean, message: string, onConfirm: () => void }>({ show: false, message: '', onConfirm: () => {} });
+
     
     const visibleMembers = React.useMemo(() => {
         let members: User[];
@@ -106,37 +100,58 @@ export function TeamRoster() {
         return sortDirection === 'asc' ? <ArrowUpDown className="ml-2 h-4 w-4" /> : <ArrowUpDown className="ml-2 h-4 w-4" />;
     };
 
-    const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
+    const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string) => {
         const startDateStr = format(from, 'yyyy-MM-dd');
         const endDateStr = format(to, 'yyyy-MM-dd');
-
-        if (type === 'Clear Absence') {
-            await deleteAbsencesInRange(userId, startDateStr, endDateStr);
-        } else {
-             const workDaysInPeriod = timeEntries.some(entry => {
-                if (entry.userId === userId) {
-                    const entryDayStr = entry.date.split('T')[0];
-                    return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
-                }
-                return false;
-            });
-            
-            if (workDaysInPeriod) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Logged Work Conflict',
-                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
-                });
-                return; // Stop execution if conflict exists
-            }
-            
-            // This will clear any existing absence in the range before adding the new one.
-            await deleteAbsencesInRange(userId, startDateStr, endDateStr);
-            await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type });
-        }
         
-        setIsAbsenceDialogOpen(false);
-        setEditingAbsence(null);
+        const saveAction = async (force: boolean = false) => {
+            if (type === 'Clear Absence') {
+                await deleteAbsencesInRange(userId, startDateStr, endDateStr, true);
+            } else {
+                const workDaysInPeriod = timeEntries.some(entry => {
+                    if (entry.userId === userId) {
+                        const entryDayStr = entry.date.split('T')[0];
+                        return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
+                    }
+                    return false;
+                });
+                
+                if (workDaysInPeriod) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Logged Work Conflict',
+                        description: 'Selected date range contains logged work and cannot be marked as an absence.'
+                    });
+                    return;
+                }
+                
+                await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type }, force);
+            }
+            setIsAbsenceDialogOpen(false);
+            setEditingAbsence(null);
+        };
+        
+        // Check for overlap
+        const overlappingAbsences = absences.filter(a => {
+            if (a.userId !== userId) return false;
+            const existingStart = a.startDate;
+            const existingEnd = a.endDate;
+            return (startDateStr <= existingEnd && endDateStr >= existingStart);
+        });
+
+        if (overlappingAbsences.length > 0 && type !== 'Clear Absence') {
+            const details = overlappingAbsences.map(a => `Dates ${format(new Date(a.startDate), 'dd MMM')} to ${format(new Date(a.endDate), 'dd MMM')} are marked as ${a.type}.`).join(' ');
+            setOverwriteConfirmation({
+                show: true,
+                message: `${details} Do you want to overwrite?`,
+                onConfirm: () => {
+                    saveAction(true);
+                    setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} });
+                }
+            });
+        } else {
+            saveAction();
+        }
     };
 
     const handleDayDoubleClick = (date: Date, userId: string) => {
@@ -161,7 +176,6 @@ export function TeamRoster() {
     };
 
     const RosterCalendar = ({ userId }: { userId: string }) => {
-        
         const isDateInAbsence = (day: string, absence: Absence) => {
             const startStr = absence.startDate.split('T')[0];
             const endStr = absence.endDate.split('T')[0];
@@ -267,78 +281,80 @@ export function TeamRoster() {
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle>Team Roster</CardTitle>
-                        <CardDescription>View your team's roster and mark absences.</CardDescription>
+        <>
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Team Roster</CardTitle>
+                            <CardDescription>View your team's roster and mark absences.</CardDescription>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
+                            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by Team" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Teams</SelectItem>
+                                    {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
+                                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
+                                <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                     <div className="flex gap-2 items-center">
-                        <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update Roster</Button>
-                         <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filter by Team" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Teams</SelectItem>
-                                {teams.map(team => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={String(selectedDate.getMonth())} onValueChange={(v) => setSelectedDate(new Date(selectedDate.getFullYear(), parseInt(v), 1))}>
-                            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>{months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={String(selectedDate.getFullYear())} onValueChange={(v) => setSelectedDate(new Date(parseInt(v), selectedDate.getMonth(), 1))}>
-                            <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>{years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
-                                <div className="flex items-center">Name {renderSortArrow('name')}</div>
-                            </TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => handleSort('email')}>
-                                <div className="flex items-center">Email {renderSortArrow('email')}</div>
-                            </TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => handleSort('team')}>
-                                <div className="flex items-center">Team {renderSortArrow('team')}</div>
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {visibleMembers.map(member => (
-                            <React.Fragment key={member.id}>
-                                <TableRow onClick={() => setExpandedUser(expandedUser === member.id ? null : member.id)} className="cursor-pointer">
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="w-10 h-10">
-                                                <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar"/>
-                                                <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium">{member.name}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{member.email}</TableCell>
-                                    <TableCell>{teams.find(t => t.id === member.teamId)?.name || 'N/A'}</TableCell>
-                                </TableRow>
-                                {expandedUser === member.id && (
-                                    <TableRow className="hover:bg-transparent">
-                                        <TableCell colSpan={3}>
-                                            <RosterCalendar userId={member.id} />
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
+                                    <div className="flex items-center">Name {renderSortArrow('name')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('email')}>
+                                    <div className="flex items-center">Email {renderSortArrow('email')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('team')}>
+                                    <div className="flex items-center">Team {renderSortArrow('team')}</div>
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {visibleMembers.map(member => (
+                                <React.Fragment key={member.id}>
+                                    <TableRow onClick={() => setExpandedUser(expandedUser === member.id ? null : member.id)} className="cursor-pointer">
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="w-10 h-10">
+                                                    <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar"/>
+                                                    <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-medium">{member.name}</span>
+                                            </div>
                                         </TableCell>
+                                        <TableCell>{member.email}</TableCell>
+                                        <TableCell>{teams.find(t => t.id === member.teamId)?.name || 'N/A'}</TableCell>
                                     </TableRow>
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
+                                    {expandedUser === member.id && (
+                                        <TableRow className="hover:bg-transparent">
+                                            <TableCell colSpan={3}>
+                                                <RosterCalendar userId={member.id} />
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}
                 onOpenChange={setIsAbsenceDialogOpen}
@@ -347,6 +363,20 @@ export function TeamRoster() {
                 isTeamView={true}
                 absence={editingAbsence}
             />
-        </Card>
+            <AlertDialog open={overwriteConfirmation.show} onOpenChange={(open) => !open && setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} })}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Absence Overlap</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {overwriteConfirmation.message}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} })}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={overwriteConfirmation.onConfirm}>Yes, Overwrite</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

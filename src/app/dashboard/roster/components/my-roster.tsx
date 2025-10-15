@@ -16,6 +16,8 @@ import { toast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const months = Array.from({ length: 12 }, (_, i) => ({
   value: i,
@@ -36,11 +38,13 @@ export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
     const { publicHolidays } = useHolidays();
-    const { absences, addAbsence, updateAbsence, deleteAbsencesInRange } = useRoster();
+    const { absences, addAbsence, deleteAbsencesInRange } = useRoster();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
     const [isAbsenceDialogOpen, setIsAbsenceDialogOpen] = React.useState(false);
     const [editingAbsence, setEditingAbsence] = React.useState<Absence | null>(null);
+    const [overwriteConfirmation, setOverwriteConfirmation] = React.useState<{ show: boolean, message: string, onConfirm: () => void }>({ show: false, message: '', onConfirm: () => {} });
+
 
     const { availableYears, minContractDate, maxContractDate } = React.useMemo(() => {
         if (!currentUser || !currentUser.contracts || currentUser.contracts.length === 0) {
@@ -79,36 +83,58 @@ export function MyRoster() {
         setSelectedDate(prevDate => new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 1));
     };
 
-    const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string, absenceIdToUpdate?: string) => {
+    const handleAbsenceSave = async (from: Date, to: Date, type: AbsenceType, userId: string) => {
         const startDateStr = format(from, 'yyyy-MM-dd');
         const endDateStr = format(to, 'yyyy-MM-dd');
 
-        if (type === 'Clear Absence') {
-            await deleteAbsencesInRange(userId, startDateStr, endDateStr);
-        } else {
-            const workDaysInPeriod = timeEntries.some(entry => {
-                if (entry.userId === userId) {
-                    const entryDayStr = entry.date.split('T')[0];
-                    return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
-                }
-                return false;
-            });
-
-            if (workDaysInPeriod) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Logged Work Conflict',
-                    description: 'Selected date range contains logged work and cannot be marked as an absence.'
+        const saveAction = async (force: boolean = false) => {
+             if (type === 'Clear Absence') {
+                await deleteAbsencesInRange(userId, startDateStr, endDateStr, true);
+            } else {
+                const workDaysInPeriod = timeEntries.some(entry => {
+                    if (entry.userId === userId) {
+                        const entryDayStr = entry.date.split('T')[0];
+                        return entryDayStr >= startDateStr && entryDayStr <= endDateStr;
+                    }
+                    return false;
                 });
-                return; // Stop execution if conflict exists
+
+                if (workDaysInPeriod) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Logged Work Conflict',
+                        description: 'Selected date range contains logged work and cannot be marked as an absence.'
+                    });
+                    return;
+                }
+                
+                await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type }, force);
             }
-            
-            await deleteAbsencesInRange(userId, startDateStr, endDateStr);
-            await addAbsence({ userId, startDate: startDateStr, endDate: endDateStr, type });
+            setIsAbsenceDialogOpen(false);
+            setEditingAbsence(null);
         }
-        
-        setIsAbsenceDialogOpen(false);
-        setEditingAbsence(null);
+
+        // Check for overlap
+        const overlappingAbsences = absences.filter(a => {
+            if (a.userId !== userId) return false;
+            const existingStart = a.startDate;
+            const existingEnd = a.endDate;
+            return (startDateStr <= existingEnd && endDateStr >= existingStart);
+        });
+
+        if (overlappingAbsences.length > 0 && type !== 'Clear Absence') {
+            const details = overlappingAbsences.map(a => `Dates ${format(new Date(a.startDate), 'dd MMM')} to ${format(new Date(a.endDate), 'dd MMM')} are marked as ${a.type}.`).join(' ');
+            setOverwriteConfirmation({
+                show: true,
+                message: `${details} Do you want to overwrite?`,
+                onConfirm: () => {
+                    saveAction(true);
+                    setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} });
+                }
+            });
+        } else {
+            saveAction();
+        }
     };
     
     const handleDayDoubleClick = (date: Date) => {
@@ -125,7 +151,6 @@ export function MyRoster() {
     };
     
     const RosterCalendar = ({ userId }: { userId: string }) => {
-
         const isDateInAbsence = (day: string, absence: Absence) => {
             const startStr = absence.startDate.split('T')[0];
             const endStr = absence.endDate.split('T')[0];
@@ -150,7 +175,7 @@ export function MyRoster() {
             publicHoliday: (date: Date) => publicHolidays.some(ph => 
                 ph.date.split('T')[0] === format(date, 'yyyy-MM-dd')
             ),
-        }), [userId, timeEntries, absences, publicHolidays]);
+        }), [userId]);
     
         function Day(props: DayProps) {
             const dayStr = format(props.date, 'yyyy-MM-dd');
@@ -238,41 +263,43 @@ export function MyRoster() {
     }, [availableYears]);
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle>My Roster</CardTitle>
-                        <CardDescription>A monthly overview of your logged time and absences.</CardDescription>
+        <>
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>My Roster</CardTitle>
+                            <CardDescription>A monthly overview of your logged time and absences.</CardDescription>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
+                            <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select month" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {months.map(month => (
+                                        <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {yearsList.map(year => (
+                                        <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                     <div className="flex gap-2 items-center">
-                        <Button onClick={() => { setEditingAbsence(null); setIsAbsenceDialogOpen(true); }}>Update My Roster</Button>
-                        <Select value={String(selectedDate.getMonth())} onValueChange={handleMonthChange}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select month" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {months.map(month => (
-                                    <SelectItem key={month.value} value={String(month.value)}>{month.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={String(selectedDate.getFullYear())} onValueChange={handleYearChange}>
-                            <SelectTrigger className="w-[120px]">
-                                <SelectValue placeholder="Select year" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {yearsList.map(year => (
-                                    <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-               <RosterCalendar userId={currentUser.id} />
-            </CardContent>
+                </CardHeader>
+                <CardContent>
+                <RosterCalendar userId={currentUser.id} />
+                </CardContent>
+            </Card>
             <MarkAbsenceDialog
                 isOpen={isAbsenceDialogOpen}
                 onOpenChange={setIsAbsenceDialogOpen}
@@ -280,6 +307,20 @@ export function MyRoster() {
                 userId={currentUser.id}
                 absence={editingAbsence}
             />
-        </Card>
+             <AlertDialog open={overwriteConfirmation.show} onOpenChange={(open) => !open && setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} })}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Absence Overlap</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {overwriteConfirmation.message}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setOverwriteConfirmation({ show: false, message: '', onConfirm: () => {} })}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={overwriteConfirmation.onConfirm}>Yes, Overwrite</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
