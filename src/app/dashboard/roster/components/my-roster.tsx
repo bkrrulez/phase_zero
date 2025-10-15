@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, startOfDay, isWithinInterval } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -24,12 +24,19 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 // ✅ interpret date string as a plain local date (no timezone conversion)
-const parseLocalDate = (dateString: string | Date): Date => {
-    if (dateString instanceof Date) {
-        return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
+const parseLocalDate = (input: string | Date): Date => {
+    if (!input) return new Date();
+
+    // If it's already a Date, normalize it to local midnight
+    if (input instanceof Date) {
+        return new Date(input.getFullYear(), input.getMonth(), input.getDate());
     }
-    if (!dateString) return new Date();
-    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+
+    // Handle full ISO strings safely by taking only the "YYYY-MM-DD" part
+    const datePart = input.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    
+    // Create a new Date object using local time, not UTC
     return new Date(year, month - 1, day);
 };
 

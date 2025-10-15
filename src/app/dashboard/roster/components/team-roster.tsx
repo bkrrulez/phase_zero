@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, startOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -31,12 +31,19 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 type SortableColumn = 'name' | 'email' | 'team';
 
 // ✅ interpret date string as a plain local date (no timezone conversion)
-const parseLocalDate = (dateString: string | Date): Date => {
-    if (dateString instanceof Date) {
-        return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
+const parseLocalDate = (input: string | Date): Date => {
+    if (!input) return new Date();
+
+    // If it's already a Date, normalize it to local midnight
+    if (input instanceof Date) {
+        return new Date(input.getFullYear(), input.getMonth(), input.getDate());
     }
-    if (!dateString) return new Date();
-    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+
+    // Handle full ISO strings safely by taking only the "YYYY-MM-DD" part
+    const datePart = input.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    
+    // Create a new Date object using local time, not UTC
     return new Date(year, month - 1, day);
 };
 
