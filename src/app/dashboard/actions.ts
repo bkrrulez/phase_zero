@@ -1019,7 +1019,7 @@ export async function getAnnualLeaveAllowance(): Promise<number> {
 
 export async function setAnnualLeaveAllowance(allowance: number): Promise<void> {
     // No DB table for this, so this is a no-op.
-    console.log(`Annual leave allowance set to ${allowance} (in-memory only).`);
+    console.log(`Annual leave allowance set to ${allowance} days (in-memory only).`);
 }
 
 export async function addHolidayRequest(request: Omit<HolidayRequest, 'id'>): Promise<HolidayRequest | null> {
@@ -1143,9 +1143,6 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-      const clearRangeStart = parseISO(startDate);
-      const clearRangeEnd = parseISO(endDate);
-  
       const overlappingAbsencesRes = await client.query(
         'SELECT * FROM absences WHERE user_id = $1 AND start_date <= $2 AND end_date >= $3',
         [userId, endDate, startDate]
@@ -1154,39 +1151,36 @@ export async function deleteAbsencesInRange(userId: string, startDate: string, e
       let affectedRows = 0;
   
       for (const row of overlappingAbsencesRes.rows) {
-        const absenceStart = parseISO(row.start_date);
-        const absenceEnd = parseISO(row.end_date);
-  
+        const absenceStartStr = format(new Date(row.start_date), 'yyyy-MM-dd');
+        const absenceEndStr = format(new Date(row.end_date), 'yyyy-MM-dd');
+
         // Case 1: Clear range completely covers the absence
-        if (isBefore(clearRangeStart, absenceStart) || clearRangeStart.getTime() === absenceStart.getTime() &&
-            (isAfter(clearRangeEnd, absenceEnd) || clearRangeEnd.getTime() === absenceEnd.getTime())) {
+        if (startDate <= absenceStartStr && endDate >= absenceEndStr) {
           await client.query('DELETE FROM absences WHERE id = $1', [row.id]);
           affectedRows++;
         }
         // Case 2: Clear range is in the middle of the absence, splitting it
-        else if (isAfter(clearRangeStart, absenceStart) && isBefore(clearRangeEnd, absenceEnd)) {
-          // Update original to be the first part
-          const newEnd1 = format(addDays(clearRangeStart, -1), 'yyyy-MM-dd');
+        else if (startDate > absenceStartStr && endDate < absenceEndStr) {
+          const newEnd1 = format(addDays(new Date(startDate), -1), 'yyyy-MM-dd');
           await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEnd1, row.id]);
           
-          // Create new record for the second part
-          const newStart2 = format(addDays(clearRangeEnd, 1), 'yyyy-MM-dd');
+          const newStart2 = format(addDays(new Date(endDate), 1), 'yyyy-MM-dd');
           const newId = `abs-${Date.now()}-${Math.random()}`;
           await client.query(
             'INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5)',
-            [newId, userId, newStart2, format(absenceEnd, 'yyyy-MM-dd'), row.type]
+            [newId, userId, newStart2, absenceEndStr, row.type]
           );
           affectedRows++;
         }
         // Case 3: Clear range trims the end of the absence
-        else if (isBefore(clearRangeStart, absenceEnd) || clearRangeStart.getTime() === absenceEnd.getTime()) {
-          const newEndDate = format(addDays(clearRangeStart, -1), 'yyyy-MM-dd');
+        else if (startDate <= absenceEndStr) {
+          const newEndDate = format(addDays(new Date(startDate), -1), 'yyyy-MM-dd');
           await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEndDate, row.id]);
           affectedRows++;
         }
         // Case 4: Clear range trims the start of the absence
-        else if (isAfter(clearRangeEnd, absenceStart) || clearRangeEnd.getTime() === absenceStart.getTime()) {
-          const newStartDate = format(addDays(clearRangeEnd, 1), 'yyyy-MM-dd');
+        else if (endDate >= absenceStartStr) {
+          const newStartDate = format(addDays(new Date(endDate), 1), 'yyyy-MM-dd');
           await client.query('UPDATE absences SET start_date = $1 WHERE id = $2', [newStartDate, row.id]);
           affectedRows++;
         }
@@ -1470,5 +1464,7 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     
 
       
+
+    
 
     
