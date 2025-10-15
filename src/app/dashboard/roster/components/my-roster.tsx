@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
-import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay, isBefore, isAfter, isDate } from 'date-fns';
+import { isSameMonth, getDay, getYear, min, max, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
 import type { Absence } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
@@ -141,8 +141,7 @@ export function MyRoster() {
             const start = parseLocalDate(a.startDate);
             const end = endOfDay(parseLocalDate(a.endDate));
             return a.userId === userId && 
-                   (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
-                    isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
+                   ((from >= start && from <= end) || (to >= start && to <= end) || (start >= from && start <= to) || (end >= from && end <= to));
         });
         
         const idToUpdate = absenceIdToUpdate || existingAbsence?.id;

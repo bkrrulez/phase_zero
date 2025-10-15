@@ -12,7 +12,7 @@ import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useTeams } from '../../contexts/TeamsContext';
-import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay, isBefore, isAfter } from 'date-fns';
+import { isSameMonth, getDay, isWithinInterval, addDays, isSameDay, format, DayProps, endOfDay, parseISO, startOfDay } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -150,8 +150,7 @@ export function TeamRoster() {
             const start = parseLocalDate(a.startDate);
             const end = endOfDay(parseLocalDate(a.endDate));
             return a.userId === userId && 
-                   (isWithinInterval(from, { start, end }) || isWithinInterval(to, { start, end }) || 
-                    isWithinInterval(start, { start: from, end: to}) || isWithinInterval(end, { start: from, end: to}));
+                   ((from >= start && from <= end) || (to >= start && to <= end) || (start >= from && start <= to) || (end >= from && end <= to));
         });
         
         const idToUpdate = absenceIdToUpdate || existingAbsence?.id;
