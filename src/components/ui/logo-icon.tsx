@@ -1,20 +1,15 @@
 
 export const LogoIcon = ({ className }: { className?: string }) => (
     <svg
-        viewBox="0 0 150 42"
+        viewBox="0 0 42 42"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        <title>Phase0 Logo</title>
-        <text x="0" y="28" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: 'bold', fill: 'hsl(var(--primary))' }}>
-            Phase0
-        </text>
-        <g transform="translate(108 21)">
-            <circle cx="0" cy="0" r="12" stroke="hsl(var(--primary))" strokeWidth="2" />
-            <circle cx="0" cy="0" r="8" stroke="hsl(var(--accent))" strokeWidth="2" />
-            <circle cx="0" cy="0" r="4" fill="hsl(var(--primary))" />
-            <path d="M0 -12 V -6 M0 6 V 12 M-12 0 H -6 M6 0 H 12" stroke="hsl(var(--primary))" strokeWidth="1.5" />
-        </g>
+        <title>Phase0 Compass Logo</title>
+        <circle cx="21" cy="21" r="18" stroke="hsl(var(--primary))" strokeWidth="4"/>
+        <path d="M21 12 L27 21 L21 30 L15 21 L21 12Z" fill="hsl(var(--accent))" />
+        <path d="M21 12 L15 21 L21 30 L27 21 L21 12Z" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinejoin="round"/>
+        <circle cx="21" cy="21" r="2" fill="hsl(var(--primary))"/>
     </svg>
 );

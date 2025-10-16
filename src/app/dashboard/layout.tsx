@@ -188,11 +188,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <Link href="/dashboard">
-            <div className="flex items-center gap-2 p-2">
-              <LogoIcon className="w-8 h-8" />
-              <h1 className="text-xl font-bold font-headline text-primary">TimeTool</h1>
-            </div>
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+              <LogoIcon className="size-8 shrink-0" />
+              <div className="duration-200 group-data-[collapsible=icon]:-translate-x-4 group-data-[collapsible=icon]:opacity-0">
+                  <h1 className="font-bold font-headline text-lg">Phase0</h1>
+              </div>
           </Link>
         </SidebarHeader>
         <SidebarContent>
