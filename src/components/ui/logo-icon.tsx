@@ -8,14 +8,13 @@ export const LogoIcon = ({ className }: { className?: string }) => (
     >
         <title>Phase0 Logo</title>
         <text x="0" y="28" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: 'bold', fill: 'hsl(var(--primary))' }}>
-            Phase
+            Phase0
         </text>
-        <g transform="translate(100 21)">
+        <g transform="translate(108 21)">
             <circle cx="0" cy="0" r="12" stroke="hsl(var(--primary))" strokeWidth="2" />
             <circle cx="0" cy="0" r="8" stroke="hsl(var(--accent))" strokeWidth="2" />
             <circle cx="0" cy="0" r="4" fill="hsl(var(--primary))" />
             <path d="M0 -12 V -6 M0 6 V 12 M-12 0 H -6 M6 0 H 12" stroke="hsl(var(--primary))" strokeWidth="1.5" />
         </g>
-        <rect x="0" y="35" width="80" height="2" fill="hsl(var(--accent))" />
     </svg>
 );

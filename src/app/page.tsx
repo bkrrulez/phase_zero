@@ -61,9 +61,9 @@ export default function LoginPage() {
           <Card className="w-full max-w-sm mx-auto shadow-xl">
             <CardHeader className="text-center">
               <div className="flex justify-center items-center mb-4">
-                <LogoIcon className="w-10 h-10" />
+                <LogoIcon className="w-24 h-10" />
               </div>
-              <CardTitle className="text-2xl font-bold font-headline text-primary">TimeTool</CardTitle>
+              <CardTitle className="text-2xl font-bold font-headline text-primary">Phase0</CardTitle>
               <CardDescription>Enter your credentials to access your dashboard</CardDescription>
             </CardHeader>
             <CardContent>
