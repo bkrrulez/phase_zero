@@ -5,21 +5,19 @@ export const LogoIcon = ({ className }: { className?: string }) => (
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        <title>TimeTool Logo</title>
-        <path
-            d="M21 3 A 18 18 0 0 1 21 39"
-            stroke="hsl(var(--primary))"
-            strokeWidth="4"
-        />
-        <path
-            d="M21 39 A 18 18 0 0 1 21 3"
-            stroke="hsl(var(--accent))"
-            strokeWidth="4"
-        />
-        <path d="M21 7V9" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" />
-        <path d="M35 21H33" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" />
-        <path d="M21 35V33" stroke="hsl(var(--accent))" strokeWidth="3" strokeLinecap="round" />
-        <path d="M7 21H9" stroke="hsl(var(--accent))" strokeWidth="3" strokeLinecap="round" />
-        <path fillRule="evenodd" clipRule="evenodd" d="M21 23H29V21H23V13H21V23Z" fill="hsl(var(--accent))" />
+        <title>Phase0 Compass Logo</title>
+        <circle cx="21" cy="21" r="18" stroke="hsl(var(--primary))" strokeWidth="2"/>
+        <circle cx="21" cy="21" r="14" stroke="hsl(var(--primary))" strokeWidth="1" strokeDasharray="3 3"/>
+        
+        {/* Star */}
+        <path d="M21 9 L23 19 L21 23 L19 19 L21 9Z" fill="hsl(var(--accent))" />
+        <path d="M33 21 L23 23 L19 21 L23 19 L33 21Z" fill="hsl(var(--accent))" />
+        <path d="M21 33 L19 23 L21 19 L23 23 L21 33Z" fill="hsl(var(--accent))" />
+        <path d="M9 21 L19 23 L23 21 L19 19 L9 21Z" fill="hsl(var(--accent))" />
+
+        <path d="M21 9 L23 19 L21 23 L19 19 L21 9Z" stroke="hsl(var(--primary))" strokeWidth="1" strokeLinejoin="round" />
+        <path d="M33 21 L23 23 L19 21 L23 19 L33 21Z" stroke="hsl(var(--primary))" strokeWidth="1" strokeLinejoin="round" />
+        <path d="M21 33 L19 23 L21 19 L23 23 L21 33Z" stroke="hsl(var(--primary))" strokeWidth="1" strokeLinejoin="round" />
+        <path d="M9 21 L19 23 L23 21 L19 19 L9 21Z" stroke="hsl(var(--primary))" strokeWidth="1" strokeLinejoin="round" />
     </svg>
 );

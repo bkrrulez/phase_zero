@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { type PublicHoliday } from '@/lib/mock-data';
+import { type PublicHoliday } from '@/lib/types';
 
 const holidaySchema = z.object({
   country: z.string().min(1, 'Country is required.'),

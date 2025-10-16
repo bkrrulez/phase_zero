@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { type Project } from '@/lib/mock-data';
+import { type Project } from '@/lib/types';
 
 const teamSchema = z.object({
   name: z.string().min(1, 'Team name is required.'),

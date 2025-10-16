@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { type User, type HolidayRequest } from "@/lib/mock-data";
+import { type User, type HolidayRequest } from "@/lib/types";
 import { format, differenceInCalendarDays, addDays, isSameDay, startOfYear, endOfYear, max, min, formatDistanceToNowStrict } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useHolidays } from '../contexts/HolidaysContext';
@@ -311,8 +311,8 @@ export default function HolidaysPage() {
         }
 
         addHolidayRequest({
-            startDate: data.date.from.toISOString(),
-            endDate: data.date.to.toISOString(),
+            startDate: format(data.date.from, 'yyyy-MM-dd'),
+            endDate: format(data.date.to, 'yyyy-MM-dd'),
         });
         setIsRequestDialogOpen(false);
     }

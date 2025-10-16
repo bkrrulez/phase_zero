@@ -27,7 +27,7 @@ export default function TeamPage() {
     
     const canAddMember = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
-    const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
+    const handleAddMember = (newUser: Omit<User, 'id'|'avatar'|'contract' > & { contracts: Omit<User['contracts'][0], 'id'>[] }) => {
         addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({

@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type PublicHoliday } from '@/lib/mock-data';
+import { type PublicHoliday } from '@/lib/types';
 
 interface DeleteHolidayDialogProps {
   holiday: PublicHoliday | null;

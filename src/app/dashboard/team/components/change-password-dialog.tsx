@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { type User } from '@/lib/mock-data';
+import { type User } from '@/lib/types';
 
 const changePasswordSchema = z.object({
   password: z.string().min(8, { message: "Password must be at least 8 characters long." }),

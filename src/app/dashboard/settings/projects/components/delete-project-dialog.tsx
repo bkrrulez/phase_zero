@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { type Project } from '@/lib/mock-data';
+import { type Project } from '@/lib/types';
 
 interface DeleteProjectDialogProps {
   project: Project | null;

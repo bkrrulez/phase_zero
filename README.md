@@ -1,6 +1,6 @@
-# TimeTool by Bikramjit Chowdhury
+# Phase0 by Bikramjit Chowdhury
 
-This is a Next.js application built for time tracking and managing small teams.
+This is a Next.js application built for civil engineers and building planners.
 
 To get started, take a look at src/app/page.tsx.
 
@@ -43,7 +43,7 @@ SMTP_HOST=your-smtp-host.com
 SMTP_PORT=587
 SMTP_USER=your-smtp-username
 SMTP_PASSWORD=your-smtp-password
-SMTP_FROM="TimeTool <no-reply@yourdomain.com>"
+SMTP_FROM="Phase0 <no-reply@yourdomain.com>"
 ```
 
 ### 3. Run the Development Server

@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type PushMessage } from '@/lib/mock-data';
+import { type PushMessage } from '@/lib/types';
 
 interface DeletePushMessageDialogProps {
   message: PushMessage | null;

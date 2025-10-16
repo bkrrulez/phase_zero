@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { type Task } from '@/lib/mock-data';
+import { type Task } from '@/lib/types';
 
 const taskSchema = z.object({
   name: z.string().min(1, 'Task name is required.'),

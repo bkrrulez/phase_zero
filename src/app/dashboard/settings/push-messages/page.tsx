@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { type PushMessage } from '@/lib/mock-data';
+import { type PushMessage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { usePushMessages } from '../../contexts/PushMessagesContext';
 import { useTeams } from '../../contexts/TeamsContext';

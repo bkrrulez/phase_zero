@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { type PushMessage } from '@/lib/mock-data';
+import { type PushMessage } from '@/lib/types';
 import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
 import { format } from 'date-fns';
 

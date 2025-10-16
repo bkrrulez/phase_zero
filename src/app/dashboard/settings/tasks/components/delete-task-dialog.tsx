@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { type Task } from '@/lib/mock-data';
+import { type Task } from '@/lib/types';
 
 interface DeleteTaskDialogProps {
   task: Task | null;

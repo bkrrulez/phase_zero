@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { type Task, type Project } from '@/lib/mock-data';
+import { type Task, type Project } from '@/lib/types';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required.'),

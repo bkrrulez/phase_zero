@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { type CustomHoliday } from '@/lib/mock-data';
+import { type CustomHoliday } from '@/lib/types';
 import { useTeams } from '@/app/dashboard/contexts/TeamsContext';
 
 const holidaySchema = z.object({

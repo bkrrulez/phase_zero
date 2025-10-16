@@ -1,7 +1,7 @@
 
-# Database Schema for TimeTool
+# Database Schema for Phase0
 
-This document outlines the database schema for the TimeTool application.
+This document outlines the database schema for the Phase0 application.
 
 ---
 

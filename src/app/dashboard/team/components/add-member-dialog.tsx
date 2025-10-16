@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { type User } from '@/lib/mock-data';
+import { type User } from '@/lib/types';
 import { useProjects } from '../../contexts/ProjectsContext';
 import { useTeams } from '../../contexts/TeamsContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -66,7 +66,7 @@ type AddMemberFormValues = z.infer<typeof addMemberSchema>;
 interface AddMemberDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddMember: (user: User) => void;
+  onAddMember: (user: Omit<User, 'id' | 'avatar' | 'contract'> & { contracts: Omit<User['contracts'][0], 'id'>[] }) => void;
   teamMembers: User[];
 }
 
@@ -111,20 +111,18 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   const managers = Array.from(new Map(teamMembers.filter(m => m.role === 'Team Lead' || m.role === 'Super Admin').map(item => [item.id, item])).values());
 
   function onSubmit(data: AddMemberFormValues) {
-    const newUser: User = {
-      id: `user-${Date.now()}`,
+    const newUser = {
       name: data.name,
       email: data.email,
       role: data.role,
       reportsTo: data.reportsTo,
       teamId: (data.teamId && data.teamId !== 'none') ? data.teamId : undefined,
-      avatar: 'https://placehold.co/100x100.png',
       associatedProjectIds: data.associatedProjectIds,
-      contract: {
+      contracts: [{
         startDate: data.startDate,
         endDate: data.endDate || null,
         weeklyHours: data.weeklyHours,
-      },
+      }],
     };
     onAddMember(newUser);
     form.reset();
