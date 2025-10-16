@@ -1,26 +1,21 @@
 
 export const LogoIcon = ({ className }: { className?: string }) => (
     <svg
-        viewBox="0 0 42 42"
+        viewBox="0 0 150 42"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        <title>TimeTool Logo</title>
-        <path
-            d="M21 3 A 18 18 0 0 1 21 39"
-            stroke="hsl(var(--primary))"
-            strokeWidth="4"
-        />
-        <path
-            d="M21 39 A 18 18 0 0 1 21 3"
-            stroke="hsl(var(--accent))"
-            strokeWidth="4"
-        />
-        <path d="M21 7V9" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" />
-        <path d="M35 21H33" stroke="hsl(var(--primary))" strokeWidth="3" strokeLinecap="round" />
-        <path d="M21 35V33" stroke="hsl(var(--accent))" strokeWidth="3" strokeLinecap="round" />
-        <path d="M7 21H9" stroke="hsl(var(--accent))" strokeWidth="3" strokeLinecap="round" />
-        <path fillRule="evenodd" clipRule="evenodd" d="M21 23H29V21H23V13H21V23Z" fill="hsl(var(--accent))" />
+        <title>Phase0 Logo</title>
+        <text x="0" y="28" style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: 'bold', fill: 'hsl(var(--primary))' }}>
+            Phase
+        </text>
+        <g transform="translate(100 21)">
+            <circle cx="0" cy="0" r="12" stroke="hsl(var(--primary))" strokeWidth="2" />
+            <circle cx="0" cy="0" r="8" stroke="hsl(var(--accent))" strokeWidth="2" />
+            <circle cx="0" cy="0" r="4" fill="hsl(var(--primary))" />
+            <path d="M0 -12 V -6 M0 6 V 12 M-12 0 H -6 M6 0 H 12" stroke="hsl(var(--primary))" strokeWidth="1.5" />
+        </g>
+        <rect x="0" y="35" width="80" height="2" fill="hsl(var(--accent))" />
     </svg>
 );
