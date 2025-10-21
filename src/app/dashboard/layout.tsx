@@ -23,7 +23,6 @@ import {
   ScrollText,
   LifeBuoy,
   FileText,
-  ClipboardCheck,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -81,7 +80,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractsProvider, useContracts } from "./contexts/ContractsContext";
-import { RosterProvider } from './contexts/RosterContext';
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -230,14 +228,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
              )}
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/roster")}>
-                <Link href="/dashboard/roster">
-                  <ClipboardCheck />
-                  Roster
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             {isLoading ? (
                 <SidebarMenuItem>
                     <Skeleton className="h-8 w-full" />
@@ -430,13 +420,11 @@ function DataProviders({
                         <SystemLogProvider>
                           <SettingsProvider>
                             <HolidaysProvider>
-                              <RosterProvider>
                                 <TimeTrackingProvider>
                                   <AccessControlProvider>
                                     <LayoutContent>{children}</LayoutContent>
                                   </AccessControlProvider>
                                 </TimeTrackingProvider>
-                              </RosterProvider>
                             </HolidaysProvider>
                           </SettingsProvider>
                         </SystemLogProvider>

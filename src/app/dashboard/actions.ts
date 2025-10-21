@@ -20,7 +20,6 @@ import {
   type LogEntry,
   type Contract,
   type ContractEndNotification,
-  type Absence,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO, isAfter, isBefore } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -123,13 +122,6 @@ const mapDbContractEndNotification = (row: any): ContractEndNotification => ({
     thresholdDays: row.threshold_days.map(Number) // Ensure numbers
 });
 
-const mapDbAbsence = (row: any): Absence => ({
-    id: row.id,
-    userId: row.user_id,
-    startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
-    endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
-    type: row.type,
-});
 
 // ========== Users & Auth ==========
 
@@ -1095,112 +1087,6 @@ export async function deleteHolidayRequest(requestId: string): Promise<void> {
     revalidatePath('/dashboard/holidays');
 }
 
-// ========== Roster / Absences ==========
-export async function getAbsences(): Promise<Absence[]> {
-    try {
-        const result = await db.query('SELECT * FROM absences');
-        return result.rows.map(mapDbAbsence);
-    } catch (error: any) {
-        if (error.code === '42P01') { // table does not exist
-            console.warn('Absences table not found, returning empty array.');
-            return [];
-        }
-        throw error;
-    }
-}
-
-export async function addAbsence(absence: Omit<Absence, 'id'>): Promise<Absence | null> {
-    const id = `abs-${Date.now()}`;
-    const { userId, startDate, endDate, type } = absence;
-    try {
-        const result = await db.query(
-            `INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [id, userId, startDate, endDate, type]
-        );
-        revalidatePath('/dashboard/roster');
-        return mapDbAbsence(result.rows[0]);
-    } catch (error) {
-        console.error("Failed to add absence", error);
-        return null;
-    }
-}
-
-export async function updateAbsence(absenceId: string, absence: Omit<Absence, 'id'>): Promise<Absence | null> {
-    const { userId, startDate, endDate, type } = absence;
-    try {
-        const result = await db.query(
-            `UPDATE absences SET user_id = $1, start_date = $2, end_date = $3, type = $4 WHERE id = $5 RETURNING *`,
-            [userId, startDate, endDate, type, absenceId]
-        );
-        revalidatePath('/dashboard/roster');
-        return mapDbAbsence(result.rows[0]);
-    } catch (error) {
-        console.error("Failed to update absence", error);
-        return null;
-    }
-}
-
-export async function deleteAbsencesInRange(userId: string, startDate: string, endDate: string): Promise<number> {
-    const client = await db.connect();
-    try {
-      await client.query('BEGIN');
-      
-      const overlappingAbsencesRes = await client.query(
-        'SELECT * FROM absences WHERE user_id = $1 AND start_date <= $2 AND end_date >= $3',
-        [userId, endDate, startDate]
-      );
-  
-      let affectedRows = 0;
-  
-      for (const row of overlappingAbsencesRes.rows) {
-        const absenceStart = format(new Date(row.start_date), 'yyyy-MM-dd');
-        const absenceEnd = format(new Date(row.end_date), 'yyyy-MM-dd');
-
-        // Case 1: Clear range completely covers the absence
-        if (startDate <= absenceStart && endDate >= absenceEnd) {
-          const res = await client.query('DELETE FROM absences WHERE id = $1', [row.id]);
-          affectedRows += res.rowCount || 0;
-        }
-        // Case 2: Clear range is in the middle of the absence, splitting it
-        else if (startDate > absenceStart && endDate < absenceEnd) {
-          const newEnd1 = format(addDays(parse(startDate, 'yyyy-MM-dd', new Date()), -1), 'yyyy-MM-dd');
-          const res1 = await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEnd1, row.id]);
-          affectedRows += res1.rowCount || 0;
-          
-          const newStart2 = format(addDays(parse(endDate, 'yyyy-MM-dd', new Date()), 1), 'yyyy-MM-dd');
-          const newId = `abs-${Date.now()}-${Math.random()}`;
-          const res2 = await client.query(
-            'INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5)',
-            [newId, userId, newStart2, absenceEnd, row.type]
-          );
-          affectedRows += res2.rowCount || 0;
-        }
-        // Case 3: Clear range trims the end of the absence
-        else if (startDate <= absenceEnd && startDate > absenceStart) {
-          const newEndDate = format(addDays(parse(startDate, 'yyyy-MM-dd', new Date()), -1), 'yyyy-MM-dd');
-          const res = await client.query('UPDATE absences SET end_date = $1 WHERE id = $2', [newEndDate, row.id]);
-          affectedRows += res.rowCount || 0;
-        }
-        // Case 4: Clear range trims the start of the absence
-        else if (endDate >= absenceStart && endDate < absenceEnd) {
-          const newStartDate = format(addDays(parse(endDate, 'yyyy-MM-dd', new Date()), 1), 'yyyy-MM-dd');
-          const res = await client.query('UPDATE absences SET start_date = $1 WHERE id = $2', [newStartDate, row.id]);
-          affectedRows += res.rowCount || 0;
-        }
-      }
-  
-      await client.query('COMMIT');
-      revalidatePath('/dashboard/roster');
-      return affectedRows;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error("Failed to delete/modify absences", error);
-      return 0;
-    } finally {
-      client.release();
-    }
-  }
-
 // ========== Access Control ==========
 
 export async function getFreezeRules(): Promise<FreezeRule[]> {
@@ -1463,17 +1349,3 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         console.error(`Failed to set setting for key '${key}':`, error);
     }
 }
-
-    
-
-      
-
-    
-
-    
-
-
-
-
-
-
