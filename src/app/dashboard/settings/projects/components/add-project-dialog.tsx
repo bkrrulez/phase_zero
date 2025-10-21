@@ -176,7 +176,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>{t('yearOfConstruction')}</FormLabel>
-                                <FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
@@ -187,7 +187,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>{t('geschosse')}</FormLabel>
-                                <FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
@@ -198,7 +198,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>{t('fluchtniveau')}</FormLabel>
-                                <FormControl><Input type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
