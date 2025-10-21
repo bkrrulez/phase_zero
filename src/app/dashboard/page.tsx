@@ -17,6 +17,8 @@ import { DeleteProjectDialog } from './settings/projects/components/delete-proje
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLog } from './contexts/SystemLogContext';
 import Image from 'next/image';
+import { FolderIcon } from '@/components/ui/folder-icon';
+
 
 const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
     const { t } = useLanguage();
@@ -39,7 +41,7 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
         <Card 
-            className="group relative overflow-hidden transition-all hover:shadow-md"
+            className="group relative overflow-hidden transition-all hover:shadow-md bg-card"
             style={{height: 'auto', aspectRatio: '5/3.5'}}
         >
             <div className="absolute top-0 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -60,13 +62,12 @@ const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: 
                 </DropdownMenu>
             </div>
              <div 
-                className="absolute inset-0 transition-colors cursor-pointer"
+                className="absolute inset-0 transition-colors cursor-pointer text-primary"
                 onClick={onEdit}
              >
-                <Image src="https://picsum.photos/seed/1/600/400" alt={project.name} fill style={{objectFit: 'cover'}} data-ai-hint="abstract geometric" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <FolderIcon className="w-full h-full" />
              </div>
-            <CardContent className="p-4 h-full flex flex-col justify-between relative text-white">
+            <CardContent className="p-4 h-full flex flex-col justify-between relative text-card-foreground">
                 <div className="flex justify-between items-start">
                     <span className="text-sm font-mono opacity-80">#{project.projectNumber}</span>
                 </div>
@@ -99,7 +100,7 @@ export default function ProjectDashboardPage() {
         if (currentUser.role === 'Super Admin') {
             return projects;
         }
-        return projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
+        return projects.filter(p => p.creatorId === currentUser.id);
     }, [projects, currentUser]);
 
     const handleAddProject = async (data: ProjectFormValues) => {
