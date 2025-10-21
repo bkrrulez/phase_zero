@@ -139,7 +139,7 @@ export default function ProjectsSettingsPage() {
                                         <TableCell className="font-medium">{project.name}</TableCell>
                                         <TableCell>{project.address}</TableCell>
                                         <TableCell>{project.projectManager}</TableCell>
-                                        <TableCell>{format(new Date(project.projectCreationDate), 'PP')}</TableCell>
+                                        <TableCell>{project.projectCreationDate ? format(new Date(project.projectCreationDate), 'PP') : 'N/A'}</TableCell>
                                         {canManageProjects && (
                                             <TableCell>
                                                 <DropdownMenu>
