@@ -135,7 +135,7 @@ export default function ProjectsSettingsPage() {
                                         <TableCell className="font-medium">{project.name}</TableCell>
                                         <TableCell>{project.address}</TableCell>
                                         <TableCell>{project.projectManager}</TableCell>
-                                        <TableCell>{project.currentUse}</TableCell>
+                                        <TableCell>{project.currentUse ? t(project.currentUse) : 'N/A'}</TableCell>
                                         {canManageProjects && (
                                             <TableCell>
                                                 <DropdownMenu>

@@ -307,6 +307,7 @@
     "no": "Nein",
     "saveChanges": "Änderungen speichern",
     "save": "Speichern",
+    "toNewUsage": "Zu neuer Nutzung",
     "editProject": "Projekt bearbeiten",
     "editProjectDesc": "Details für das Projekt \"{{name}}\" aktualisieren.",
     "creationDate": "Erstellungsdatum",

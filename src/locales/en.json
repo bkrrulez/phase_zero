@@ -307,6 +307,7 @@
     "no": "No",
     "saveChanges": "Save Changes",
     "save": "Save",
+    "toNewUsage": "To New Usage",
     "editProject": "Edit Project",
     "editProjectDesc": "Update the details for the project \"{{name}}\".",
     "creationDate": "Creation Date",

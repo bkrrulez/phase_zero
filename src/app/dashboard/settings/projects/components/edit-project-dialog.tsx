@@ -56,9 +56,9 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         creator: project.creatorId,
         address: project.address,
         projectOwner: project.projectOwner,
-        yearOfConstruction: project.yearOfConstruction,
-        numberOfFloors: project.numberOfFloors,
-        escapeLevel: project.escapeLevel,
+        yearOfConstruction: project.yearOfConstruction ?? undefined,
+        numberOfFloors: project.numberOfFloors ?? undefined,
+        escapeLevel: project.escapeLevel ?? undefined,
         listedBuilding: project.listedBuilding ? 'Yes' : 'No',
         protectionZone: project.protectionZone ? 'Yes' : 'No',
         currentUse: project.currentUse || 'General',
@@ -98,7 +98,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ScrollArea className="max-h-[70vh] p-1">
+            <ScrollArea className="max-h-[70vh]">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 p-6">
                     {/* Left Column */}
                     <div className="space-y-4">
@@ -252,7 +252,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                                         <ScrollArea className="h-48">
                                             {currentUseOptions.map(opt => (
                                                 <SelectItem key={opt.value} value={opt.value}>
-                                                    {language === 'de' ? t(opt.value) : opt.label}
+                                                    {language === 'de' ? t(opt.value as any) : opt.label}
                                                 </SelectItem>
                                             ))}
                                         </ScrollArea>
@@ -265,10 +265,10 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                     </div>
                  </div>
             </ScrollArea>
-            <DialogFooter className="pt-4 pr-6">
+            <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                 <Button type="submit">{t('saveChanges')}</Button>
-                <Button type="button" variant="secondary">To New Usage</Button>
+                <Button type="button" variant="secondary">{t('toNewUsage')}</Button>
             </DialogFooter>
           </form>
         </Form>
