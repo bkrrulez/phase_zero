@@ -16,7 +16,6 @@ import { EditProjectDialog } from './settings/projects/components/edit-project-d
 import { DeleteProjectDialog } from './settings/projects/components/delete-project-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLog } from './contexts/SystemLogContext';
-import Image from 'next/image';
 import { FolderIcon } from '@/components/ui/folder-icon';
 
 
@@ -41,13 +40,20 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
         <Card 
-            className="group relative overflow-hidden transition-all hover:shadow-md bg-card"
+            className="group relative overflow-hidden transition-all hover:shadow-md border-0"
             style={{height: 'auto', aspectRatio: '5/3.5'}}
         >
+            <div 
+                className="absolute inset-0 transition-colors cursor-pointer"
+                onClick={onEdit}
+             >
+                <FolderIcon className="w-full h-full" />
+             </div>
+
             <div className="absolute top-0 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-black/10 hover:text-white">
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -61,15 +67,10 @@ const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: 
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-             <div 
-                className="absolute inset-0 transition-colors cursor-pointer text-primary"
-                onClick={onEdit}
-             >
-                <FolderIcon className="w-full h-full" />
-             </div>
-            <CardContent className="p-4 h-full flex flex-col justify-between relative text-card-foreground">
+            
+            <CardContent className="p-4 h-full flex flex-col justify-between relative text-white">
                 <div className="flex justify-between items-start">
-                    <span className="text-sm font-mono opacity-80">#{project.projectNumber}</span>
+                    <span className="text-xs font-mono opacity-80">#{project.projectNumber}</span>
                 </div>
                 <div className="text-center">
                     <p className="font-bold text-lg truncate">{project.name}</p>
@@ -100,7 +101,7 @@ export default function ProjectDashboardPage() {
         if (currentUser.role === 'Super Admin') {
             return projects;
         }
-        return projects.filter(p => p.creatorId === currentUser.id);
+        return projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
     }, [projects, currentUser]);
 
     const handleAddProject = async (data: ProjectFormValues) => {
