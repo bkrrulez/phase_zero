@@ -13,7 +13,7 @@ export const FolderIcon = ({ className }: { className?: string }) => (
         {/* This creates the lighter main body of the folder */}
         <path 
             d="M10 22 H90 V67 C90 68.1046 89.1046 69 88 69 H12 C10.8954 69 10 68.1046 10 67V22Z"
-            className="fill-accent"
+            fill="hsl(var(--accent) / 0.8)"
         />
     </svg>
 );

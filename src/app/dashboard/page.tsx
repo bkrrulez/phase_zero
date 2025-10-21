@@ -23,8 +23,7 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
     const { t } = useLanguage();
     return (
         <Card 
-            className="aspect-[5/3] flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors bg-muted/50"
-            style={{height: 'auto', aspectRatio: '5/3.5'}}
+            className="aspect-[5/3.5] flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors bg-muted/50"
             onClick={onClick}
         >
             <CardContent className="p-0 flex flex-col items-center gap-2">
@@ -39,47 +38,42 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
 
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
-        <Card 
-            className="group relative overflow-hidden transition-all hover:shadow-md border-0"
-            style={{height: 'auto', aspectRatio: '5/3.5'}}
+        <div 
+            className="group relative overflow-hidden transition-all hover:shadow-md aspect-[5/3.5] cursor-pointer"
+            onClick={onEdit}
         >
-            <div 
-                className="absolute inset-0 transition-colors cursor-pointer"
-                onClick={onEdit}
-             >
-                <FolderIcon className="w-full h-full" />
-             </div>
+            <FolderIcon className="w-full h-full text-card-foreground" />
 
-            <div className="absolute top-0 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-black/10 hover:text-white">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-black/20 hover:text-white">
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={onEdit}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
                             <Edit className="mr-2 h-4 w-4"/> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive focus:text-destructive">
                             <Trash2 className="mr-2 h-4 w-4"/> Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
             
-            <CardContent className="p-4 h-full flex flex-col justify-between relative text-white">
-                <div className="flex justify-between items-start">
-                    <span className="text-xs font-mono opacity-80">#{project.projectNumber}</span>
+            <div className="absolute inset-0 p-4 flex flex-col justify-between text-white pointer-events-none">
+                <div className="relative h-[18%]">
+                    <span className="absolute top-0 left-0 text-xs font-mono opacity-90 px-2">#{project.projectNumber}</span>
                 </div>
-                <div className="text-center">
-                    <p className="font-bold text-lg truncate">{project.name}</p>
+                <div className="flex-grow flex items-center justify-center text-center">
+                    <p className="font-bold text-lg truncate px-4">{project.name}</p>
                 </div>
-                <div>
-                     <p className="text-sm opacity-80 truncate">{project.address}</p>
+                <div className="relative h-[25%]">
+                     <p className="absolute bottom-0 left-0 text-sm opacity-90 truncate px-2">{project.address}</p>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 };
 
