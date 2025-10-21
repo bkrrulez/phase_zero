@@ -31,6 +31,13 @@ export default function ProjectsSettingsPage() {
 
     const canManageProjects = currentUser.role === 'Super Admin';
 
+    const visibleProjects = React.useMemo(() => {
+        if (currentUser.role === 'Super Admin') {
+            return projects;
+        }
+        return projects.filter(p => p.creatorId === currentUser.id);
+    }, [projects, currentUser]);
+
     const handleAddProject = async (data: ProjectFormValues) => {
         const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
             name: data.projectName,
@@ -129,7 +136,7 @@ export default function ProjectsSettingsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {projects.map(project => (
+                                {visibleProjects.map(project => (
                                     <TableRow key={project.id}>
                                         <TableCell className="font-mono">{project.projectNumber}</TableCell>
                                         <TableCell className="font-medium">{project.name}</TableCell>
@@ -162,7 +169,7 @@ export default function ProjectsSettingsPage() {
                                         )}
                                     </TableRow>
                                 ))}
-                                {projects.length === 0 && (
+                                {visibleProjects.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
                                     </TableRow>

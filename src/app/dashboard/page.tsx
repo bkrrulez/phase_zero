@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -20,7 +21,7 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
     const { t } = useLanguage();
     return (
         <Card 
-            className="h-48 flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors bg-muted/50"
+            className="aspect-[5/3] flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors bg-muted/50"
             onClick={onClick}
         >
             <CardContent className="p-0 flex flex-col items-center gap-2">
@@ -35,7 +36,7 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
 
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
-        <Card className="h-48 group relative overflow-hidden transition-all hover:shadow-md">
+        <Card className="aspect-[5/3] group relative overflow-hidden transition-all hover:shadow-md">
             <div className="absolute top-0 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

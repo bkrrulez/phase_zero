@@ -41,7 +41,7 @@
     "noPermissionPage": "Sie haben keine Berechtigung, diese Seite anzuzeigen.",
     "contactAdmin": "Bitte kontaktieren Sie Ihren Administrator, wenn Sie glauben, dass dies ein Fehler ist.",
     "welcome": "Willkommen, {{name}}!",
-    "welcomeSubtitle": "Hier ist Ihre Zeiterfassungsübersicht für diesen Monat.",
+    "welcomeSubtitle": "Hier ist Ihre Projektübersicht.",
     "hoursThisMonth": "Stunden diesen Monat",
     "outOfExpected": "von {{hours}}h erwartet bis heute",
     "overtime": "Überstunden / Defizit",

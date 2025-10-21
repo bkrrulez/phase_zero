@@ -41,7 +41,7 @@
     "noPermissionPage": "You do not have permission to view this page.",
     "contactAdmin": "Please contact your administrator if you believe this is an error.",
     "welcome": "Welcome, {{name}}!",
-    "welcomeSubtitle": "Here's your time tracking summary for this month.",
+    "welcomeSubtitle": "Here's your Project summary.",
     "hoursThisMonth": "Hours this month",
     "outOfExpected": "out of {{hours}}h expected till date",
     "overtime": "Overtime / Deficit",
