@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -96,7 +95,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <ScrollArea className="max-h-[70vh] p-1">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pr-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 p-6">
                     {/* Left Column */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg">{t('projectData')}</h3>
@@ -246,11 +245,13 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                        {currentUseOptions.map(opt => (
-                                            <SelectItem key={opt.value} value={opt.value}>
-                                                {language === 'de' ? t(opt.value) : opt.label}
-                                            </SelectItem>
-                                        ))}
+                                        <ScrollArea className="h-48">
+                                            {currentUseOptions.map(opt => (
+                                                <SelectItem key={opt.value} value={opt.value}>
+                                                    {language === 'de' ? t(opt.value) : opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </ScrollArea>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
