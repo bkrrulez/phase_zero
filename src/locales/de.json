@@ -309,6 +309,7 @@
     "editProject": "Projekt bearbeiten",
     "editProjectDesc": "Details für das Projekt \"{{name}}\" aktualisieren.",
     "creationDate": "Erstellungsdatum",
+    "projectNumber": "Projektnummer",
     "General": "Allgemein",
     "Residential": "Wohnen",
     "Office": "Büro",

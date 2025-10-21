@@ -263,8 +263,9 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                  </div>
             </ScrollArea>
             <DialogFooter className="pt-4 pr-6">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-              <Button type="submit">{t('addProject')}</Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
+                <Button type="submit">{t('addProject')}</Button>
+                <Button type="button" variant="secondary">To New Usage</Button>
             </DialogFooter>
           </form>
         </Form>

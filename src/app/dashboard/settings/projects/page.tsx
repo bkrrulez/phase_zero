@@ -120,11 +120,11 @@ export default function ProjectsSettingsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>#</TableHead>
+                                    <TableHead>{t('projectNumber')}</TableHead>
                                     <TableHead>{t('projectName')}</TableHead>
                                     <TableHead>{t('address')}</TableHead>
                                     <TableHead>{t('projectManager')}</TableHead>
-                                    <TableHead>{t('creationDate')}</TableHead>
+                                    <TableHead>{t('aktuelleNutzung')}</TableHead>
                                     {canManageProjects && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
                             </TableHeader>
@@ -135,7 +135,7 @@ export default function ProjectsSettingsPage() {
                                         <TableCell className="font-medium">{project.name}</TableCell>
                                         <TableCell>{project.address}</TableCell>
                                         <TableCell>{project.projectManager}</TableCell>
-                                        <TableCell>{project.projectCreationDate ? format(new Date(project.projectCreationDate), 'PP') : 'N/A'}</TableCell>
+                                        <TableCell>{project.currentUse}</TableCell>
                                         {canManageProjects && (
                                             <TableCell>
                                                 <DropdownMenu>

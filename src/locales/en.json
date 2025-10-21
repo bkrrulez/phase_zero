@@ -308,5 +308,6 @@
     "saveChanges": "Save Changes",
     "editProject": "Edit Project",
     "editProjectDesc": "Update the details for the project \"{{name}}\".",
-    "creationDate": "Creation Date"
+    "creationDate": "Creation Date",
+    "projectNumber": "Project Number"
 }

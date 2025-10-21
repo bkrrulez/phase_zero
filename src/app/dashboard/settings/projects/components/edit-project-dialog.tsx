@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -265,8 +266,9 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                  </div>
             </ScrollArea>
             <DialogFooter className="pt-4 pr-6">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-              <Button type="submit">{t('saveChanges')}</Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
+                <Button type="submit">{t('saveChanges')}</Button>
+                <Button type="button" variant="secondary">To New Usage</Button>
             </DialogFooter>
           </form>
         </Form>
