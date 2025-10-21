@@ -11,7 +11,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  role: "User" | "Team Lead" | "Super Admin";
+  role: "User" | "Team Lead" | "Super Admin" | "Expert";
   avatar: string;
   reportsTo?: string; // User ID of manager
   teamId?: string;

@@ -40,7 +40,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const addMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
-  role: z.enum(['User', 'Team Lead', 'Super Admin']),
+  role: z.enum(['User', 'Team Lead', 'Super Admin', 'Expert']),
   reportsTo: z.string().optional(),
   teamId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required.'),
@@ -51,7 +51,7 @@ const addMemberSchema = z.object({
     message: 'This field is required for Users and Team Leads.',
     path: ['reportsTo'],
 }).refine(data => {
-    if (data.role === 'User' || data.role === 'Team Lead') {
+    if (data.role === 'User' || data.role === 'Team Lead' || data.role === 'Expert') {
         return !!data.teamId && data.teamId !== 'none';
     }
     return true;
@@ -100,10 +100,10 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   const availableRoles = React.useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'Super Admin') {
-        return ['User', 'Team Lead', 'Super Admin'];
+        return ['User', 'Team Lead', 'Expert', 'Super Admin'];
     }
     if (currentUser.role === 'Team Lead') {
-        return ['User', 'Team Lead'];
+        return ['User', 'Team Lead', 'Expert'];
     }
     return [];
   }, [currentUser]);

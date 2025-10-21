@@ -50,7 +50,7 @@ const contractSchema = z.object({
 const editMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
-  role: z.enum(['User', 'Team Lead', 'Super Admin']),
+  role: z.enum(['User', 'Team Lead', 'Super Admin', 'Expert']),
   reportsTo: z.string().optional(),
   teamId: z.string().optional(),
   associatedProjectIds: z.array(z.string()).min(1, 'Please select at least one project.'),
@@ -59,7 +59,7 @@ const editMemberSchema = z.object({
     message: 'This field is required for Users and Team Leads.',
     path: ['reportsTo'],
 }).refine(data => {
-    if (data.role === 'User' || data.role === 'Team Lead') {
+    if (data.role === 'User' || data.role === 'Team Lead' || data.role === 'Expert') {
         return !!data.teamId && data.teamId !== 'none';
     }
     return true;
@@ -193,6 +193,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                         <SelectContent>
                             <SelectItem value="User">User</SelectItem>
                             <SelectItem value="Team Lead">Team Lead</SelectItem>
+                            <SelectItem value="Expert">Expert</SelectItem>
                             <SelectItem value="Super Admin">Super Admin</SelectItem>
                         </SelectContent>
                     </Select>

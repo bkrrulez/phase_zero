@@ -77,7 +77,7 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
             members = teamMembers;
         } else if (currentUser.role === 'Team Lead') {
             members = teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
-        } else { // Employee
+        } else { // User
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
 
@@ -145,7 +145,7 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
             return true;
         }
         if (currentUser.role === 'Team Lead') {
-            return member.reportsTo === currentUser.id && member.role === 'Employee';
+            return member.reportsTo === currentUser.id && member.role === 'User';
         }
         return false;
     };
@@ -203,10 +203,9 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
 
         const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
         const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
-        
         const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
         const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
-
+        
         return {
             weeklyHours: totalWeeklyHours,
             startDate: format(earliestStartDate, 'yyyy-MM-dd'),
