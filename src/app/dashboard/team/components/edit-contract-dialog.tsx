@@ -50,16 +50,16 @@ const contractSchema = z.object({
 const editMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
-  role: z.enum(['Employee', 'Team Lead', 'Super Admin']),
+  role: z.enum(['User', 'Team Lead', 'Super Admin']),
   reportsTo: z.string().optional(),
   teamId: z.string().optional(),
   associatedProjectIds: z.array(z.string()).min(1, 'Please select at least one project.'),
   contracts: z.array(contractSchema).min(1, 'At least one active contract is required.'),
 }).refine(data => data.role === 'Super Admin' || !!data.reportsTo, {
-    message: 'This field is required for Employees and Team Leads.',
+    message: 'This field is required for Users and Team Leads.',
     path: ['reportsTo'],
 }).refine(data => {
-    if (data.role === 'Employee' || data.role === 'Team Lead') {
+    if (data.role === 'User' || data.role === 'Team Lead') {
         return !!data.teamId && data.teamId !== 'none';
     }
     return true;
@@ -88,7 +88,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
     defaultValues: {
       name: '',
       email: '',
-      role: 'Employee',
+      role: 'User',
       reportsTo: '',
       teamId: '',
       associatedProjectIds: [],
@@ -191,7 +191,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="Employee">Employee</SelectItem>
+                            <SelectItem value="User">User</SelectItem>
                             <SelectItem value="Team Lead">Team Lead</SelectItem>
                             <SelectItem value="Super Admin">Super Admin</SelectItem>
                         </SelectContent>

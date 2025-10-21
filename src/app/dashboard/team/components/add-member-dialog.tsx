@@ -40,7 +40,7 @@ import { useAuth } from '../../contexts/AuthContext';
 const addMemberSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
   email: z.string().email('Invalid email address.'),
-  role: z.enum(['Employee', 'Team Lead', 'Super Admin']),
+  role: z.enum(['User', 'Team Lead', 'Super Admin']),
   reportsTo: z.string().optional(),
   teamId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required.'),
@@ -48,10 +48,10 @@ const addMemberSchema = z.object({
   weeklyHours: z.coerce.number().int().min(0, 'Weekly hours cannot be negative.').max(40, 'Weekly hours cannot exceed 40.'),
   associatedProjectIds: z.array(z.string()).min(1, 'Please select at least one project.'),
 }).refine(data => data.role === 'Super Admin' || !!data.reportsTo, {
-    message: 'This field is required for Employees and Team Leads.',
+    message: 'This field is required for Users and Team Leads.',
     path: ['reportsTo'],
 }).refine(data => {
-    if (data.role === 'Employee' || data.role === 'Team Lead') {
+    if (data.role === 'User' || data.role === 'Team Lead') {
         return !!data.teamId && data.teamId !== 'none';
     }
     return true;
@@ -79,7 +79,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
     defaultValues: {
       name: '',
       email: '',
-      role: 'Employee',
+      role: 'User',
       reportsTo: '',
       teamId: '',
       startDate: '',
@@ -100,10 +100,10 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
   const availableRoles = React.useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'Super Admin') {
-        return ['Employee', 'Team Lead', 'Super Admin'];
+        return ['User', 'Team Lead', 'Super Admin'];
     }
     if (currentUser.role === 'Team Lead') {
-        return ['Employee', 'Team Lead'];
+        return ['User', 'Team Lead'];
     }
     return [];
   }, [currentUser]);

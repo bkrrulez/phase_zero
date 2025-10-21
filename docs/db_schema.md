@@ -15,7 +15,7 @@ Stores information about individual users.
 -   `name` (TEXT, NOT NULL): Full name of the user.
 -   `email` (TEXT, NOT NULL, UNIQUE): Email address, used for login.
 -   `password` (TEXT, NOT NULL): User's password (for a real app, this should be a hash).
--   `role` (TEXT, NOT NULL): User's role ('Employee', 'Team Lead', 'Super Admin').
+-   `role` (TEXT, NOT NULL): User's role ('User', 'Team Lead', 'Super Admin').
 -   `avatar` (TEXT): URL to the user's avatar image.
 -   `team_id` (FK -> `teams.id`, TEXT): The team the user belongs to. Can be NULL.
 -   `reports_to` (FK -> `users.id`, TEXT): The ID of the user's manager. Can be NULL.
@@ -30,13 +30,6 @@ Stores employment contracts for users. A user can have multiple contracts.
 -   `start_date` (DATE, NOT NULL): Start date of the employment contract.
 -   `end_date` (DATE): End date of the employment contract. NULL if ongoing.
 -   `weekly_hours` (INTEGER, NOT NULL): Contracted weekly work hours for this contract.
-
-### `teams`
-
-Stores information about teams.
-
--   `id` (PK, TEXT): Unique identifier for the team (e.g., 'team-1').
--   `name` (TEXT, NOT NULL, UNIQUE): The name of the team.
 
 ### `projects`
 

@@ -1,5 +1,4 @@
 
-
 export type Contract = {
   id: string;
   userId: string;
@@ -12,7 +11,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  role: "Employee" | "Team Lead" | "Super Admin";
+  role: "User" | "Team Lead" | "Super Admin";
   avatar: string;
   reportsTo?: string; // User ID of manager
   teamId?: string;

@@ -93,7 +93,7 @@ export default function MembersSettingsPage() {
             members = teamMembers;
         } else if (currentUser.role === 'Team Lead') {
             members = teamMembers.filter(member => member.id === currentUser.id || member.reportsTo === currentUser.id);
-        } else { // Employee
+        } else { // User
             members = teamMembers.filter(member => member.id === currentUser.id);
         }
 
@@ -184,7 +184,7 @@ export default function MembersSettingsPage() {
             return true;
         }
         if (currentUser.role === 'Team Lead') {
-            return member.reportsTo === currentUser.id && member.role === 'Employee';
+            return member.reportsTo === currentUser.id && member.role === 'User';
         }
         return false;
     };
@@ -425,7 +425,7 @@ export default function MembersSettingsPage() {
                     setEditingUser(null);
                 }
             }}
-            onSave={handleSaveDetails}
+            onSave={(data) => handleSaveDetails(editingUser, data)}
             teamMembers={teamMembers}
         />
       )}
