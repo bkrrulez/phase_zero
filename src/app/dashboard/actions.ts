@@ -84,12 +84,20 @@ const mapDbContractToContract = (dbContract: any): Contract => ({
 });
 
 const mapDbProjectToProject = (dbProject: any): Project => ({
-  id: dbProject.id,
-  name: dbProject.name,
-  budget: dbProject.budget ? Number(dbProject.budget) : undefined,
-  hoursPerYear: dbProject.hours_per_year ? Number(dbProject.hours_per_year) : undefined,
-  details: dbProject.details,
-  taskIds: dbProject.task_ids || [],
+    id: dbProject.id,
+    name: dbProject.name,
+    projectNumber: dbProject.project_number,
+    projectCreationDate: new Date(dbProject.project_creation_date).toISOString(),
+    projectManager: dbProject.project_manager,
+    creatorId: dbProject.creator_id,
+    address: dbProject.address,
+    projectOwner: dbProject.project_owner,
+    yearOfConstruction: dbProject.year_of_construction,
+    numberOfFloors: dbProject.number_of_floors,
+    escapeLevel: dbProject.escape_level,
+    listedBuilding: dbProject.listed_building,
+    protectionZone: dbProject.protection_zone,
+    currentUse: dbProject.current_use,
 });
 
 const mapDbTaskToTask = (dbTask: any): Task => ({
@@ -756,30 +764,50 @@ export async function sendContractEndNotificationsNow(isManualTrigger: boolean =
 
 export async function getProjects(): Promise<Project[]> {
     const result = await db.query(`
-        SELECT p.*, COALESCE(array_agg(pt.task_id) FILTER (WHERE pt.task_id IS NOT NULL), '{}') as task_ids
-        FROM projects p
-        LEFT JOIN project_tasks pt ON p.id = pt.project_id
-        GROUP BY p.id
-        ORDER BY p.name
+        SELECT * FROM projects ORDER BY name
     `);
     return result.rows.map(mapDbProjectToProject);
 }
 
-export async function addProject(projectData: Omit<Project, 'id'>): Promise<void> {
-    const { name, budget, hoursPerYear, details, taskIds } = projectData;
+export async function addProject(projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<void> {
+    const { 
+        name, 
+        projectManager,
+        creatorId,
+        address,
+        projectOwner,
+        yearOfConstruction,
+        numberOfFloors,
+        escapeLevel,
+        listedBuilding,
+        protectionZone,
+        currentUse
+    } = projectData;
+
     const client = await db.connect();
     try {
         await client.query('BEGIN');
+
+        // Get the next project number
+        const numberRes = await client.query("SELECT nextval('project_number_seq') as next_num");
+        const nextNum = numberRes.rows[0].next_num;
+        const projectNumber = String(nextNum).padStart(5, '0');
+
         const id = `proj-${Date.now()}`;
+        
         await client.query(
-            'INSERT INTO projects (id, name, budget, hours_per_year, details) VALUES ($1, $2, $3, $4, $5)',
-            [id, name, budget, hoursPerYear, details]
+            `INSERT INTO projects (
+                id, name, project_number, project_manager, creator_id, address, 
+                project_owner, year_of_construction, number_of_floors, escape_level, 
+                listed_building, protection_zone, current_use
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+            [
+                id, name, projectNumber, projectManager, creatorId, address, 
+                projectOwner, yearOfConstruction, numberOfFloors, escapeLevel, 
+                listedBuilding, protectionZone, currentUse
+            ]
         );
-        if (taskIds && taskIds.length > 0) {
-            for (const taskId of taskIds) {
-                await client.query('INSERT INTO project_tasks (project_id, task_id) VALUES ($1, $2)', [id, taskId]);
-            }
-        }
+        
         await client.query('COMMIT');
         revalidatePath('/dashboard/settings/projects');
     } catch (error) {
@@ -791,20 +819,36 @@ export async function addProject(projectData: Omit<Project, 'id'>): Promise<void
 }
 
 export async function updateProject(projectId: string, data: Omit<Project, 'id'>): Promise<void> {
-    const { name, budget, hoursPerYear, details, taskIds } = data;
+    const { 
+        name, 
+        projectManager,
+        creatorId,
+        address,
+        projectOwner,
+        yearOfConstruction,
+        numberOfFloors,
+        escapeLevel,
+        listedBuilding,
+        protectionZone,
+        currentUse
+    } = data;
+    
     const client = await db.connect();
     try {
         await client.query('BEGIN');
         await client.query(
-            'UPDATE projects SET name = $1, budget = $2, hours_per_year = $3, details = $4 WHERE id = $5',
-            [name, budget, hoursPerYear, details, projectId]
+            `UPDATE projects SET 
+                name = $1, project_manager = $2, creator_id = $3, address = $4,
+                project_owner = $5, year_of_construction = $6, number_of_floors = $7,
+                escape_level = $8, listed_building = $9, protection_zone = $10, current_use = $11
+             WHERE id = $12`,
+            [
+                name, projectManager, creatorId, address, projectOwner, yearOfConstruction,
+                numberOfFloors, escapeLevel, listedBuilding, protectionZone, currentUse,
+                projectId
+            ]
         );
-        await client.query('DELETE FROM project_tasks WHERE project_id = $1', [projectId]);
-        if (taskIds && taskIds.length > 0) {
-            for (const taskId of taskIds) {
-                await client.query('INSERT INTO project_tasks (project_id, task_id) VALUES ($1, $2)', [projectId, taskId]);
-            }
-        }
+        
         await client.query('COMMIT');
         revalidatePath('/dashboard/settings/projects');
     } catch (error) {
@@ -1347,5 +1391,61 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         );
     } catch (error) {
         console.error(`Failed to set setting for key '${key}':`, error);
+    }
+}
+// ========== Absences ==========
+export async function getAbsences(): Promise<Absence[]> {
+    try {
+        const result = await db.query('SELECT * FROM absences ORDER BY start_date DESC');
+        return result.rows.map(row => ({
+            id: row.id,
+            userId: row.user_id,
+            startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
+            endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
+            type: row.type
+        }));
+    } catch (error) {
+        console.error("Failed to fetch absences:", error);
+        return [];
+    }
+}
+
+export async function addAbsence(absence: Omit<Absence, 'id'>): Promise<Absence | null> {
+    const { userId, startDate, endDate, type } = absence;
+    const id = `abs-${Date.now()}`;
+    try {
+        const result = await db.query(
+            'INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [id, userId, startDate, endDate, type]
+        );
+        revalidatePath('/dashboard/roster');
+        const newAbsence = result.rows[0];
+        return {
+             id: newAbsence.id,
+            userId: newAbsence.user_id,
+            startDate: format(new Date(newAbsence.start_date), 'yyyy-MM-dd'),
+            endDate: format(new Date(newAbsence.end_date), 'yyyy-MM-dd'),
+            type: newAbsence.type
+        };
+    } catch (error) {
+        console.error("Failed to add absence:", error);
+        return null;
+    }
+}
+
+export async function deleteAbsencesInRange(userId: string, startDate: string, endDate: string): Promise<number> {
+    try {
+        const result = await db.query(
+            `DELETE FROM absences 
+             WHERE user_id = $1 
+             AND start_date <= $2 
+             AND end_date >= $3`,
+            [userId, endDate, startDate] // Note: end_date >= start and start_date <= end for overlap
+        );
+        revalidatePath('/dashboard/roster');
+        return result.rowCount || 0;
+    } catch (error) {
+        console.error("Failed to delete absences in range:", error);
+        return 0;
     }
 }
