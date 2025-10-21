@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Plus, Trash2, Edit } from 'lucide-react';
+import { MoreHorizontal, Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,12 +16,14 @@ import { EditProjectDialog } from './settings/projects/components/edit-project-d
 import { DeleteProjectDialog } from './settings/projects/components/delete-project-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useSystemLog } from './contexts/SystemLogContext';
+import Image from 'next/image';
 
 const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
     const { t } = useLanguage();
     return (
         <Card 
             className="aspect-[5/3] flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors bg-muted/50"
+            style={{height: 'auto', aspectRatio: '5/3.5'}}
             onClick={onClick}
         >
             <CardContent className="p-0 flex flex-col items-center gap-2">
@@ -36,7 +38,10 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
 
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
-        <Card className="aspect-[5/3] group relative overflow-hidden transition-all hover:shadow-md">
+        <Card 
+            className="group relative overflow-hidden transition-all hover:shadow-md"
+            style={{height: 'auto', aspectRatio: '5/3.5'}}
+        >
             <div className="absolute top-0 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -55,18 +60,21 @@ const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: 
                 </DropdownMenu>
             </div>
              <div 
-                className="absolute inset-x-0 -top-1 h-24 bg-muted group-hover:bg-muted/80 transition-colors"
-                style={{ clipPath: 'polygon(0 0, 100% 0, 100% 85%, 0% 100%)' }}
-             />
-            <CardContent className="p-4 h-full flex flex-col justify-between relative cursor-pointer" onClick={onEdit}>
+                className="absolute inset-0 transition-colors cursor-pointer"
+                onClick={onEdit}
+             >
+                <Image src="https://picsum.photos/seed/1/600/400" alt={project.name} fill style={{objectFit: 'cover'}} data-ai-hint="abstract geometric" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+             </div>
+            <CardContent className="p-4 h-full flex flex-col justify-between relative text-white">
                 <div className="flex justify-between items-start">
-                    <span className="text-sm font-mono text-muted-foreground">#{project.projectNumber}</span>
+                    <span className="text-sm font-mono opacity-80">#{project.projectNumber}</span>
                 </div>
                 <div className="text-center">
                     <p className="font-bold text-lg truncate">{project.name}</p>
                 </div>
                 <div>
-                     <p className="text-sm text-muted-foreground truncate">{project.address}</p>
+                     <p className="text-sm opacity-80 truncate">{project.address}</p>
                 </div>
             </CardContent>
         </Card>
@@ -88,6 +96,9 @@ export default function ProjectDashboardPage() {
 
     const userProjects = React.useMemo(() => {
         if (!currentUser) return [];
+        if (currentUser.role === 'Super Admin') {
+            return projects;
+        }
         return projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
     }, [projects, currentUser]);
 
