@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { format } from 'date-fns';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,11 +17,10 @@ import { useProjects } from '../../contexts/ProjectsContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { format } from 'date-fns';
 
 export default function ProjectsSettingsPage() {
     const { toast } = useToast();
-    const { projects, addProject, updateProject, deleteProject, getNextProjectNumber } = useProjects();
+    const { projects, addProject, updateProject, deleteProject } = useProjects();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
     const { t } = useLanguage();
@@ -32,12 +32,8 @@ export default function ProjectsSettingsPage() {
     const canManageProjects = currentUser.role === 'Super Admin';
 
     const handleAddProject = async (data: ProjectFormValues) => {
-        const nextNumber = await getNextProjectNumber();
-
-        const newProjectData: Omit<Project, 'id'> = {
+        const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
             name: data.projectName,
-            projectNumber: nextNumber,
-            projectCreationDate: new Date().toISOString(),
             projectManager: data.projectManager,
             creatorId: data.creator,
             address: data.address,
@@ -50,7 +46,7 @@ export default function ProjectsSettingsPage() {
             currentUse: data.currentUse,
         };
 
-        addProject(newProjectData);
+        await addProject(newProjectData);
         setIsAddDialogOpen(false);
         toast({
             title: t('projectAdded'),

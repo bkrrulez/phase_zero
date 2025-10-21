@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -94,7 +95,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ScrollArea className="max-h-[70vh] p-1">
+            <ScrollArea className="max-h-[70vh]">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 p-6">
                     {/* Left Column */}
                     <div className="space-y-4">

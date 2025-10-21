@@ -51,11 +51,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   }
 
   const getNextProjectNumber = async (): Promise<string> => {
-    const highestNumber = projects.reduce((max, p) => {
-        const num = parseInt(p.projectNumber, 10);
-        return isNaN(num) ? max : Math.max(max, num);
-    }, 0);
-    return String(highestNumber + 1).padStart(5, '0');
+    // This is now handled on the backend, but we can keep a client-side estimation
+    // to avoid waiting for the backend response if needed for UI purposes.
+    // For now, we'll just return a placeholder as the backend is the source of truth.
+    return "auto";
   }
 
   return (
