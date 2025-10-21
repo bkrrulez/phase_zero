@@ -306,6 +306,7 @@
     "yes": "Ja",
     "no": "Nein",
     "saveChanges": "Änderungen speichern",
+    "save": "Speichern",
     "editProject": "Projekt bearbeiten",
     "editProjectDesc": "Details für das Projekt \"{{name}}\" aktualisieren.",
     "creationDate": "Erstellungsdatum",

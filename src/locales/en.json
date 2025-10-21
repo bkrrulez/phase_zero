@@ -306,8 +306,21 @@
     "yes": "Yes",
     "no": "No",
     "saveChanges": "Save Changes",
+    "save": "Save",
     "editProject": "Edit Project",
     "editProjectDesc": "Update the details for the project \"{{name}}\".",
     "creationDate": "Creation Date",
-    "projectNumber": "Project Number"
+    "projectNumber": "Project Number",
+    "General": "General",
+    "Residential": "Residential",
+    "Office": "Office",
+    "Accommodation/ Guest House/ Hotel/ Dormitory": "Accommodation/ Guest House/ Hotel/ Dormitory",
+    "Inn/ Restaurant/ Cafe": "Inn/ Restaurant/ Cafe",
+    "Retail Outlet/ Shopping Center": "Retail Outlet/ Shopping Center",
+    "Educational Institution/ School/ Kindergarten": "Educational Institution/ School/ Kindergarten",
+    "Business Premises": "Business Premises",
+    "Garage/ Covered Parking, Parking Deck": "Garage/ Covered Parking, Parking Deck",
+    "Gas Station": "Gas Station",
+    "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters": "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters",
+    "Non Residential": "Non Residential"
 }

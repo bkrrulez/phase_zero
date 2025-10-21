@@ -198,7 +198,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>{t('fluchtniveau')}</FormLabel>
-                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}/></FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
@@ -249,7 +249,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                                         <ScrollArea className="h-48">
                                             {currentUseOptions.map(opt => (
                                                 <SelectItem key={opt.value} value={opt.value}>
-                                                    {language === 'de' ? t(opt.value) : opt.label}
+                                                    {language === 'de' ? t(opt.value as any) : opt.label}
                                                 </SelectItem>
                                             ))}
                                         </ScrollArea>
@@ -264,7 +264,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
             </ScrollArea>
             <DialogFooter className="pt-4 pr-6">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-                <Button type="submit">{t('addProject')}</Button>
+                <Button type="submit">{t('save')}</Button>
                 <Button type="button" variant="secondary">To New Usage</Button>
             </DialogFooter>
           </form>
