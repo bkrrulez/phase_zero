@@ -1,5 +1,4 @@
 
-
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -160,7 +159,7 @@
     "teamUpdatedDesc": "The team \"{{name}}\" has been updated.",
     "teamDeleted": "Team Deleted",
     "teamDeletedDesc": "The team \"{{name}}\" has been deleted. Members have been unassigned.",
-    "projectsSubtitle": "Manage projects, their tasks, and budget.",
+    "projectsSubtitle": "Manage projects and their properties.",
     "addProject": "Add Project",
     "allProjects": "All Projects",
     "allProjectsDesc": "A list of all projects in the organization.",
@@ -288,7 +287,26 @@
     "notificationsSentDesc": "Notifications were triggered for {{count}} users.",
     "notificationsSentError": "Could not process notifications.",
     "intendedHours": "Intended Hours",
-    "actualHours": "Actual Hours"
+    "actualHours": "Actual Hours",
+    "fillProjectDetails": "Fill in the details to create a new project.",
+    "projectData": "Project Data",
+    "projectName": "Project Name",
+    "projectManager": "Project Manager",
+    "creator": "Creator",
+    "address": "Address",
+    "projectOwner": "Project Owner",
+    "selectCreator": "Select a Creator",
+    "buildingData": "Building Data",
+    "yearOfConstruction": "Year of Construction",
+    "geschosse": "Number of Floors",
+    "fluchtniveau": "Escape Level (in meters)",
+    "denkmalschutz": "Listed Building",
+    "schutzzone": "Protection Zone",
+    "aktuelleNutzung": "Current Use",
+    "yes": "Yes",
+    "no": "No",
+    "saveChanges": "Save Changes",
+    "editProject": "Edit Project",
+    "editProjectDesc": "Update the details for the project \"{{name}}\".",
+    "creationDate": "Creation Date"
 }
-
-

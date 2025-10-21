@@ -10,6 +10,7 @@ interface ProjectsContextType {
   updateProject: (projectId: string, data: Omit<Project, 'id'>) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   isLoading: boolean;
+  getNextProjectNumber: () => Promise<string>;
 }
 
 export const ProjectsContext = React.createContext<ProjectsContextType | undefined>(undefined);
@@ -49,8 +50,16 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
       setProjects(prev => prev.filter(p => p.id !== projectId));
   }
 
+  const getNextProjectNumber = async (): Promise<string> => {
+    const highestNumber = projects.reduce((max, p) => {
+        const num = parseInt(p.projectNumber, 10);
+        return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    return String(highestNumber + 1).padStart(5, '0');
+  }
+
   return (
-    <ProjectsContext.Provider value={{ projects, addProject, updateProject, deleteProject, isLoading }}>
+    <ProjectsContext.Provider value={{ projects, addProject, updateProject, deleteProject, isLoading, getNextProjectNumber }}>
         {children}
     </ProjectsContext.Provider>
   );
@@ -63,5 +72,3 @@ export const useProjects = () => {
   }
   return context;
 };
-
-    

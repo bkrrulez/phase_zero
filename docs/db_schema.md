@@ -15,7 +15,7 @@ Stores information about individual users.
 -   `name` (TEXT, NOT NULL): Full name of the user.
 -   `email` (TEXT, NOT NULL, UNIQUE): Email address, used for login.
 -   `password` (TEXT, NOT NULL): User's password (for a real app, this should be a hash).
--   `role` (TEXT, NOT NULL): User's role ('User', 'Team Lead', 'Super Admin', 'Expert').
+-   `role` (TEXT, NOT NULL, CHECK in ('User', 'Team Lead', 'Super Admin', 'Expert')): User's role.
 -   `avatar` (TEXT): URL to the user's avatar image.
 -   `team_id` (FK -> `teams.id`, TEXT): The team the user belongs to. Can be NULL.
 -   `reports_to` (FK -> `users.id`, TEXT): The ID of the user's manager. Can be NULL.
@@ -37,9 +37,18 @@ Stores project information.
 
 -   `id` (PK, TEXT): Unique identifier for the project (e.g., 'proj-1').
 -   `name` (TEXT, NOT NULL): The name of the project.
--   `budget` (NUMERIC): The budget for the project.
--   `hours_per_year` (NUMERIC): The budgeted hours per year for the project.
--   `details` (TEXT): A short description of the project.
+-   `project_number` (VARCHAR(10), UNIQUE): Auto-generated unique 5-digit project number.
+-   `project_creation_date` (TIMESTAMPTZ): Timestamp when the project was created.
+-   `project_manager` (VARCHAR(255)): Name of the project manager.
+-   `creator_id` (VARCHAR(255)): User ID of the person who created the project entry.
+-   `address` (TEXT): Address of the building/project.
+-   `project_owner` (VARCHAR(255)): Name of the project owner.
+-   `year_of_construction` (INTEGER): The year the building was constructed.
+-   `number_of_floors` (INTEGER): Number of floors in the building.
+-   `escape_level` (NUMERIC(5, 2)): The escape level in meters.
+-   `listed_building` (BOOLEAN): Whether the building is a listed building.
+-   `protection_zone` (BOOLEAN): Whether the building is in a protection zone.
+-   `current_use` (VARCHAR(255)): The current use of the building.
 
 ### `tasks`
 

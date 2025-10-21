@@ -1,5 +1,4 @@
 
-
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -160,7 +159,7 @@
     "teamUpdatedDesc": "Das Team \"{{name}}\" wurde aktualisiert.",
     "teamDeleted": "Team gelöscht",
     "teamDeletedDesc": "Das Team \"{{name}}\" wurde gelöscht. Mitglieder wurden entfernt.",
-    "projectsSubtitle": "Projekte, ihre Aufgaben und Budgets verwalten.",
+    "projectsSubtitle": "Projekte und ihre Eigenschaften verwalten.",
     "addProject": "Projekt hinzufügen",
     "allProjects": "Alle Projekte",
     "allProjectsDesc": "Eine Liste aller Projekte in der Organisation.",
@@ -288,7 +287,38 @@
     "notificationsSentDesc": "Benachrichtigungen wurden für {{count}} Benutzer ausgelöst.",
     "notificationsSentError": "Benachrichtigungen konnten nicht verarbeitet werden.",
     "intendedHours": "Soll-Stunden",
-    "actualHours": "Ist-Stunden"
+    "actualHours": "Ist-Stunden",
+    "fillProjectDetails": "Füllen Sie die Details aus, um ein neues Projekt zu erstellen.",
+    "projectData": "Projektdaten",
+    "projectName": "Projektname",
+    "projectManager": "Projektmanager",
+    "creator": "Ersteller",
+    "address": "Adresse",
+    "projectOwner": "Projekteigentümer",
+    "selectCreator": "Ersteller auswählen",
+    "buildingData": "Gebäudedaten",
+    "yearOfConstruction": "Baujahr",
+    "geschosse": "Geschoße",
+    "fluchtniveau": "Fluchtniveau (in Metern)",
+    "denkmalschutz": "Denkmalschutz",
+    "schutzzone": "Schutzzone",
+    "aktuelleNutzung": "Aktuelle Nutzung",
+    "yes": "Ja",
+    "no": "Nein",
+    "saveChanges": "Änderungen speichern",
+    "editProject": "Projekt bearbeiten",
+    "editProjectDesc": "Details für das Projekt \"{{name}}\" aktualisieren.",
+    "creationDate": "Erstellungsdatum",
+    "General": "Allgemein",
+    "Residential": "Wohnen",
+    "Office": "Büro",
+    "Accommodation/ Guest House/ Hotel/ Dormitory": "Beherbergung/ Pension/ Hotel/ Heim",
+    "Inn/ Restaurant/ Cafe": "Gasthaus/ Restaurant/ Café",
+    "Retail Outlet/ Shopping Center": "Verkaufsstätte/ Einkaufszentrum",
+    "Educational Institution/ School/ Kindergarten": "Bildungseinrichtung/ Schule/ Kindergarten",
+    "Business Premises": "Betriebsanlagen",
+    "Garage/ Covered Parking, Parking Deck": "Garage/ Überdachte Stellplätze, Parkdeck",
+    "Gas Station": "Tankstelle",
+    "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters": "Sonderbauten: Krankenhaus/ Pflegeheim/ Versammlungsstätten/ Schutzbauten",
+    "Non Residential": "Nicht-Wohngebäude"
 }
-
-

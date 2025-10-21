@@ -7,21 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { type Project } from '@/lib/mock-data';
+import { type Project } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { AddProjectDialog, type ProjectFormValues } from './components/add-project-dialog';
 import { EditProjectDialog } from './components/edit-project-dialog';
 import { DeleteProjectDialog } from './components/delete-project-dialog';
 import { useProjects } from '../../contexts/ProjectsContext';
-import { useTasks } from '../../contexts/TasksContext';
 import { useSystemLog } from '../../contexts/SystemLogContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { format } from 'date-fns';
 
 export default function ProjectsSettingsPage() {
     const { toast } = useToast();
-    const { projects, addProject, updateProject, deleteProject } = useProjects();
-    const { tasks: allTasks } = useTasks();
+    const { projects, addProject, updateProject, deleteProject, getNextProjectNumber } = useProjects();
     const { logAction } = useSystemLog();
     const { currentUser } = useAuth();
     const { t } = useLanguage();
@@ -32,39 +31,60 @@ export default function ProjectsSettingsPage() {
 
     const canManageProjects = currentUser.role === 'Super Admin';
 
-    const projectDetails = React.useMemo(() => {
-        return projects.map(project => {
-            const tasks = allTasks.filter(t => project.taskIds?.includes(t.id));
-            return {
-                ...project,
-                tasks,
-            }
-        });
-    }, [projects, allTasks]);
-    
-    const formatCurrency = (value?: number) => {
-        if (value === undefined || value === null) return 'N/A';
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-    }
+    const handleAddProject = async (data: ProjectFormValues) => {
+        const nextNumber = await getNextProjectNumber();
 
-    const handleAddProject = (data: ProjectFormValues) => {
-        addProject(data);
+        const newProjectData: Omit<Project, 'id'> = {
+            name: data.projectName,
+            projectNumber: nextNumber,
+            projectCreationDate: new Date().toISOString(),
+            projectManager: data.projectManager,
+            creatorId: data.creator,
+            address: data.address,
+            projectOwner: data.projectOwner,
+            yearOfConstruction: data.yearOfConstruction,
+            numberOfFloors: data.numberOfFloors,
+            escapeLevel: data.escapeLevel,
+            listedBuilding: data.listedBuilding === 'Yes',
+            protectionZone: data.protectionZone === 'Yes',
+            currentUse: data.currentUse,
+        };
+
+        addProject(newProjectData);
         setIsAddDialogOpen(false);
         toast({
             title: t('projectAdded'),
-            description: t('projectAddedDesc', { name: data.name }),
+            description: t('projectAddedDesc', { name: data.projectName }),
         });
-        logAction(`User '${currentUser.name}' created a new project: '${data.name}'.`);
+        logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
-        updateProject(projectId, data);
+        const projectToUpdate = projects.find(p => p.id === projectId);
+        if (!projectToUpdate) return;
+        
+        const updatedProjectData: Omit<Project, 'id'> = {
+            ...projectToUpdate,
+            name: data.projectName,
+            projectManager: data.projectManager,
+            creatorId: data.creator,
+            address: data.address,
+            projectOwner: data.projectOwner,
+            yearOfConstruction: data.yearOfConstruction,
+            numberOfFloors: data.numberOfFloors,
+            escapeLevel: data.escapeLevel,
+            listedBuilding: data.listedBuilding === 'Yes',
+            protectionZone: data.protectionZone === 'Yes',
+            currentUse: data.currentUse,
+        };
+
+        updateProject(projectId, updatedProjectData);
         setEditingProject(null);
         toast({
             title: t('projectUpdated'),
-            description: t('projectUpdatedDesc', { name: data.name }),
+            description: t('projectUpdatedDesc', { name: data.projectName }),
         });
-        logAction(`User '${currentUser.name}' updated project: '${data.name}'.`);
+        logAction(`User '${currentUser.name}' updated project: '${data.projectName}'.`);
     }
 
     const handleDeleteProject = (projectId: string) => {
@@ -104,26 +124,22 @@ export default function ProjectsSettingsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[200px]">{t('project')}</TableHead>
-                                    <TableHead>{t('tasks')}</TableHead>
-                                    <TableHead>{t('budget')}</TableHead>
-                                    <TableHead>Hours/Year</TableHead>
-                                    <TableHead>{t('details')}</TableHead>
+                                    <TableHead>#</TableHead>
+                                    <TableHead>{t('projectName')}</TableHead>
+                                    <TableHead>{t('address')}</TableHead>
+                                    <TableHead>{t('projectManager')}</TableHead>
+                                    <TableHead>{t('creationDate')}</TableHead>
                                     {canManageProjects && <TableHead><span className="sr-only">{t('actions')}</span></TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {projectDetails.map(project => (
+                                {projects.map(project => (
                                     <TableRow key={project.id}>
+                                        <TableCell className="font-mono">{project.projectNumber}</TableCell>
                                         <TableCell className="font-medium">{project.name}</TableCell>
-                                        <TableCell className="text-sm text-muted-foreground max-w-[250px] truncate">
-                                            {project.tasks.map(t => t.name).join(', ') || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>{formatCurrency(project.budget)}</TableCell>
-                                        <TableCell>{project.hoursPerYear || 'N/A'}</TableCell>
-                                        <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
-                                            {project.details || 'N/A'}
-                                        </TableCell>
+                                        <TableCell>{project.address}</TableCell>
+                                        <TableCell>{project.projectManager}</TableCell>
+                                        <TableCell>{format(new Date(project.projectCreationDate), 'PP')}</TableCell>
                                         {canManageProjects && (
                                             <TableCell>
                                                 <DropdownMenu>
@@ -150,7 +166,7 @@ export default function ProjectsSettingsPage() {
                                         )}
                                     </TableRow>
                                 ))}
-                                {projectDetails.length === 0 && (
+                                {projects.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-24 text-center">{t('noProjectsCreated')}</TableCell>
                                     </TableRow>
@@ -166,7 +182,6 @@ export default function ProjectsSettingsPage() {
                         isOpen={isAddDialogOpen}
                         onOpenChange={setIsAddDialogOpen}
                         onAddProject={handleAddProject}
-                        allTasks={allTasks}
                     />
                     {editingProject && (
                         <EditProjectDialog
@@ -174,7 +189,6 @@ export default function ProjectsSettingsPage() {
                             onOpenChange={(isOpen) => !isOpen && setEditingProject(null)}
                             onSaveProject={handleSaveProject}
                             project={editingProject}
-                            allTasks={allTasks}
                         />
                     )}
                     <DeleteProjectDialog

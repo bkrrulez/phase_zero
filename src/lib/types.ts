@@ -50,10 +50,18 @@ export type HolidayRequest = {
 export type Project = {
   id: string;
   name: string;
-  taskIds?: string[];
-  budget?: number;
-  hoursPerYear?: number;
-  details?: string;
+  projectNumber: string;
+  projectCreationDate: string;
+  projectManager: string;
+  creatorId: string;
+  address: string;
+  projectOwner: string;
+  yearOfConstruction?: number;
+  numberOfFloors?: number;
+  escapeLevel?: number;
+  listedBuilding: boolean;
+  protectionZone: boolean;
+  currentUse?: string;
 };
 
 export type Task = {
