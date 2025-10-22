@@ -9,7 +9,6 @@ import { type PushMessage } from '@/lib/mock-data';
 import { formatDistanceToNow } from 'date-fns';
 import { usePushMessages } from '../contexts/PushMessagesContext';
 import { useNotifications } from '../contexts/NotificationsContext';
-import { useHolidays } from '../contexts/HolidaysContext';
 import { Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -56,20 +55,13 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
   
   // App Notifications (e.g., Holiday Requests)
   const { notifications, markAsRead } = useNotifications();
-  const { holidayRequests, approveRequest, rejectRequest } = useHolidays();
 
+  // Since holiday requests are removed, this will be empty but keeps the structure
   const userAppNotifications = React.useMemo(() => {
       return notifications
-        .filter(n => {
-            if (!n.recipientIds.includes(currentUser.id) || n.type !== 'holidayRequest') {
-                return false;
-            }
-            // Check if the associated holiday request is still pending.
-            const request = holidayRequests.find(r => r.id === n.referenceId);
-            return request ? request.status === 'Pending' : false;
-        })
+        .filter(n => n.recipientIds.includes(currentUser.id) && n.type !== 'holidayRequest') // Filter out holiday requests explicitly
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [notifications, currentUser, holidayRequests]);
+  }, [notifications, currentUser]);
 
   // Combined notifications
   const allDisplayableItems = React.useMemo(() => {
@@ -81,6 +73,7 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
         ...msg,
     }));
     
+    // appItems will be empty regarding holiday requests
     const appItems = userAppNotifications.map(notif => ({
         id: notif.id,
         type: notif.type,
@@ -99,14 +92,14 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
   };
   
   const handleApprove = (notificationId: string, requestId: string) => {
-      approveRequest(requestId);
+      // approveRequest(requestId);
       markAsRead(notificationId, currentUser.id);
       toast({ title: "Request Approved", description: "The holiday request has been approved."});
       onClose();
   }
   
   const handleReject = (notificationId: string, requestId: string) => {
-      rejectRequest(requestId);
+      // rejectRequest(requestId);
       markAsRead(notificationId, currentUser.id);
       toast({ title: "Request Rejected", description: "The holiday request has been rejected.", variant: 'destructive'});
       onClose();
@@ -133,27 +126,6 @@ export function NotificationPopover({ onClose }: NotificationPopoverProps) {
                       </p>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => handleDismissPushMessage(item.id)}>Dismiss</Button>
-                  </div>
-                ) : item.type === 'holidayRequest' ? (
-                  <div className="flex items-start gap-3 py-3">
-                    {!item.isRead && <span className="flex h-2 w-2 translate-y-1 rounded-full bg-sky-500" />}
-                    <div className="grid gap-1 flex-1">
-                      <p className="font-medium">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{item.body}</p>
-                       <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                        </p>
-                      {!item.isRead && (
-                        <div className="flex gap-2 pt-2">
-                            <Button size="sm" onClick={() => handleApprove(item.id, item.referenceId)}>
-                                <Check className="mr-2 h-4 w-4"/>Approve
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleReject(item.id, item.referenceId)}>
-                                <X className="mr-2 h-4 w-4"/>Reject
-                            </Button>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 ) : null}
                 {index < allDisplayableItems.length - 1 && <Separator />}

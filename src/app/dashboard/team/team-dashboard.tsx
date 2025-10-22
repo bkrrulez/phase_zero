@@ -7,16 +7,14 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { isSameDay } from "date-fns";
+import { isSameDay, startOfMonth, getDay, addDays } from "date-fns";
 import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useMembers } from "../contexts/MembersContext";
-import { useHolidays } from "../contexts/HolidaysContext";
 import { useAuth } from '../contexts/AuthContext';
 
 export function TeamDashboard() {
   const { timeEntries } = useTimeTracking();
   const { teamMembers } = useMembers();
-  const { publicHolidays, customHolidays } = useHolidays();
   const { currentUser } = useAuth();
 
   const teamPerformance = useMemo(() => {
@@ -38,30 +36,13 @@ export function TeamDashboard() {
     return visibleMembers.map(member => {
       const dailyHours = member.contract.weeklyHours / 5;
 
-      const allPublicHolidaysThisMonth = publicHolidays.filter(h => {
-          const holidayDate = new Date(h.date);
-          return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6;
-      });
-
-      const allCustomHolidaysThisMonth = customHolidays.filter(h => {
-          const holidayDate = new Date(h.date);
-          const applies = (h.appliesTo === 'all-members') ||
-                          (h.appliesTo === 'all-teams' && !!member.teamId) ||
-                          (h.appliesTo === member.teamId);
-          return holidayDate.getFullYear() === currentYear && holidayDate.getMonth() === currentMonth && holidayDate.getDay() !== 0 && holidayDate.getDay() !== 6 && applies;
-      });
-
-      const allHolidaysThisMonth = [...allPublicHolidaysThisMonth, ...allCustomHolidaysThisMonth];
-
       let workDaysSoFar = 0;
       const dayIterator = new Date(monthStart);
-      const holidaysSoFar = allHolidaysThisMonth.filter(h => new Date(h.date) <= today);
   
       while (dayIterator <= today) {
           const dayOfWeek = dayIterator.getDay();
-          const isHoliday = holidaysSoFar.some(h => isSameDay(new Date(h.date), dayIterator));
   
-          if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday) {
+          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
               workDaysSoFar++;
           }
           dayIterator.setDate(dayIterator.getDate() + 1);
@@ -73,11 +54,7 @@ export function TeamDashboard() {
       });
       const manualTotalHours = userTimeEntries.reduce((acc, entry) => acc + entry.duration, 0);
       
-      const holidayHours = allHolidaysThisMonth.reduce((acc, h) => {
-          return acc + (h.type === 'Full Day' ? dailyHours : dailyHours / 2);
-      }, 0);
-
-      const totalHours = manualTotalHours + holidayHours;
+      const totalHours = manualTotalHours;
       const expectedHours = workDaysSoFar * dailyHours;
       const performance = totalHours - expectedHours;
       
@@ -88,7 +65,7 @@ export function TeamDashboard() {
         performance,
       }
     });
-  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser]);
+  }, [timeEntries, teamMembers, currentUser]);
 
   const usersWithOvertime = teamPerformance
     .filter(u => u.performance > 0)

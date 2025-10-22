@@ -9,14 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { isSameDay, startOfMonth, getDay, addDays, endOfMonth, isWithinInterval, startOfYear, endOfYear, getYear, parseISO, isSameMonth } from "date-fns";
 import { useTimeTracking } from "../contexts/TimeTrackingContext";
 import { useMembers } from "../contexts/MembersContext";
-import { useHolidays } from "../contexts/HolidaysContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
 
 export function TeamDashboard() {
   const { timeEntries } = useTimeTracking();
   const { teamMembers } = useMembers();
-  const { publicHolidays, customHolidays, annualLeaveAllowance } = useHolidays();
   const { currentUser } = useAuth();
   const { t } = useLanguage();
 
@@ -34,32 +32,9 @@ export function TeamDashboard() {
     const today = new Date();
     const periodStart = startOfMonth(today);
     const selectedYear = getYear(today);
-
-    // --- Standardized Leave Calculation ---
-    const yearStart = startOfYear(new Date(selectedYear, 0, 1));
     const yearEndForLeave = endOfYear(new Date(selectedYear, 11, 31));
-    
-    let standardWorkingDaysInYear = 0;
-    const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
 
-    for (let d = new Date(yearStart); d <= yearEndForLeave; d = addDays(d, 1)) {
-        const dayOfWeek = getDay(d);
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-        const isPublicHoliday = publicHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-        if (isPublicHoliday) continue;
-        standardWorkingDaysInYear++;
-    }
-
-    const dailyLeaveCredit = standardWorkingDaysInYear > 0 ? annualLeaveAllowance / standardWorkingDaysInYear : 0;
-    // --- End Standardized Leave Calculation ---
-    
     return visibleMembers.map(member => {
-      const userHolidaysInYear = publicHolidaysInYear
-        .concat(customHolidays.filter(h => {
-            if (getYear(parseISO(h.date)) !== selectedYear) return false;
-            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-            return applies;
-        }));
       
       // Calculate Logged Hours for the month so far
       const userTimeEntries = timeEntries.filter(entry => {
@@ -76,9 +51,6 @@ export function TeamDashboard() {
           const dayOfWeek = getDay(d);
           if (dayOfWeek === 0 || dayOfWeek === 6) continue;
           
-          const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-          if (isHoliday) continue;
-          
           const activeContractsOnDay = member.contracts.filter(c => {
               const contractStart = parseISO(c.startDate);
               const contractEnd = c.endDate ? parseISO(c.endDate) : yearEndForLeave;
@@ -92,11 +64,7 @@ export function TeamDashboard() {
           }
       }
       
-      const leaveDaysSoFar = workingDaysSoFar * dailyLeaveCredit;
-      const avgDailyHoursSoFar = workingDaysSoFar > 0 ? assignedHoursSoFar / workingDaysSoFar : 0;
-      const leaveHoursSoFar = leaveDaysSoFar * avgDailyHoursSoFar;
-      const expectedHoursSoFar = assignedHoursSoFar - leaveHoursSoFar;
-
+      const expectedHoursSoFar = assignedHoursSoFar;
       const performance = loggedHours - expectedHoursSoFar;
 
       return {
@@ -106,7 +74,7 @@ export function TeamDashboard() {
         performance,
       }
     });
-  }, [timeEntries, teamMembers, publicHolidays, customHolidays, currentUser, annualLeaveAllowance]);
+  }, [timeEntries, teamMembers, currentUser]);
 
   const usersWithOvertime = teamPerformance
     .filter(u => u.performance > 0)

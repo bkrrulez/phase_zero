@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -295,13 +296,11 @@ export function IndividualReport() {
         const round = (num: number) => parseFloat(num.toFixed(2));
 
         // Consolidated Info
-        const summaryHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+        const summaryHeaders = [t('member'), t('role'), t('team'), t('expected'), t('logged'), t('remaining')];
         const summaryData = [
             selectedUser.name,
             selectedUser.role,
             getTeamName(selectedUser.teamId),
-            { v: round(monthlyData.totalAssigned), t: 'n', s: {...userRowStyle, ...numberFormat}},
-            { v: round(monthlyData.totalLeave), t: 'n', s: {...userRowStyle, ...numberFormat}},
             { v: round(monthlyData.totalExpected), t: 'n', s: {...userRowStyle, ...numberFormat}},
             { v: round(monthlyData.totalLogged), t: 'n', s: {...userRowStyle, ...numberFormat}},
             { v: round(monthlyData.totalExpected - monthlyData.totalLogged), t: 'n', s: {...userRowStyle, ...numberFormat}}
@@ -312,7 +311,7 @@ export function IndividualReport() {
         aoa.push([]);
 
         // Time Entries
-        const timeEntryHeaders = [t('date'), t('project'), '', '', '', '', t('loggedHours'), ''];
+        const timeEntryHeaders = [t('date'), t('project'), '', '', '', t('loggedHours'), ''];
         aoa.push(timeEntryHeaders.map(h => ({v: h, s: headerStyle})));
 
         const userEntriesForMonth = timeEntries.filter(entry => entry.userId === selectedUser.id && isSameMonth(parseISO(entry.date), selectedDate)).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -321,7 +320,6 @@ export function IndividualReport() {
             aoa.push([
                 {v: format(parseISO(entry.date), 'dd/MM/yyyy'), s: dataRowStyle },
                 {v: entry.project, s: dataRowStyle },
-                {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },

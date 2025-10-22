@@ -66,7 +66,6 @@ export function DetailedReport({ data }: DetailedReportProps) {
             <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
             <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
             <TableHead className="text-right">{t('assignedHours')}</TableHead>
-            <TableHead className="text-right">{t('leaveHours')}</TableHead>
             <TableHead className="text-right">{t('expected')}</TableHead>
             <TableHead className="text-right">{t('logged')}</TableHead>
             <TableHead className="text-right">{t('remaining')}</TableHead>
@@ -93,7 +92,6 @@ export function DetailedReport({ data }: DetailedReportProps) {
                   <TableCell className="hidden md:table-cell"><Badge variant={userRow.user.role === 'Team Lead' || userRow.user.role === 'Super Admin' ? "default" : "secondary"}>{userRow.user.role}</Badge></TableCell>
                   <TableCell className="hidden md:table-cell">{getTeamName(userRow.user.teamId)}</TableCell>
                   <TableCell className="text-right font-mono">{userRow.assignedHours.toFixed(2)}h</TableCell>
-                  <TableCell className="text-right font-mono">{userRow.leaveHours.toFixed(2)}h</TableCell>
                   <TableCell className="text-right font-mono">{userRow.expectedHours.toFixed(2)}h</TableCell>
                   <TableCell className="text-right font-mono">{userRow.loggedHours.toFixed(2)}h</TableCell>
                   <TableCell className={`text-right font-mono ${userRow.remainingHours < 0 ? 'text-green-600' : ''}`}>{userRow.remainingHours.toFixed(2)}h</TableCell>
@@ -106,7 +104,6 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                 <TableCell className="pl-12 font-medium">Project - {projectRow.name}</TableCell>
                                 <TableCell className="hidden md:table-cell"></TableCell>
                                 <TableCell className="hidden md:table-cell"></TableCell>
-                                <TableCell></TableCell>
                                 <TableCell></TableCell>
                                 <TableCell></TableCell>
                                 <TableCell className="text-right font-mono">{projectRow.loggedHours.toFixed(2)}h</TableCell>
