@@ -30,13 +30,13 @@ export default function ContractsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold font-headline">{t('contracts')}</h1>
+                <h1 className="text-3xl font-bold font-headline">{t('accessControl')}</h1>
                 <p className="text-muted-foreground">{t('contractsSubtitle')}</p>
             </div>
             <Tabs defaultValue="all-contracts">
                 <TabsList className="flex flex-col sm:flex-row h-auto sm:h-10 w-full sm:w-auto sm:inline-flex">
-                    <TabsTrigger value="all-contracts" className="w-full sm:w-auto">{t('allContracts')}</TabsTrigger>
-                    <TabsTrigger value="end-notifications" className="w-full sm:w-auto">{t('contractEndNotifications')}</TabsTrigger>
+                    <TabsTrigger value="all-contracts" className="w-full sm:w-auto">{'Manage Access'}</TabsTrigger>
+                    <TabsTrigger value="end-notifications" className="w-full sm:w-auto">{'Access End Notification'}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="all-contracts" className="mt-4">
                     <ContractsTable />

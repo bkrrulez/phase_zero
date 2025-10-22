@@ -27,7 +27,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 
 
 type ContractStatus = 'Upcoming' | 'Active' | 'Expired';
-type SortableColumn = 'name' | 'email' | 'startDate' | 'endDate' | 'status' | 'weeklyHours';
+type SortableColumn = 'name' | 'email' | 'startDate' | 'endDate' | 'status';
 
 const getContractStatus = (contract: Contract): ContractStatus => {
     const today = startOfDay(new Date());
@@ -122,9 +122,6 @@ export function ContractsTable() {
                     break;
                 case 'status':
                     comparison = statusA.localeCompare(statusB);
-                    break;
-                case 'weeklyHours':
-                    comparison = a.weeklyHours - b.weeklyHours;
                     break;
             }
 
@@ -324,12 +321,6 @@ export function ContractsTable() {
                                     {renderSortArrow('status')}
                                 </div>
                             </TableHead>
-                            <TableHead className="text-right cursor-pointer" onClick={() => handleSort('weeklyHours')}>
-                                <div className="flex items-center justify-end">
-                                    {t('weeklyHours')}
-                                    {renderSortArrow('weeklyHours')}
-                                </div>
-                            </TableHead>
                             <TableHead className="text-right">{t('actions')}</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -348,7 +339,6 @@ export function ContractsTable() {
                                     <TableCell>
                                         <Badge variant={status === 'Active' ? 'default' : status === 'Upcoming' ? 'secondary' : 'destructive'} className={cn(status === 'Active' && 'bg-green-600')}>{status}</Badge>
                                     </TableCell>
-                                    <TableCell className="text-right">{contract.weeklyHours}h</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
@@ -364,7 +354,7 @@ export function ContractsTable() {
                             )
                         }) : (
                             <TableRow>
-                                <TableCell colSpan={8} className="h-24 text-center">
+                                <TableCell colSpan={7} className="h-24 text-center">
                                     {selectedMemberId ? "No contracts found for the selected user." : "No contracts found for the selected status."}
                                 </TableCell>
                             </TableRow>

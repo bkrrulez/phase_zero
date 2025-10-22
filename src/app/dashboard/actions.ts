@@ -30,7 +30,6 @@ const mapDbUserToUser = (dbUser: any): User => {
         id: c.id,
         startDate: format(new Date(c.start_date), 'yyyy-MM-dd'),
         endDate: c.end_date ? format(new Date(c.end_date), 'yyyy-MM-dd') : null,
-        weeklyHours: c.weekly_hours,
     }));
 
     const activeContracts = allContracts.filter((c: any) => {
@@ -48,7 +47,7 @@ const mapDbUserToUser = (dbUser: any): User => {
             if (!b.endDate) return 1;
             return new Date(b.endDate).getTime() - new Date(a.endDate).getTime();
         });
-        primaryContract = sortedContracts[0] || { startDate: new Date().toISOString(), endDate: null, weeklyHours: 0 };
+        primaryContract = sortedContracts[0] || { startDate: new Date().toISOString(), endDate: null };
     }
     
     return {
@@ -63,7 +62,6 @@ const mapDbUserToUser = (dbUser: any): User => {
         contract: {
             startDate: primaryContract.startDate,
             endDate: primaryContract.endDate,
-            weeklyHours: primaryContract.weeklyHours,
         },
         contracts: allContracts,
         contractPdf: dbUser.contract_pdf,
@@ -75,7 +73,6 @@ const mapDbContractToContract = (dbContract: any): Contract => ({
     userId: dbContract.user_id,
     startDate: format(new Date(dbContract.start_date), 'yyyy-MM-dd'),
     endDate: dbContract.end_date ? format(new Date(dbContract.end_date), 'yyyy-MM-dd') : null,
-    weeklyHours: dbContract.weekly_hours
 });
 
 const mapDbProjectToProject = (dbProject: any): Project => ({
@@ -223,8 +220,8 @@ export async function addUser(newUserData: Omit<User, 'id' | 'avatar' >): Promis
             for (const contract of contracts) {
                 const contractId = `contract-${Date.now()}-${Math.random()}`;
                 const contractRes = await client.query(
-                    `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                    [contractId, id, contract.startDate, contract.endDate, contract.weeklyHours]
+                    `INSERT INTO contracts (id, user_id, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING *`,
+                    [contractId, id, contract.startDate, contract.endDate]
                 );
                 insertedContracts.push(contractRes.rows[0]);
             }
@@ -293,15 +290,15 @@ export async function updateUser(updatedUser: User): Promise<User | null> {
             if (contract.id && existingContractIds.has(contract.id)) {
                 // Update existing contract
                 await client.query(
-                    `UPDATE contracts SET start_date = $1, end_date = $2, weekly_hours = $3 WHERE id = $4`,
-                    [contract.startDate, contract.endDate || null, contract.weeklyHours, contract.id]
+                    `UPDATE contracts SET start_date = $1, end_date = $2 WHERE id = $3`,
+                    [contract.startDate, contract.endDate || null, contract.id]
                 );
             } else {
                  // Insert new contract
                  const contractId = `contract-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                  await client.query(
-                    `INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5)`,
-                    [contractId, id, contract.startDate, contract.endDate || null, contract.weeklyHours]
+                    `INSERT INTO contracts (id, user_id, start_date, end_date) VALUES ($1, $2, $3, $4)`,
+                    [contractId, id, contract.startDate, contract.endDate || null]
                 );
             }
         }
@@ -550,20 +547,20 @@ export async function getContracts(): Promise<Contract[]> {
 
 
 export async function addContract(contractData: Omit<Contract, 'id'>): Promise<void> {
-    const { userId, startDate, endDate, weeklyHours } = contractData;
+    const { userId, startDate, endDate } = contractData;
     const id = `contract-${Date.now()}`;
     await db.query(
-        'INSERT INTO contracts (id, user_id, start_date, end_date, weekly_hours) VALUES ($1, $2, $3, $4, $5)',
-        [id, userId, startDate, endDate, weeklyHours]
+        'INSERT INTO contracts (id, user_id, start_date, end_date) VALUES ($1, $2, $3, $4)',
+        [id, userId, startDate, endDate]
     );
     revalidatePath('/dashboard/contracts');
 }
 
 export async function updateContract(contractId: string, contractData: Omit<Contract, 'id'>): Promise<void> {
-    const { userId, startDate, endDate, weeklyHours } = contractData;
+    const { userId, startDate, endDate } = contractData;
     await db.query(
-        'UPDATE contracts SET user_id = $1, start_date = $2, end_date = $3, weekly_hours = $4 WHERE id = $5',
-        [userId, startDate, endDate, weeklyHours, contractId]
+        'UPDATE contracts SET user_id = $1, start_date = $2, end_date = $3 WHERE id = $4',
+        [userId, startDate, endDate, contractId]
     );
     revalidatePath('/dashboard/contracts');
 }
@@ -766,7 +763,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
                 project_owner, year_of_construction, number_of_floors, escape_level, 
-                listed_building, protection_zone, current_use
+                listedBuilding, protection_zone, current_use
              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 

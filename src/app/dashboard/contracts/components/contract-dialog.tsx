@@ -17,7 +17,6 @@ const contractFormSchema = z.object({
   userId: z.string().min(1, 'A user must be selected.'),
   startDate: z.string().min(1, 'Start date is required.'),
   endDate: z.string().optional().nullable(),
-  weeklyHours: z.coerce.number().int().min(1, 'Hours must be positive.').max(80, 'Cannot exceed 80 hours.'),
 });
 
 type ContractFormValues = z.infer<typeof contractFormSchema>;
@@ -39,7 +38,6 @@ export function ContractDialog({ isOpen, onOpenChange, onSave, contract, users, 
       userId: '',
       startDate: '',
       endDate: '',
-      weeklyHours: 40,
     },
   });
 
@@ -50,14 +48,12 @@ export function ContractDialog({ isOpen, onOpenChange, onSave, contract, users, 
                 userId: contract.userId,
                 startDate: contract.startDate,
                 endDate: contract.endDate || '',
-                weeklyHours: contract.weeklyHours,
             });
         } else {
              form.reset({
                 userId: userId || '',
                 startDate: '',
                 endDate: '',
-                weeklyHours: 40,
             });
         }
     }
@@ -124,19 +120,6 @@ export function ContractDialog({ isOpen, onOpenChange, onSave, contract, users, 
                     <FormLabel>End Date (Optional)</FormLabel>
                     <FormControl>
                         <Input type="date" {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="weeklyHours"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Weekly Hours</FormLabel>
-                    <FormControl>
-                        <Input type="number" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

@@ -5,7 +5,6 @@ export type Contract = {
   userId: string;
   startDate: string;
   endDate: string | null;
-  weeklyHours: number;
 };
 
 export type User = {
@@ -20,7 +19,6 @@ export type User = {
   contract: { // This is now a single object representing the primary contract for simplified access
     startDate: string;
     endDate: string | null;
-    weeklyHours: number;
   },
   contracts: Omit<Contract, 'userId'>[];
   contractPdf?: string | null;
