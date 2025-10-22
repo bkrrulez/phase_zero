@@ -1,10 +1,1 @@
-
-import * as React from 'react';
-
-export default function RosterLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <>{children}</>;
-}
+// This file is obsolete and has been deleted.
