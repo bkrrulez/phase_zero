@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from "react";
@@ -45,7 +46,7 @@ export type LogTimeFormValues = z.infer<typeof logTimeSchema>;
 interface LogTimeDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (data: LogTimeFormValues, entryId?: string) => Promise<{ success: boolean }>;
+  onSave: (data: Omit<LogTimeFormValues, 'userId'>, entryId?: string) => Promise<{ success: boolean }>;
   entryToEdit?: TimeEntry | null;
   userId?: string; // The ID of the user whose time is being logged/edited
 }

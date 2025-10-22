@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -82,8 +83,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         date: format(data.date, 'yyyy-MM-dd'),
         startTime: data.startTime,
         endTime: data.endTime,
-        projectId: data.project,
-        taskId: data.task,
+        project: data.project,
         placeOfWork: data.placeOfWork,
         remarks: data.remarks,
       };
@@ -121,8 +121,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
         date: format(data.date, 'yyyy-MM-dd'),
         startTime: data.startTime,
         endTime: data.endTime,
-        projectId: data.project,
-        taskId: data.task,
+        project: data.project,
         placeOfWork: data.placeOfWork,
         remarks: data.remarks,
       };
