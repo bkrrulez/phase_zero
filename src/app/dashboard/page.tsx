@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { MoreHorizontal, Plus, Check, ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useProjects } from './contexts/ProjectsContext';
 import { useAuth } from './contexts/AuthContext';
 import { useLanguage } from './contexts/LanguageContext';
@@ -117,9 +117,9 @@ export default function ProjectDashboardPage() {
         filteredProjects.sort((a, b) => {
             let comparison = 0;
             if (sortBy === 'name') {
-                comparison = a.name.localeCompare(b.name);
+                comparison = (a.name || '').localeCompare(b.name || '');
             } else if (sortBy === 'projectNumber') {
-                comparison = a.projectNumber.localeCompare(b.projectNumber);
+                comparison = (a.projectNumber || '').localeCompare(b.projectNumber || '');
             } else { // creationDate
                 comparison = new Date(b.projectCreationDate).getTime() - new Date(a.projectCreationDate).getTime();
             }
@@ -269,4 +269,3 @@ export default function ProjectDashboardPage() {
         </>
     );
 }
-
