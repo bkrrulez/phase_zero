@@ -1,3 +1,4 @@
+
 import { type Project } from '@/lib/types';
 
 export const FolderIcon = ({ className, project }: { className?: string, project: Project }) => (
@@ -18,24 +19,24 @@ export const FolderIcon = ({ className, project }: { className?: string, project
         <text
             x="8"
             y="11"
-            className="text-[0.2rem] sm:text-[2.2px] fill-primary-foreground/80 font-mono"
+            className="text-[6.5px] fill-primary-foreground/80 font-mono"
             textAnchor="start"
         >
             #{project.projectNumber}
         </text>
         <text
             x="50"
-            y="37"
+            y="36"
             textAnchor="middle"
             alignmentBaseline="middle"
-            className="text-[0.4rem] sm:text-[4px] font-bold fill-primary-foreground"
+            className="text-[12px] font-bold fill-primary-foreground"
         >
             {project.name}
         </text>
         <text
             x="8"
             y="54"
-            className="text-[0.2rem] sm:text-[2.2px] fill-primary-foreground/90"
+            className="text-[6.5px] fill-primary-foreground/90"
             textAnchor="start"
         >
             {project.address}
