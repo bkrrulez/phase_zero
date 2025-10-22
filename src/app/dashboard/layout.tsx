@@ -20,7 +20,6 @@ import {
   Shield,
   ScrollText,
   LifeBuoy,
-  FileText,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -223,7 +222,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/contracts")}>
                         <Link href="/dashboard/contracts">
-                            <FileText /> {t('contracts')}
+                            <Shield /> {t('accessControl')}
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -351,11 +350,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <footer className="p-4 text-center text-xs text-muted-foreground">
           Created by Bikramjit Chowdhury
         </footer>
-        <LogTimeDialog
-          isOpen={isLogTimeDialogOpen}
-          onOpenChange={setIsLogTimeDialogOpen}
-          onSave={handleLogTime}
-        />
+        {/* The LogTimeDialog is removed from the layout trigger */}
       </SidebarInset>
     </SidebarProvider>
   );
