@@ -25,7 +25,6 @@ import { addDays, getDay, isSameMonth, startOfMonth, isWithinInterval, getYear, 
 import type { DayContentProps } from 'react-day-picker';
 import { DayDetailsDialog } from './day-details-dialog';
 import { useMembers } from '../../contexts/MembersContext';
-import { useHolidays } from '../../contexts/HolidaysContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
 import { LogTimeDialog, type LogTimeFormValues } from '../../components/log-time-dialog';
@@ -46,10 +45,6 @@ interface ReportCalendarContextValue {
     dailyTotals: Record<string, number>;
     dailyEntries: Record<string, TimeEntry[]>;
     dailyExpected: Record<string, number>;
-    dailyHolidayNames: Record<string, string>;
-    personalLeaveDays: Date[];
-    publicHolidayDays: Date[];
-    customHolidayDays: Date[];
   };
   onDayClick: (date: Date) => void;
   t: (key: any, options?: any) => string;
@@ -74,11 +69,9 @@ const DayContent: React.FC<DayContentProps> = (props) => {
 
   const hours = monthlyData.dailyTotals[dayOfMonth];
   const expectedHours = monthlyData.dailyExpected[dayOfMonth];
-  const holidayName = monthlyData.dailyHolidayNames[dayOfMonth];
   const hasManualEntries = (monthlyData.dailyEntries[dayOfMonth] || []).length > 0;
   
   const isWeekend = getDay(date) === 0 || getDay(date) === 6;
-  const isLeaveDay = monthlyData.personalLeaveDays.some(d => d.toDateString() === date.toDateString());
 
   const wrapperProps = {
     className: "relative w-full h-full flex flex-col items-center justify-between text-center p-1",
@@ -95,12 +88,8 @@ const DayContent: React.FC<DayContentProps> = (props) => {
         {hours !== undefined && hours > 0 ? (
             <span className="text-xs font-bold text-primary">{hours.toFixed(1)}h</span>
         ) : <span className="h-[15px]" />}
-        {!isWeekend && !isLeaveDay ? (
-            holidayName ? (
-                <span className="text-[10px] font-semibold text-green-600 truncate px-1">
-                    {holidayName}
-                </span>
-            ) : expectedHours > 0 ? (
+        {!isWeekend ? (
+            expectedHours > 0 ? (
                 <span className="text-[10px] font-semibold text-orange-400">
                     {t('expectedHoursShort', { hours: expectedHours.toFixed(1) })}
                 </span>
@@ -118,7 +107,6 @@ export function IndividualReport() {
     const { teams } = useTeams();
     const { teamMembers } = useMembers();
     const { currentUser } = useAuth();
-    const { publicHolidays, customHolidays, holidayRequests, annualLeaveAllowance } = useHolidays();
     const { timeEntries, updateTimeEntry, deleteTimeEntry } = useTimeTracking();
 
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
@@ -221,27 +209,13 @@ export function IndividualReport() {
 
 
   const monthlyData = React.useMemo(() => {
-    if (!selectedUser) return { dailyTotals: {}, personalLeaveDays: [], publicHolidayDays: [], customHolidayDays: [], dailyEntries: {}, dailyExpected: {}, dailyHolidayNames: {}, totalLogged: 0, totalExpected: 0, totalAssigned: 0, totalLeave: 0 };
+    if (!selectedUser) return { dailyTotals: {}, dailyEntries: {}, dailyExpected: {}, totalLogged: 0, totalExpected: 0, totalAssigned: 0, totalLeave: 0 };
 
     const dailyTotals: Record<string, number> = {};
     const dailyEntries: Record<string, TimeEntry[]> = {};
     const dailyExpected: Record<string, number> = {};
-    const dailyHolidayNames: Record<string, string> = {};
 
-    const selectedYear = selectedDate.getFullYear();
-    const yearStart = startOfYear(selectedDate);
     const yearEnd = endOfYear(selectedDate);
-    const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
-
-    const standardWorkDaysInYear = 261;
-    const dailyLeaveCredit = annualLeaveAllowance / standardWorkDaysInYear;
-    
-    const userHolidaysInYear = publicHolidaysInYear
-        .concat(customHolidays.filter(h => {
-            if (getYear(parseISO(h.date)) !== selectedYear) return false;
-            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!selectedUser.teamId) || (h.appliesTo === selectedUser.teamId);
-            return applies;
-        }));
     
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
@@ -256,16 +230,6 @@ export function IndividualReport() {
 
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-        const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-        if (isHoliday) {
-            const holiday = userHolidaysInYear.find(h => isSameDay(parseISO(h.date), d));
-            if (holiday) dailyHolidayNames[dayOfMonth] = holiday.name;
-            continue;
-        }
-
-        const isLeaveDay = holidayRequests.some(req => req.userId === selectedUser.id && req.status === 'Approved' && isWithinInterval(d, { start: parseISO(req.startDate), end: parseISO(req.endDate) }));
-        if (isLeaveDay) continue;
-
         const activeContractsOnDay = selectedUser.contracts.filter(c => {
             const contractStart = parseISO(c.startDate);
             const contractEnd = c.endDate ? parseISO(c.endDate) : yearEnd;
@@ -274,13 +238,8 @@ export function IndividualReport() {
         
         if (activeContractsOnDay.length > 0) {
             const dailyContractHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
-            const leaveHoursForDay = dailyLeaveCredit * dailyContractHours;
-            const expected = dailyContractHours - leaveHoursForDay;
-            
-            dailyExpected[dayOfMonth] = expected;
-            totalAssigned += dailyContractHours;
-            totalLeave += leaveHoursForDay;
-            totalExpected += expected;
+            dailyExpected[dayOfMonth] = dailyContractHours;
+            totalExpected += dailyContractHours;
         }
     }
 
@@ -300,25 +259,8 @@ export function IndividualReport() {
         totalLogged += entry.duration;
     });
     
-    const personalLeaveDays = holidayRequests.filter(req => 
-        req.userId === selectedUser.id && req.status === 'Approved'
-    ).flatMap(req => {
-        const start = parseISO(req.startDate);
-        const end = parseISO(req.endDate);
-        const dates: Date[] = [];
-        for (let dt = start; dt <= end; dt = addDays(dt, 1)) {
-            if (isSameMonth(dt, selectedDate)) {
-                dates.push(new Date(dt));
-            }
-        }
-        return dates;
-    });
-    
-    const publicHolidayDays = publicHolidaysInYear.map(h => parseISO(h.date));
-    const customHolidayDays = userHolidaysInYear.filter(h => !publicHolidaysInYear.includes(h)).map(h => parseISO(h.date));
-
-    return { dailyTotals, personalLeaveDays, publicHolidayDays, customHolidayDays, dailyEntries, dailyExpected, dailyHolidayNames, totalLogged, totalExpected, totalAssigned, totalLeave };
-  }, [selectedUser, selectedDate, publicHolidays, customHolidays, holidayRequests, timeEntries, annualLeaveAllowance]);
+    return { dailyTotals, dailyEntries, dailyExpected, totalLogged, totalExpected, totalAssigned, totalLeave };
+  }, [selectedUser, selectedDate, timeEntries]);
     
     const canEditEntries = React.useMemo(() => {
         if (!selectedUser) return false;
@@ -370,18 +312,16 @@ export function IndividualReport() {
         aoa.push([]);
 
         // Time Entries
-        const timeEntryHeaders = [t('date'), t('project'), t('task'), '', '', '', t('loggedHours'), ''];
+        const timeEntryHeaders = [t('date'), t('project'), '', '', '', '', t('loggedHours'), ''];
         aoa.push(timeEntryHeaders.map(h => ({v: h, s: headerStyle})));
 
         const userEntriesForMonth = timeEntries.filter(entry => entry.userId === selectedUser.id && isSameMonth(parseISO(entry.date), selectedDate)).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         
         userEntriesForMonth.forEach(entry => {
-            const [project, ...taskParts] = entry.task.split(' - ');
-            const task = taskParts.join(' - ');
             aoa.push([
                 {v: format(parseISO(entry.date), 'dd/MM/yyyy'), s: dataRowStyle },
-                {v: project, s: dataRowStyle },
-                {v: task, s: dataRowStyle },
+                {v: entry.project, s: dataRowStyle },
+                {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
                 {v: '', s: dataRowStyle },
@@ -548,9 +488,6 @@ export function IndividualReport() {
                   modifiers={{ 
                       saturday: (date) => getDay(date) === 6,
                       sunday: (date) => getDay(date) === 0,
-                      holiday: monthlyData.publicHolidayDays,
-                      customHoliday: monthlyData.customHolidayDays,
-                      personalLeave: monthlyData.personalLeaveDays,
                       logged: Object.keys(monthlyData.dailyTotals).filter(d => monthlyData.dailyTotals[parseInt(d)] > 0).map(day => {
                           return new Date(selectedDate.getFullYear(), selectedDate.getMonth(), parseInt(day))
                       })
@@ -558,9 +495,6 @@ export function IndividualReport() {
                   modifiersClassNames={{
                   saturday: 'text-muted-foreground/50',
                   sunday: 'text-muted-foreground/50',
-                  holiday: 'bg-green-200 dark:bg-green-800 rounded-md',
-                  customHoliday: 'bg-orange-200 dark:bg-orange-800 rounded-md',
-                  personalLeave: 'bg-yellow-200 dark:bg-yellow-800 rounded-md',
                   logged: 'border border-primary rounded-md'
                   }}
                   components={{
@@ -613,4 +547,3 @@ export function IndividualReport() {
     </div>
   );
 }
-

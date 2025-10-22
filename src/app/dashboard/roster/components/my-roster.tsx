@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTimeTracking } from '../../contexts/TimeTrackingContext';
-import { useHolidays } from '../../contexts/HolidaysContext';
 import { useRoster, AbsenceType } from '../../contexts/RosterContext';
 import { getDay, getYear, min, max, format, DayProps, isSameDay, addDays } from 'date-fns';
 import { MarkAbsenceDialog } from './mark-absence-dialog';
@@ -28,7 +27,6 @@ const months = Array.from({ length: 12 }, (_, i) => ({
 export function MyRoster() {
     const { currentUser } = useAuth();
     const { timeEntries } = useTimeTracking();
-    const { publicHolidays, customHolidays } = useHolidays();
     const { absences, addAbsence, deleteAbsencesInRange } = useRoster();
 
     const [selectedDate, setSelectedDate] = React.useState(new Date());
@@ -87,13 +85,11 @@ export function MyRoster() {
 
         const absenceChunks: { from: Date, to: Date }[] = [];
         let currentChunkStart: Date | null = null;
-        const allHolidays = [...publicHolidays, ...customHolidays];
-
+        
         for (let dt = new Date(from); dt <= to; dt = addDays(dt, 1)) {
             const dayOfWeek = getDay(dt);
             const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-            const isHoliday = allHolidays.some(h => isSameDay(new Date(h.date), dt));
-            const isWorkingDay = !isWeekend && !isHoliday;
+            const isWorkingDay = !isWeekend;
 
             if (isWorkingDay) {
                 if (currentChunkStart === null) {
@@ -204,20 +200,13 @@ export function MyRoster() {
                 absence.type === 'Sick Leave' &&
                 isDateInAbsence(format(date, 'yyyy-MM-dd'), absence)
             ),
-            publicHoliday: (date: Date) => publicHolidays.some(ph => 
-                ph.date.split('T')[0] === format(date, 'yyyy-MM-dd')
-            ),
-        }), [userId, timeEntries, absences, publicHolidays]);
+        }), [userId, timeEntries, absences]);
     
         function Day(props: DayProps) {
-            const dayStr = format(props.date, 'yyyy-MM-dd');
             let className = "w-full h-full p-0 m-0 flex items-center justify-center";
             let tooltip = '';
     
-            if (modifiers.publicHoliday(props.date)) {
-                className = cn(className, "bg-orange-100 dark:bg-orange-900/50");
-                tooltip = publicHolidays.find(ph => ph.date.split('T')[0] === dayStr)?.name || 'Public Holiday';
-            } else if ([0,6].includes(getDay(props.date))) {
+            if ([0,6].includes(getDay(props.date))) {
                 className = cn(className, "bg-orange-100 dark:bg-orange-900/50");
                 tooltip = getDay(props.date) === 0 ? 'Sunday' : 'Saturday';
             }
