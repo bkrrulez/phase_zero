@@ -212,22 +212,22 @@ export default function ProjectDashboardPage() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline">
-                                Sort By
+                                {t('sortBy')}
                                 {renderSortIcon()}
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleSortChange('creationDate')}>
                                 <Check className={`mr-2 h-4 w-4 ${sortBy === 'creationDate' ? 'opacity-100' : 'opacity-0'}`} />
-                                By Creation Date
+                                {t('byCreationDate')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleSortChange('name')}>
                                  <Check className={`mr-2 h-4 w-4 ${sortBy === 'name' ? 'opacity-100' : 'opacity-0'}`} />
-                                By Name
+                                 {t('byName')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleSortChange('projectNumber')}>
                                  <Check className={`mr-2 h-4 w-4 ${sortBy === 'projectNumber' ? 'opacity-100' : 'opacity-0'}`} />
-                                By Project Number
+                                 {t('byProjectNumber')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
