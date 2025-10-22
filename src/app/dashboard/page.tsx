@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -42,7 +43,7 @@ const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: 
         >
             <FolderIcon className="w-full h-full" project={project} />
 
-            <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1 right-1 z-10">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground/80 hover:bg-black/20 hover:text-white">
