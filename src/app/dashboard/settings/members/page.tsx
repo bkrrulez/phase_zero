@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { type User } from "@/lib/types";
 import { EditMemberDialog, type EditMemberFormValues } from "@/app/dashboard/team/components/edit-contract-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from '@/hooks/use-toast';
 import { AddMemberDialog } from "@/app/dashboard/team/components/add-member-dialog";
 import { ChangePasswordDialog } from "@/app/dashboard/team/components/change-password-dialog";
 import { updateUserPasswordAndNotify } from "@/app/dashboard/actions";
@@ -27,7 +27,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { DeleteMemberDialog } from "./components/delete-member-dialog";
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MemberContractTab } from './components/member-contract-tab';
+import { MemberContractTab } from '../members/components/member-contract-tab';
 import { cn } from '@/lib/utils';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 
@@ -134,7 +134,7 @@ export default function MembersSettingsPage() {
         await logAction(`User '${currentUser.name}' updated details for member '${updatedData.name}'.`);
     }
 
-    const handleAddMember = (newUser: Omit<User, 'id'|'avatar'>) => {
+    const handleAddMember = (newUser: Omit<User, 'id'|'avatar'|'contract' > & { contracts: Omit<User['contracts'][0], 'id'>[] }) => {
         addMember(newUser);
         setIsAddMemberDialogOpen(false);
         toast({
@@ -222,20 +222,17 @@ export default function MembersSettingsPage() {
             const sortedContracts = [...member.contracts].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
             const mostRecent = sortedContracts[0] || member.contract; 
             return {
-                weeklyHours: mostRecent.weeklyHours,
                 startDate: mostRecent.startDate,
                 endDate: mostRecent.endDate
             };
         }
 
-        const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
         const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
         
         const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
         const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
 
         return {
-            weeklyHours: totalWeeklyHours,
             startDate: format(earliestStartDate, 'yyyy-MM-dd'),
             endDate: latestEndDate ? format(latestEndDate, 'yyyy-MM-dd') : null,
         };
@@ -251,7 +248,6 @@ export default function MembersSettingsPage() {
                 [t('email')]: member.email,
                 [t('role')]: member.role,
                 [t('team')]: getTeamName(member.teamId),
-                [t('weeklyHours')]: contractDetails.weeklyHours,
                 [t('contractStart')]: format(new Date(contractDetails.startDate), 'yyyy-MM-dd'),
                 [t('contractEnd')]: contractDetails.endDate ? format(new Date(contractDetails.endDate), 'yyyy-MM-dd') : 'Ongoing'
             };
@@ -302,7 +298,7 @@ export default function MembersSettingsPage() {
         <Tabs defaultValue="all-members">
             <TabsList className={cn("grid w-full", currentUser.role === 'Super Admin' ? "grid-cols-2 md:w-[400px]" : "grid-cols-1 md:w-[200px]")}>
                 <TabsTrigger value="all-members">{t('allMembers')}</TabsTrigger>
-                {currentUser.role === 'Super Admin' && <TabsTrigger value="member-contract">{t('memberContractTab')}</TabsTrigger>}
+                {currentUser.role === 'Super Admin' && <TabsTrigger value="member-contract">Member Access</TabsTrigger>}
             </TabsList>
             <TabsContent value="all-members">
                 <Card>
@@ -326,7 +322,6 @@ export default function MembersSettingsPage() {
                                 <TableHead>{t('member')}</TableHead>
                                 <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
                                 <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
-                                <TableHead className="hidden md:table-cell text-right">{t('weeklyHours')}</TableHead>
                                 <TableHead className="hidden lg:table-cell">{t('contractStart')}</TableHead>
                                 <TableHead className="hidden lg:table-cell">{t('contractEnd')}</TableHead>
                                 <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
@@ -353,7 +348,6 @@ export default function MembersSettingsPage() {
                                         <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
-                                    <TableCell className="hidden md:table-cell text-right font-mono">{contractDetails.weeklyHours}h</TableCell>
                                     <TableCell className="hidden lg:table-cell">{format(new Date(contractDetails.startDate), 'PP')}</TableCell>
                                     <TableCell className="hidden lg:table-cell">{contractDetails.endDate ? format(new Date(contractDetails.endDate), 'PP') : 'Ongoing'}</TableCell>
                                     <TableCell>
@@ -371,7 +365,7 @@ export default function MembersSettingsPage() {
                                                 </DropdownMenuItem>
                                                  {canDownloadContract(member) && (
                                                     <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
-                                                        {t('downloadContract')}
+                                                        Download Access Document
                                                     </DropdownMenuItem>
                                                 )}
                                                 <DropdownMenuItem 

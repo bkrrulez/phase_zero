@@ -97,8 +97,8 @@ export default function ProfilePage() {
      if (currentUser.role !== 'Super Admin' && contract.endDate && new Date(contract.endDate) < startOfDay(new Date())) {
         toast({
             variant: "destructive",
-            title: "Cannot Edit Expired Contract",
-            description: "This contract has expired and cannot be modified.",
+            title: "Cannot Edit Expired Access Period",
+            description: "This access period has expired and cannot be modified.",
         });
         return;
     }
@@ -109,12 +109,12 @@ export default function ProfilePage() {
   const handleSaveContract = async (data: Omit<Contract, 'id'>, contractId?: string) => {
       if (contractId) {
           await updateContractAction(contractId, data);
-          toast({ title: "Contract Updated" });
-          logAction(`User '${currentUser.name}' updated contract #${contractId} for '${currentUser.name}'.`);
+          toast({ title: "Access Period Updated" });
+          logAction(`User '${currentUser.name}' updated access period #${contractId} for '${currentUser.name}'.`);
       } else {
           await addContractAction(data);
-          toast({ title: "Contract Added" });
-          logAction(`User '${currentUser.name}' added a new contract for '${currentUser.name}'.`);
+          toast({ title: "Access Period Added" });
+          logAction(`User '${currentUser.name}' added a new access period for '${currentUser.name}'.`);
       }
       await fetchMembers(); // Refetches all members to get updated contract info
       setIsContractDialogOpen(false);
@@ -126,16 +126,16 @@ export default function ProfilePage() {
       if (currentUser.role !== 'Super Admin' && deletingContract.endDate && new Date(deletingContract.endDate) < startOfDay(new Date())) {
         toast({
             variant: "destructive",
-            title: "Cannot Delete Expired Contract",
-            description: "This contract has expired and cannot be deleted.",
+            title: "Cannot Delete Expired Access Period",
+            description: "This access period has expired and cannot be deleted.",
         });
         setDeletingContract(null);
         return;
     }
 
       await deleteContractAction(deletingContract.id);
-      toast({ title: "Contract Deleted", variant: "destructive" });
-      logAction(`User '${currentUser.name}' deleted contract #${deletingContract.id} for '${currentUser.name}'.`);
+      toast({ title: "Access Period Deleted", variant: "destructive" });
+      logAction(`User '${currentUser.name}' deleted access period #${deletingContract.id} for '${currentUser.name}'.`);
       
       await fetchMembers();
       setDeletingContract(null);
@@ -191,12 +191,12 @@ export default function ProfilePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>{t('contractDetails')}</CardTitle>
-              <CardDescription>{t('contractDetailsDesc')}</CardDescription>
+              <CardTitle>Access Details</CardTitle>
+              <CardDescription>Your employment access information. These fields can only be edited by a team lead or admin.</CardDescription>
             </div>
             {currentUser.role === 'Super Admin' && (
                 <Button onClick={handleOpenAddContractDialog}>
-                    <PlusCircle className="mr-2 h-4 w-4"/> Add Contract
+                    <PlusCircle className="mr-2 h-4 w-4"/> Add Access
                 </Button>
             )}
           </CardHeader>
@@ -206,7 +206,6 @@ export default function ProfilePage() {
                     <TableRow>
                         <TableHead>{t('startDate')}</TableHead>
                         <TableHead>{t('endDate')}</TableHead>
-                        <TableHead className="text-right">{t('weeklyHours')}</TableHead>
                          {currentUser.role === 'Super Admin' && <TableHead className="text-right">{t('actions')}</TableHead>}
                     </TableRow>
                 </TableHeader>
@@ -218,7 +217,6 @@ export default function ProfilePage() {
                             <TableRow key={contract.id} className={cn(isPast && "text-muted-foreground bg-muted/50")}>
                                 <TableCell>{format(new Date(contract.startDate), 'PP')}</TableCell>
                                 <TableCell>{contract.endDate ? format(new Date(contract.endDate), 'PP') : 'Ongoing'}</TableCell>
-                                <TableCell className="text-right">{contract.weeklyHours}h</TableCell>
                                 {currentUser.role === 'Super Admin' && (
                                      <TableCell className="text-right">
                                         <DropdownMenu>
@@ -236,7 +234,7 @@ export default function ProfilePage() {
                          )
                     }) : (
                         <TableRow>
-                            <TableCell colSpan={currentUser.role === 'Super Admin' ? 4 : 3} className="text-center h-24">No contracts found.</TableCell>
+                            <TableCell colSpan={currentUser.role === 'Super Admin' ? 3 : 2} className="text-center h-24">No access periods found.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>

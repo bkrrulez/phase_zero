@@ -55,19 +55,16 @@ export default function TeamPage() {
             const sortedContracts = [...member.contracts].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
             const mostRecent = sortedContracts[0] || member.contract;
             return {
-                weeklyHours: mostRecent.weeklyHours,
                 startDate: mostRecent.startDate,
                 endDate: mostRecent.endDate
             };
         }
 
-        const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
         const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
         const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
         const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
         
         return {
-            weeklyHours: totalWeeklyHours,
             startDate: format(earliestStartDate, 'yyyy-MM-dd'),
             endDate: latestEndDate ? format(latestEndDate, 'yyyy-MM-dd') : null,
         };
@@ -83,7 +80,6 @@ export default function TeamPage() {
                 [t('email')]: member.email,
                 [t('role')]: member.role,
                 [t('team')]: getTeamName(member.teamId),
-                [t('weeklyHours')]: contractDetails.weeklyHours,
                 [t('contractStart')]: format(new Date(contractDetails.startDate), 'yyyy-MM-dd'),
                 [t('contractEnd')]: contractDetails.endDate ? format(new Date(contractDetails.endDate), 'yyyy-MM-dd') : 'Ongoing'
             }

@@ -169,7 +169,7 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
         if (!member.contractPdf) return;
         const link = document.createElement('a');
         link.href = member.contractPdf;
-        link.download = `contract-${member.name.replace(/\s+/g, '-')}.pdf`;
+        link.download = `access-document-${member.name.replace(/\s+/g, '-')}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -195,19 +195,16 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
             const sortedContracts = [...member.contracts].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
             const mostRecent = sortedContracts[0] || member.contract; // Fallback to primary if no contracts at all
             return {
-                weeklyHours: mostRecent.weeklyHours,
                 startDate: mostRecent.startDate,
                 endDate: mostRecent.endDate
             };
         }
 
-        const totalWeeklyHours = activeContracts.reduce((sum, c) => sum + c.weeklyHours, 0);
         const earliestStartDate = minDate(activeContracts.map(c => new Date(c.startDate)));
         const endDates = activeContracts.map(c => c.endDate ? new Date(c.endDate) : null).filter(Boolean);
         const latestEndDate = endDates.length > 0 ? maxDate(endDates as Date[]) : null;
         
         return {
-            weeklyHours: totalWeeklyHours,
             startDate: format(earliestStartDate, 'yyyy-MM-dd'),
             endDate: latestEndDate ? format(latestEndDate, 'yyyy-MM-dd') : null,
         };
@@ -238,9 +235,8 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
                           <TableHead>{t('member')}</TableHead>
                           <TableHead className="hidden md:table-cell">{t('role')}</TableHead>
                           <TableHead className="hidden md:table-cell">{t('team')}</TableHead>
-                          <TableHead className="hidden md:table-cell text-right">{t('weeklyHours')}</TableHead>
-                          <TableHead className="hidden lg:table-cell">{t('contractStart')}</TableHead>
-                          <TableHead className="hidden lg:table-cell">{t('contractEnd')}</TableHead>
+                          <TableHead className="hidden lg:table-cell">Access Start</TableHead>
+                          <TableHead className="hidden lg:table-cell">Access End</TableHead>
                           <TableHead><span className="sr-only">{t('actions')}</span></TableHead>
                       </TableRow>
                   </TableHeader>
@@ -265,7 +261,6 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
                                   <Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
-                              <TableCell className="hidden md:table-cell text-right font-mono">{contractDetails.weeklyHours}h</TableCell>
                               <TableCell className="hidden lg:table-cell">{format(new Date(contractDetails.startDate), 'PP')}</TableCell>
                               <TableCell className="hidden lg:table-cell">{contractDetails.endDate ? format(new Date(contractDetails.endDate), 'PP') : 'Ongoing'}</TableCell>
                               <TableCell>
@@ -283,7 +278,7 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
                                           </DropdownMenuItem>
                                           {canDownloadContract(member) && (
                                             <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
-                                                {t('downloadContract')}
+                                                Download Access Document
                                             </DropdownMenuItem>
                                           )}
                                           <DropdownMenuItem 

@@ -36,7 +36,7 @@ export function DeleteContractDialog({ isOpen, onOpenChange, onConfirm, contract
         <AlertDialogHeader>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete contract #{contract.id}. This action cannot be undone.
+            This will permanently delete access period #{contract.id}. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

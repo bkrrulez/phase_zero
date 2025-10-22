@@ -77,9 +77,9 @@ export function MemberContractTab() {
 
         toast({
           title: t('uploadSuccessful'),
-          description: t('contractUploadedFor', { name: member?.name }),
+          description: `Access document uploaded for ${member?.name}.`,
         });
-        await logAction(`User '${currentUser.name}' uploaded a contract for '${member?.name}'.`);
+        await logAction(`User '${currentUser.name}' uploaded an access document for '${member?.name}'.`);
         
         // Reset form
         setSelectedMemberId('');
@@ -98,7 +98,7 @@ export function MemberContractTab() {
       toast({
         variant: 'destructive',
         title: t('uploadFailed'),
-        description: t('uploadErrorOccurred'),
+        description: "An error occurred while uploading the document.",
       });
       setIsUploading(false);
     }
@@ -111,16 +111,16 @@ export function MemberContractTab() {
         await deleteUserContract(deletingContractForUser.id);
         updateMember({ ...deletingContractForUser, contractPdf: null });
         toast({
-            title: t('contractDeletedTitle'),
-            description: t('contractDeletedFor', { name: deletingContractForUser.name }),
+            title: "Access Document Deleted",
+            description: `The access document for ${deletingContractForUser.name} has been removed.`,
             variant: 'destructive'
         });
-        await logAction(`User '${currentUser.name}' deleted the contract for '${deletingContractForUser.name}'.`);
+        await logAction(`User '${currentUser.name}' deleted the access document for '${deletingContractForUser.name}'.`);
       } catch (error) {
            toast({
                 variant: 'destructive',
                 title: t('error'),
-                description: t('contractDeleteError'),
+                description: "Failed to delete the access document.",
             });
       } finally {
         setDeletingContractForUser(null);
@@ -132,9 +132,9 @@ export function MemberContractTab() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t('uploadContractTitle')}</CardTitle>
+          <CardTitle>Upload Access Document</CardTitle>
           <CardDescription>
-            {t('uploadContractDesc')}
+            Select a member and upload their access document in PDF format. This will overwrite any existing document.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row items-end gap-4">
@@ -185,19 +185,19 @@ export function MemberContractTab() {
             </Popover>
           </div>
           <div className="grid w-full sm:w-auto sm:flex-1 gap-1.5">
-            <label>{t('contractFileLabel')}</label>
+            <label>Access Document (PDF)</label>
             <Input type="file" accept="application/pdf" onChange={handleFileChange} ref={fileInputRef} />
           </div>
           <Button onClick={handleUpload} disabled={isUploading}>
-            {isUploading ? t('uploading') : t('uploadContractBtn')}
+            {isUploading ? t('uploading') : 'Upload Document'}
           </Button>
         </CardContent>
       </Card>
       
       <Card>
           <CardHeader>
-              <CardTitle>{t('uploadedContractsTitle')}</CardTitle>
-              <CardDescription>{t('uploadedContractsDesc')}</CardDescription>
+              <CardTitle>Uploaded Access Documents</CardTitle>
+              <CardDescription>A list of all members with an uploaded access document.</CardDescription>
           </CardHeader>
           <CardContent>
               <Table>
@@ -222,7 +222,7 @@ export function MemberContractTab() {
                       ))}
                       {membersWithContracts.length === 0 && (
                           <TableRow>
-                              <TableCell colSpan={3} className="h-24 text-center">{t('noContractsUploaded')}</TableCell>
+                              <TableCell colSpan={3} className="h-24 text-center">No access documents have been uploaded yet.</TableCell>
                           </TableRow>
                       )}
                   </TableBody>
@@ -235,7 +235,7 @@ export function MemberContractTab() {
               <AlertDialogHeader>
                   <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                      {t('deleteContractConfirmation', { name: deletingContractForUser?.name })}
+                      This will permanently delete the access document for "{deletingContractForUser?.name}". This action cannot be undone.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

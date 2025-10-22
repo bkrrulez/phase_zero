@@ -70,9 +70,9 @@ export function ContractDialog({ isOpen, onOpenChange, onSave, contract, users, 
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{contract ? 'Edit' : 'Add'} Contract</DialogTitle>
+          <DialogTitle>{contract ? 'Edit' : 'Add'} Access Period</DialogTitle>
           <DialogDescription>
-            {contract ? `Editing contract #${contract.id}` : 'Add a new contract for a user.'}
+            {contract ? `Editing access period #${contract.id}` : 'Add a new access period for a user.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -128,7 +128,7 @@ export function ContractDialog({ isOpen, onOpenChange, onSave, contract, users, 
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">Save Contract</Button>
+              <Button type="submit">Save Access Period</Button>
             </DialogFooter>
           </form>
         </Form>
