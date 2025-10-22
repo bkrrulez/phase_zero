@@ -14,7 +14,6 @@ import {
   BarChartHorizontal,
   ChevronRight,
   Briefcase,
-  ClipboardList,
   CalendarDays,
   Send,
   Building,
@@ -67,7 +66,6 @@ import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingCo
 import { MembersProvider, useMembers } from "./contexts/MembersContext";
 import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
-import { TasksProvider } from "./contexts/TasksContext";
 import { HolidaysProvider } from "./contexts/HolidaysContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
 import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
@@ -281,13 +279,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                             </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/tasks")}>
-                            <Link href="/dashboard/settings/tasks">
-                                <ClipboardList /> {t('tasks')}
-                            </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
                       {(currentUser.role === 'Team Lead' || currentUser.role === 'Super Admin') && (
                         <SidebarMenuItem>
                           <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/access-control")}>
@@ -411,29 +402,27 @@ function DataProviders({
     <LanguageProvider>
       <TeamsProvider>
         <ProjectsProvider>
-          <TasksProvider>
-             <NotificationsProvider>
-                <PushMessagesProvider>
-                  <ContractsProvider>
-                    <MembersProvider>
-                      <AuthProvider>
-                        <SystemLogProvider>
-                          <SettingsProvider>
-                            <HolidaysProvider>
-                                <TimeTrackingProvider>
-                                  <AccessControlProvider>
-                                    <LayoutContent>{children}</LayoutContent>
-                                  </AccessControlProvider>
-                                </TimeTrackingProvider>
-                            </HolidaysProvider>
-                          </SettingsProvider>
-                        </SystemLogProvider>
-                      </AuthProvider>
-                    </MembersProvider>
-                  </ContractsProvider>
-                </PushMessagesProvider>
-              </NotificationsProvider>
-          </TasksProvider>
+            <NotificationsProvider>
+              <PushMessagesProvider>
+                <ContractsProvider>
+                  <MembersProvider>
+                    <AuthProvider>
+                      <SystemLogProvider>
+                        <SettingsProvider>
+                          <HolidaysProvider>
+                              <TimeTrackingProvider>
+                                <AccessControlProvider>
+                                  <LayoutContent>{children}</LayoutContent>
+                                </AccessControlProvider>
+                              </TimeTrackingProvider>
+                          </HolidaysProvider>
+                        </SettingsProvider>
+                      </SystemLogProvider>
+                    </AuthProvider>
+                  </MembersProvider>
+                </ContractsProvider>
+              </PushMessagesProvider>
+            </NotificationsProvider>
         </ProjectsProvider>
       </TeamsProvider>
     </LanguageProvider>

@@ -1,4 +1,5 @@
 
+
 export type Contract = {
   id: string;
   userId: string;
@@ -31,7 +32,7 @@ export type TimeEntry = {
   date: string;
   startTime: string;
   endTime: string;
-  task: string;
+  project: string;
   duration: number; // in hours
   placeOfWork: 'Home Office' | 'In Office';
   remarks?: string;
@@ -62,12 +63,6 @@ export type Project = {
   listedBuilding: boolean;
   protectionZone: boolean;
   currentUse?: string;
-};
-
-export type Task = {
-  id: string;
-  name: string;
-  details?: string;
 };
 
 export type Team = {
@@ -146,7 +141,6 @@ export type InitialData = {
   timeEntries: TimeEntry[];
   holidayRequests: HolidayRequest[];
   projects: Project[];
-  tasks: Task[];
   teams: Team[];
   publicHolidays: PublicHoliday[];
   customHolidays: CustomHoliday[];

@@ -99,18 +99,11 @@ export function DetailedReport({ data }: DetailedReportProps) {
                   <TableCell className={`text-right font-mono ${userRow.remainingHours < 0 ? 'text-green-600' : ''}`}>{userRow.remainingHours.toFixed(2)}h</TableCell>
                 </TableRow>
                 {isUserOpen && userRow.projects.map(projectRow => {
-                    const isProjectOpen = openStates[`${userRow.user.id}-${projectRow.name}`] ?? false;
                     return (
                         <React.Fragment key={`${userRow.user.id}-${projectRow.name}`}>
                             <TableRow>
                                 <TableCell></TableCell>
-                                <TableCell className="flex items-center gap-2">
-                                     <Button variant="ghost" size="sm" className="w-9 p-0" onClick={() => toggleOpen(`${userRow.user.id}-${projectRow.name}`)}>
-                                        {isProjectOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                                        <span className="sr-only">Toggle</span>
-                                    </Button>
-                                    <span className="font-medium">Project - {projectRow.name}</span>
-                                </TableCell>
+                                <TableCell className="pl-12 font-medium">Project - {projectRow.name}</TableCell>
                                 <TableCell className="hidden md:table-cell"></TableCell>
                                 <TableCell className="hidden md:table-cell"></TableCell>
                                 <TableCell></TableCell>
@@ -119,20 +112,6 @@ export function DetailedReport({ data }: DetailedReportProps) {
                                 <TableCell className="text-right font-mono">{projectRow.loggedHours.toFixed(2)}h</TableCell>
                                 <TableCell></TableCell>
                             </TableRow>
-
-                            {isProjectOpen && projectRow.tasks.map(taskRow => (
-                                <TableRow key={`${userRow.user.id}-${projectRow.name}-${taskRow.name}`}>
-                                    <TableCell></TableCell>
-                                    <TableCell className="pl-16 text-muted-foreground">Task - {taskRow.name}</TableCell>
-                                    <TableCell className="hidden md:table-cell"></TableCell>
-                                    <TableCell className="hidden md:table-cell"></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell className="text-right font-mono text-muted-foreground">{taskRow.loggedHours.toFixed(2)}h</TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
-                            ))}
                         </React.Fragment>
                     )
                 })}

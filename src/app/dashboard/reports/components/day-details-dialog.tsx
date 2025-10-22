@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -93,15 +94,13 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
                         <TableHead>Start Time</TableHead>
                         <TableHead>End Time</TableHead>
                         <TableHead>Project</TableHead>
-                        <TableHead>Task</TableHead>
                         <TableHead>Remarks</TableHead>
                         {canEdit && <TableHead className="text-right">Actions</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {entries.length > 0 ? entries.map(entry => {
-                        const [project, ...taskParts] = entry.task.split(' - ');
-                        const task = taskParts.join(' - ');
+                        const project = entry.project;
                         const isFrozen = isDateFrozenForUser(entry.userId, new Date(entry.date));
                         
                         return (
@@ -109,7 +108,6 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
                                 <TableCell>{entry.startTime}</TableCell>
                                 <TableCell>{entry.endTime}</TableCell>
                                 <TableCell>{project || 'N/A'}</TableCell>
-                                <TableCell>{task || 'N/A'}</TableCell>
                                 <TableCell className="max-w-[200px] truncate">{entry.remarks || '-'}</TableCell>
                                 {canEdit && (
                                     <TableCell className="text-right">
@@ -140,7 +138,7 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
                         )
                     }) : (
                          <TableRow>
-                            <TableCell colSpan={canEdit ? 6 : 5} className="h-24 text-center">No manual time entries for this day.</TableCell>
+                            <TableCell colSpan={canEdit ? 5 : 4} className="h-24 text-center">No manual time entries for this day.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>

@@ -43,7 +43,6 @@ import { useTimeTracking } from '../contexts/TimeTrackingContext';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useProjects } from '../contexts/ProjectsContext';
-import { useTasks } from '../contexts/TasksContext';
 import { type User, type TimeEntry, type Contract, type Team } from '@/lib/types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DetailedReport } from './components/detailed-report';
@@ -88,13 +87,6 @@ type ProjectReportItem = {
     loggedHours: number;
 };
 
-type TaskReportItem = {
-    key: string;
-    member: User;
-    taskName: string;
-    loggedHours: number;
-};
-
 export type DetailedReportData = {
     user: User;
     assignedHours: number;
@@ -105,10 +97,6 @@ export type DetailedReportData = {
     projects: {
         name: string;
         loggedHours: number;
-        tasks: {
-            name: string;
-            loggedHours: number;
-        }[];
     }[];
 }
 
@@ -214,7 +202,7 @@ export default function ReportsPage() {
   const tab = searchParams.get('tab') || 'team-report';
 
   const [periodType, setPeriodType] = React.useState<'custom' | 'weekly' | 'monthly' | 'yearly'>('monthly');
-  const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'task' | 'detailed'>('consolidated');
+  const [reportView, setReportView] = React.useState<'consolidated' | 'project' | 'detailed'>('consolidated');
   const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth());
   const [selectedWeekIndex, setSelectedWeekIndex] = React.useState<number>(0);
@@ -291,7 +279,6 @@ export default function ReportsPage() {
     });
     
     const projectAgg: Record<string, ProjectReportItem> = {};
-    const taskAgg: Record<string, TaskReportItem> = {};
     const detailedAgg: Record<string, DetailedReportData> = {};
 
     visibleMembers.forEach(member => {
@@ -303,8 +290,7 @@ export default function ReportsPage() {
 
     // Calculations for all views
     filteredTimeEntries.forEach(entry => {
-        const [projectName, ...taskParts] = entry.task.split(' - ');
-        const taskName = taskParts.join(' - ') || 'Unspecified';
+        const projectName = entry.project;
         const member = teamMembers.find(m => m.id === entry.userId);
 
         if (!member) return;
@@ -314,26 +300,14 @@ export default function ReportsPage() {
         if (!projectAgg[projectKey]) projectAgg[projectKey] = { key: projectKey, member, projectName, loggedHours: 0 };
         projectAgg[projectKey].loggedHours += entry.duration;
 
-        // Task Level
-        const taskKey = `${entry.userId}__${taskName}`;
-        if (!taskAgg[taskKey]) taskAgg[taskKey] = { key: taskKey, member, taskName, loggedHours: 0 };
-        taskAgg[taskKey].loggedHours += entry.duration;
-
         // Detailed Level
         if (detailedAgg[entry.userId]) {
             let project = detailedAgg[entry.userId].projects.find(p => p.name === projectName);
             if (!project) {
-                project = { name: projectName, loggedHours: 0, tasks: [] };
+                project = { name: projectName, loggedHours: 0 };
                 detailedAgg[entry.userId].projects.push(project);
             }
             project.loggedHours += entry.duration;
-
-            let task = project.tasks.find(t => t.name === taskName);
-            if (!task) {
-                task = { name: taskName, loggedHours: 0 };
-                project.tasks.push(task);
-            }
-            task.loggedHours += entry.duration;
         }
     });
 
@@ -401,7 +375,6 @@ export default function ReportsPage() {
       
       if (detailedAgg[member.id]) {
           detailedAgg[member.id].projects.forEach(p => p.loggedHours = parseFloat(p.loggedHours.toFixed(2)));
-          detailedAgg[member.id].projects.forEach(p => p.tasks.forEach(t => t.loggedHours = parseFloat(t.loggedHours.toFixed(2))));
           detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
       }
 
@@ -409,21 +382,16 @@ export default function ReportsPage() {
     });
 
     const projectReport = Object.values(projectAgg).map(item => ({ ...item, loggedHours: parseFloat(item.loggedHours.toFixed(2))})).sort((a, b) => a.member.name.localeCompare(b.member.name));
-    const taskReport = Object.values(taskAgg).map(item => ({...item, loggedHours: parseFloat(item.loggedHours.toFixed(2))})).sort((a,b) => a.member.name.localeCompare(b.member.name));
     
     const detailedReport = Object.values(detailedAgg).map(userReport => ({
         ...userReport,
         projects: userReport.projects.map(p => ({
             ...p,
             loggedHours: parseFloat(p.loggedHours.toFixed(2)),
-            tasks: p.tasks.map(t => ({
-                ...t,
-                loggedHours: parseFloat(t.loggedHours.toFixed(2))
-            }))
         }))
     })).sort((a,b) => a.user.name.localeCompare(b.user.name));
 
-    return { consolidatedData, projectReport, taskReport, detailedReport };
+    return { consolidatedData, projectReport, detailedReport };
   }, [teamMembers, currentUser, selectedTeams, timeEntries, periodStart, periodEnd, selectedYear, publicHolidays, customHolidays, annualLeaveAllowance]);
   
   const sortedConsolidatedData = React.useMemo(() => {
@@ -490,7 +458,6 @@ export default function ReportsPage() {
           const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: "E0E0E0" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
           const userStyle = { font: { bold: true }, fill: { fgColor: { rgb: "BDD7EE" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } }; 
           const projectStyle = { fill: { fgColor: { rgb: "FFE699" } }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
-          const taskStyle = { font: { italic: true }, border: { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle } };
           
           const dataForExport: any[][] = [];
           const title = getReportTitle();
@@ -519,14 +486,6 @@ export default function ReportsPage() {
                       { v: projectRow.loggedHours, t: 'n', s: { ...projectStyle, ...numberFormat } }, { v: '', s: projectStyle }
                   ];
                   dataForExport.push(projectRowData);
-                
-                  projectRow.tasks.forEach(taskRow => {
-                      const taskRowData = [
-                          { v: `        Task- ${taskRow.name}`, s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle }, { v: '', s: taskStyle },
-                          { v: taskRow.loggedHours, t: 'n', s: { ...taskStyle, ...numberFormat } }, { v: '', s: taskStyle }
-                      ];
-                      dataForExport.push(taskRowData);
-                  });
               });
           });
           
@@ -602,11 +561,6 @@ export default function ReportsPage() {
           const projectReportData = reports.projectReport.map(item => [item.member.name, item.member.role, getTeamName(item.member.teamId), item.projectName, item.loggedHours]);
           const projectSheet = createStyledSheet(t('projectLevelReport'), projectHeaders, projectReportData);
           XLSX.utils.book_append_sheet(wb, projectSheet, t('projectLevelReport'));
-          
-          const taskHeaders = [t('member'), t('role'), t('team'), t('task'), t('loggedHours')];
-          const taskReportData = reports.taskReport.map(item => [item.member.name, item.member.role, getTeamName(item.member.teamId), item.taskName, item.loggedHours]);
-          const taskSheet = createStyledSheet(t('taskLevelReport'), taskHeaders, taskReportData);
-          XLSX.utils.book_append_sheet(wb, taskSheet, t('taskLevelReport'));
 
           XLSX.writeFile(wb, `team_report_${new Date().toISOString().split('T')[0]}.xlsx`);
       }
@@ -765,7 +719,6 @@ export default function ReportsPage() {
             <RadioGroup value={reportView} onValueChange={(v) => setReportView(v as any)} className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center space-x-2"><RadioGroupItem value="consolidated" id="r-consolidated" /><Label htmlFor="r-consolidated">{t('consolidated')}</Label></div>
                 <div className="flex items-center space-x-2"><RadioGroupItem value="project" id="r-project" /><Label htmlFor="r-project">{t('projectLevel')}</Label></div>
-                <div className="flex items-center space-x-2"><RadioGroupItem value="task" id="r-task" /><Label htmlFor="r-task">{t('taskLevel')}</Label></div>
                 <div className="flex items-center space-x-2"><RadioGroupItem value="detailed" id="r-detailed" /><Label htmlFor="r-detailed">{t('detailed')}</Label></div>
             </RadioGroup>
         )}
@@ -891,28 +844,6 @@ export default function ReportsPage() {
                           </TableRow>
                         ))}
                         {reports.projectReport.length === 0 && (<TableRow><TableCell colSpan={5} className="text-center h-24">{t('noProjectHours')}</TableCell></TableRow>)}
-                      </TableBody>
-                    </Table>
-                  )}
-                   {reportView === 'task' && (
-                    <Table>
-                      <TableHeader><TableRow><TableHead>{t('member')}</TableHead><TableHead className="hidden md:table-cell">{t('role')}</TableHead><TableHead className="hidden md:table-cell">{t('team')}</TableHead><TableHead>{t('task')}</TableHead><TableHead className="text-right">{t('loggedHours')}</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {reports.taskReport.map(item => (
-                          <TableRow key={item.key}>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="w-10 h-10"><AvatarImage src={item.member.avatar} alt={item.member.name} data-ai-hint="person avatar"/><AvatarFallback>{item.member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
-                                <div><Link href={`/dashboard/reports?tab=individual-report&userId=${item.member.id}`} className="font-medium hover:underline">{item.member.name}</Link><p className="text-sm text-muted-foreground hidden sm:table-cell">{item.member.email}</p></div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell"><Badge variant={item.member.role === 'Team Lead' || item.member.role === 'Super Admin' ? "default" : "secondary"}>{item.member.role}</Badge></TableCell>
-                            <TableCell className="hidden md:table-cell">{getTeamName(item.member.teamId)}</TableCell>
-                            <TableCell className="font-medium">{item.taskName}</TableCell>
-                            <TableCell className="text-right font-mono">{item.loggedHours.toFixed(2)}h</TableCell>
-                          </TableRow>
-                        ))}
-                        {reports.taskReport.length === 0 && (<TableRow><TableCell colSpan={5} className="text-center h-24">{t('noTaskHours')}</TableCell></TableRow>)}
                       </TableBody>
                     </Table>
                   )}

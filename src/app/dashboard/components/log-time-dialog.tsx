@@ -21,7 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAccessControl } from "../contexts/AccessControlContext";
 import { useProjects } from "../contexts/ProjectsContext";
-import { useTasks } from "../contexts/TasksContext";
 import { useAuth } from "../contexts/AuthContext";
 import type { TimeEntry } from "@/lib/types";
 import { useMembers } from "../contexts/MembersContext";
@@ -32,7 +31,6 @@ const logTimeSchema = z.object({
   startTime: z.string().min(1, { message: "Start time is required." }),
   endTime: z.string().min(1, { message: "End time is required." }),
   project: z.string().min(1, { message: "Please select a project." }),
-  task: z.string().min(1, { message: "Please select a task." }),
   placeOfWork: z.enum(['Home Office', 'In Office']),
   remarks: z.string().min(1, { message: "Remarks are required." }),
 }).refine(data => data.endTime > data.startTime, {
@@ -66,7 +64,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
       startTime: '',
       endTime: '',
       project: '',
-      task: '',
       placeOfWork: 'Home Office',
       remarks: '',
     }
@@ -102,8 +99,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
 
   useEffect(() => {
     if (isEditMode && entryToEdit) {
-      const [project, ...taskParts] = entryToEdit.task.split(' - ');
-      const task = taskParts.join(' - ');
       const entryDate = new Date(entryToEdit.date);
       
       form.reset({
@@ -111,8 +106,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         date: entryDate,
         startTime: entryToEdit.startTime,
         endTime: entryToEdit.endTime,
-        project: project.trim(),
-        task: task.trim(),
+        project: entryToEdit.project,
         placeOfWork: entryToEdit.placeOfWork || 'Home Office',
         remarks: entryToEdit.remarks || '',
       });
@@ -132,7 +126,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
         startTime: '',
         endTime: '',
         project: '',
-        task: '',
         placeOfWork: 'Home Office',
         remarks: '',
       });
@@ -143,7 +136,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   useEffect(() => {
     if (targetUser && !isEditMode) {
         form.setValue('project', '');
-        form.setValue('task', '');
     }
   }, [selectedUserId, form, isEditMode, targetUser]);
 
@@ -151,22 +143,8 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const { projects } = useProjects();
-  const { tasks: allTasks } = useTasks();
 
   const availableProjects = projects.filter(p => targetUser?.associatedProjectIds?.includes(p.id));
-
-  const selectedProjectName = form.watch("project");
-  
-  const availableTasks = React.useMemo(() => {
-    if (!selectedProjectName) return [];
-    const selectedProject = availableProjects.find(p => p.name === selectedProjectName);
-    if (!selectedProject || !selectedProject.taskIds) return [];
-    return allTasks.filter(task => selectedProject.taskIds?.includes(task.id));
-  }, [selectedProjectName, availableProjects, allTasks]);
-
-  useEffect(() => {
-    form.setValue('task', '');
-  }, [selectedProjectName, form]);
 
   async function onSubmit(data: LogTimeFormValues) {
     const { success } = await onSave(data, entryToEdit?.id);
@@ -374,28 +352,6 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
               />
               <FormField
                 control={form.control}
-                name="task"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Task</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProjectName}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a task" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableTasks.map((task) => (
-                          <SelectItem key={task.id} value={task.name}>{task.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="placeOfWork"
                 render={({ field }) => (
                   <FormItem>
@@ -439,5 +395,3 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
     </Dialog>
   )
 }
-
-    
