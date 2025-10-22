@@ -2,9 +2,9 @@
 'use client';
 
 import * as React from 'react';
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { MoreHorizontal, Plus, Check, ArrowDown, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useProjects } from './contexts/ProjectsContext';
 import { useAuth } from './contexts/AuthContext';
 import { useLanguage } from './contexts/LanguageContext';
@@ -86,18 +86,49 @@ export default function ProjectDashboardPage() {
     const { toast } = useToast();
     const { logAction } = useSystemLog();
     const { t } = useLanguage();
+    
+    type SortByType = 'creationDate' | 'name' | 'projectNumber';
+    const [sortBy, setSortBy] = React.useState<SortByType>('creationDate');
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('desc');
 
     const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
     const [editingProject, setEditingProject] = React.useState<Project | null>(null);
     const [deletingProject, setDeletingProject] = React.useState<Project | null>(null);
 
+    const handleSortChange = (sortKey: SortByType) => {
+        if (sortBy === sortKey) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(sortKey);
+            setSortDirection('desc'); // Default to descending for new sort key
+        }
+    };
+
     const userProjects = React.useMemo(() => {
         if (!currentUser) return [];
+        
+        let filteredProjects: Project[];
         if (currentUser.role === 'Super Admin') {
-            return projects;
+            filteredProjects = [...projects];
+        } else {
+            filteredProjects = projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
         }
-        return projects.filter(p => currentUser.associatedProjectIds?.includes(p.id));
-    }, [projects, currentUser]);
+
+        filteredProjects.sort((a, b) => {
+            let comparison = 0;
+            if (sortBy === 'name') {
+                comparison = a.name.localeCompare(b.name);
+            } else if (sortBy === 'projectNumber') {
+                comparison = a.projectNumber.localeCompare(b.projectNumber);
+            } else { // creationDate
+                comparison = new Date(b.projectCreationDate).getTime() - new Date(a.projectCreationDate).getTime();
+            }
+
+            return sortDirection === 'asc' ? -comparison : comparison;
+        });
+        
+        return filteredProjects;
+    }, [projects, currentUser, sortBy, sortDirection]);
 
     const handleAddProject = async (data: ProjectFormValues) => {
         const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
@@ -165,12 +196,41 @@ export default function ProjectDashboardPage() {
         }
     };
     
+    const renderSortIcon = () => {
+        const Icon = sortDirection === 'asc' ? ArrowUp : ArrowDown;
+        return <Icon className="ml-2 h-4 w-4" />;
+    };
+
     return (
         <>
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline">{t('projectDashboard')}</h1>
-                    <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold font-headline">{t('projectDashboard')}</h1>
+                        <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline">
+                                Sort By
+                                {renderSortIcon()}
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleSortChange('creationDate')}>
+                                <Check className={`mr-2 h-4 w-4 ${sortBy === 'creationDate' ? 'opacity-100' : 'opacity-0'}`} />
+                                By Creation Date
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSortChange('name')}>
+                                 <Check className={`mr-2 h-4 w-4 ${sortBy === 'name' ? 'opacity-100' : 'opacity-0'}`} />
+                                By Name
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSortChange('projectNumber')}>
+                                 <Check className={`mr-2 h-4 w-4 ${sortBy === 'projectNumber' ? 'opacity-100' : 'opacity-0'}`} />
+                                By Project Number
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6">
                     <AddProjectCard onClick={() => setIsAddDialogOpen(true)} />
@@ -209,3 +269,4 @@ export default function ProjectDashboardPage() {
         </>
     );
 }
+
