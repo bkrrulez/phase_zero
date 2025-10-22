@@ -312,9 +312,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <SidebarTrigger />
           <div className="flex items-center gap-4">
             <LanguageToggle />
-            <Button onClick={() => setIsLogTimeDialogOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" /> {t('logTime')}
-            </Button>
             <Popover open={isNotificationPopoverOpen} onOpenChange={setIsNotificationPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
