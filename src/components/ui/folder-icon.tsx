@@ -29,7 +29,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
                 textAnchor="start"
             >
                 <title>Project Number: {project.projectNumber}</title>
-                #{project.projectNumber}
+                {project.projectNumber}
             </text>
             <text
                 x="50"
