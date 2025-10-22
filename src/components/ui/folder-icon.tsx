@@ -25,7 +25,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
             <text
                 x="8"
                 y="11"
-                className="text-[6px] fill-primary-foreground/80 font-mono"
+                className="text-[6px] fill-primary-foreground/80 font-mono font-bold"
                 textAnchor="start"
             >
                 <title>Project Number: {project.projectNumber}</title>
@@ -36,14 +36,14 @@ export const FolderIcon = ({ className, project }: { className?: string, project
                 y="36"
                 textAnchor="middle"
                 alignmentBaseline="middle"
-                className="text-[8px] font-bold fill-primary-foreground"
+                className="text-[13px] font-bold fill-primary-foreground"
             >
                 {project.name}
             </text>
             <text
                 x="8"
                 y="54"
-                className="text-[6.5px] fill-primary-foreground/90"
+                className="text-[7px] fill-primary-foreground/90"
                 textAnchor="start"
             >
                 <title>{project.address}</title>
