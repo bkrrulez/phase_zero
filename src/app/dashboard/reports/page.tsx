@@ -37,7 +37,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IndividualReport } from './components/individual-report';
 import { useMembers } from '../contexts/MembersContext';
-import { useHolidays } from '../contexts/HolidaysContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTimeTracking } from '../contexts/TimeTrackingContext';
 import { Label } from '@/components/ui/label';
@@ -90,7 +89,6 @@ type ProjectReportItem = {
 export type DetailedReportData = {
     user: User;
     assignedHours: number;
-    leaveHours: number;
     expectedHours: number;
     loggedHours: number;
     remainingHours: number;
@@ -186,7 +184,7 @@ const MultiSelect = ({ options, selected, onChange, placeholder, className }: Mu
 };
 
 
-type SortableColumn = 'member' | 'role' | 'team' | 'assignedHours' | 'leaveHours' | 'expectedHours' | 'loggedHours' | 'remainingHours' | 'inOfficePercentage';
+type SortableColumn = 'member' | 'role' | 'team' | 'assignedHours' | 'expectedHours' | 'loggedHours' | 'remainingHours' | 'inOfficePercentage';
 
 
 export default function ReportsPage() {
@@ -194,7 +192,6 @@ export default function ReportsPage() {
   const searchParams = useSearchParams();
   const { teamMembers } = useMembers();
   const { currentUser } = useAuth();
-  const { publicHolidays, customHolidays, annualLeaveAllowance } = useHolidays();
   const { timeEntries } = useTimeTracking();
   const { t } = useLanguage();
   const { teams } = useTeams();
@@ -283,7 +280,7 @@ export default function ReportsPage() {
 
     visibleMembers.forEach(member => {
         detailedAgg[member.id] = {
-            user: member, assignedHours: 0, leaveHours: 0, expectedHours: 0, loggedHours: 0, remainingHours: 0,
+            user: member, assignedHours: 0, expectedHours: 0, loggedHours: 0, remainingHours: 0,
             projects: []
         };
     });
@@ -311,28 +308,14 @@ export default function ReportsPage() {
         }
     });
 
-    const yearStart = startOfYear(new Date(selectedYear, 0, 1));
     const yearEnd = endOfYear(new Date(selectedYear, 11, 31));
-    const publicHolidaysInYear = publicHolidays.filter(h => getYear(parseISO(h.date)) === selectedYear);
-
+    
     const consolidatedData = visibleMembers.map(member => {
-      
-      const userHolidaysInYear = publicHolidaysInYear
-        .concat(customHolidays.filter(h => {
-            if (getYear(parseISO(h.date)) !== selectedYear) return false;
-            const applies = (h.appliesTo === 'all-members') || (h.appliesTo === 'all-teams' && !!member.teamId) || (h.appliesTo === member.teamId);
-            return applies;
-        }));
-
       let assignedHoursInPeriod = 0;
-      let workingDaysInPeriod = 0;
 
       for (let d = new Date(periodStart); d <= periodEnd; d = addDays(d, 1)) {
           const dayOfWeek = getDay(d);
           if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-          
-          const isHoliday = userHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-          if (isHoliday) continue;
           
           const activeContractsOnDay = member.contracts.filter(c => {
               const contractStart = parseISO(c.startDate);
@@ -341,30 +324,12 @@ export default function ReportsPage() {
           });
 
           if (activeContractsOnDay.length > 0) {
-              workingDaysInPeriod++;
               const dailyHours = activeContractsOnDay.reduce((sum, c) => sum + c.weeklyHours, 0) / 5;
               assignedHoursInPeriod += dailyHours;
           }
       }
       
-      const assignedHours = parseFloat(assignedHoursInPeriod.toFixed(2));
-      
-      // --- Leave Calculation ---
-      let standardWorkingDaysInYear = 0;
-      for (let d = new Date(yearStart); d <= yearEnd; d = addDays(d,1)) {
-          const dayOfWeek = getDay(d);
-          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-          const isPublicHoliday = publicHolidaysInYear.some(h => isSameDay(parseISO(h.date), d));
-          if (isPublicHoliday) continue;
-          standardWorkingDaysInYear++;
-      }
-      
-      const dailyLeaveCredit = standardWorkingDaysInYear > 0 ? annualLeaveAllowance / standardWorkingDaysInYear : 0;
-      const leaveDaysInPeriod = workingDaysInPeriod * dailyLeaveCredit;
-      const avgDailyHoursInPeriod = workingDaysInPeriod > 0 ? assignedHours / workingDaysInPeriod : 0;
-      const leaveHours = parseFloat((leaveDaysInPeriod * avgDailyHoursInPeriod).toFixed(2));
-
-      const expectedHours = parseFloat((assignedHours - leaveHours).toFixed(2));
+      const expectedHours = parseFloat(assignedHoursInPeriod.toFixed(2));
       
       const memberTimeEntries = filteredTimeEntries.filter(e => e.userId === member.id);
       const loggedHours = parseFloat(memberTimeEntries.reduce((acc, e) => acc + e.duration, 0).toFixed(2));
@@ -375,10 +340,10 @@ export default function ReportsPage() {
       
       if (detailedAgg[member.id]) {
           detailedAgg[member.id].projects.forEach(p => p.loggedHours = parseFloat(p.loggedHours.toFixed(2)));
-          detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours, leaveHours, expectedHours, loggedHours, remainingHours };
+          detailedAgg[member.id] = { ...detailedAgg[member.id], assignedHours: expectedHours, expectedHours, loggedHours, remainingHours };
       }
 
-      return { ...member, assignedHours, leaveHours, expectedHours, loggedHours, remainingHours, inOfficePercentage };
+      return { ...member, assignedHours: expectedHours, expectedHours, loggedHours, remainingHours, inOfficePercentage };
     });
 
     const projectReport = Object.values(projectAgg).map(item => ({ ...item, loggedHours: parseFloat(item.loggedHours.toFixed(2))})).sort((a, b) => a.member.name.localeCompare(b.member.name));
@@ -392,7 +357,7 @@ export default function ReportsPage() {
     })).sort((a,b) => a.user.name.localeCompare(b.user.name));
 
     return { consolidatedData, projectReport, detailedReport };
-  }, [teamMembers, currentUser, selectedTeams, timeEntries, periodStart, periodEnd, selectedYear, publicHolidays, customHolidays, annualLeaveAllowance]);
+  }, [teamMembers, currentUser, selectedTeams, timeEntries, periodStart, periodEnd, selectedYear]);
   
   const sortedConsolidatedData = React.useMemo(() => {
     return [...reports.consolidatedData].sort((a, b) => {
@@ -409,9 +374,6 @@ export default function ReportsPage() {
                 break;
             case 'assignedHours':
                 comparison = a.assignedHours - b.assignedHours;
-                break;
-            case 'leaveHours':
-                comparison = a.leaveHours - b.leaveHours;
                 break;
             case 'expectedHours':
                 comparison = a.expectedHours - b.expectedHours;
@@ -464,7 +426,7 @@ export default function ReportsPage() {
           dataForExport.push([{ v: title }]);
           dataForExport.push([]);
           
-          const headers = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining')];
+          const headers = [t('member'), t('role'), t('team'), t('assignedHours'), t('expected'), t('logged'), t('remaining')];
           dataForExport.push(headers.map(h => ({ v: h, s: headerStyle })));
 
           reports.detailedReport.forEach(userRow => {
@@ -473,7 +435,6 @@ export default function ReportsPage() {
                   { v: userRow.user.role, s: userStyle },
                   { v: getTeamName(userRow.user.teamId), s: userStyle },
                   { v: userRow.assignedHours, t: 'n', s: {...userStyle, ...numberFormat} }, 
-                  { v: userRow.leaveHours, t: 'n', s: {...userStyle, ...numberFormat} },
                   { v: userRow.expectedHours, t: 'n', s: {...userStyle, ...numberFormat} }, 
                   { v: userRow.loggedHours, t: 'n', s: {...userStyle, ...numberFormat} },
                   { v: userRow.remainingHours, t: 'n', s: { ...userStyle, ...numberFormat, font: { ...userStyle.font, color: { rgb: userRow.remainingHours < 0 ? "008000" : "000000" } } } }
@@ -482,7 +443,7 @@ export default function ReportsPage() {
               
               userRow.projects.forEach(projectRow => {
                   const projectRowData = [
-                      { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
+                      { v: `    Project- ${projectRow.name}`, s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle }, { v: '', s: projectStyle },
                       { v: projectRow.loggedHours, t: 'n', s: { ...projectStyle, ...numberFormat } }, { v: '', s: projectStyle }
                   ];
                   dataForExport.push(projectRowData);
@@ -552,8 +513,8 @@ export default function ReportsPage() {
           
           const wb = XLSX.utils.book_new();
 
-          const consolidatedHeaders = [t('member'), t('role'), t('team'), t('assignedHours'), t('leaveHours'), t('expected'), t('logged'), t('remaining'), 'In Office %'];
-          const consolidatedReportData = sortedConsolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.assignedHours, m.leaveHours, m.expectedHours, m.loggedHours, m.remainingHours, m.inOfficePercentage]);
+          const consolidatedHeaders = [t('member'), t('role'), t('team'), t('expected'), t('logged'), t('remaining'), 'In Office %'];
+          const consolidatedReportData = sortedConsolidatedData.map(m => [m.name, m.role, getTeamName(m.teamId), m.expectedHours, m.loggedHours, m.remainingHours, m.inOfficePercentage]);
           const consolidatedSheet = createStyledSheet(getReportTitle(), consolidatedHeaders, consolidatedReportData);
           XLSX.utils.book_append_sheet(wb, consolidatedSheet, t('totalTime'));
 
@@ -782,12 +743,6 @@ export default function ReportsPage() {
                           <TableHead className={cn("hidden md:table-cell", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('team')}>
                             <div className="flex items-center">{t('team')}{currentUser.role === 'Super Admin' && renderSortArrow('team')}</div>
                           </TableHead>
-                          <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('assignedHours')}>
-                            <div className="flex items-center justify-end">{t('assignedHours')}{currentUser.role === 'Super Admin' && renderSortArrow('assignedHours')}</div>
-                          </TableHead>
-                           <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('leaveHours')}>
-                            <div className="flex items-center justify-end">{t('leaveHours')}{currentUser.role === 'Super Admin' && renderSortArrow('leaveHours')}</div>
-                          </TableHead>
                           <TableHead className={cn("text-right", currentUser.role === 'Super Admin' ? 'cursor-pointer' : '')} onClick={() => currentUser.role === 'Super Admin' && handleSort('expectedHours')}>
                             <div className="flex items-center justify-end">{t('expected')}{currentUser.role === 'Super Admin' && renderSortArrow('expectedHours')}</div>
                           </TableHead>
@@ -813,8 +768,6 @@ export default function ReportsPage() {
                             </TableCell>
                             <TableCell className="hidden md:table-cell"><Badge variant={member.role === 'Team Lead' || member.role === 'Super Admin' ? "default" : "secondary"}>{member.role}</Badge></TableCell>
                             <TableCell className="hidden md:table-cell">{getTeamName(member.teamId)}</TableCell>
-                            <TableCell className="text-right font-mono">{member.assignedHours.toFixed(2)}h</TableCell>
-                            <TableCell className="text-right font-mono">{member.leaveHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.expectedHours.toFixed(2)}h</TableCell>
                             <TableCell className="text-right font-mono">{member.loggedHours.toFixed(2)}h</TableCell>
                             <TableCell className={cn("text-right font-mono", member.remainingHours < 0 && "text-green-600")}>{member.remainingHours.toFixed(2)}h</TableCell>

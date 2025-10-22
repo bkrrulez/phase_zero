@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   Bell,
   ChevronDown,
-  Calendar as CalendarIcon,
   Home,
   LogOut,
   Users,
@@ -66,7 +65,6 @@ import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingCo
 import { MembersProvider, useMembers } from "./contexts/MembersContext";
 import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
-import { HolidaysProvider } from "./contexts/HolidaysContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
 import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
 import { SystemLogProvider } from "./contexts/SystemLogContext";
@@ -148,10 +146,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     }).length;
   }, [pushMessages, userMessageStates, currentUser]);
 
-  const unreadRequestCount = React.useMemo(() => {
-    if (!currentUser) return 0;
-    return notifications.filter(n => n.recipientIds.includes(currentUser.id) && !n.readBy.includes(currentUser.id)).length;
-  }, [notifications, currentUser]);
+  const unreadRequestCount = 0; // Holiday requests are removed
 
   const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
 
@@ -226,20 +221,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
              )}
-            {isLoading ? (
-                <SidebarMenuItem>
-                    <Skeleton className="h-8 w-full" />
-                </SidebarMenuItem>
-             ) : isHolidaysNavVisible ? (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/holidays")}>
-                  <Link href="/dashboard/holidays">
-                    <CalendarIcon />
-                    {t('holidays')}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ) : null}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
@@ -290,13 +271,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                       )}
                       {currentUser.role === 'Super Admin' && (
                         <>
-                          <SidebarMenuItem>
-                            <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/holidays")}>
-                                <Link href="/dashboard/settings/holidays">
-                                    <CalendarDays /> {t('holidays')}
-                                </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
                           <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/push-messages")}>
                                 <Link href="/dashboard/settings/push-messages">
@@ -409,13 +383,11 @@ function DataProviders({
                     <AuthProvider>
                       <SystemLogProvider>
                         <SettingsProvider>
-                          <HolidaysProvider>
-                              <TimeTrackingProvider>
-                                <AccessControlProvider>
-                                  <LayoutContent>{children}</LayoutContent>
-                                </AccessControlProvider>
-                              </TimeTrackingProvider>
-                          </HolidaysProvider>
+                          <TimeTrackingProvider>
+                            <AccessControlProvider>
+                              <LayoutContent>{children}</LayoutContent>
+                            </AccessControlProvider>
+                          </TimeTrackingProvider>
                         </SettingsProvider>
                       </SystemLogProvider>
                     </AuthProvider>

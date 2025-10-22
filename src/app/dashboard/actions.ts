@@ -3,16 +3,12 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { sendContractEndNotifications, sendHolidayRequestUpdateEmail, sendPasswordResetConfirmationEmail } from '@/lib/mail';
+import { sendContractEndNotifications, sendPasswordResetConfirmationEmail } from '@/lib/mail';
 import {
   type User,
   type TimeEntry,
-  type HolidayRequest,
   type Project,
-  type Task,
   type Team,
-  type PublicHoliday,
-  type CustomHoliday,
   type FreezeRule,
   type PushMessage,
   type UserMessageState,
@@ -100,26 +96,10 @@ const mapDbProjectToProject = (dbProject: any): Project => ({
     currentUse: dbProject.current_use,
 });
 
-const mapDbTaskToTask = (dbTask: any): Task => ({
-  id: dbTask.id,
-  name: dbTask.name,
-  details: dbTask.details,
-});
-
 const mapDbTeamToTeam = (dbTeam: any): Team => ({
     id: dbTeam.id,
     name: dbTeam.name,
     projectIds: dbTeam.project_ids || [],
-});
-
-const mapDbHolidayRequestToHolidayRequest = (row: any): HolidayRequest => ({
-  id: row.id,
-  userId: row.user_id,
-  startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
-  endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
-  status: row.status,
-  actionByUserId: row.action_by_user_id,
-  actionTimestamp: row.action_timestamp ? new Date(row.action_timestamp).toISOString() : null,
 });
 
 const mapDbContractEndNotification = (row: any): ContractEndNotification => ({
@@ -459,10 +439,9 @@ export async function resetUserPassword(email: string, newPassword: string): Pro
 
 export async function getTimeEntries(): Promise<TimeEntry[]> {
     const result = await db.query(`
-      SELECT te.*, p.name as project_name, t.name as task_name
+      SELECT te.*, p.name as project_name
       FROM time_entries te
       JOIN projects p ON te.project_id = p.id
-      JOIN tasks t ON te.task_id = t.id
       ORDER BY te.date DESC, te.start_time DESC
     `);
     return result.rows.map(row => ({
@@ -471,25 +450,20 @@ export async function getTimeEntries(): Promise<TimeEntry[]> {
       date: format(new Date(row.date), 'yyyy-MM-dd'),
       startTime: row.start_time,
       endTime: row.end_time,
-      task: `${row.project_name} - ${row.task_name}`,
+      project: row.project_name,
       duration: Number(row.duration),
       placeOfWork: row.place_of_work,
       remarks: row.remarks
     }));
 }
 
-export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {projectId: string, taskId: string}): Promise<TimeEntry | null> {
-    const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, placeOfWork, remarks } = entry;
+export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'>): Promise<TimeEntry | null> {
+    const { userId, date, startTime, endTime, project: projectName, placeOfWork, remarks } = entry;
     const client = await db.connect();
     try {
         const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
-        const taskResult = await client.query('SELECT id FROM tasks WHERE name = $1', [taskName]);
-
         if (projectResult.rows.length === 0) throw new Error(`Project not found: ${projectName}`);
-        if (taskResult.rows.length === 0) throw new Error(`Task not found: ${taskName}`);
-
         const projectId = projectResult.rows[0].id;
-        const taskId = taskResult.rows[0].id;
 
         const start = new Date(`1970-01-01T${startTime}`);
         const end = new Date(`1970-01-01T${endTime}`);
@@ -497,9 +471,9 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
 
         const id = `te-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO time_entries (id, user_id, project_id, task_id, date, start_time, end_time, duration, place_of_work, remarks)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-            [id, userId, projectId, taskId, date, startTime, endTime, duration, placeOfWork, remarks]
+            `INSERT INTO time_entries (id, user_id, project_id, date, start_time, end_time, duration, place_of_work, remarks)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            [id, userId, projectId, date, startTime, endTime, duration, placeOfWork, remarks]
         );
         revalidatePath('/dashboard');
         
@@ -510,7 +484,7 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
             date: format(new Date(inserted.date), 'yyyy-MM-dd'),
             startTime: inserted.start_time,
             endTime: inserted.end_time,
-            task: `${projectName} - ${taskName}`,
+            project: projectName,
             duration: Number(inserted.duration),
             placeOfWork: inserted.place_of_work,
             remarks: inserted.remarks,
@@ -523,18 +497,13 @@ export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'> & {project
     }
 }
 
-export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'id' | 'duration'> & { projectId: string; taskId: string }): Promise<TimeEntry | null> {
-  const { userId, date, startTime, endTime, projectId: projectName, taskId: taskName, placeOfWork, remarks } = entry;
+export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'id' | 'duration'>): Promise<TimeEntry | null> {
+  const { userId, date, startTime, endTime, project: projectName, placeOfWork, remarks } = entry;
   const client = await db.connect();
   try {
     const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
-    const taskResult = await client.query('SELECT id FROM tasks WHERE name = $1', [taskName]);
-
     if (projectResult.rows.length === 0) throw new Error(`Project not found: ${projectName}`);
-    if (taskResult.rows.length === 0) throw new Error(`Task not found: ${taskName}`);
-
     const projectId = projectResult.rows[0].id;
-    const taskId = taskResult.rows[0].id;
 
     const start = new Date(`1970-01-01T${startTime}`);
     const end = new Date(`1970-01-01T${endTime}`);
@@ -542,9 +511,9 @@ export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'i
 
     const result = await client.query(
       `UPDATE time_entries 
-       SET project_id = $1, task_id = $2, date = $3, start_time = $4, end_time = $5, duration = $6, place_of_work = $7, remarks = $8
-       WHERE id = $9 RETURNING *`,
-      [projectId, taskId, date, startTime, endTime, duration, placeOfWork, remarks, entryId]
+       SET project_id = $1, date = $2, start_time = $3, end_time = $4, duration = $5, place_of_work = $6, remarks = $7
+       WHERE id = $8 RETURNING *`,
+      [projectId, date, startTime, endTime, duration, placeOfWork, remarks, entryId]
     );
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/reports');
@@ -556,7 +525,7 @@ export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'i
       date: format(new Date(updated.date), 'yyyy-MM-dd'),
       startTime: updated.start_time,
       endTime: updated.end_time,
-      task: `${projectName} - ${taskName}`,
+      project: projectName,
       duration: Number(updated.duration),
       placeOfWork: updated.place_of_work,
       remarks: updated.remarks,
@@ -864,29 +833,6 @@ export async function deleteProject(projectId: string): Promise<void> {
     revalidatePath('/dashboard/settings/projects');
 }
 
-// ========== Tasks ==========
-
-export async function getTasks(): Promise<Task[]> {
-    const result = await db.query('SELECT * FROM tasks ORDER BY name');
-    return result.rows.map(mapDbTaskToTask);
-}
-
-export async function addTask(taskData: Omit<Task, 'id'>): Promise<void> {
-    const id = `task-${Date.now()}`;
-    await db.query('INSERT INTO tasks (id, name, details) VALUES ($1, $2, $3)', [id, taskData.name, taskData.details]);
-    revalidatePath('/dashboard/settings/tasks');
-}
-
-export async function updateTask(taskId: string, data: Omit<Task, 'id'>): Promise<void> {
-    await db.query('UPDATE tasks SET name = $1, details = $2 WHERE id = $3', [data.name, data.details, taskId]);
-    revalidatePath('/dashboard/settings/tasks');
-}
-
-export async function deleteTask(taskId: string): Promise<void> {
-    await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
-    revalidatePath('/dashboard/settings/tasks');
-}
-
 // ========== Teams ==========
 
 export async function getTeams(): Promise<Team[]> {
@@ -973,162 +919,6 @@ export async function deleteTeam(teamId: string): Promise<void> {
     } finally {
         client.release();
     }
-}
-
-// ========== Holidays ==========
-
-export async function getPublicHolidays(): Promise<PublicHoliday[]> {
-    const result = await db.query('SELECT * FROM public_holidays ORDER BY date');
-    return result.rows.map(row => ({ ...row, date: format(new Date(row.date), 'yyyy-MM-dd')}));
-}
-
-export async function addPublicHoliday(holidayData: Omit<PublicHoliday, 'id'>): Promise<PublicHoliday | null> {
-    const { country, name, date, type } = holidayData;
-    const id = `ph-${Date.now()}`;
-    const result = await db.query(
-        `INSERT INTO public_holidays (id, country, name, date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [id, country, name, date, type]
-    );
-    revalidatePath('/dashboard/settings/holidays');
-    const newHoliday = result.rows[0];
-    return { ...newHoliday, date: format(new Date(newHoliday.date), 'yyyy-MM-dd') };
-}
-
-export async function updatePublicHoliday(holidayId: string, data: Omit<PublicHoliday, 'id'>): Promise<PublicHoliday | null> {
-    const { country, name, date, type } = data;
-    const result = await db.query(
-        `UPDATE public_holidays SET country = $1, name = $2, date = $3, type = $4 WHERE id = $5 RETURNING *`,
-        [country, name, date, type, holidayId]
-    );
-    revalidatePath('/dashboard/settings/holidays');
-    const updatedHoliday = result.rows[0];
-    return { ...updatedHoliday, date: format(new Date(updatedHoliday.date), 'yyyy-MM-dd') };
-}
-
-export async function deletePublicHoliday(holidayId: string): Promise<void> {
-    await db.query('DELETE FROM public_holidays WHERE id = $1', [holidayId]);
-    revalidatePath('/dashboard/settings/holidays');
-}
-
-export async function getCustomHolidays(): Promise<CustomHoliday[]> {
-    const result = await db.query('SELECT * FROM custom_holidays ORDER BY date');
-    return result.rows.map(row => ({ ...row, date: format(new Date(row.date), 'yyyy-MM-dd'), appliesTo: row.applies_to}));
-}
-
-export async function addCustomHoliday(holidayData: Omit<CustomHoliday, 'id'>): Promise<CustomHoliday | null> {
-    const { country, name, date, type, appliesTo } = holidayData;
-    const id = `ch-${Date.now()}`;
-    const result = await db.query(
-        `INSERT INTO custom_holidays (id, country, name, date, type, applies_to) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [id, country, name, date, type, appliesTo]
-    );
-    revalidatePath('/dashboard/settings/holidays');
-    const newHoliday = result.rows[0];
-    return { ...newHoliday, appliesTo: newHoliday.applies_to, date: format(new Date(newHoliday.date), 'yyyy-MM-dd') };
-}
-
-export async function updateCustomHoliday(holidayId: string, data: Omit<CustomHoliday, 'id'>): Promise<CustomHoliday | null> {
-    const { country, name, date, type, appliesTo } = data;
-    const result = await db.query(
-        `UPDATE custom_holidays SET country = $1, name = $2, date = $3, type = $4, applies_to = $5 WHERE id = $6 RETURNING *`,
-        [country, name, date, type, appliesTo, holidayId]
-    );
-    revalidatePath('/dashboard/settings/holidays');
-    const updatedHoliday = result.rows[0];
-    return { ...updatedHoliday, appliesTo: updatedHoliday.applies_to, date: format(new Date(updatedHoliday.date), 'yyyy-MM-dd') };
-}
-
-export async function deleteCustomHoliday(holidayId: string): Promise<void> {
-    await db.query('DELETE FROM custom_holidays WHERE id = $1', [holidayId]);
-    revalidatePath('/dashboard/settings/holidays');
-}
-
-export async function getHolidayRequests(): Promise<HolidayRequest[]> {
-    const result = await db.query('SELECT * FROM holiday_requests ORDER BY start_date DESC');
-    return result.rows.map(mapDbHolidayRequestToHolidayRequest);
-}
-
-export async function getAnnualLeaveAllowance(): Promise<number> {
-    // This is not in the db schema, so we'll return a static value as before.
-    // In a real app, this would be in a settings table.
-    return 25;
-}
-
-export async function setAnnualLeaveAllowance(allowance: number): Promise<void> {
-    // No DB table for this, so this is a no-op.
-    console.log(`Annual leave allowance set to ${allowance} days (in-memory only).`);
-}
-
-export async function addHolidayRequest(request: Omit<HolidayRequest, 'id'>): Promise<HolidayRequest | null> {
-    const id = `hr-${Date.now()}`;
-    const result = await db.query(
-        `INSERT INTO holiday_requests (id, user_id, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [id, request.userId, request.startDate, request.endDate, request.status]
-    );
-    revalidatePath('/dashboard/holidays');
-    return mapDbHolidayRequestToHolidayRequest(result.rows[0]);
-}
-
-export async function updateHolidayRequestStatus(requestId: string, status: 'Approved' | 'Rejected', approverId: string): Promise<HolidayRequest | null> {
-    const client = await db.connect();
-    try {
-        await client.query('BEGIN');
-        
-        const updateResult = await client.query(
-            `UPDATE holiday_requests SET status = $1, action_by_user_id = $2, action_timestamp = NOW() WHERE id = $3 AND status = $4 RETURNING *`,
-            [status, approverId, requestId, 'Pending']
-        );
-
-        if (updateResult.rows.length === 0) {
-            // Either request not found or it was not in 'Pending' state
-            await client.query('ROLLBACK');
-            return null;
-        }
-        
-        const updatedRequest = mapDbHolidayRequestToHolidayRequest(updateResult.rows[0]);
-
-        // Fetch users for email notification
-        const requesterResult = await client.query('SELECT * FROM users WHERE id = $1', [updatedRequest.userId]);
-        const approverResult = await client.query('SELECT * FROM users WHERE id = $1', [approverId]);
-
-        if (requesterResult.rows.length === 0 || approverResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return null; // Should not happen
-        }
-
-        const requester = mapDbUserToUser(requesterResult.rows[0]);
-        const approver = mapDbUserToUser(approverResult.rows[0]);
-        
-        let teamLead: User | null = null;
-        if (requester.reportsTo) {
-            const teamLeadResult = await client.query('SELECT * FROM users WHERE id = $1', [requester.reportsTo]);
-            if(teamLeadResult.rows.length > 0) {
-                teamLead = mapDbUserToUser(teamLeadResult.rows[0]);
-            }
-        }
-        
-        await sendHolidayRequestUpdateEmail({ request: updatedRequest, user: requester, approver, teamLead, status });
-
-        await client.query('COMMIT');
-        
-        revalidatePath('/dashboard/holidays');
-        revalidatePath('/dashboard'); // for notifications popover
-
-        return updatedRequest;
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error updating holiday request:', error);
-        return null;
-    } finally {
-        client.release();
-    }
-}
-
-
-export async function deleteHolidayRequest(requestId: string): Promise<void> {
-    await db.query('DELETE FROM holiday_requests WHERE id = $1', [requestId]);
-    revalidatePath('/dashboard/holidays');
 }
 
 // ========== Access Control ==========

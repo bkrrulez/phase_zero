@@ -38,16 +38,6 @@ export type TimeEntry = {
   remarks?: string;
 };
 
-export type HolidayRequest = {
-  id: string;
-  userId: string;
-  startDate: string;
-  endDate: string;
-  status: "Pending" | "Approved" | "Rejected";
-  actionByUserId?: string | null;
-  actionTimestamp?: string | null;
-};
-
 export type Project = {
   id: string;
   name: string;
@@ -69,23 +59,6 @@ export type Team = {
   id: string;
   name: string;
   projectIds?: string[];
-};
-
-export type PublicHoliday = {
-  id: string;
-  country: string;
-  name: string;
-  date: string; // ISO string for simplicity
-  type: "Full Day" | "Half Day";
-};
-
-export type CustomHoliday = {
-  id: string;
-  country: string;
-  name: string;
-  date: string; // ISO string
-  type: "Full Day" | "Half Day";
-  appliesTo: string; // 'all-teams', 'all-members', or a teamId
 };
 
 export type FreezeRule = {
@@ -139,15 +112,11 @@ export type InitialData = {
   teamMembers: Omit<User, 'contract' | 'contracts'>[];
   contracts: Omit<Contract, 'userId'>[];
   timeEntries: TimeEntry[];
-  holidayRequests: HolidayRequest[];
   projects: Project[];
   teams: Team[];
-  publicHolidays: PublicHoliday[];
-  customHolidays: CustomHoliday[];
   freezeRules: FreezeRule[];
   pushMessages: PushMessage[];
   userMessageStates: Record<string, UserMessageState>;
   notifications: AppNotification[];
   systemLogs: LogEntry[];
-  annualLeaveAllowance: number;
 };
