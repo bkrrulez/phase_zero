@@ -172,7 +172,7 @@ export default function ProjectDashboardPage() {
                     <h1 className="text-3xl font-bold font-headline">{t('projectDashboard')}</h1>
                     <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-7 gap-6">
                     <AddProjectCard onClick={() => setIsAddDialogOpen(true)} />
                     {userProjects.map(project => (
                         <ProjectCard
