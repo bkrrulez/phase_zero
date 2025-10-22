@@ -26,14 +26,20 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
             onClick={onClick}
         >
             <div 
-                className="absolute inset-0 group overflow-hidden rounded-lg transition-all cursor-pointer bg-muted/50 flex items-center justify-center hover:bg-muted/80"
+                className="absolute inset-0 group overflow-hidden rounded-lg transition-all cursor-pointer bg-muted/50 hover:bg-muted/80"
             >
-                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background border-2 border-dashed">
-                        <Plus className="h-6 w-6" />
-                    </div>
-                    <p className="font-medium">{t('addProject')}</p>
-                </div>
+                 <svg viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                    <foreignObject width="100" height="60">
+                        <div className="flex items-center justify-center h-full">
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background border-2 border-dashed">
+                                    <Plus className="h-6 w-6" />
+                                </div>
+                                <p className="font-medium text-sm">{t('addProject')}</p>
+                            </div>
+                        </div>
+                    </foreignObject>
+                </svg>
             </div>
         </div>
     );
@@ -163,7 +169,7 @@ export default function ProjectDashboardPage() {
         <>
             <div className="space-y-6">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Project Dashboard</h1>
+                    <h1 className="text-3xl font-bold font-headline">{t('projectDashboard')}</h1>
                     <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
