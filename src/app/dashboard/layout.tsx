@@ -63,7 +63,6 @@ import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dia
 import { NotificationPopover } from "./components/notification-popover";
 import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
 import { MembersProvider, useMembers } from "./contexts/MembersContext";
-import { AccessControlProvider } from "./contexts/AccessControlContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
 import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesContext";
@@ -268,15 +267,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                             </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                      {(currentUser.role === 'Team Lead' || currentUser.role === 'Super Admin') && (
-                        <SidebarMenuItem>
-                          <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/access-control")}>
-                              <Link href="/dashboard/settings/access-control">
-                                  <Shield /> {t('accessControl')}
-                              </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      )}
                       {currentUser.role === 'Super Admin' && (
                         <>
                           <SidebarMenuItem>
@@ -390,9 +380,7 @@ function DataProviders({
                         <SettingsProvider>
                           <RosterProvider>
                             <TimeTrackingProvider>
-                              <AccessControlProvider>
-                                <LayoutContent>{children}</LayoutContent>
-                              </AccessControlProvider>
+                              {children}
                             </TimeTrackingProvider>
                           </RosterProvider>
                         </SettingsProvider>
@@ -416,7 +404,7 @@ export default function DashboardLayout({
 }) {
   return (
     <DataProviders>
-      {children}
+      <LayoutContent>{children}</LayoutContent>
     </DataProviders>
   );
 }

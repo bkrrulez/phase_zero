@@ -16,7 +16,6 @@ import { type TimeEntry } from '@/lib/types';
 import { format } from 'date-fns';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAccessControl } from '../../contexts/AccessControlContext';
 import { useMembers } from '../../contexts/MembersContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +34,6 @@ interface DayDetailsDialogProps {
 
 export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit, onEdit, onDelete }: DayDetailsDialogProps) {
   const { currentUser } = useAuth();
-  const { freezeRules } = useAccessControl();
   const { teamMembers } = useMembers();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -45,25 +43,7 @@ export function DayDetailsDialog({ isOpen, onOpenChange, date, entries, canEdit,
     if (currentUser?.role === 'Super Admin') {
       return false;
     }
-    
-    const user = teamMembers.find(m => m.id === userId);
-    if (!user) return false;
-
-    for (const rule of freezeRules) {
-      const ruleAppliesToAll = rule.teamId === 'all-teams';
-      const ruleAppliesToUserTeam = user.teamId && rule.teamId === user.teamId;
-
-      if (ruleAppliesToAll || ruleAppliesToUserTeam) {
-        const startDate = new Date(rule.startDate);
-        const endDate = new Date(rule.endDate);
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-        if (dateToCheck >= startDate && dateToCheck <= endDate) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return false; // Since freeze rules are removed
   }
   
   const handleActionClick = (isFrozen: boolean, action: () => void) => {

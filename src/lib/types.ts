@@ -61,14 +61,6 @@ export type Team = {
   projectIds?: string[];
 };
 
-export type FreezeRule = {
-  id: string;
-  teamId: string; // 'all-teams' or a specific team id
-  startDate: string;
-  endDate: string;
-  recurringDay?: number | null; // e.g., 0 for Sunday, 1 for Monday
-};
-
 export type PushMessage = {
   id: string;
   context: string;
@@ -108,13 +100,21 @@ export type ContractEndNotification = {
     thresholdDays: number[];
 };
 
+export type Absence = {
+  id: string;
+  userId: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  type: 'General Absence' | 'Sick Leave';
+};
+
+
 export type InitialData = {
   teamMembers: Omit<User, 'contract' | 'contracts'>[];
   contracts: Omit<Contract, 'userId'>[];
   timeEntries: TimeEntry[];
   projects: Project[];
   teams: Team[];
-  freezeRules: FreezeRule[];
   pushMessages: PushMessage[];
   userMessageStates: Record<string, UserMessageState>;
   notifications: AppNotification[];

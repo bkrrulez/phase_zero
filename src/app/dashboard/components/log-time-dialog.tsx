@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useAccessControl } from "../contexts/AccessControlContext";
 import { useProjects } from "../contexts/ProjectsContext";
 import { useAuth } from "../contexts/AuthContext";
 import type { TimeEntry } from "@/lib/types";
@@ -72,28 +71,8 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
   const selectedUserId = form.watch("userId");
   const targetUser = teamMembers.find(m => m.id === (isEditMode ? userId : selectedUserId));
   
-  const { freezeRules } = useAccessControl();
   const [isUserComboboxOpen, setIsUserComboboxOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-
-  const isDateFrozen = (date: Date) => {
-    if (!targetUser) return false;
-    for (const rule of freezeRules) {
-      const ruleAppliesToAll = rule.teamId === 'all-teams';
-      const ruleAppliesToUserTeam = targetUser?.teamId && rule.teamId === targetUser.teamId;
-
-      if (ruleAppliesToAll || ruleAppliesToUserTeam) {
-        const startDate = new Date(rule.startDate);
-        const endDate = new Date(rule.endDate);
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-        if (date >= startDate && date <= endDate) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
   
   const [isFormDisabled, setIsFormDisabled] = useState(false);
 
@@ -112,11 +91,8 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
       });
       setInputValue(format(entryDate, 'dd/MM/yyyy'));
       
-      if (isDateFrozen(entryDate)) {
-        setIsFormDisabled(true);
-      } else {
-        setIsFormDisabled(false);
-      }
+      // Since freeze rules are removed, we don't need to check if the date is frozen.
+      setIsFormDisabled(false);
 
     } else {
       setIsFormDisabled(false);
@@ -162,7 +138,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
           <DialogTitle>{isEditMode ? 'Edit Time Entry' : 'Log Time'}</DialogTitle>
           <DialogDescription>
             {isFormDisabled 
-              ? `This entry cannot be modified because the date is within a frozen period.`
+              ? `This entry cannot be modified.`
               : isEditMode 
                 ? `Editing entry for ${targetUser?.name}.` 
                 : "Fill in the details below to log your work time. Click save when you're done."
@@ -283,7 +259,7 @@ export function LogTimeDialog({ isOpen, onOpenChange, onSave, entryToEdit, userI
                                             setIsDatePickerOpen(false);
                                         }}
                                         toDate={new Date()}
-                                        disabled={(date) => isAfter(date, new Date()) || isDateFrozen(date)}
+                                        disabled={(date) => isAfter(date, new Date())}
                                         initialFocus
                                         captionLayout="dropdown-buttons"
                                         fromYear={new Date().getFullYear() - 10}

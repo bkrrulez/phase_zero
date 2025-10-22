@@ -9,13 +9,13 @@ import {
   type TimeEntry,
   type Project,
   type Team,
-  type FreezeRule,
   type PushMessage,
   type UserMessageState,
   type AppNotification,
   type LogEntry,
   type Contract,
   type ContractEndNotification,
+  type Absence,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO, isAfter, isBefore } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -919,41 +919,6 @@ export async function deleteTeam(teamId: string): Promise<void> {
     } finally {
         client.release();
     }
-}
-
-// ========== Access Control ==========
-
-export async function getFreezeRules(): Promise<FreezeRule[]> {
-    const result = await db.query('SELECT * FROM freeze_rules ORDER BY start_date DESC');
-    return result.rows.map(row => ({
-        id: row.id,
-        teamId: row.team_id,
-        startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
-        endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
-        recurringDay: row.recurring_day
-    }));
-}
-
-export async function addFreezeRule(newRuleData: Omit<FreezeRule, 'id'>): Promise<FreezeRule | null> {
-    const { teamId, startDate, endDate, recurringDay } = newRuleData;
-    const id = `freeze-${Date.now()}`;
-    const result = await db.query(
-        `INSERT INTO freeze_rules (id, team_id, start_date, end_date, recurring_day) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [id, teamId, startDate, endDate, recurringDay]
-    );
-    revalidatePath('/dashboard/settings/access-control');
-    return {
-        id: result.rows[0].id,
-        teamId: result.rows[0].team_id,
-        startDate: format(new Date(result.rows[0].start_date), 'yyyy-MM-dd'),
-        endDate: format(new Date(result.rows[0].end_date), 'yyyy-MM-dd'),
-        recurringDay: result.rows[0].recurring_day
-    }
-}
-
-export async function removeFreezeRule(ruleId: string): Promise<void> {
-    await db.query('DELETE FROM freeze_rules WHERE id = $1', [ruleId]);
-    revalidatePath('/dashboard/settings/access-control');
 }
 
 // ========== Notifications & Messages ==========
