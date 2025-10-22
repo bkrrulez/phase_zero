@@ -1,11 +1,9 @@
-
 'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Plus, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useProjects } from './contexts/ProjectsContext';
 import { useAuth } from './contexts/AuthContext';
@@ -22,56 +20,44 @@ import { FolderIcon } from '@/components/ui/folder-icon';
 const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
     const { t } = useLanguage();
     return (
-        <Card 
-            className="aspect-[5/3.5] flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors bg-muted/50"
+        <div 
+            className="group relative overflow-hidden rounded-lg transition-all hover:shadow-md aspect-[5/3] cursor-pointer bg-muted/50 flex items-center justify-center hover:bg-muted/80"
             onClick={onClick}
         >
-            <CardContent className="p-0 flex flex-col items-center gap-2">
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background">
-                    <Plus className="h-6 w-6 text-muted-foreground" />
+             <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background border-2 border-dashed">
+                    <Plus className="h-6 w-6" />
                 </div>
-                <p className="font-medium text-muted-foreground">{t('addProject')}</p>
-            </CardContent>
-        </Card>
+                <p className="font-medium">{t('addProject')}</p>
+            </div>
+        </div>
     );
 };
 
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
         <div 
-            className="group relative overflow-hidden transition-all hover:shadow-md aspect-[5/3.5] cursor-pointer"
+            className="group relative overflow-hidden transition-all hover:shadow-md aspect-[5/3] cursor-pointer"
             onClick={onEdit}
         >
-            <FolderIcon className="w-full h-full text-card-foreground" />
+            <FolderIcon className="w-full h-full" project={project} />
 
-            <div className="absolute top-1 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-black/20 hover:text-white">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground/80 hover:bg-black/20 hover:text-white">
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                            <Edit className="mr-2 h-4 w-4"/> Edit
+                             Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4"/> Delete
+                             Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-            </div>
-            
-            <div className="absolute inset-0 p-4 flex flex-col justify-between text-white pointer-events-none">
-                <div className="relative h-[18%]">
-                    <span className="absolute top-0 left-0 text-xs font-mono opacity-90 px-2">#{project.projectNumber}</span>
-                </div>
-                <div className="flex-grow flex items-center justify-center text-center">
-                    <p className="font-bold text-lg truncate px-4">{project.name}</p>
-                </div>
-                <div className="relative h-[25%]">
-                     <p className="absolute bottom-0 left-0 text-sm opacity-90 truncate px-2">{project.address}</p>
-                </div>
             </div>
         </div>
     );
@@ -171,7 +157,7 @@ export default function ProjectDashboardPage() {
                     <h1 className="text-3xl font-bold font-headline">Project Dashboard</h1>
                     <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
                     <AddProjectCard onClick={() => setIsAddDialogOpen(true)} />
                     {userProjects.map(project => (
                         <ProjectCard

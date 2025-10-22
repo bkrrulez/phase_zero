@@ -1,19 +1,44 @@
-export const FolderIcon = ({ className }: { className?: string }) => (
+import { type Project } from '@/lib/types';
+
+export const FolderIcon = ({ className, project }: { className?: string, project: Project }) => (
     <svg
-        viewBox="0 0 100 75"
+        viewBox="0 0 100 60"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        {/* This creates the darker top part of the folder */}
         <path 
-            d="M10 8 H35 L45 18 H90 V25 H10Z"
+            d="M5 6 H30 L38 12 H95 V16 H5Z"
             className="fill-primary"
         />
-        {/* This creates the lighter main body of the folder */}
         <path 
-            d="M10 22 H90 V67 C90 68.1046 89.1046 69 88 69 H12 C10.8954 69 10 68.1046 10 67V22Z"
+            d="M5 15 H95 V55 C95 56.1046 94.1046 57 93 57 H7 C5.89543 57 5 56.1046 5 55V15Z"
             fill="hsl(var(--accent) / 0.8)"
         />
+        <text
+            x="8"
+            y="11"
+            className="text-[0.2rem] sm:text-[2.2px] fill-primary-foreground/80 font-mono"
+            textAnchor="start"
+        >
+            #{project.projectNumber}
+        </text>
+        <text
+            x="50"
+            y="37"
+            textAnchor="middle"
+            alignmentBaseline="middle"
+            className="text-[0.4rem] sm:text-[4px] font-bold fill-primary-foreground"
+        >
+            {project.name}
+        </text>
+        <text
+            x="8"
+            y="54"
+            className="text-[0.2rem] sm:text-[2.2px] fill-primary-foreground/90"
+            textAnchor="start"
+        >
+            {project.address}
+        </text>
     </svg>
 );
