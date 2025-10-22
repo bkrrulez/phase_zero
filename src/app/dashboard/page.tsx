@@ -29,16 +29,16 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
                 className="absolute inset-0 group overflow-hidden rounded-lg transition-all cursor-pointer bg-muted/50 hover:bg-muted/80"
             >
                  <svg viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                    <foreignObject width="100" height="60">
-                        <div className="flex items-center justify-center h-full">
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background border-2 border-dashed">
-                                    <Plus className="h-6 w-6" />
-                                </div>
-                                <p className="font-medium text-sm">{t('addProject')}</p>
-                            </div>
-                        </div>
-                    </foreignObject>
+                    <circle cx="50" cy="26" r="10" stroke="hsl(var(--foreground) / 0.3)" strokeWidth="1" strokeDasharray="3 3" />
+                    <path d="M47 26 L53 26 M50 23 L50 29" stroke="hsl(var(--foreground) / 0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                    <text
+                        x="50"
+                        y="48"
+                        textAnchor="middle"
+                        className="text-[8px] font-medium fill-muted-foreground"
+                    >
+                        {t('addProject')}
+                    </text>
                 </svg>
             </div>
         </div>
@@ -172,7 +172,7 @@ export default function ProjectDashboardPage() {
                     <h1 className="text-3xl font-bold font-headline">{t('projectDashboard')}</h1>
                     <p className="text-muted-foreground">{t('welcomeSubtitle')}</p>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-6">
                     <AddProjectCard onClick={() => setIsAddDialogOpen(true)} />
                     {userProjects.map(project => (
                         <ProjectCard
