@@ -21,14 +21,19 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
     const { t } = useLanguage();
     return (
         <div 
-            className="group relative overflow-hidden rounded-lg transition-all hover:shadow-md aspect-[5/3] cursor-pointer bg-muted/50 flex items-center justify-center hover:bg-muted/80"
+            className="relative w-full"
+            style={{ paddingBottom: '60%' }} // 5:3 aspect ratio
             onClick={onClick}
         >
-             <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background border-2 border-dashed">
-                    <Plus className="h-6 w-6" />
+            <div 
+                className="absolute inset-0 group overflow-hidden rounded-lg transition-all cursor-pointer bg-muted/50 flex items-center justify-center hover:bg-muted/80"
+            >
+                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-background border-2 border-dashed">
+                        <Plus className="h-6 w-6" />
+                    </div>
+                    <p className="font-medium">{t('addProject')}</p>
                 </div>
-                <p className="font-medium">{t('addProject')}</p>
             </div>
         </div>
     );
@@ -37,27 +42,32 @@ const AddProjectCard = ({ onClick }: { onClick: () => void }) => {
 const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) => {
     return (
         <div 
-            className="group relative overflow-hidden transition-all hover:shadow-md aspect-[5/3] cursor-pointer"
-            onClick={onEdit}
+            className="relative w-full"
+            style={{ paddingBottom: '60%' }} // 5:3 aspect ratio
         >
-            <FolderIcon className="w-full h-full" project={project} />
+            <div 
+                className="absolute inset-0 group overflow-hidden transition-all hover:shadow-md cursor-pointer"
+                onClick={onEdit}
+            >
+                <FolderIcon className="w-full h-full" project={project} />
 
-            <div className="absolute top-1 right-1 z-10">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-black hover:bg-black/20 hover:text-white">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                             Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive focus:text-destructive">
-                             Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="absolute top-1 right-1 z-10">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-black hover:bg-black/20 hover:text-white">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                                 Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive focus:text-destructive">
+                                 Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
         </div>
     );
