@@ -100,15 +100,6 @@ export type ContractEndNotification = {
     thresholdDays: number[];
 };
 
-export type Absence = {
-  id: string;
-  userId: string;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
-  type: 'General Absence' | 'Sick Leave';
-};
-
-
 export type InitialData = {
   teamMembers: Omit<User, 'contract' | 'contracts'>[];
   contracts: Omit<Contract, 'userId'>[];

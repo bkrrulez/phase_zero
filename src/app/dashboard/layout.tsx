@@ -74,7 +74,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractsProvider, useContracts } from "./contexts/ContractsContext";
-import { RosterProvider } from './contexts/RosterContext';
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -200,13 +199,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 <Link href="/dashboard/team">
                   <Users />
                   {t('team')}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/roster")}>
-                <Link href="/dashboard/roster">
-                  <CalendarDays /> Roster
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -350,7 +342,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <footer className="p-4 text-center text-xs text-muted-foreground">
           Created by Bikramjit Chowdhury
         </footer>
-        {/* The LogTimeDialog is removed from the layout trigger */}
       </SidebarInset>
     </SidebarProvider>
   );
@@ -373,11 +364,9 @@ function DataProviders({
                     <AuthProvider>
                       <SystemLogProvider>
                         <SettingsProvider>
-                          <RosterProvider>
-                            <TimeTrackingProvider>
-                              {children}
-                            </TimeTrackingProvider>
-                          </RosterProvider>
+                          <TimeTrackingProvider>
+                            {children}
+                          </TimeTrackingProvider>
                         </SettingsProvider>
                       </SystemLogProvider>
                     </AuthProvider>

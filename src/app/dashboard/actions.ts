@@ -15,7 +15,6 @@ import {
   type LogEntry,
   type Contract,
   type ContractEndNotification,
-  type Absence,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO, isAfter, isBefore } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -370,7 +369,6 @@ export async function deleteUser(userId: string): Promise<void> {
         // Delete associated records in other tables to maintain referential integrity
         await client.query('DELETE FROM contracts WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM time_entries WHERE user_id = $1', [userId]);
-        await client.query('DELETE FROM holiday_requests WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM notification_recipients WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM notification_read_by WHERE user_id = $1', [userId]);
@@ -1146,61 +1144,5 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         );
     } catch (error) {
         console.error(`Failed to set setting for key '${key}':`, error);
-    }
-}
-// ========== Absences ==========
-export async function getAbsences(): Promise<Absence[]> {
-    try {
-        const result = await db.query('SELECT * FROM absences ORDER BY start_date DESC');
-        return result.rows.map(row => ({
-            id: row.id,
-            userId: row.user_id,
-            startDate: format(new Date(row.start_date), 'yyyy-MM-dd'),
-            endDate: format(new Date(row.end_date), 'yyyy-MM-dd'),
-            type: row.type
-        }));
-    } catch (error) {
-        console.error("Failed to fetch absences:", error);
-        return [];
-    }
-}
-
-export async function addAbsence(absence: Omit<Absence, 'id'>): Promise<Absence | null> {
-    const { userId, startDate, endDate, type } = absence;
-    const id = `abs-${Date.now()}`;
-    try {
-        const result = await db.query(
-            'INSERT INTO absences (id, user_id, start_date, end_date, type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [id, userId, startDate, endDate, type]
-        );
-        revalidatePath('/dashboard/roster');
-        const newAbsence = result.rows[0];
-        return {
-             id: newAbsence.id,
-            userId: newAbsence.user_id,
-            startDate: format(new Date(newAbsence.start_date), 'yyyy-MM-dd'),
-            endDate: format(new Date(newAbsence.end_date), 'yyyy-MM-dd'),
-            type: newAbsence.type
-        };
-    } catch (error) {
-        console.error("Failed to add absence:", error);
-        return null;
-    }
-}
-
-export async function deleteAbsencesInRange(userId: string, startDate: string, endDate: string): Promise<number> {
-    try {
-        const result = await db.query(
-            `DELETE FROM absences 
-             WHERE user_id = $1 
-             AND start_date <= $2 
-             AND end_date >= $3`,
-            [userId, endDate, startDate] // Note: end_date >= start and start_date <= end for overlap
-        );
-        revalidatePath('/dashboard/roster');
-        return result.rowCount || 0;
-    } catch (error) {
-        console.error("Failed to delete absences in range:", error);
-        return 0;
     }
 }
