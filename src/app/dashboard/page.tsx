@@ -45,7 +45,7 @@ const ProjectCard = ({ project, onEdit, onDelete }: { project: Project; onEdit: 
             <div className="absolute top-1 right-1 z-10">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground/80 hover:bg-black/20 hover:text-white">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-black hover:bg-black/20 hover:text-white">
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
