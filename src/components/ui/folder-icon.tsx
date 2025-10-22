@@ -2,9 +2,9 @@
 import { type Project } from '@/lib/types';
 
 export const FolderIcon = ({ className, project }: { className?: string, project: Project }) => {
-    const maxAddressLength = 25;
-    const truncatedAddress = project.address.length > maxAddressLength 
-        ? `${project.address.substring(0, 22)}...`
+    const maxAddressLength = 22;
+    const truncatedAddress = project.address.length > 25 
+        ? `${project.address.substring(0, maxAddressLength)}...`
         : project.address;
 
     return (
@@ -24,7 +24,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
             />
             <text
                 x="8"
-                y="11.5"
+                y="12.5"
                 className="text-[6px] font-bold fill-primary-foreground/80"
                 textAnchor="start"
             >
