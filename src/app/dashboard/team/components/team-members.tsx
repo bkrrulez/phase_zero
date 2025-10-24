@@ -273,9 +273,6 @@ export function TeamMembers({ onAddMemberClick, onExportClick }: TeamMembersProp
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
                                           <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
-                                          <DropdownMenuItem asChild>
-                                            <Link href={`/dashboard/reports?tab=individual-report&userId=${member.id}`}>{t('viewReport')}</Link>
-                                          </DropdownMenuItem>
                                           {canDownloadContract(member) && (
                                             <DropdownMenuItem onClick={() => handleDownloadContract(member)}>
                                                 Download Access Document

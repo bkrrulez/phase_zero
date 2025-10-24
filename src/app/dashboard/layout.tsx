@@ -10,7 +10,6 @@ import {
   LogOut,
   Users,
   Settings,
-  BarChartHorizontal,
   ChevronRight,
   Briefcase,
   CalendarDays,
@@ -199,14 +198,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 <Link href="/dashboard/team">
                   <Users />
                   {t('team')}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/reports")}>
-                <Link href="/dashboard/reports">
-                  <BarChartHorizontal />
-                  {t('reports')}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
