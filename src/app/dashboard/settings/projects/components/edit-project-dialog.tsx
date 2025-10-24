@@ -27,7 +27,7 @@ const projectSchema = z.object({
   escapeLevel: z.coerce.number().min(0).max(999.99).optional(),
   listedBuilding: z.enum(['Yes', 'No']),
   protectionZone: z.enum(['Yes', 'No']),
-  currentUse: z.string().optional(),
+  currentUse: z.string().min(1, "Current use is required."),
 });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;
