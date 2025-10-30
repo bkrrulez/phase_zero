@@ -8,9 +8,6 @@ import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/ty
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -144,14 +141,8 @@ export default function RuleBookDetailPage() {
         </div>
 
         <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="shrink-0">
-            <CardTitle>Rule Book Content</CardTitle>
-            <CardDescription>
-              Content from the 'Main' sheet of the imported file.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col overflow-y-auto">
-            <div className="overflow-x-auto">
+          <CardContent className="flex-1 flex p-0">
+            <div className="overflow-auto w-full">
               <Table className="min-w-full border-collapse">
                 <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
                   <TableRow>
