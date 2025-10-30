@@ -142,9 +142,9 @@ export default function RuleBookDetailPage() {
         </div>
 
         <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardContent className="flex-1 p-0">
-            <div className="overflow-x-auto">
-              <div className="max-h-[65vh] overflow-y-auto">
+          <CardContent className="flex-1 p-0 flex flex-col">
+            <div className="overflow-y-auto max-h-[70vh]">
+              <div className="overflow-x-auto">
                 <Table className="min-w-full border-collapse">
                   <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
                     <TableRow>
