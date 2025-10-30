@@ -9,6 +9,7 @@ import {
   Card,
   CardContent,
   CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -141,8 +142,8 @@ export default function RuleBookDetailPage() {
         </div>
 
         <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardContent className="flex-1 flex p-0">
-            <div className="overflow-x-auto w-full">
+          <CardContent className="flex-1 p-0">
+            <div className="overflow-x-auto">
               <div className="max-h-[65vh] overflow-y-auto">
                 <Table className="min-w-full border-collapse">
                   <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
@@ -178,8 +179,7 @@ export default function RuleBookDetailPage() {
                             <TableCell
                               key={`${entry.id}-${header}`}
                               className={cn(
-                                'border-r last:border-r-0 align-top whitespace-nowrap',
-                                header === 'Text' && 'max-w-[450px] truncate'
+                                'border-r last:border-r-0 align-top whitespace-nowrap'
                               )}
                             >
                               {isRefTable ? (
@@ -191,7 +191,7 @@ export default function RuleBookDetailPage() {
                                   {cellValue}
                                 </Button>
                               ) : (
-                                <span title={header === 'Text' ? String(cellValue) : undefined}>{String(cellValue)}</span>
+                                <span>{String(cellValue)}</span>
                               )}
                             </TableCell>
                           );
