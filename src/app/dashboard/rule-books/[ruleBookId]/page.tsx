@@ -152,26 +152,26 @@ export default function RuleBookDetailPage() {
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <ScrollArea className="h-[60vh] w-full">
+                         <ScrollArea className="h-[70vh] w-full border rounded-md">
                             <Table>
-                                <TableHeader className="sticky top-0 bg-card">
+                                <TableHeader className="sticky top-0 bg-card z-10">
                                     <TableRow>
-                                        <TableHead className="w-[50px]">Sl No.</TableHead>
+                                        <TableHead className="w-[50px] border-r">Sl No.</TableHead>
                                         {headers.map(header => (
-                                            <TableHead key={header}>{header}</TableHead>
+                                            <TableHead key={header} className="border-r last:border-r-0">{header}</TableHead>
                                         ))}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {details.entries.map((entry, index) => (
                                         <TableRow key={entry.id}>
-                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell className="border-r">{index + 1}</TableCell>
                                             {headers.map(header => {
                                                 const cellValue = entry.data[header];
                                                 const isRefTable = details.referenceTables.some(t => t.name === cellValue);
 
                                                 return (
-                                                    <TableCell key={`${entry.id}-${header}`}>
+                                                    <TableCell key={`${entry.id}-${header}`} className="border-r last:border-r-0 align-top">
                                                         {isRefTable ? (
                                                             <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
                                                                 {cellValue}
