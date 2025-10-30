@@ -67,11 +67,13 @@ export default function RuleBooksPage() {
             const mainData: any[] = XLSX.utils.sheet_to_json(mainWorksheet, { defval: "" });
 
             // Validate headers
-            const headers = XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0] as string[];
-            const mandatoryColumns = importSettings.filter(s => s.isMandatory).map(s => s.name);
+            const headers = (XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0] as string[]).map(h => h.trim().toLowerCase());
+            const mandatoryColumns = importSettings.filter(s => s.isMandatory).map(s => s.name.toLowerCase());
             const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
+
             if (missingColumns.length > 0) {
-                throw new Error(`Missing mandatory columns in 'Main' sheet: ${missingColumns.join(', ')}`);
+                const originalCaseMissing = importSettings.filter(s => missingColumns.includes(s.name.toLowerCase())).map(s => s.name);
+                throw new Error(`Missing mandatory columns in 'Main' sheet: ${originalCaseMissing.join(', ')}`);
             }
             
             // Validate table references
@@ -82,7 +84,7 @@ export default function RuleBooksPage() {
                 for (const row of mainData) {
                     const cellValue = row[tableColumnSetting.name];
                     if (cellValue && typeof cellValue === 'string') {
-                        const tableNames = cellValue.split(',').map(name => name.trim());
+                         const tableNames = cellValue.split(',').map(name => name.trim());
                         
                         for (const tableName of tableNames) {
                             if (tableName) {
@@ -237,5 +239,3 @@ export default function RuleBooksPage() {
     </>
   );
 }
-
-    
