@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -186,6 +187,7 @@ export default function RuleBookDetailPage() {
                               key={`${entry.id}-${header}`}
                               className={cn(
                                 'border-r last:border-r-0 align-top whitespace-nowrap',
+                                header === 'Text' && 'max-w-[450px] truncate'
                               )}
                             >
                               {isRefTable ? (
@@ -197,7 +199,7 @@ export default function RuleBookDetailPage() {
                                   {cellValue}
                                 </Button>
                               ) : (
-                                String(cellValue)
+                                <span title={header === 'Text' ? String(cellValue) : undefined}>{String(cellValue)}</span>
                               )}
                             </TableCell>
                           );
