@@ -82,20 +82,25 @@ export default function RuleBooksPage() {
                 for (const row of mainData) {
                     const cellValue = row[tableColumnSetting.name];
                     if (cellValue && typeof cellValue === 'string') {
-                        const trimmedCellValue = cellValue.trim();
-                        if (trimmedCellValue) {
-                             const sheetExists = workbook.SheetNames.some(
-                                (sheetName) => sheetName.toLowerCase() === trimmedCellValue.toLowerCase()
-                            );
-                            if (!sheetExists) {
-                               throw new Error(`Table sheet '${trimmedCellValue}' missing in the uploaded file. Please check.`);
-                            }
-                            if (!referenceTables[trimmedCellValue]) {
-                                const actualSheetName = workbook.SheetNames.find(
-                                    (sn) => sn.toLowerCase() === trimmedCellValue.toLowerCase()
-                                )!;
-                                const tableSheet = workbook.Sheets[actualSheetName];
-                                referenceTables[trimmedCellValue] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
+                        const tableNames = cellValue.split(',').map(name => name.trim());
+                        
+                        for (const tableName of tableNames) {
+                            if (tableName) {
+                                const sheetExists = workbook.SheetNames.some(
+                                    (sheetName) => sheetName.toLowerCase() === tableName.toLowerCase()
+                                );
+
+                                if (!sheetExists) {
+                                    throw new Error(`Table sheet '${tableName}' missing in the uploaded file. Please check.`);
+                                }
+
+                                if (!referenceTables[tableName]) {
+                                    const actualSheetName = workbook.SheetNames.find(
+                                        (sn) => sn.toLowerCase() === tableName.toLowerCase()
+                                    )!;
+                                    const tableSheet = workbook.Sheets[actualSheetName];
+                                    referenceTables[tableName] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
+                                }
                             }
                         }
                     }
