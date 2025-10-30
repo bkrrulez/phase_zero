@@ -112,7 +112,7 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
             entries: entriesRes.rows,
             referenceTables: refTablesRes.rows.map(row => ({
                 ...row,
-                data: JSON.parse(row.data)
+                data: row.data // The 'data' column is already parsed as JSON by the pg driver
             })),
         };
     } catch (error) {
