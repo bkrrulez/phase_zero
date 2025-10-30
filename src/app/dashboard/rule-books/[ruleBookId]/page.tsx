@@ -150,64 +150,64 @@ export default function RuleBookDetailPage() {
               Content from the 'Main' sheet of the imported file.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col overflow-y-auto">
+          <CardContent className="flex-1 overflow-y-auto">
             <div className="overflow-x-auto">
-                <Table className="min-w-full border-collapse">
-                  <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
-                    <TableRow>
-                      <TableHead className="sticky left-0 w-16 border-r bg-card z-20">
-                        Sl No.
+              <Table className="min-w-full border-collapse">
+                <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
+                  <TableRow>
+                    <TableHead className="sticky left-0 w-16 border-r bg-card z-20">
+                      Sl No.
+                    </TableHead>
+                    {headers.map((header) => (
+                      <TableHead
+                        key={header}
+                        className={cn(
+                          'border-r last:border-r-0 whitespace-nowrap bg-card'
+                        )}
+                      >
+                        {header}
                       </TableHead>
-                      {headers.map((header) => (
-                        <TableHead
-                          key={header}
-                          className={cn(
-                            'border-r last:border-r-0 whitespace-nowrap bg-card'
-                          )}
-                        >
-                          {header}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {details.entries.map((entry, index) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="sticky left-0 w-16 border-r bg-card z-10">
-                          {index + 1}
-                        </TableCell>
-                        {headers.map((header) => {
-                          const cellValue = entry.data[header];
-                          const isRefTable = details.referenceTables.some(
-                            (t) => t.name === cellValue
-                          );
-
-                          return (
-                            <TableCell
-                              key={`${entry.id}-${header}`}
-                              className={cn(
-                                'border-r last:border-r-0 align-top whitespace-nowrap',
-                                header === 'Text' && 'max-w-[450px] truncate'
-                              )}
-                            >
-                              {isRefTable ? (
-                                <Button
-                                  variant="link"
-                                  className="p-0 h-auto"
-                                  onClick={() => handleOpenReferenceTable(cellValue)}
-                                >
-                                  {cellValue}
-                                </Button>
-                              ) : (
-                                <span title={header === 'Text' ? String(cellValue) : undefined}>{String(cellValue)}</span>
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {details.entries.map((entry, index) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="sticky left-0 w-16 border-r bg-card z-10">
+                        {index + 1}
+                      </TableCell>
+                      {headers.map((header) => {
+                        const cellValue = entry.data[header];
+                        const isRefTable = details.referenceTables.some(
+                          (t) => t.name === cellValue
+                        );
+
+                        return (
+                          <TableCell
+                            key={`${entry.id}-${header}`}
+                            className={cn(
+                              'border-r last:border-r-0 align-top whitespace-nowrap',
+                              header === 'Text' && 'max-w-[450px] truncate'
+                            )}
+                          >
+                            {isRefTable ? (
+                              <Button
+                                variant="link"
+                                className="p-0 h-auto"
+                                onClick={() => handleOpenReferenceTable(cellValue)}
+                              >
+                                {cellValue}
+                              </Button>
+                            ) : (
+                              <span title={header === 'Text' ? String(cellValue) : undefined}>{String(cellValue)}</span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
