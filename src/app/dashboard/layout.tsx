@@ -289,7 +289,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="flex h-screen flex-col w-full overflow-hidden">
+        <div className="flex h-screen flex-col w-full">
             <header className="flex shrink-0 items-center p-4 bg-card border-b sticky top-0 z-10">
                 <SidebarTrigger />
                 <div className="flex items-center gap-4 flex-wrap ml-auto">

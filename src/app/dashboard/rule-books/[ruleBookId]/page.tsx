@@ -122,7 +122,7 @@ export default function RuleBookDetailPage() {
         </div>
 
         {/* Table Container */}
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto border rounded-lg">
           <Table className="min-w-max border-collapse">
             <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
               <TableRow>
