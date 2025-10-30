@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -108,91 +107,93 @@ export default function RuleBookDetailPage() {
 
     return (
         <>
-            <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                     <Button asChild variant="outline" size="icon">
-                        <Link href="/dashboard/rule-books">
-                            <ArrowLeft className="h-4 w-4" />
-                            <span className="sr-only">Back</span>
-                        </Link>
-                    </Button>
-                    <div>
-                        <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
-                        <p className="text-muted-foreground">Detailed view of the imported rule book.</p>
+            <div className="space-y-6 flex flex-col h-full">
+                {/* Fixed Top Section */}
+                <div className="shrink-0">
+                    <div className="flex items-center gap-4">
+                        <Button asChild variant="outline" size="icon">
+                            <Link href="/dashboard/rule-books">
+                                <ArrowLeft className="h-4 w-4" />
+                                <span className="sr-only">Back</span>
+                            </Link>
+                        </Button>
+                        <div>
+                            <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
+                            <p className="text-muted-foreground">Detailed view of the imported rule book.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-3 mt-6">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Rule Book Name</CardTitle>
+                                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{details.ruleBook.name}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Rows Imported</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{details.ruleBook.rowCount}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Import Date</CardTitle>
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{format(details.ruleBook.importedAt, 'PP')}</div>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
-
-                 <div className="grid gap-4 md:grid-cols-3">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Rule Book Name</CardTitle>
-                            <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{details.ruleBook.name}</div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Rows Imported</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{details.ruleBook.rowCount}</div>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Import Date</CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{format(details.ruleBook.importedAt, 'PP')}</div>
-                        </CardContent>
-                    </Card>
-                </div>
                 
-                <Card>
-                    <CardHeader>
+                {/* Scrollable Table Section */}
+                <Card className="flex-1 flex flex-col overflow-hidden">
+                    <CardHeader className='shrink-0'>
                         <CardTitle>Rule Book Content</CardTitle>
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                       <div className="relative h-[65vh] overflow-auto border rounded-md">
-                            <Table>
-                                <TableHeader className="sticky top-0 z-10 bg-card">
-                                    <TableRow>
-                                        <TableHead className="w-[50px] border-r">Sl No.</TableHead>
-                                        {headers.map(header => (
-                                            <TableHead key={header} className={cn("border-r last:border-r-0", isColumnFreeText(header) && "min-w-[60ch]")}>{header}</TableHead>
-                                        ))}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {details.entries.map((entry, index) => (
-                                        <TableRow key={entry.id}>
-                                            <TableCell className="w-[50px] border-r">{index + 1}</TableCell>
-                                            {headers.map(header => {
-                                                const cellValue = entry.data[header];
-                                                const isRefTable = details.referenceTables.some(t => t.name === cellValue);
-                                                
-                                                return (
-                                                    <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top", isColumnFreeText(header) ? 'min-w-[60ch] break-words' : 'break-words')}>
-                                                        {isRefTable ? (
-                                                            <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
-                                                                {cellValue}
-                                                            </Button>
-                                                        ) : (
-                                                            cellValue
-                                                        )}
-                                                    </TableCell>
-                                                )
-                                            })}
-                                        </TableRow>
+                    <CardContent className="flex-1 overflow-auto">
+                        <Table>
+                            <TableHeader className="sticky top-0 z-10 bg-card">
+                                <TableRow>
+                                    <TableHead className="w-[50px] border-r">Sl No.</TableHead>
+                                    {headers.map(header => (
+                                        <TableHead key={header} className={cn("border-r last:border-r-0", isColumnFreeText(header) ? "w-[60ch]" : "min-w-[150px]")}>{header}</TableHead>
                                     ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {details.entries.map((entry, index) => (
+                                    <TableRow key={entry.id}>
+                                        <TableCell className="w-[50px] border-r">{index + 1}</TableCell>
+                                        {headers.map(header => {
+                                            const cellValue = entry.data[header];
+                                            const isRefTable = details.referenceTables.some(t => t.name === cellValue);
+                                            
+                                            return (
+                                                <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top", isColumnFreeText(header) ? 'w-[60ch] break-words' : 'break-words')}>
+                                                    {isRefTable ? (
+                                                        <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
+                                                            {cellValue}
+                                                        </Button>
+                                                    ) : (
+                                                        <div className="max-w-full break-words whitespace-pre-wrap">{cellValue}</div>
+                                                    )}
+                                                </TableCell>
+                                            )
+                                        })}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
             </div>
