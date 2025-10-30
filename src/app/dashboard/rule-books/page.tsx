@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -12,14 +11,10 @@ import { format } from 'date-fns';
 import { ImportSettingsDialog, type ImportSetting } from './components/import-settings-dialog';
 import { ImportRuleBookDialog } from './components/import-rule-book-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-// Mock types for now
-type RuleBook = {
-  id: string;
-  name: string;
-  importedAt: Date;
-  rowCount: number;
-};
+import { type RuleBook, type RuleBookEntry } from '@/lib/types';
+import { getRuleBooks, addRuleBook, deleteRuleBook } from './actions';
+import { useToast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx-js-style';
 
 const defaultImportSettings: ImportSetting[] = [
   { id: 'col-1', name: 'Gliederung', isMandatory: true, type: 'Free Text', values: '' },
@@ -35,29 +30,97 @@ const defaultImportSettings: ImportSetting[] = [
 export default function RuleBooksPage() {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
+  const { toast } = useToast();
   
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isImportOpen, setIsImportOpen] = React.useState(false);
   const [ruleBooks, setRuleBooks] = React.useState<RuleBook[]>([]);
   const [importSettings, setImportSettings] = React.useState<ImportSetting[]>(defaultImportSettings);
+  
+  const fetchRuleBooks = React.useCallback(async () => {
+    const books = await getRuleBooks();
+    setRuleBooks(books);
+  }, []);
 
-  const handleImportRuleBook = (name: string, file: File) => {
-    // This is where the file processing logic will go.
-    // For now, we'll just simulate a successful import.
-    console.log(`Importing ${file.name} as "${name}"`);
-    const newRuleBook: RuleBook = {
-      id: `rb-${Date.now()}`,
-      name,
-      importedAt: new Date(),
-      rowCount: Math.floor(Math.random() * (500 - 50 + 1) + 50), // Mock row count
+  React.useEffect(() => {
+    fetchRuleBooks();
+  }, [fetchRuleBooks]);
+
+
+  const handleImportRuleBook = async (name: string, file: File) => {
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = async (e) => {
+        try {
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const mainSheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'main');
+            if (!mainSheetName) {
+                throw new Error("A sheet named 'Main' or 'main' was not found in the file.");
+            }
+            
+            const mainWorksheet = workbook.Sheets[mainSheetName];
+            const mainData: any[] = XLSX.utils.sheet_to_json(mainWorksheet, { defval: "" });
+
+            // Validate headers
+            const headers = XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0] as string[];
+            const mandatoryColumns = importSettings.filter(s => s.isMandatory).map(s => s.name);
+            const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
+            if (missingColumns.length > 0) {
+                throw new Error(`Missing mandatory columns in 'Main' sheet: ${missingColumns.join(', ')}`);
+            }
+            
+            // Validate table references
+            const tableColumnSetting = importSettings.find(s => s.type === 'Table');
+            const referenceTables: Record<string, any[]> = {};
+            
+            if (tableColumnSetting) {
+                for (const row of mainData) {
+                    const cellValue = row[tableColumnSetting.name];
+                    if (cellValue && typeof cellValue === 'string') {
+                        if (!workbook.SheetNames.includes(cellValue)) {
+                           throw new Error(`Table sheet '${cellValue}' missing in the uploaded file. Please check.`);
+                        }
+                        if (!referenceTables[cellValue]) {
+                            const tableSheet = workbook.Sheets[cellValue];
+                            referenceTables[cellValue] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
+                        }
+                    }
+                }
+            }
+
+            const entries: RuleBookEntry[] = mainData.map(row => ({
+                id: '', // Will be generated on the server
+                ruleBookId: '', // Will be assigned on the server
+                data: row,
+            }));
+
+            await addRuleBook({ name, entries, referenceTables });
+            
+            toast({ title: "Import Successful", description: `${name} with ${entries.length} rows has been imported.` });
+            await fetchRuleBooks(); // Refresh the list
+            setIsImportOpen(false);
+
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Import Failed',
+                description: error.message || 'An unexpected error occurred during import.',
+            });
+        }
     };
-    setRuleBooks(prev => [...prev, newRuleBook]);
-    setIsImportOpen(false);
   };
   
   const handleSaveSettings = (settings: ImportSetting[]) => {
     setImportSettings(settings);
     setIsSettingsOpen(false);
+  }
+
+  const handleDeleteRuleBook = async (bookId: string) => {
+      await deleteRuleBook(bookId);
+      await fetchRuleBooks();
+      toast({ title: "Rule Book Deleted", variant: "destructive" });
   }
 
   if (currentUser?.role !== 'Super Admin') {
@@ -109,7 +172,7 @@ export default function RuleBooksPage() {
                   ruleBooks.map((book) => (
                     <TableRow key={book.id} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className="font-medium">{book.name}</TableCell>
-                      <TableCell>{format(book.importedAt, 'PPpp')}</TableCell>
+                      <TableCell>{format(new Date(book.importedAt), 'PPpp')}</TableCell>
                       <TableCell>{book.rowCount}</TableCell>
                       <TableCell className="text-right">
                          <DropdownMenu>
@@ -117,7 +180,7 @@ export default function RuleBooksPage() {
                                 <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                <DropdownMenuItem onClick={() => handleDeleteRuleBook(book.id)} className="text-destructive focus:text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4"/> Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

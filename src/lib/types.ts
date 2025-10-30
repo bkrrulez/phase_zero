@@ -98,6 +98,27 @@ export type ContractEndNotification = {
     thresholdDays: number[];
 };
 
+export type RuleBook = {
+  id: string;
+  name: string;
+  importedAt: Date;
+  rowCount: number;
+}
+
+export type RuleBookEntry = {
+  id: string;
+  ruleBookId: string;
+  data: Record<string, any>;
+};
+
+export type ReferenceTable = {
+  id: string;
+  ruleBookId: string;
+  name: string;
+  data: Record<string, any>[];
+};
+
+
 export type InitialData = {
   teamMembers: Omit<User, 'contract' | 'contracts'>[];
   contracts: Omit<Contract, 'userId'>[];
