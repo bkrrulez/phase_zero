@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -184,7 +185,7 @@ export default function RuleBookDetailPage() {
           </CardHeader>
           <CardContent className="flex-1 p-0 sm:p-6 sm:pt-0 overflow-hidden">
             {/* This div is the dedicated scroll container for the table */}
-            <div className="relative h-full overflow-auto border rounded-md">
+            <div className="h-full overflow-auto border rounded-md">
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
                   <TableRow>
