@@ -150,7 +150,7 @@ export default function RuleBookDetailPage() {
               Content from the 'Main' sheet of the imported file.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto">
+          <CardContent className="flex-1 flex flex-col overflow-y-auto">
             <div className="overflow-x-auto">
               <Table className="min-w-full border-collapse">
                 <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
