@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReferenceTableDialog } from '../components/reference-table-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface RuleBookDetails {
     ruleBook: RuleBook;
@@ -36,11 +38,14 @@ const columnOrder = [
 export default function RuleBookDetailPage() {
     const params = useParams();
     const ruleBookId = params.ruleBookId as string;
+    const { t } = useLanguage();
     
     const [details, setDetails] = React.useState<RuleBookDetails | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
+    const [importSettings, setImportSettings] = React.useState<any[]>([]);
+
 
     React.useEffect(() => {
         if (!ruleBookId) return;
@@ -152,9 +157,9 @@ export default function RuleBookDetailPage() {
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <div className="w-full border rounded-md">
+                         <ScrollArea className="h-[65vh] w-full border rounded-md">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="sticky top-0 bg-card z-10">
                                     <TableRow>
                                         <TableHead className="w-[50px] border-r">Sl No.</TableHead>
                                         {headers.map(header => (
@@ -162,35 +167,33 @@ export default function RuleBookDetailPage() {
                                         ))}
                                     </TableRow>
                                 </TableHeader>
+                                <TableBody>
+                                    {details.entries.map((entry, index) => (
+                                        <TableRow key={entry.id}>
+                                            <TableCell className="w-[50px] border-r">{index + 1}</TableCell>
+                                            {headers.map(header => {
+                                                const cellValue = entry.data[header];
+                                                const isRefTable = details.referenceTables.some(t => t.name === cellValue);
+                                                const columnSetting = importSettings.find(s => s.name === header);
+                                                const isFreeText = columnSetting?.type === 'Free Text';
+                                                
+                                                return (
+                                                    <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top", isFreeText && "max-w-[50ch] break-words")}>
+                                                        {isRefTable ? (
+                                                            <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
+                                                                {cellValue}
+                                                            </Button>
+                                                        ) : (
+                                                            cellValue
+                                                        )}
+                                                    </TableCell>
+                                                )
+                                            })}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
                             </Table>
-                             <ScrollArea className="h-[65vh]">
-                                <Table>
-                                    <TableBody>
-                                        {details.entries.map((entry, index) => (
-                                            <TableRow key={entry.id}>
-                                                <TableCell className="w-[50px] border-r">{index + 1}</TableCell>
-                                                {headers.map(header => {
-                                                    const cellValue = entry.data[header];
-                                                    const isRefTable = details.referenceTables.some(t => t.name === cellValue);
-
-                                                    return (
-                                                        <TableCell key={`${entry.id}-${header}`} className="border-r last:border-r-0 align-top">
-                                                            {isRefTable ? (
-                                                                <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
-                                                                    {cellValue}
-                                                                </Button>
-                                                            ) : (
-                                                                cellValue
-                                                            )}
-                                                        </TableCell>
-                                                    )
-                                                })}
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </ScrollArea>
-                         </div>
+                        </ScrollArea>
                     </CardContent>
                 </Card>
             </div>
