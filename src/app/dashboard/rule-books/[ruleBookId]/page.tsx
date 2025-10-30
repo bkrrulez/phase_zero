@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -84,14 +85,20 @@ export default function RuleBookDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-1/4" />
-        <Skeleton className="h-4 w-1/2" />
+        <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10" />
+            <div>
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64 mt-1" />
+            </div>
+        </div>
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-4 w-1/2" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-72 w-full" />
           </CardContent>
         </Card>
       </div>
@@ -117,10 +124,6 @@ export default function RuleBookDetailPage() {
     if (indexB === -1) return -1;
     return indexA - indexB;
   });
-
-  const isColumnFreeText = (header: string) => {
-    return header.toLowerCase() === 'text';
-  };
 
   return (
     <>
@@ -148,70 +151,62 @@ export default function RuleBookDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col overflow-hidden">
-            {/* Outer container for horizontal scrolling */}
-            <div className="overflow-x-auto">
-              {/* Inner container for vertical scrolling */}
-              <div className="max-h-[calc(100vh-22rem)] overflow-y-auto">
-                <Table className="min-w-full border-collapse">
-                  <TableHeader className="sticky top-0 z-20 bg-card shadow-sm">
-                    <TableRow>
-                      <TableHead className="sticky left-0 w-[50px] border-r bg-card z-30">
-                        Sl No.
+            <div className="relative h-full overflow-auto">
+              <Table className="min-w-full border-collapse">
+                <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
+                  <TableRow>
+                    <TableHead className="sticky left-0 w-16 border-r bg-card z-20">
+                      Sl No.
+                    </TableHead>
+                    {headers.map((header) => (
+                      <TableHead
+                        key={header}
+                        className={cn(
+                          'border-r last:border-r-0 whitespace-nowrap bg-card'
+                        )}
+                      >
+                        {header}
                       </TableHead>
-                      {headers.map((header) => (
-                        <TableHead
-                          key={header}
-                          className={cn(
-                            'border-r last:border-r-0 whitespace-nowrap bg-card',
-                            isColumnFreeText(header) && 'min-w-[60ch]'
-                          )}
-                        >
-                          {header}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {details.entries.map((entry, index) => (
-                      <TableRow key={entry.id}>
-                        <TableCell className="sticky left-0 w-[50px] border-r bg-card z-10">
-                          {index + 1}
-                        </TableCell>
-                        {headers.map((header) => {
-                          const cellValue = entry.data[header];
-                          const isRefTable = details.referenceTables.some(
-                            (t) => t.name === cellValue
-                          );
-
-                          return (
-                            <TableCell
-                              key={`${entry.id}-${header}`}
-                              className={cn(
-                                'border-r last:border-r-0 align-top break-words',
-                                isColumnFreeText(header)
-                                  ? 'min-w-[60ch] whitespace-pre-wrap'
-                                  : 'break-words'
-                              )}
-                            >
-                              {isRefTable ? (
-                                <Button
-                                  variant="link"
-                                  className="p-0 h-auto"
-                                  onClick={() => handleOpenReferenceTable(cellValue)}
-                                >
-                                  {cellValue}
-                                </Button>
-                              ) : (
-                                cellValue
-                              )}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {details.entries.map((entry, index) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="sticky left-0 w-16 border-r bg-card z-10">
+                        {index + 1}
+                      </TableCell>
+                      {headers.map((header) => {
+                        const cellValue = entry.data[header];
+                        const isRefTable = details.referenceTables.some(
+                          (t) => t.name === cellValue
+                        );
+
+                        return (
+                          <TableCell
+                            key={`${entry.id}-${header}`}
+                            className={cn(
+                              'border-r last:border-r-0 align-top whitespace-nowrap',
+                            )}
+                          >
+                            {isRefTable ? (
+                              <Button
+                                variant="link"
+                                className="p-0 h-auto"
+                                onClick={() => handleOpenReferenceTable(cellValue)}
+                              >
+                                {cellValue}
+                              </Button>
+                            ) : (
+                              String(cellValue)
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

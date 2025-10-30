@@ -338,8 +338,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <div className="flex-1 overflow-auto">
-            <main className="p-4 sm:p-6 lg:p-8 h-full">{children}</main>
+        <div className="flex-1 flex flex-col overflow-auto">
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 h-full">{children}</main>
              <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
                 Created by Bikramjit Chowdhury
             </footer>
