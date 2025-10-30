@@ -84,11 +84,17 @@ export default function RuleBooksPage() {
                     if (cellValue && typeof cellValue === 'string') {
                         const trimmedCellValue = cellValue.trim();
                         if (trimmedCellValue) {
-                            if (!workbook.SheetNames.includes(trimmedCellValue)) {
+                             const sheetExists = workbook.SheetNames.some(
+                                (sheetName) => sheetName.toLowerCase() === trimmedCellValue.toLowerCase()
+                            );
+                            if (!sheetExists) {
                                throw new Error(`Table sheet '${trimmedCellValue}' missing in the uploaded file. Please check.`);
                             }
                             if (!referenceTables[trimmedCellValue]) {
-                                const tableSheet = workbook.Sheets[trimmedCellValue];
+                                const actualSheetName = workbook.SheetNames.find(
+                                    (sn) => sn.toLowerCase() === trimmedCellValue.toLowerCase()
+                                )!;
+                                const tableSheet = workbook.Sheets[actualSheetName];
                                 referenceTables[trimmedCellValue] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
                             }
                         }
