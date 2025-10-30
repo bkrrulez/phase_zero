@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { useParams } from 'next/navigation';
 import { getRuleBookDetails } from '../actions';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,17 +21,22 @@ interface RuleBookDetails {
     referenceTables: ReferenceTable[];
 }
 
-export default function RuleBookDetailPage({ params }: { params: { ruleBookId: string } }) {
+export default function RuleBookDetailPage() {
+    const params = useParams();
+    const ruleBookId = params.ruleBookId as string;
+    
     const [details, setDetails] = React.useState<RuleBookDetails | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
 
     React.useEffect(() => {
+        if (!ruleBookId) return;
+
         async function fetchDetails() {
             try {
                 setLoading(true);
-                const fetchedDetails = await getRuleBookDetails(params.ruleBookId);
+                const fetchedDetails = await getRuleBookDetails(ruleBookId);
                 setDetails(fetchedDetails);
             } catch (err) {
                 setError('Failed to load rule book details.');
@@ -40,7 +46,7 @@ export default function RuleBookDetailPage({ params }: { params: { ruleBookId: s
             }
         }
         fetchDetails();
-    }, [params.ruleBookId]);
+    }, [ruleBookId]);
 
     const handleOpenReferenceTable = (tableName: string) => {
         const table = details?.referenceTables.find(t => t.name === tableName);
