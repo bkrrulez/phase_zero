@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -82,7 +83,7 @@ export default function RuleBookDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6 flex flex-col">
+      <div className="space-y-6 flex flex-col h-full">
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
           <div>
@@ -124,7 +125,7 @@ export default function RuleBookDetailPage() {
 
   return (
     <>
-      <div className="flex flex-col space-y-6">
+      <div className="flex flex-col space-y-6 h-full">
         <div className="shrink-0">
           <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="icon">
