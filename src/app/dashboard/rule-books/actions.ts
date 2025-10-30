@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -87,4 +88,37 @@ export async function deleteRuleBook(ruleBookId: string): Promise<void> {
         client.release();
     }
     revalidatePath('/dashboard/rule-books');
+}
+
+
+export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook: RuleBook, entries: RuleBookEntry[], referenceTables: ReferenceTable[] } | null> {
+    const client = await db.connect();
+    try {
+        const ruleBookRes = await client.query('SELECT * FROM rule_books WHERE id = $1', [ruleBookId]);
+        if (ruleBookRes.rows.length === 0) {
+            return null;
+        }
+
+        const entriesRes = await client.query('SELECT * FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
+        const refTablesRes = await client.query('SELECT * FROM reference_tables WHERE rule_book_id = $1', [ruleBookId]);
+
+        return {
+            ruleBook: {
+                id: ruleBookRes.rows[0].id,
+                name: ruleBookRes.rows[0].name,
+                importedAt: new Date(ruleBookRes.rows[0].imported_at),
+                rowCount: ruleBookRes.rows[0].row_count,
+            },
+            entries: entriesRes.rows,
+            referenceTables: refTablesRes.rows.map(row => ({
+                ...row,
+                data: JSON.parse(row.data)
+            })),
+        };
+    } catch (error) {
+        console.error(`Error getting details for rule book with ID ${ruleBookId}:`, error);
+        throw new Error('Failed to get rule book details.');
+    } finally {
+        client.release();
+    }
 }

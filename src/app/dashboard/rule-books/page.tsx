@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -15,6 +16,7 @@ import { type RuleBook, type RuleBookEntry } from '@/lib/types';
 import { getRuleBooks, addRuleBook, deleteRuleBook } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx-js-style';
+import { useRouter } from 'next/navigation';
 
 const defaultImportSettings: ImportSetting[] = [
   { id: 'col-1', name: 'Gliederung', isMandatory: true, type: 'Free Text', values: '' },
@@ -31,6 +33,7 @@ export default function RuleBooksPage() {
   const { currentUser } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
+  const router = useRouter();
   
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isImportOpen, setIsImportOpen] = React.useState(false);
@@ -90,9 +93,7 @@ export default function RuleBooksPage() {
                 }
             }
 
-            const entries: RuleBookEntry[] = mainData.map(row => ({
-                id: '', // Will be generated on the server
-                ruleBookId: '', // Will be assigned on the server
+            const entries: Omit<RuleBookEntry, 'id' | 'ruleBookId'>[] = mainData.map(row => ({
                 data: row,
             }));
 
@@ -122,6 +123,10 @@ export default function RuleBooksPage() {
       await fetchRuleBooks();
       toast({ title: "Rule Book Deleted", variant: "destructive" });
   }
+
+  const handleRowClick = (bookId: string) => {
+    router.push(`/dashboard/rule-books/${bookId}`);
+  };
 
   if (currentUser?.role !== 'Super Admin') {
     return (
@@ -170,17 +175,17 @@ export default function RuleBooksPage() {
               <TableBody>
                 {ruleBooks.length > 0 ? (
                   ruleBooks.map((book) => (
-                    <TableRow key={book.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableRow key={book.id} onClick={() => handleRowClick(book.id)} className="cursor-pointer hover:bg-muted/50">
                       <TableCell className="font-medium">{book.name}</TableCell>
                       <TableCell>{format(new Date(book.importedAt), 'PPpp')}</TableCell>
                       <TableCell>{book.rowCount}</TableCell>
                       <TableCell className="text-right">
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4"/></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => handleDeleteRuleBook(book.id)} className="text-destructive focus:text-destructive">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteRuleBook(book.id); }} className="text-destructive focus:text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4"/> Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
