@@ -77,14 +77,14 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex justify-between items-start pr-12">
+            <div className='space-y-1.5'>
                 <DialogTitle>Import Settings</DialogTitle>
                 <DialogDescription>
                 Configure the columns to be imported from your rule book files.
                 </DialogDescription>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={addNewSetting}>
+            <Button type="button" variant="outline" size="sm" onClick={addNewSetting} className='shrink-0'>
                 <PlusCircle className="mr-2 h-4 w-4"/> Add New
             </Button>
           </div>
