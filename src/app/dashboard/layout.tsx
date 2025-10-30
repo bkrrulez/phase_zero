@@ -289,8 +289,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between p-4 bg-card border-b sticky top-0 z-10">
+      <SidebarInset className="flex flex-col">
+        <header className="flex items-center justify-between p-4 bg-card border-b sticky top-0 z-10 shrink-0">
           <SidebarTrigger />
           <div className="flex items-center gap-4">
             <LanguageToggle />
@@ -341,10 +341,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex-1 overflow-auto">
             <main className="p-4 sm:p-6 lg:p-8 h-full">{children}</main>
+             <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
+                Created by Bikramjit Chowdhury
+            </footer>
         </div>
-        <footer className="p-4 text-center text-xs text-muted-foreground border-t">
-          Created by Bikramjit Chowdhury
-        </footer>
       </SidebarInset>
     </SidebarProvider>
   );
