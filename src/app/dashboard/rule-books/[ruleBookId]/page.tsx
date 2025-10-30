@@ -93,14 +93,13 @@ export default function RuleBookDetailPage() {
     
     const originalHeaders = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
-    // Sort headers according to the predefined order
-    const headers = originalHeaders.sort((a, b) => {
+    const headers = [...originalHeaders].sort((a, b) => {
         const indexA = columnOrder.indexOf(a);
         const indexB = columnOrder.indexOf(b);
-        if (indexA === -1 && indexB === -1) return a.localeCompare(b); // sort alphabetically if both not in order list
-        if (indexA === -1) return 1; // move items not in list to the end
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
         if (indexB === -1) return -1;
-        return indexA - indexB; // sort by index in order list
+        return indexA - indexB;
     });
 
     const isColumnFreeText = (header: string) => {
@@ -165,7 +164,7 @@ export default function RuleBookDetailPage() {
                                     <TableRow>
                                         <TableHead className="w-[50px] border-r">Sl No.</TableHead>
                                         {headers.map(header => (
-                                            <TableHead key={header} className={cn("border-r last:border-r-0", isColumnFreeText(header) && "w-[60ch]")}>{header}</TableHead>
+                                            <TableHead key={header} className={cn("border-r last:border-r-0", isColumnFreeText(header) && "min-w-[60ch]")}>{header}</TableHead>
                                         ))}
                                     </TableRow>
                                 </TableHeader>
@@ -178,7 +177,7 @@ export default function RuleBookDetailPage() {
                                                 const isRefTable = details.referenceTables.some(t => t.name === cellValue);
                                                 
                                                 return (
-                                                    <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top break-words", isColumnFreeText(header) && "w-[60ch]")}>
+                                                    <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top", isColumnFreeText(header) ? 'min-w-[60ch] break-words' : 'break-words')}>
                                                         {isRefTable ? (
                                                             <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
                                                                 {cellValue}
