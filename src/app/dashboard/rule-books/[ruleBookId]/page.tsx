@@ -110,14 +110,17 @@ export default function RuleBookDetailPage() {
     <>
       <div className="space-y-6 h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
           <Button asChild variant="outline" size="icon">
             <Link href="/dashboard/rule-books">
               <ArrowLeft className="h-4 w-4" />
               <span className="sr-only">Back</span>
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
+          <div>
+            <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
+            <p className="text-muted-foreground">Detailed view of the imported rule book.</p>
+          </div>
         </div>
 
         {/* Table */}
