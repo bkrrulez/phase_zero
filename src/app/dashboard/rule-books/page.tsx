@@ -64,21 +64,26 @@ export default function RuleBooksPage() {
             }
             
             const mainWorksheet = workbook.Sheets[mainSheetName];
-            const mainData: any[] = XLSX.utils.sheet_to_json(mainWorksheet, { defval: "" });
+            const sheetHeaders = (XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0] as string[]);
+            
+            // Normalize headers for validation
+            const normalizedSheetHeaders = sheetHeaders.map(h => h.trim().toLowerCase());
+            const normalizedMandatoryColumns = importSettings
+                .filter(s => s.isMandatory)
+                .map(s => s.name.toLowerCase());
 
-            // Validate headers
-            const headers = (XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0] as string[]).map(h => h.trim().toLowerCase());
-            const mandatoryColumns = importSettings.filter(s => s.isMandatory).map(s => s.name.toLowerCase());
-            const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
-
+            const missingColumns = normalizedMandatoryColumns.filter(col => !normalizedSheetHeaders.includes(col));
             if (missingColumns.length > 0) {
-                const originalCaseMissing = importSettings.filter(s => missingColumns.includes(s.name.toLowerCase())).map(s => s.name);
+                const originalCaseMissing = importSettings
+                    .filter(s => missingColumns.includes(s.name.toLowerCase()))
+                    .map(s => s.name);
                 throw new Error(`Missing mandatory columns in 'Main' sheet: ${originalCaseMissing.join(', ')}`);
             }
+
+            const mainData: any[] = XLSX.utils.sheet_to_json(mainWorksheet, { defval: "" });
             
-            // Validate table references
-            const tableColumnSetting = importSettings.find(s => s.type === 'Table');
             const referenceTables: Record<string, any[]> = {};
+            const tableColumnSetting = importSettings.find(s => s.type === 'Table');
             
             if (tableColumnSetting) {
                 for (const row of mainData) {
@@ -87,22 +92,14 @@ export default function RuleBooksPage() {
                          const tableNames = cellValue.split(',').map(name => name.trim());
                         
                         for (const tableName of tableNames) {
-                            if (tableName) {
-                                const sheetExists = workbook.SheetNames.some(
-                                    (sheetName) => sheetName.toLowerCase() === tableName.toLowerCase()
-                                );
-
-                                if (!sheetExists) {
+                            if (tableName && !referenceTables[tableName]) {
+                                const actualSheetName = workbook.SheetNames.find(sn => sn.toLowerCase() === tableName.toLowerCase());
+                                if (!actualSheetName) {
                                     throw new Error(`Table sheet '${tableName}' missing in the uploaded file. Please check.`);
                                 }
 
-                                if (!referenceTables[tableName]) {
-                                    const actualSheetName = workbook.SheetNames.find(
-                                        (sn) => sn.toLowerCase() === tableName.toLowerCase()
-                                    )!;
-                                    const tableSheet = workbook.Sheets[actualSheetName];
-                                    referenceTables[tableName] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
-                                }
+                                const tableSheet = workbook.Sheets[actualSheetName];
+                                referenceTables[tableName] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
                             }
                         }
                     }
