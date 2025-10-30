@@ -159,9 +159,9 @@ export default function RuleBookDetailPage() {
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <div className="relative h-[65vh] overflow-y-auto border rounded-md">
+                       <div className="relative h-[65vh] overflow-auto border rounded-md">
                             <Table>
-                                <TableHeader className="sticky top-0 bg-card z-10">
+                                <TableHeader className="sticky top-0 z-10 bg-card">
                                     <TableRow>
                                         <TableHead className="w-[50px] border-r">Sl No.</TableHead>
                                         {headers.map(header => (
