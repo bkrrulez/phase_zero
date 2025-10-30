@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen, Calendar, Users } from 'lucide-react';
 import { format } from 'date-fns';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReferenceTableDialog } from '../components/reference-table-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -44,7 +43,6 @@ export default function RuleBookDetailPage() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
-    const [importSettings, setImportSettings] = React.useState<any[]>([]);
 
 
     React.useEffect(() => {
@@ -150,7 +148,7 @@ export default function RuleBookDetailPage() {
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{format(details.ruleBook.importedAt, 'PPP')}</div>
+                            <div className="text-2xl font-bold">{format(details.ruleBook.importedAt, 'PP')}</div>
                         </CardContent>
                     </Card>
                 </div>
@@ -161,7 +159,7 @@ export default function RuleBookDetailPage() {
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                       <div className="relative h-[70vh] overflow-y-auto border rounded-md">
+                       <div className="relative h-[65vh] overflow-y-auto border rounded-md">
                             <Table>
                                 <TableHeader className="sticky top-0 bg-card z-10">
                                     <TableRow>
