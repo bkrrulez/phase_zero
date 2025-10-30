@@ -21,6 +21,18 @@ interface RuleBookDetails {
     referenceTables: ReferenceTable[];
 }
 
+// Define the desired order of columns
+const columnOrder = [
+    'Gliederung',
+    'Text',
+    'Nutzung',
+    'Spaltentyp',
+    'Erfüllbarkeit',
+    'Checkliste',
+    'Referenztabelle'
+];
+
+
 export default function RuleBookDetailPage() {
     const params = useParams();
     const ruleBookId = params.ruleBookId as string;
@@ -76,7 +88,17 @@ export default function RuleBookDetailPage() {
         return <div className="text-center p-8">Rule book not found.</div>;
     }
     
-    const headers = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
+    const originalHeaders = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
+    
+    // Sort headers according to the predefined order
+    const headers = originalHeaders.sort((a, b) => {
+        const indexA = columnOrder.indexOf(a);
+        const indexB = columnOrder.indexOf(b);
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b); // sort alphabetically if both not in order list
+        if (indexA === -1) return 1; // move items not in list to the end
+        if (indexB === -1) return -1;
+        return indexA - indexB; // sort by index in order list
+    });
 
     return (
         <>
