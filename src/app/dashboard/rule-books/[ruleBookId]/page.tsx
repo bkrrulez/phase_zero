@@ -126,13 +126,13 @@ export default function RuleBookDetailPage() {
           <Table className="min-w-max border-collapse">
             <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
               <TableRow>
-                <TableHead className="w-16 border-r bg-card z-20 sticky left-0">
+                <TableHead className="w-16 border-r">
                   Sl No.
                 </TableHead>
                 {headers.map((header) => (
                   <TableHead
                     key={header}
-                    className="border-r last:border-r-0 whitespace-nowrap bg-card px-4 py-2"
+                    className="border-r last:border-r-0 whitespace-nowrap px-4 py-2"
                   >
                     {header}
                   </TableHead>
@@ -142,7 +142,7 @@ export default function RuleBookDetailPage() {
             <TableBody>
               {details.entries.map((entry, index) => (
                 <TableRow key={entry.id}>
-                  <TableCell className="w-16 border-r bg-card z-10 sticky left-0">
+                  <TableCell className="w-16 border-r">
                     {index + 1}
                   </TableCell>
                   {headers.map((header) => {
