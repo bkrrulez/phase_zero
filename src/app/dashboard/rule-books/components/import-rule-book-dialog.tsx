@@ -43,6 +43,7 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      file: undefined,
     },
   });
 
