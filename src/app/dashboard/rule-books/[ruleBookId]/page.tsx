@@ -106,8 +106,6 @@ export default function RuleBookDetailPage() {
     });
 
     const isColumnFreeText = (header: string) => {
-      // This is a simplified check. In a real scenario, you would have access
-      // to the import settings to determine the column type.
       return header.toLowerCase() === 'text';
     };
 
@@ -162,19 +160,17 @@ export default function RuleBookDetailPage() {
                         <CardTitle>Rule Book Content</CardTitle>
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
-                    <CardContent className="table w-full border-collapse">
-                        <Table>
-                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px] border-r">Sl No.</TableHead>
-                                    {headers.map(header => (
-                                        <TableHead key={header} className={cn("border-r last:border-r-0", isColumnFreeText(header) && "max-w-[60ch]")}>{header}</TableHead>
-                                    ))}
-                                </TableRow>
-                            </TableHeader>
-                        </Table>
-                         <ScrollArea className="h-[65vh] w-full border rounded-md">
+                    <CardContent>
+                       <div className="relative h-[70vh] overflow-y-auto border rounded-md">
                             <Table>
+                                <TableHeader className="sticky top-0 bg-card z-10">
+                                    <TableRow>
+                                        <TableHead className="w-[50px] border-r">Sl No.</TableHead>
+                                        {headers.map(header => (
+                                            <TableHead key={header} className={cn("border-r last:border-r-0", isColumnFreeText(header) && "w-[60ch]")}>{header}</TableHead>
+                                        ))}
+                                    </TableRow>
+                                </TableHeader>
                                 <TableBody>
                                     {details.entries.map((entry, index) => (
                                         <TableRow key={entry.id}>
@@ -184,7 +180,7 @@ export default function RuleBookDetailPage() {
                                                 const isRefTable = details.referenceTables.some(t => t.name === cellValue);
                                                 
                                                 return (
-                                                    <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top break-words", isColumnFreeText(header) && "max-w-[60ch]")}>
+                                                    <TableCell key={`${entry.id}-${header}`} className={cn("border-r last:border-r-0 align-top break-words", isColumnFreeText(header) && "w-[60ch]")}>
                                                         {isRefTable ? (
                                                             <Button variant="link" className="p-0 h-auto" onClick={() => handleOpenReferenceTable(cellValue)}>
                                                                 {cellValue}
@@ -199,7 +195,7 @@ export default function RuleBookDetailPage() {
                                     ))}
                                 </TableBody>
                             </Table>
-                        </ScrollArea>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
