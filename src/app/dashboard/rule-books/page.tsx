@@ -108,10 +108,12 @@ export default function RuleBooksPage() {
             }
 
             const entries: Omit<RuleBookEntry, 'id' | 'ruleBookId'>[] = mainData.map(row => ({
-                data: row,
+                data: JSON.parse(JSON.stringify(row)),
             }));
+            
+            const plainReferenceTables = JSON.parse(JSON.stringify(referenceTables));
 
-            await addRuleBook({ name, entries, referenceTables });
+            await addRuleBook({ name, entries, referenceTables: plainReferenceTables });
             
             toast({ title: "Import Successful", description: `${name} with ${entries.length} rows has been imported.` });
             await fetchRuleBooks(); // Refresh the list
@@ -235,3 +237,5 @@ export default function RuleBooksPage() {
     </>
   );
 }
+
+    
