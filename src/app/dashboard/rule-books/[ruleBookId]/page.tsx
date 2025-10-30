@@ -9,7 +9,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -91,9 +90,8 @@ export default function RuleBookDetailPage() {
           </div>
         </div>
         <Card className="flex-1">
-          <CardHeader>
+           <CardHeader>
              <Skeleton className="h-6 w-1/3" />
-             <Skeleton className="h-4 w-1/2" />
            </CardHeader>
           <CardContent className="p-4">
             <Skeleton className="h-[50vh] w-full" />
