@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -292,7 +291,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <header className="flex items-center p-4 bg-card border-b sticky top-0 z-10 shrink-0">
           <SidebarTrigger />
-          <div className="flex items-center gap-4 flex-wrap justify-end ml-auto">
+          <div className="flex items-center gap-4 flex-wrap ml-auto">
             <LanguageToggle />
             <Popover open={isNotificationPopoverOpen} onOpenChange={setIsNotificationPopoverOpen}>
               <PopoverTrigger asChild>
