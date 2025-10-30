@@ -289,62 +289,64 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center p-4 bg-card border-b sticky top-0 z-10 shrink-0">
-          <SidebarTrigger />
-          <div className="flex items-center gap-4 flex-wrap ml-auto">
-            <LanguageToggle />
-            <Popover open={isNotificationPopoverOpen} onOpenChange={setIsNotificationPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  {totalUnreadCount > 0 && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                      {totalUnreadCount}
-                    </span>
-                  )}
-                  <span className="sr-only">Notifications</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-96 p-0">
-                <NotificationPopover onClose={() => setIsNotificationPopoverOpen(false)} />
-              </PopoverContent>
-            </Popover>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 p-1 h-auto">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={currentUser.avatar} alt={currentUser.name} data-ai-hint="person avatar"/>
-                    <AvatarFallback>{currentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-left hidden md:block">
-                    <p className="text-sm font-medium">{currentUser.name}</p>
-                    <p className="text-xs text-muted-foreground">{currentUser.role}</p>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile">{t('profile')}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                   <Link href="/dashboard/support">{t('support')}</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>{t('logout')}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-        <div className="flex-1 flex flex-col min-h-0">
-          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
-          <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
-            Created by Bikramjit Chowdhury
-          </footer>
+        <div className="flex flex-col h-full">
+            <header className="flex items-center p-4 bg-card border-b sticky top-0 z-10 shrink-0">
+                <SidebarTrigger />
+                <div className="flex items-center gap-4 flex-wrap ml-auto">
+                    <LanguageToggle />
+                    <Popover open={isNotificationPopoverOpen} onOpenChange={setIsNotificationPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="relative">
+                        <Bell className="h-5 w-5" />
+                        {totalUnreadCount > 0 && (
+                            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                            {totalUnreadCount}
+                            </span>
+                        )}
+                        <span className="sr-only">Notifications</span>
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-96 p-0">
+                        <NotificationPopover onClose={() => setIsNotificationPopoverOpen(false)} />
+                    </PopoverContent>
+                    </Popover>
+                    <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="flex items-center gap-2 p-1 h-auto">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src={currentUser.avatar} alt={currentUser.name} data-ai-hint="person avatar"/>
+                            <AvatarFallback>{currentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="text-left hidden md:block">
+                            <p className="text-sm font-medium">{currentUser.name}</p>
+                            <p className="text-xs text-muted-foreground">{currentUser.role}</p>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                        <Link href="/dashboard/profile">{t('profile')}</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                        <Link href="/dashboard/support">{t('support')}</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={logout}>{t('logout')}</DropdownMenuItem>
+                    </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </header>
+            <div className="flex-1 flex flex-col min-h-0">
+              <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+                  {children}
+              </main>
+              <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
+                  Created by Bikramjit Chowdhury
+              </footer>
+            </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

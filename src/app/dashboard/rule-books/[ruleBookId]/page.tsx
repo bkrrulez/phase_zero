@@ -78,11 +78,11 @@ export default function RuleBookDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6 flex flex-col h-full">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0">
           <Skeleton className="h-10 w-10" />
           <Skeleton className="h-8 w-48" />
         </div>
-        <Card className="flex-1 flex flex-col">
+        <Card className="flex-1 flex flex-col min-h-0">
           <CardContent className="flex-1 p-0 flex flex-col min-h-0">
              <Skeleton className="h-full w-full" />
           </CardContent>
@@ -110,7 +110,7 @@ export default function RuleBookDetailPage() {
     <>
       <div className="space-y-6 h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 shrink-0">
           <Button asChild variant="outline" size="icon">
             <Link href="/dashboard/rule-books">
               <ArrowLeft className="h-4 w-4" />
@@ -124,7 +124,7 @@ export default function RuleBookDetailPage() {
         </div>
 
         {/* Table */}
-        <Card className="flex-1 flex flex-col min-h-0">
+        <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <CardContent className="flex-1 p-0 flex flex-col min-h-0">
             <div className="overflow-auto min-h-0">
                 <Table className="min-w-max border-collapse">
