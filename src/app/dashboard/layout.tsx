@@ -289,10 +289,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="flex flex-col">
-        <header className="flex items-center justify-between p-4 bg-card border-b sticky top-0 z-10 shrink-0">
+      <SidebarInset>
+        <header className="flex items-center p-4 bg-card border-b sticky top-0 z-10 shrink-0">
           <SidebarTrigger />
-          <div className="flex items-center gap-4 flex-wrap justify-end">
+          <div className="flex items-center gap-4 flex-wrap justify-end ml-auto">
             <LanguageToggle />
             <Popover open={isNotificationPopoverOpen} onOpenChange={setIsNotificationPopoverOpen}>
               <PopoverTrigger asChild>
