@@ -338,11 +338,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <div className="flex-1 flex flex-col overflow-auto">
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 h-full">{children}</main>
-             <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
-                Created by Bikramjit Chowdhury
-            </footer>
+        <div className="flex-1 flex flex-col min-h-0">
+          <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+            {children}
+          </main>
+          <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
+            Created by Bikramjit Chowdhury
+          </footer>
         </div>
       </SidebarInset>
     </SidebarProvider>
@@ -359,29 +361,28 @@ function DataProviders({
     <LanguageProvider>
       <TeamsProvider>
         <ProjectsProvider>
-            <NotificationsProvider>
-              <PushMessagesProvider>
-                <ContractsProvider>
-                  <MembersProvider>
-                    <AuthProvider>
-                      <SystemLogProvider>
-                        <SettingsProvider>
-                          <TimeTrackingProvider>
-                            {children}
-                          </TimeTrackingProvider>
-                        </SettingsProvider>
-                      </SystemLogProvider>
-                    </AuthProvider>
-                  </MembersProvider>
-                </ContractsProvider>
-              </PushMessagesProvider>
-            </NotificationsProvider>
+          <NotificationsProvider>
+            <PushMessagesProvider>
+              <ContractsProvider>
+                <MembersProvider>
+                  <AuthProvider>
+                    <SystemLogProvider>
+                      <SettingsProvider>
+                        <TimeTrackingProvider>
+                          {children}
+                        </TimeTrackingProvider>
+                      </SettingsProvider>
+                    </SystemLogProvider>
+                  </AuthProvider>
+                </MembersProvider>
+              </ContractsProvider>
+            </PushMessagesProvider>
+          </NotificationsProvider>
         </ProjectsProvider>
       </TeamsProvider>
     </LanguageProvider>
-  )
+  );
 }
-
 
 export default function DashboardLayout({
   children,
@@ -394,3 +395,5 @@ export default function DashboardLayout({
     </DataProviders>
   );
 }
+
+
