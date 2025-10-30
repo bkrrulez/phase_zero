@@ -101,7 +101,7 @@ export default function RuleBookDetailPage() {
         if (indexB === -1) return -1;
         return indexA - indexB;
     });
-
+    
     const isColumnFreeText = (header: string) => {
       return header.toLowerCase() === 'text';
     };
@@ -157,8 +157,8 @@ export default function RuleBookDetailPage() {
                         <CardTitle>Rule Book Content</CardTitle>
                         <CardDescription>Content from the 'Main' sheet of the imported file.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                       <div className="relative h-[65vh] overflow-auto border rounded-md">
+                    <CardContent className="overflow-x-auto">
+                       <div className="relative h-[65vh] overflow-y-auto border rounded-md">
                             <Table>
                                 <TableHeader className="sticky top-0 z-10 bg-card">
                                     <TableRow>
