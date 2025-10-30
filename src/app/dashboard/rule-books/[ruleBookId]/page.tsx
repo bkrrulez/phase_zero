@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -182,8 +183,8 @@ export default function RuleBookDetailPage() {
               Content from the 'Main' sheet of the imported file.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0 sm:p-6 sm:pt-0">
-            <div className="relative h-full overflow-auto border rounded-md">
+          <CardContent className="flex-1 p-0 sm:p-6 sm:pt-0 overflow-hidden">
+            <div className="relative h-[65vh] overflow-auto border rounded-md">
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
                   <TableRow>
