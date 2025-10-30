@@ -24,7 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 const formSchema = z.object({
   name: z.string().min(1, 'Rule book name is required.'),
-  file: z.instanceof(FileList).refine(files => files.length > 0, 'A file is required.'),
+  file: z.instanceof(FileList).refine(files => files?.length > 0, 'A file is required.'),
 });
 
 interface ImportRuleBookDialogProps {
@@ -46,6 +46,8 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
       file: undefined,
     },
   });
+  
+  const fileRef = form.register("file");
 
   const checkFileHeaders = (file: File): Promise<number> => {
     return new Promise((resolve, reject) => {
@@ -140,24 +142,18 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="file"
-                render={({ field: { onChange, ...fieldProps } }) => (
-                  <FormItem>
-                    <FormLabel>Upload CSV/Excel</FormLabel>
-                    <FormControl>
-                      <Input
+              <FormItem>
+                <FormLabel>Upload CSV/Excel</FormLabel>
+                <FormControl>
+                    <Input
                         type="file"
                         accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                        onChange={(e) => onChange(e.target.files)}
-                        {...fieldProps}
+                        {...fileRef}
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                </FormControl>
+                <FormMessage>{form.formState.errors.file?.message}</FormMessage>
+              </FormItem>
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
