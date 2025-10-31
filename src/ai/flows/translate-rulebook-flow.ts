@@ -18,7 +18,7 @@ const translatePrompt = ai.definePrompt({
     name: 'translateRuleBookPrompt',
     input: { schema: RuleBookEntrySchema },
     output: { schema: TranslatedRuleBookEntrySchema },
-    model: 'googleai/gemini-2.0-flash',
+    model: 'googleai/gemini-pro',
     prompt: `Translate the following JSON object from German to English.
     
     Translate all keys and all string values to English.
@@ -26,7 +26,7 @@ const translatePrompt = ai.definePrompt({
     Return only the translated JSON object.
     
     Input:
-    {{{json input}}}
+    {{{json .}}}
     
     Output:
     `,
