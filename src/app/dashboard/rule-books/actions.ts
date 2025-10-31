@@ -4,7 +4,7 @@
 import { db } from '@/lib/db';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
-import { translateRuleBookEntry } from '@/ai/flows/translate-rulebook-flow';
+import { translateTextOffline } from '@/lib/offline-translator';
 
 
 type AddRuleBookPayload = {
@@ -161,7 +161,13 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
 
         for (const entry of entries) {
             const originalData = entry.data;
-            const translatedData = await translateRuleBookEntry(originalData);
+            const translatedData: Record<string, any> = {};
+
+            for(const key in originalData) {
+                const translatedKey = await translateTextOffline(key);
+                const translatedValue = await translateTextOffline(originalData[key]);
+                translatedData[translatedKey] = translatedValue;
+            }
             
             const translationId = `rbet-${Date.now()}-${Math.random()}`;
 
@@ -178,7 +184,7 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
         return { success: true };
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('AI translation failed:', error); // Log the specific error
+        console.error('Offline translation failed:', error); // Log the specific error
         throw new Error('Failed to translate and save rule book entries.');
     } finally {
         client.release();
