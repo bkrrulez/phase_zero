@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -99,6 +100,17 @@ export default function RuleBookDetailPage() {
     return indexA - indexB;
   });
 
+  const getColumnStyle = (header: string) => {
+    const style: React.CSSProperties = { minWidth: '150px' };
+    if (header === 'Text') {
+      style.minWidth = '400px';
+      style.maxWidth = '500px';
+    } else if (header === 'Gliederung') {
+      style.maxWidth = '400px';
+    }
+    return style;
+  };
+
   return (
     <>
       <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
@@ -140,7 +152,7 @@ export default function RuleBookDetailPage() {
                     className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-r whitespace-nowrap"
                     style={{ 
                       backgroundColor: 'hsl(var(--card))',
-                      minWidth: header === 'Text' ? '400px' : '150px'
+                      ...getColumnStyle(header)
                     }}
                   >
                     {header}
@@ -169,15 +181,12 @@ export default function RuleBookDetailPage() {
                     const isRefTable = details.referenceTables.some(
                       (t) => t.name === cellValue
                     );
-                    const isTextColumn = header === 'Text';
+                    const isTextColumn = header === 'Text' || header === 'Gliederung';
                     return (
                       <td
                         key={`${entry.id}-${header}`}
                         className="p-4 align-top border-r"
-                        style={{
-                          minWidth: isTextColumn ? '400px' : '150px',
-                          maxWidth: isTextColumn ? '400px' : 'none'
-                        }}
+                        style={getColumnStyle(header)}
                       >
                         {isRefTable ? (
                           <Button
