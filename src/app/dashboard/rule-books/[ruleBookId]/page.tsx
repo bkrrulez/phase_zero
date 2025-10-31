@@ -118,7 +118,7 @@ export default function RuleBookDetailPage() {
           </div>
         </div>
 
-        {/* Scrolling Container */}
+        {/* Scrolling Container for the table */}
         <div className="flex-1 relative overflow-auto border rounded-lg">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
@@ -187,3 +187,4 @@ export default function RuleBookDetailPage() {
     </>
   );
 }
+
