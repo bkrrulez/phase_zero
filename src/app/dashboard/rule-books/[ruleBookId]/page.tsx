@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { getRuleBookDetails } from '../actions';
+import { getRuleBookDetails, translateRuleBookOffline } from '../actions';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import {
   Table,
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 interface RuleBookDetails {
   ruleBook: RuleBook;
@@ -53,31 +54,63 @@ export default function RuleBookDetailPage() {
   const params = useParams();
   const ruleBookId = params.ruleBookId as string;
   const { t } = useLanguage();
+  const { toast } = useToast();
 
   const [details, setDetails] = React.useState<RuleBookDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [isTranslating, setIsTranslating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
   const [viewLanguage, setViewLanguage] = React.useState<'DE' | 'EN'>('DE');
 
-  React.useEffect(() => {
-    if (!ruleBookId) return;
-
-    async function fetchDetails() {
-      try {
-        setLoading(true);
-        const fetchedDetails = await getRuleBookDetails(ruleBookId);
-        setDetails(fetchedDetails);
-      } catch (err) {
-        setError(t('importErrorDesc'));
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchDetails = React.useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      const fetchedDetails = await getRuleBookDetails(id);
+      setDetails(fetchedDetails);
+      const hasTranslations = fetchedDetails?.entries.every(e => e.translation);
+      if (viewLanguage === 'EN' && !hasTranslations) {
+          setViewLanguage('DE');
       }
+    } catch (err) {
+      setError(t('importErrorDesc'));
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [t, viewLanguage]);
+
+  React.useEffect(() => {
+    if (ruleBookId) {
+      fetchDetails(ruleBookId);
+    }
+  }, [ruleBookId, fetchDetails]);
+
+  const handleLanguageToggle = async (checked: boolean) => {
+    const newLang = checked ? 'EN' : 'DE';
+    if (newLang === 'DE') {
+        setViewLanguage('DE');
+        return;
     }
 
-    fetchDetails();
-  }, [ruleBookId, t]);
+    const hasMissingTranslations = details?.entries.some(e => !e.translation);
+
+    if (newLang === 'EN' && hasMissingTranslations) {
+        setIsTranslating(true);
+        const result = await translateRuleBookOffline(ruleBookId);
+        setIsTranslating(false);
+
+        if (result.success) {
+            toast({ title: "Translation complete", description: "The rule book has been translated."});
+            await fetchDetails(ruleBookId);
+            setViewLanguage('EN');
+        } else {
+            toast({ variant: 'destructive', title: "Translation failed", description: result.error });
+        }
+    } else {
+        setViewLanguage('EN');
+    }
+  }
 
   const handleOpenReferenceTable = (tableName: string) => {
     const table = details?.referenceTables.find((t) => t.name === tableName);
@@ -119,10 +152,10 @@ export default function RuleBookDetailPage() {
   if (!details) return <div className="text-center p-8">{t('noRuleBooks')}</div>;
   
   const isEnglishView = viewLanguage === 'EN';
-  const hasTranslation = details.entries.length > 0 && details.entries[0].translation;
+  const hasTranslation = details.entries.length > 0 && details.entries.every(e => e.translation);
 
   const deHeaders = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
-  const enHeaders = hasTranslation ? Object.keys(details.entries[0].translation!) : [];
+  const enHeaders = hasTranslation && details.entries[0].translation ? Object.keys(details.entries[0].translation) : [];
 
   const getSortedHeaders = (headers: string[], order: string[]) => {
     return [...headers].sort((a, b) => {
@@ -142,7 +175,7 @@ export default function RuleBookDetailPage() {
   const originalHeadersSorted = getSortedHeaders(deHeaders, columnOrder);
   
   const headerMapping: Record<string, string> = isEnglishView && hasTranslation 
-    ? Object.fromEntries(originalHeadersSorted.map((deHeader, i) => [headers[i], deHeader]))
+    ? Object.fromEntries(originalHeadersSorted.map((deHeader, i) => [headers[i] || deHeader, deHeader]))
     : {};
 
   return (
@@ -167,9 +200,12 @@ export default function RuleBookDetailPage() {
             <Switch
               id="translation-toggle"
               checked={viewLanguage === 'EN'}
-              onCheckedChange={(checked) => setViewLanguage(checked ? 'EN' : 'DE')}
+              onCheckedChange={handleLanguageToggle}
+              disabled={isTranslating}
             />
-            <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'EN' ? 'text-foreground' : 'text-muted-foreground')}>EN (Translated)</Label>
+            <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'EN' ? 'text-foreground' : 'text-muted-foreground')}>
+                {isTranslating ? "Translating..." : "EN (Translated)"}
+            </Label>
           </div>
         </div>
 
@@ -232,7 +268,7 @@ export default function RuleBookDetailPage() {
                     const dataObject = isEnglishView && entry.translation ? entry.translation : entry.data;
                     const cellValue = String(dataObject[header] ?? '');
 
-                    const originalHeader = isEnglishView ? (headerMapping[header] || header) : header;
+                    const originalHeader = isEnglishView && hasTranslation ? (headerMapping[header] || header) : header;
                     const isTextColumn = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'].includes(originalHeader);
                     const isRefColumn = originalHeader === 'Referenztabelle';
                     

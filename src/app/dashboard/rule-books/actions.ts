@@ -4,10 +4,12 @@
 import { db } from '@/lib/db';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 type AddRuleBookPayload = {
     name: string;
-    entries: Omit<RuleBookEntry, 'id' | 'ruleBookId'>[];
+    entries: Omit<RuleBookEntry, 'id' | 'ruleBookId' | 'translation'>[];
     referenceTables: Record<string, any[]>;
 }
 
@@ -20,13 +22,11 @@ export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
         
         const ruleBookId = `rb-${Date.now()}`;
         
-        // Insert the rule book metadata
         await client.query(
             `INSERT INTO rule_books (id, name, imported_at, row_count) VALUES ($1, $2, NOW(), $3)`,
             [ruleBookId, name, entries.length]
         );
 
-        // Insert the main entries
         for (const entry of entries) {
             const entryId = `rbe-${Date.now()}-${Math.random()}`;
             await client.query(
@@ -35,7 +35,6 @@ export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
             );
         }
 
-        // Insert the reference tables
         for (const tableName in referenceTables) {
             const tableId = `reft-${Date.now()}-${Math.random()}`;
             const tableData = referenceTables[tableName];
@@ -77,7 +76,6 @@ export async function deleteRuleBook(ruleBookId: string): Promise<void> {
     const client = await db.connect();
      try {
         await client.query('BEGIN');
-        // cascade delete will handle entries and tables
         await client.query('DELETE FROM rule_books WHERE id = $1', [ruleBookId]);
         await client.query('COMMIT');
     } catch (error) {
@@ -105,6 +103,7 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
                 (SELECT translated_data FROM rule_book_entry_translations WHERE rule_book_entry_id = rbe.id AND language = 'en') as translation
             FROM rule_book_entries rbe 
             WHERE rbe.rule_book_id = $1
+            ORDER BY rbe.id
         `, [ruleBookId]);
         
         const refTablesRes = await client.query('SELECT * FROM reference_tables WHERE rule_book_id = $1', [ruleBookId]);
@@ -133,4 +132,58 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
     } finally {
         client.release();
     }
+}
+
+async function getTranslations(): Promise<Record<string, string>> {
+  const filePath = path.join(process.cwd(), 'src', 'lib', 'translations.json');
+  const jsonData = await fs.readFile(filePath, 'utf-8');
+  return JSON.parse(jsonData);
+}
+
+export async function translateRuleBookOffline(ruleBookId: string): Promise<{ success: boolean; error?: string }> {
+  const client = await db.connect();
+  try {
+    const translations = await getTranslations();
+    const entriesRes = await client.query('SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
+    const entries = entriesRes.rows;
+
+    if (entries.length === 0) {
+      return { success: true }; // Nothing to translate
+    }
+
+    await client.query('BEGIN');
+
+    for (const entry of entries) {
+      const originalData = entry.data;
+      const translatedData: Record<string, any> = {};
+
+      for (const key in originalData) {
+        const translatedKey = translations[key] || key;
+        const originalValue = originalData[key];
+        
+        if (typeof originalValue === 'string') {
+          translatedData[translatedKey] = translations[originalValue] || originalValue;
+        } else {
+          translatedData[translatedKey] = originalValue;
+        }
+      }
+      
+      await client.query(
+        `INSERT INTO rule_book_entry_translations (rule_book_entry_id, language, translated_data)
+         VALUES ($1, 'en', $2)
+         ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = $2`,
+        [entry.id, JSON.stringify(translatedData)]
+      );
+    }
+
+    await client.query('COMMIT');
+    revalidatePath(`/dashboard/rule-books/${ruleBookId}`);
+    return { success: true };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Offline translation failed:', error);
+    return { success: false, error: 'Failed to translate and save rule book.' };
+  } finally {
+    client.release();
+  }
 }
