@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -71,20 +70,6 @@ export default function RuleBookDetailPage() {
     if (table) setSelectedTable(table);
   };
 
-  const getColumnStyle = (header: string): React.CSSProperties => {
-    const style: React.CSSProperties = { minWidth: '150px' };
-
-    if (header === 'Text') {
-      style.maxWidth = '500px';
-    } else if (header === 'Gliederung') {
-      style.maxWidth = '400px';
-    } else {
-      style.maxWidth = '300px';
-    }
-
-    return style;
-  };
-
   if (loading) {
     return (
       <div className="space-y-6 flex flex-col h-full">
@@ -114,91 +99,135 @@ export default function RuleBookDetailPage() {
     return indexA - indexB;
   });
 
-  return (
-    <div className="h-full flex flex-col gap-6">
-      {/* Fixed Header */}
-      <div className="flex items-start gap-4 shrink-0">
-        <Button asChild variant="outline" size="icon">
-          <Link href="/dashboard/rule-books">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back</span>
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
-          <p className="text-muted-foreground">Detailed view of the imported rule book.</p>
-        </div>
-      </div>
+  const getColumnStyle = (header: string) => {
+    const style: React.CSSProperties = { minWidth: '150px' };
+    if (header === 'Text') {
+      style.minWidth = '400px';
+      style.maxWidth = '600px';
+    } else if (header === 'Gliederung') {
+      style.maxWidth = '400px';
+    } else {
+      style.maxWidth = '300px';
+    }
+    return style;
+  };
 
-      {/* Table Container with fixed height and scroll */}
-      <div className="flex-1 relative overflow-auto border rounded-lg">
-        <Table className="w-full border-collapse">
-          <TableHeader className="sticky top-0 z-10 bg-card">
-            <TableRow>
-              <TableHead 
-                className="sticky left-0 z-20 bg-card border-r"
-                style={{
-                  width: '80px',
-                  minWidth: '80px',
-                }}
-              >
-                Sl No.
-              </TableHead>
-              {headers.map((header) => (
-                <TableHead
-                  key={header}
-                  className="border-r whitespace-nowrap"
-                  style={getColumnStyle(header)}
-                >
-                  {header}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {details.entries.map((entry, index) => (
-              <TableRow key={entry.id} className="hover:bg-muted/50">
-                <TableCell 
-                  className="sticky left-0 z-10 bg-card group-hover:bg-muted/50 border-r"
-                  style={{
+  return (
+    <>
+      <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
+        {/* Fixed Header */}
+        <div className="flex items-start gap-4 shrink-0">
+          <Button asChild variant="outline" size="icon">
+            <Link href="/dashboard/rule-books">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Back</span>
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
+            <p className="text-muted-foreground">Detailed view of the imported rule book.</p>
+          </div>
+        </div>
+
+        {/* Table Container with fixed height and scroll */}
+        <div className="flex-1 border rounded-lg" style={{ overflow: 'auto', position: 'relative' }}>
+          <table className="w-full border-collapse" style={{ display: 'table', tableLayout: 'auto' }}>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 20, backgroundColor: 'hsl(var(--card))' }}>
+              <tr className="border-b">
+                <th 
+                  className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-r"
+                  style={{ 
+                    position: 'sticky', 
+                    left: 0, 
+                    zIndex: 30, 
+                    backgroundColor: 'hsl(var(--card))',
                     width: '80px',
-                    minWidth: '80px',
+                    minWidth: '80px'
                   }}
                 >
-                  {index + 1}
-                </TableCell>
-                {headers.map((header) => {
-                  const cellValue = entry.data[header];
-                  const isRefTable = details.referenceTables.some(
-                    (t) => t.name === cellValue
-                  );
-                  const isTextColumn = header === 'Text' || header === 'Gliederung';
-                  return (
-                    <TableCell
-                      key={`${entry.id}-${header}`}
-                      className="align-top border-r"
-                      style={getColumnStyle(header)}
-                    >
-                      {isRefTable ? (
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto whitespace-normal text-left"
-                          onClick={() => handleOpenReferenceTable(cellValue)}
-                        >
-                          {cellValue}
-                        </Button>
-                      ) : (
-                        <div className={isTextColumn ? "whitespace-normal" : "whitespace-nowrap"}>
-                          {String(cellValue ?? '')}
-                        </div>
-                      )}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  Sl No.
+                </th>
+                {headers.map((header) => (
+                  <th
+                    key={header}
+                    className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-r whitespace-nowrap"
+                    style={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      ...getColumnStyle(header)
+                    }}
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {details.entries.map((entry, index) => (
+                <tr key={entry.id} className="border-b transition-colors hover:bg-muted/50">
+                  <td 
+                    className="p-4 align-top border-r font-medium"
+                    style={{ 
+                      position: 'sticky', 
+                      left: 0, 
+                      zIndex: 10, 
+                      backgroundColor: 'hsl(var(--card))',
+                      width: '80px',
+                      minWidth: '80px'
+                    }}
+                  >
+                    {index + 1}
+                  </td>
+                  {headers.map((header) => {
+                    const cellValue = String(entry.data[header] ?? '');
+                    const isRefColumn = header === 'Referenztabelle';
+                    const columnsToWrap = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
+                    const shouldWrap = columnsToWrap.includes(header);
+
+                    return (
+                      <td
+                        key={`${entry.id}-${header}`}
+                        className="p-4 align-top border-r"
+                        style={getColumnStyle(header)}
+                      >
+                        {isRefColumn && cellValue.includes('Tabelle') ? (
+                          <div className="whitespace-normal">
+                            {cellValue.split(/, | /).map((part, partIndex) => {
+                              const trimmedPart = part.replace(/,$/, '');
+                              const isRefTable = details.referenceTables.some(
+                                (t) => t.name === trimmedPart
+                              );
+                              if (isRefTable) {
+                                return (
+                                  <React.Fragment key={partIndex}>
+                                    <Button
+                                      variant="link"
+                                      className="p-0 h-auto text-left"
+                                      onClick={() => handleOpenReferenceTable(trimmedPart)}
+                                    >
+                                      {trimmedPart}
+                                    </Button>
+                                    {partIndex < cellValue.split(/, | /).length - 1 ? ', ' : ''}
+                                  </React.Fragment>
+                                );
+                              }
+                              return (
+                                <span key={partIndex}>{part}{partIndex < cellValue.split(/, | /).length - 1 ? ' ' : ''}</span>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className={shouldWrap ? "whitespace-normal" : "whitespace-nowrap"}>
+                            {cellValue}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <ReferenceTableDialog
@@ -206,6 +235,6 @@ export default function RuleBookDetailPage() {
         onOpenChange={() => setSelectedTable(null)}
         table={selectedTable}
       />
-    </div>
+    </>
   );
 }
