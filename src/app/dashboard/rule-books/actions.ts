@@ -143,10 +143,13 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
 export async function translateRuleBookOffline(ruleBookId: string): Promise<{ success: boolean; error?: string }> {
     const client = await db.connect();
     try {
+        await client.query('BEGIN');
+        
         const entriesRes = await client.query('SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
         const entries = entriesRes.rows;
 
         if (entries.length === 0) {
+            await client.query('COMMIT');
             return { success: true };
         }
         
@@ -168,14 +171,16 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
                 [translationId, entry.id, JSON.stringify(translatedData)]
             );
         }
+        
+        await client.query('COMMIT');
 
         revalidatePath(`/dashboard/rule-books/${ruleBookId}`);
         return { success: true };
     } catch (error) {
-        console.error('AI translation failed:', error);
+        await client.query('ROLLBACK');
+        console.error('AI translation failed:', error); // Log the specific error
         throw new Error('Failed to translate and save rule book entries.');
     } finally {
         client.release();
     }
 }
-
