@@ -64,7 +64,7 @@ export default function RuleBooksPage() {
             
             const mainSheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'main');
             if (!mainSheetName) {
-                throw new Error("A sheet named 'Main' or 'main' was not found in the file.");
+                throw new Error(t('missingSheetError'));
             }
             
             const mainWorksheet = workbook.Sheets[mainSheetName];
@@ -80,7 +80,7 @@ export default function RuleBooksPage() {
                 const originalCaseMissing = importSettings
                     .filter(s => missingColumns.includes(s.name.toLowerCase()))
                     .map(s => s.name);
-                throw new Error(`Missing mandatory columns in 'Main' sheet: ${originalCaseMissing.join(', ')}`);
+                throw new Error(t('missingColumnsError', { columns: originalCaseMissing.join(', ') }));
             }
 
             const mainData: any[] = XLSX.utils.sheet_to_json(mainWorksheet, { defval: "" });
@@ -98,7 +98,7 @@ export default function RuleBooksPage() {
                             if (tableName && !referenceTables[tableName]) {
                                 const actualSheetName = workbook.SheetNames.find(sn => sn.toLowerCase() === tableName.toLowerCase());
                                 if (!actualSheetName) {
-                                    throw new Error(`Table sheet '${tableName}' missing in the uploaded file. Please check.`);
+                                    throw new Error(t('missingTableSheetError', { name: tableName }));
                                 }
 
                                 const tableSheet = workbook.Sheets[actualSheetName];
@@ -117,15 +117,15 @@ export default function RuleBooksPage() {
 
             await addRuleBook({ name, entries: plainEntries, referenceTables: plainReferenceTables });
             
-            toast({ title: "Import Successful", description: `${name} with ${plainEntries.length} rows has been imported.` });
+            toast({ title: t('importSuccess'), description: t('importSuccessDesc', { name, count: plainEntries.length }) });
             await fetchRuleBooks(); // Refresh the list
             setIsImportOpen(false);
 
         } catch (error: any) {
             toast({
                 variant: 'destructive',
-                title: 'Import Failed',
-                description: error.message || 'An unexpected error occurred during import.',
+                title: t('importFailed'),
+                description: error.message || t('importErrorDesc'),
             });
         }
     };
@@ -139,7 +139,7 @@ export default function RuleBooksPage() {
   const handleDeleteRuleBook = async (bookId: string) => {
       await deleteRuleBook(bookId);
       await fetchRuleBooks();
-      toast({ title: "Rule Book Deleted", variant: "destructive" });
+      toast({ title: t('ruleBookDeleted'), variant: "destructive" });
   }
 
   const handleRowClick = (bookId: string) => {
@@ -163,31 +163,31 @@ export default function RuleBooksPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">{t('ruleBooks')}</h1>
-            <p className="text-muted-foreground">Import and manage rule books for your projects.</p>
+            <p className="text-muted-foreground">{t('ruleBooksSubtitle')}</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
-              <Settings className="mr-2 h-4 w-4" /> Import Settings
+              <Settings className="mr-2 h-4 w-4" /> {t('importSettings')}
             </Button>
             <Button onClick={() => setIsImportOpen(true)}>
-              <UploadCloud className="mr-2 h-4 w-4" /> Import Rule Book
+              <UploadCloud className="mr-2 h-4 w-4" /> {t('importRuleBook')}
             </Button>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Imported Rule Books</CardTitle>
-            <CardDescription>A list of all imported rule books.</CardDescription>
+            <CardTitle>{t('importedRuleBooks')}</CardTitle>
+            <CardDescription>{t('importedRuleBooksDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Rule Book Name</TableHead>
-                  <TableHead>Import Date</TableHead>
-                  <TableHead>Rows</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('ruleBookName')}</TableHead>
+                  <TableHead>{t('importDate')}</TableHead>
+                  <TableHead>{t('rows')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -213,7 +213,7 @@ export default function RuleBooksPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteRuleBook(book.id); }} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                    <Trash2 className="mr-2 h-4 w-4"/> {t('delete')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -223,7 +223,7 @@ export default function RuleBooksPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                      No rule books have been imported yet.
+                      {t('noRuleBooks')}
                     </TableCell>
                   </TableRow>
                 )}

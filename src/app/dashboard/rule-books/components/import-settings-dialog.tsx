@@ -20,10 +20,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const importSettingSchema = z.object({
     id: z.string(),
-    name: z.string().min(1, 'Column name is required.'),
+    name: z.string().min(1, 'columnNameRequired'),
     isMandatory: z.boolean(),
     type: z.enum(['Free Text', 'Drop Down', 'Table']),
     values: z.string().optional(),
@@ -31,7 +32,18 @@ const importSettingSchema = z.object({
 
 const formSchema = z.object({
   settings: z.array(importSettingSchema),
+}).refine(data => {
+  for (const setting of data.settings) {
+    if (setting.type === 'Drop Down' && !setting.values) {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: 'valuesRequired',
+  path: ['settings'], // This might not point to a specific field, but it's a form-level error.
 });
+
 
 export type ImportSetting = z.infer<typeof importSettingSchema>;
 
@@ -43,6 +55,7 @@ interface ImportSettingsDialogProps {
 }
 
 export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }: ImportSettingsDialogProps) {
+  const { t } = useLanguage();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -79,13 +92,13 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
         <DialogHeader>
           <div className="flex justify-between items-start pr-12">
             <div className='space-y-1.5'>
-                <DialogTitle>Import Settings</DialogTitle>
+                <DialogTitle>{t('importSettingsTitle')}</DialogTitle>
                 <DialogDescription>
-                Configure the columns to be imported from your rule book files.
+                {t('importSettingsDesc')}
                 </DialogDescription>
             </div>
             <Button type="button" variant="outline" size="sm" onClick={addNewSetting} className='shrink-0'>
-                <PlusCircle className="mr-2 h-4 w-4"/> Add New
+                <PlusCircle className="mr-2 h-4 w-4"/> {t('addNew')}
             </Button>
           </div>
         </DialogHeader>
@@ -95,11 +108,11 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[250px]">Column Name</TableHead>
-                    <TableHead className="w-[120px] text-center">Mandatory</TableHead>
-                    <TableHead className="w-[180px]">Column Type</TableHead>
-                    <TableHead>Values</TableHead>
-                    <TableHead className="w-[80px] text-right">Action</TableHead>
+                    <TableHead className="w-[250px]">{t('columnName')}</TableHead>
+                    <TableHead className="w-[120px] text-center">{t('mandatory')}</TableHead>
+                    <TableHead className="w-[180px]">{t('columnType')}</TableHead>
+                    <TableHead>{t('values')}</TableHead>
+                    <TableHead className="w-[80px] text-right">{t('action')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -137,9 +150,9 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Free Text">Free Text</SelectItem>
-                                            <SelectItem value="Drop Down">Drop Down</SelectItem>
-                                            <SelectItem value="Table">Table</SelectItem>
+                                            <SelectItem value="Free Text">{t('freeText')}</SelectItem>
+                                            <SelectItem value="Drop Down">{t('dropDown')}</SelectItem>
+                                            <SelectItem value="Table">{t('table')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 )}
@@ -167,11 +180,12 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                 </TableBody>
               </Table>
             </div>
+            {form.formState.errors.settings && <p className="text-sm font-medium text-destructive mt-2">{t(form.formState.errors.settings.message as any)}</p>}
             <DialogFooter className="pt-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
-              <Button type="submit">Save Settings</Button>
+              <Button type="submit">{t('saveSettings')}</Button>
             </DialogFooter>
           </form>
         </Form>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -55,7 +56,7 @@ export default function RuleBookDetailPage() {
         const fetchedDetails = await getRuleBookDetails(ruleBookId);
         setDetails(fetchedDetails);
       } catch (err) {
-        setError('Failed to load rule book details.');
+        setError(t('importErrorDesc'));
         console.error(err);
       } finally {
         setLoading(false);
@@ -63,11 +64,24 @@ export default function RuleBookDetailPage() {
     }
 
     fetchDetails();
-  }, [ruleBookId]);
+  }, [ruleBookId, t]);
 
   const handleOpenReferenceTable = (tableName: string) => {
     const table = details?.referenceTables.find((t) => t.name === tableName);
     if (table) setSelectedTable(table);
+  };
+
+  const getColumnStyle = (header: string): React.CSSProperties => {
+    const style: React.CSSProperties = { minWidth: '150px' };
+    if (header === 'Text') {
+      style.minWidth = '400px';
+      style.maxWidth = '600px';
+    } else if (header === 'Gliederung') {
+      style.maxWidth = '400px';
+    } else {
+      style.maxWidth = '300px';
+    }
+    return style;
   };
 
   if (loading) {
@@ -85,7 +99,7 @@ export default function RuleBookDetailPage() {
   }
 
   if (error) return <div className="text-destructive text-center p-8">{error}</div>;
-  if (!details) return <div className="text-center p-8">Rule book not found.</div>;
+  if (!details) return <div className="text-center p-8">{t('noRuleBooks')}</div>;
 
   const originalHeaders =
     details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
@@ -99,19 +113,6 @@ export default function RuleBookDetailPage() {
     return indexA - indexB;
   });
 
-  const getColumnStyle = (header: string) => {
-    const style: React.CSSProperties = { minWidth: '150px' };
-    if (header === 'Text') {
-      style.minWidth = '400px';
-      style.maxWidth = '600px';
-    } else if (header === 'Gliederung') {
-      style.maxWidth = '400px';
-    } else {
-      style.maxWidth = '300px';
-    }
-    return style;
-  };
-
   return (
     <>
       <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
@@ -120,12 +121,12 @@ export default function RuleBookDetailPage() {
           <Button asChild variant="outline" size="icon">
             <Link href="/dashboard/rule-books">
               <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back</span>
+              <span className="sr-only">{t('back')}</span>
             </Link>
           </Button>
           <div>
             <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
-            <p className="text-muted-foreground">Detailed view of the imported rule book.</p>
+            <p className="text-muted-foreground">{t('ruleBookDetailsDesc')}</p>
           </div>
         </div>
 
@@ -145,7 +146,7 @@ export default function RuleBookDetailPage() {
                     minWidth: '80px'
                   }}
                 >
-                  Sl No.
+                  {t('serialNumber')}
                 </th>
                 {headers.map((header) => (
                   <th
@@ -179,9 +180,8 @@ export default function RuleBookDetailPage() {
                   </td>
                   {headers.map((header) => {
                     const cellValue = String(entry.data[header] ?? '');
+                    const isTextColumn = header === 'Text' || header === 'Gliederung' || header === 'Nutzung' || header === 'Spaltentyp' || header === 'Erfüllbarkeit' || header === 'Checkliste';
                     const isRefColumn = header === 'Referenztabelle';
-                    const columnsToWrap = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
-                    const shouldWrap = columnsToWrap.includes(header);
 
                     return (
                       <td
@@ -216,7 +216,7 @@ export default function RuleBookDetailPage() {
                             })}
                           </div>
                         ) : (
-                          <div className={shouldWrap ? "whitespace-normal" : "whitespace-nowrap"}>
+                          <div className={isTextColumn ? "whitespace-normal" : "whitespace-nowrap"}>
                             {cellValue}
                           </div>
                         )}

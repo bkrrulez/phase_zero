@@ -12,7 +12,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { type ReferenceTable } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ReferenceTableDialogProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ interface ReferenceTableDialogProps {
 }
 
 export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceTableDialogProps) {
+    const { t } = useLanguage();
     if (!table) return null;
 
     const headers = table.data.length > 0 ? Object.keys(table.data[0]) : [];
@@ -29,9 +30,9 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Reference: {table.name}</DialogTitle>
+                    <DialogTitle>{t('referenceTableTitle', { name: table.name })}</DialogTitle>
                     <DialogDescription>
-                        Detailed information from the referenced table.
+                        {t('referenceTableDesc')}
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] w-full">

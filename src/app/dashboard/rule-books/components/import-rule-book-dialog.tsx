@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { type ImportSetting } from './import-settings-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Rule book name is required.'),
@@ -35,6 +36,7 @@ interface ImportRuleBookDialogProps {
 }
 
 export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSettings }: ImportRuleBookDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isConfirming, setIsConfirming] = React.useState(false);
   const [importData, setImportData] = React.useState<{ name: string; file: File, rowCount: number } | null>(null);
@@ -64,13 +66,13 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
             const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
 
             if (missingColumns.length > 0) {
-                reject(`Missing mandatory columns: ${missingColumns.join(', ')}`);
+                reject(t('missingColumnsError', { columns: missingColumns.join(', ') }));
             } else {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
                 resolve(jsonData.length);
             }
         };
-        reader.onerror = () => reject('Failed to read file.');
+        reader.onerror = () => reject(t('importFailed'));
 
         if (file.type.includes('csv')) {
             Papa.parse(file, {
@@ -80,7 +82,7 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
                     const headers = results.meta.fields || [];
                     const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
                     if (missingColumns.length > 0) {
-                        reject(`Missing mandatory columns: ${missingColumns.join(', ')}`);
+                        reject(t('missingColumnsError', { columns: missingColumns.join(', ') }));
                     } else {
                         resolve(results.data.length);
                     }
@@ -102,8 +104,8 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
     } catch (error) {
         toast({
             variant: 'destructive',
-            title: 'Import Error',
-            description: typeof error === 'string' ? error : 'An unexpected error occurred.',
+            title: t('importError'),
+            description: typeof error === 'string' ? error : t('importErrorDesc'),
         });
     }
   };
@@ -122,9 +124,9 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import Rule Book</DialogTitle>
+            <DialogTitle>{t('importRuleBookTitle')}</DialogTitle>
             <DialogDescription>
-              Provide a name for the rule book and upload the file.
+              {t('importRuleBookDesc')}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -134,7 +136,7 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rule Book Name</FormLabel>
+                    <FormLabel>{t('ruleBookNameLabel')}</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., OIB-Richtlinie 2" {...field} />
                     </FormControl>
@@ -143,7 +145,7 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
                 )}
               />
               <FormItem>
-                <FormLabel>Upload CSV/Excel</FormLabel>
+                <FormLabel>{t('ruleBookFileLabel')}</FormLabel>
                 <FormControl>
                     <Input
                         type="file"
@@ -156,9 +158,9 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
-                <Button type="submit">Import</Button>
+                <Button type="submit">{t('import')}</Button>
               </DialogFooter>
             </form>
           </Form>
@@ -168,14 +170,14 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Import</AlertDialogTitle>
+                <AlertDialogTitle>{t('confirmImport')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {importData?.rowCount} rows will be imported from the file. Do you want to continue?
+                    {t('confirmImportDesc', { count: importData?.rowCount || 0 })}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setImportData(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmImport}>Continue</AlertDialogAction>
+                <AlertDialogCancel onClick={() => setImportData(null)}>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmImport}>{t('confirm')}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
