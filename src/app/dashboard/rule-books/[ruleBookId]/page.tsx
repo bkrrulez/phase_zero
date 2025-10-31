@@ -73,14 +73,15 @@ export default function RuleBookDetailPage() {
 
   const getColumnStyle = (header: string): React.CSSProperties => {
     const style: React.CSSProperties = { minWidth: '150px' };
+
     if (header === 'Text') {
-      style.minWidth = '400px';
-      style.maxWidth = '600px';
+      style.maxWidth = '500px';
     } else if (header === 'Gliederung') {
       style.maxWidth = '400px';
     } else {
       style.maxWidth = '300px';
     }
+
     return style;
   };
 
