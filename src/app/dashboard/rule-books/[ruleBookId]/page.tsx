@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -102,7 +101,7 @@ export default function RuleBookDetailPage() {
 
   return (
     <>
-      <div className="h-full flex flex-col gap-6">
+      <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Fixed Header */}
         <div className="flex items-start gap-4 shrink-0">
           <Button asChild variant="outline" size="icon">
@@ -118,32 +117,53 @@ export default function RuleBookDetailPage() {
         </div>
 
         {/* Table Container with fixed height and scroll */}
-        <div className="relative flex-1 overflow-auto border rounded-lg">
-          <Table>
-            <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
-              <TableRow>
-                <TableHead className="sticky left-0 bg-card border-r w-[80px]">
+        <div className="flex-1 border rounded-lg" style={{ overflow: 'auto', position: 'relative' }}>
+          <table className="w-full border-collapse" style={{ display: 'table', tableLayout: 'auto' }}>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 20, backgroundColor: 'hsl(var(--card))' }}>
+              <tr className="border-b">
+                <th 
+                  className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-r"
+                  style={{ 
+                    position: 'sticky', 
+                    left: 0, 
+                    zIndex: 30, 
+                    backgroundColor: 'hsl(var(--card))',
+                    width: '80px',
+                    minWidth: '80px'
+                  }}
+                >
                   Sl No.
-                </TableHead>
+                </th>
                 {headers.map((header) => (
-                  <TableHead
+                  <th
                     key={header}
-                    className={cn(
-                      "whitespace-nowrap border-r",
-                      header === 'Text' ? 'min-w-[400px]' : 'min-w-[150px]'
-                    )}
+                    className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-r whitespace-nowrap"
+                    style={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      minWidth: header === 'Text' ? '400px' : '150px'
+                    }}
                   >
                     {header}
-                  </TableHead>
+                  </th>
                 ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+              </tr>
+            </thead>
+            <tbody>
               {details.entries.map((entry, index) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="sticky left-0 bg-card border-r font-medium w-[80px]">
+                <tr key={entry.id} className="border-b transition-colors hover:bg-muted/50">
+                  <td 
+                    className="p-4 align-top border-r font-medium"
+                    style={{ 
+                      position: 'sticky', 
+                      left: 0, 
+                      zIndex: 10, 
+                      backgroundColor: 'hsl(var(--card))',
+                      width: '80px',
+                      minWidth: '80px'
+                    }}
+                  >
                     {index + 1}
-                  </TableCell>
+                  </td>
                   {headers.map((header) => {
                     const cellValue = entry.data[header];
                     const isRefTable = details.referenceTables.some(
@@ -151,12 +171,13 @@ export default function RuleBookDetailPage() {
                     );
                     const isTextColumn = header === 'Text';
                     return (
-                      <TableCell
+                      <td
                         key={`${entry.id}-${header}`}
-                        className={cn(
-                          'align-top border-r',
-                          isTextColumn ? 'min-w-[400px] max-w-[400px]' : 'whitespace-nowrap min-w-[150px]'
-                        )}
+                        className="p-4 align-top border-r"
+                        style={{
+                          minWidth: isTextColumn ? '400px' : '150px',
+                          maxWidth: isTextColumn ? '400px' : 'none'
+                        }}
                       >
                         {isRefTable ? (
                           <Button
@@ -171,13 +192,13 @@ export default function RuleBookDetailPage() {
                             {String(cellValue)}
                           </div>
                         )}
-                      </TableCell>
+                      </td>
                     );
                   })}
-                </TableRow>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       </div>
 
