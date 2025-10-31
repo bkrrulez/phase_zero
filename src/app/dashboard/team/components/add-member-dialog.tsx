@@ -45,7 +45,6 @@ const addMemberSchema = z.object({
   teamId: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required.'),
   endDate: z.string().optional().nullable(),
-  weeklyHours: z.coerce.number().int().min(0, 'Weekly hours cannot be negative.').max(40, 'Weekly hours cannot exceed 40.'),
   associatedProjectIds: z.array(z.string()).min(1, 'Please select at least one project.'),
 }).refine(data => data.role === 'Super Admin' || !!data.reportsTo, {
     message: 'This field is required for Users and Team Leads.',
@@ -61,7 +60,7 @@ const addMemberSchema = z.object({
 });
 
 
-type AddMemberFormValues = z.infer<typeof addMemberSchema>;
+type AddMemberFormValues = Omit<z.infer<typeof addMemberSchema>, 'weeklyHours'>;
 
 interface AddMemberDialogProps {
   isOpen: boolean;
@@ -84,7 +83,6 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
       teamId: '',
       startDate: '',
       endDate: '',
-      weeklyHours: 40,
       associatedProjectIds: [],
     },
   });
@@ -121,10 +119,9 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
       contracts: [{
         startDate: data.startDate,
         endDate: data.endDate || null,
-        weeklyHours: data.weeklyHours,
       }],
     };
-    onAddMember(newUser);
+    onAddMember(newUser as any);
     form.reset();
   }
 
@@ -262,19 +259,7 @@ export function AddMemberDialog({ isOpen, onOpenChange, onAddMember, teamMembers
                     )}
                 />
             </div>
-             <FormField
-                control={form.control}
-                name="weeklyHours"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Weekly Contract Hours</FormLabel>
-                    <FormControl>
-                        <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
+            
             <FormField
               control={form.control}
               name="associatedProjectIds"

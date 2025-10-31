@@ -54,7 +54,6 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
             id: c.id,
             startDate: c.startDate,
             endDate: c.endDate || null,
-            weeklyHours: c.weeklyHours,
         })),
         // The primary contract is purely for display and will be recalculated on the backend
         // So we can just pass a placeholder.

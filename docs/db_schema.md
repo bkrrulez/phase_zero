@@ -29,7 +29,6 @@ Stores employment contracts for users. A user can have multiple contracts.
 -   `user_id` (FK -> `users.id`, TEXT, NOT NULL): The user this contract belongs to.
 -   `start_date` (DATE, NOT NULL): Start date of the employment contract.
 -   `end_date` (DATE): End date of the employment contract. NULL if ongoing.
--   `weekly_hours` (INTEGER, NOT NULL): Contracted weekly work hours for this contract.
 
 ### `projects`
 

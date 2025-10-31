@@ -44,7 +44,6 @@ const contractSchema = z.object({
   id: z.string().optional(),
   startDate: z.string().min(1, 'Start date is required.'),
   endDate: z.string().optional().nullable(),
-  weeklyHours: z.coerce.number().int().min(1, 'Hours must be positive.').max(80, 'Cannot exceed 80 hours.'),
 });
 
 const editMemberSchema = z.object({
@@ -137,7 +136,7 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
   }
 
   const handleAddNewContract = () => {
-    append({ startDate: '', endDate: '', weeklyHours: 40 });
+    append({ startDate: '', endDate: '' });
   }
 
   return (
@@ -258,7 +257,6 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                         <TableRow>
                             <TableHead>Start Date</TableHead>
                             <TableHead>End Date</TableHead>
-                            <TableHead>Weekly Hours</TableHead>
                             <TableHead className="text-right">Action</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -279,13 +277,6 @@ export function EditMemberDialog({ user, isOpen, onOpenChange, onSave, teamMembe
                                         control={form.control}
                                         name={`contracts.${index}.endDate`}
                                         render={({ field }) => <Input type="date" {...field} value={field.value || ''} disabled={isPast}/>}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField
-                                        control={form.control}
-                                        name={`contracts.${index}.weeklyHours`}
-                                        render={({ field }) => <Input type="number" {...field} className="w-20" disabled={isPast}/>}
                                     />
                                 </TableCell>
                                 <TableCell className="text-right">
