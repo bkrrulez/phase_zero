@@ -103,7 +103,7 @@ export default function RuleBookDetailPage() {
   return (
     <>
       <div className="space-y-6 h-full flex flex-col">
-        {/* Header - Stays Fixed */}
+        {/* Fixed Header */}
         <div className="flex items-start gap-4 shrink-0">
           <Button asChild variant="outline" size="icon">
             <Link href="/dashboard/rule-books">
