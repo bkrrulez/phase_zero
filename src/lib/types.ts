@@ -109,6 +109,7 @@ export type RuleBookEntry = {
   id: string;
   ruleBookId: string;
   data: Record<string, any>;
+  translation?: Record<string, any> | null;
 };
 
 export type ReferenceTable = {

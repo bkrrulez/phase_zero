@@ -99,7 +99,14 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
             return null;
         }
 
-        const entriesRes = await client.query('SELECT * FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
+        const entriesRes = await client.query(`
+            SELECT 
+                rbe.*,
+                (SELECT translated_data FROM rule_book_entry_translations WHERE rule_book_entry_id = rbe.id AND language = 'en') as translation
+            FROM rule_book_entries rbe 
+            WHERE rbe.rule_book_id = $1
+        `, [ruleBookId]);
+        
         const refTablesRes = await client.query('SELECT * FROM reference_tables WHERE rule_book_id = $1', [ruleBookId]);
 
         return {
@@ -109,10 +116,15 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
                 importedAt: new Date(ruleBookRes.rows[0].imported_at),
                 rowCount: ruleBookRes.rows[0].row_count,
             },
-            entries: entriesRes.rows,
+            entries: entriesRes.rows.map(row => ({
+                id: row.id,
+                ruleBookId: row.rule_book_id,
+                data: row.data,
+                translation: row.translation || null,
+            })),
             referenceTables: refTablesRes.rows.map(row => ({
                 ...row,
-                data: row.data // The 'data' column is already parsed as JSON by the pg driver
+                data: row.data
             })),
         };
     } catch (error) {

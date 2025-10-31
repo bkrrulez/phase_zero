@@ -15,11 +15,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { ReferenceTableDialog } from '../components/reference-table-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface RuleBookDetails {
   ruleBook: RuleBook;
@@ -46,6 +48,7 @@ export default function RuleBookDetailPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
+  const [viewLanguage, setViewLanguage] = React.useState<'DE' | 'EN'>('DE');
 
   React.useEffect(() => {
     if (!ruleBookId) return;
@@ -118,20 +121,38 @@ export default function RuleBookDetailPage() {
     <>
       <div className="flex flex-col gap-6 h-full">
         {/* Fixed Header */}
-        <div className="flex items-start gap-4 shrink-0">
-          <Button asChild variant="outline" size="icon">
-            <Link href="/dashboard/rule-books">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">{t('back')}</span>
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
-            <p className="text-muted-foreground">{t('ruleBookDetailsDesc')}</p>
+        <div className="flex items-start justify-between gap-4 shrink-0">
+          <div className="flex items-start gap-4">
+            <Button asChild variant="outline" size="icon">
+              <Link href="/dashboard/rule-books">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">{t('back')}</span>
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
+              <p className="text-muted-foreground">{t('ruleBookDetailsDesc')}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'DE' ? 'text-foreground' : 'text-muted-foreground')}>DE (Original)</Label>
+            <Switch
+              id="translation-toggle"
+              checked={viewLanguage === 'EN'}
+              onCheckedChange={(checked) => setViewLanguage(checked ? 'EN' : 'DE')}
+            />
+            <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'EN' ? 'text-foreground' : 'text-muted-foreground')}>EN (Translated)</Label>
           </div>
         </div>
 
-        {/* Table Container with fixed height and scroll */}
+        {viewLanguage === 'EN' && (
+          <div className="flex items-center gap-2 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
+            <AlertTriangle className="h-5 w-5" />
+            <span>English version is not legally binding.</span>
+          </div>
+        )}
+
+        {/* Table Container */}
         <div className="flex-1 border rounded-lg" style={{ overflow: 'auto', position: 'relative' }}>
           <table className="w-full border-collapse" style={{ display: 'table', tableLayout: 'auto' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 20, backgroundColor: 'hsl(var(--card))' }}>
@@ -180,7 +201,8 @@ export default function RuleBookDetailPage() {
                     {index + 1}
                   </td>
                   {headers.map((header) => {
-                    const cellValue = String(entry.data[header] ?? '');
+                    const dataToShow = viewLanguage === 'EN' && entry.translation ? entry.translation : entry.data;
+                    const cellValue = String(dataToShow[header] ?? '');
                     const isTextColumn = header === 'Text' || header === 'Gliederung' || header === 'Nutzung' || header === 'Spaltentyp' || header === 'Erfüllbarkeit' || header === 'Checkliste';
                     const isRefColumn = header === 'Referenztabelle';
 
