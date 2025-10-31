@@ -1,3 +1,4 @@
+
 'use server';
 
 import { promises as fs } from 'fs';
@@ -30,11 +31,18 @@ export async function translateTextOffline(text: string): Promise<string> {
 
     // Sort keys by length, longest first, to avoid partial replacements (e.g., "in" before "in Betrieb")
     const sortedKeys = Object.keys(dictionary).sort((a, b) => b.length - a.length);
-
+    
     for (const key of sortedKeys) {
-        // Use a regular expression to replace whole words only to avoid partial matches within other words
-        const regex = new RegExp(`\\b${key}\\b`, 'g');
-        translatedText = translatedText.replace(regex, dictionary[key]);
+        // Create a case-insensitive regular expression for the key
+        // The 'g' flag ensures all occurrences are replaced, not just the first one.
+        const regex = new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+        translatedText = translatedText.replace(regex, (match) => {
+            const translation = dictionary[key];
+            // Attempt to preserve original case
+            if (match === match.toUpperCase()) return translation.toUpperCase();
+            if (match === match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()) return translation.charAt(0).toUpperCase() + translation.slice(1);
+            return translation;
+        });
     }
 
     return translatedText;

@@ -1,3 +1,4 @@
+
 {
     "Gliederung": "Structure",
     "Text": "Text",
@@ -15,7 +16,7 @@
     "Nutzungsabschnitt": "Usage Section",
     "Gebäudeklasse": "Building Class",
     "Gebäudehöhe": "Building Height",
-    "in": "in",
+    "in Betrieb": "in operation",
     "und": "and",
     "oder": "or",
     "der": "the",
@@ -48,5 +49,10 @@
     "ob": "if/whether",
     "den": "the",
     "dem": "the",
-    "des": "the"
+    "des": "the",
+    "in": "in",
+    "ist": "is",
+    "sind": "are",
+    "hat": "has",
+    "haben": "have"
 }
