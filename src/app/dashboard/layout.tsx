@@ -290,7 +290,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <div className="flex h-screen flex-col w-full">
-            <header className="flex shrink-0 items-center p-4 bg-card border-b sticky top-0 z-10">
+            <header className="flex h-14 shrink-0 items-center px-4 bg-card border-b sticky top-0 z-10">
                 <SidebarTrigger />
                 <div className="flex items-center gap-4 flex-wrap ml-auto">
                     <LanguageToggle />

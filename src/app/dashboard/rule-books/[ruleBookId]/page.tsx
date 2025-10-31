@@ -116,7 +116,7 @@ export default function RuleBookDetailPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="flex flex-col gap-6 h-full">
         {/* Fixed Header */}
         <div className="flex items-start gap-4 shrink-0">
           <Button asChild variant="outline" size="icon">
