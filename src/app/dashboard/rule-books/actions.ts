@@ -4,9 +4,7 @@
 import { db } from '@/lib/db';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { translateTextOffline } from '@/lib/offline-translator';
+import { translateRuleBookEntry } from '@/ai/flows/translate-rulebook-flow';
 
 
 type AddRuleBookPayload = {
@@ -18,11 +16,10 @@ type AddRuleBookPayload = {
 export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
     const { name, entries, referenceTables } = payload;
     const client = await db.connect();
+    let ruleBookId = `rb-${Date.now()}`;
 
     try {
         await client.query('BEGIN');
-        
-        const ruleBookId = `rb-${Date.now()}`;
         
         await client.query(
             `INSERT INTO rule_books (id, name, imported_at, row_count) VALUES ($1, $2, NOW(), $3)`,
@@ -56,6 +53,12 @@ export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
     }
     
     revalidatePath('/dashboard/rule-books');
+
+    // Trigger translation in the background after successful import.
+    // We don't await this so the UI can update immediately.
+    translateRuleBookOffline(ruleBookId).catch(err => {
+        console.error(`Background translation failed for new rule book ${ruleBookId}:`, err);
+    });
 }
 
 
@@ -147,9 +150,7 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
             return { success: true };
         }
         
-        await client.query('BEGIN');
-
-        // Delete existing translations for this rule book to ensure a fresh translation
+        // Clear existing translations for this rule book to ensure a fresh translation
         await client.query(
             'DELETE FROM rule_book_entry_translations WHERE rule_book_entry_id IN (SELECT id FROM rule_book_entries WHERE rule_book_id = $1)',
             [ruleBookId]
@@ -157,33 +158,24 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
 
         for (const entry of entries) {
             const originalData = entry.data;
-            const translatedData: Record<string, any> = {};
-            
-            for (const key in originalData) {
-                const translatedKey = await translateTextOffline(key);
-                const originalValue = originalData[key];
-                translatedData[translatedKey] = await translateTextOffline(String(originalValue));
-            }
+            const translatedData = await translateRuleBookEntry(originalData);
             
             const translationId = `rbet-${Date.now()}-${Math.random()}`;
 
             await client.query(
                 `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
-                VALUES ($1, $2, 'en', $3::jsonb)
-                ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = EXCLUDED.translated_data`,
+                VALUES ($1, $2, 'en', $3::jsonb)`,
                 [translationId, entry.id, JSON.stringify(translatedData)]
             );
         }
 
-        await client.query('COMMIT');
         revalidatePath(`/dashboard/rule-books/${ruleBookId}`);
         return { success: true };
     } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Offline translation failed:', error);
-        // Re-throw the error to be caught by the client-side caller
+        console.error('AI translation failed:', error);
         throw new Error('Failed to translate and save rule book entries.');
     } finally {
         client.release();
     }
 }
+
