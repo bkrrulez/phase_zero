@@ -142,12 +142,12 @@ export default function RuleBookDetailPage() {
   const originalHeadersSorted = getSortedHeaders(deHeaders, columnOrder);
   
   const headerMapping: Record<string, string> = isEnglishView && hasTranslation 
-    ? Object.fromEntries(enHeaders.map((enHeader, i) => [enHeader, deHeaders[i]]))
+    ? Object.fromEntries(originalHeadersSorted.map((deHeader, i) => [headers[i], deHeader]))
     : {};
 
   return (
     <>
-      <div className="flex flex-col gap-6 h-full">
+      <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Fixed Header */}
         <div className="flex items-start justify-between gap-4 shrink-0">
           <div className="flex items-start gap-4">
@@ -291,4 +291,3 @@ export default function RuleBookDetailPage() {
     </>
   );
 }
-
