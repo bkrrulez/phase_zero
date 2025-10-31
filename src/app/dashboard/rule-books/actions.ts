@@ -146,8 +146,14 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
         if (entries.length === 0) {
             return { success: true };
         }
-
+        
         await client.query('BEGIN');
+
+        // Delete existing translations for this rule book to ensure a fresh translation
+        await client.query(
+            'DELETE FROM rule_book_entry_translations WHERE rule_book_entry_id IN (SELECT id FROM rule_book_entries WHERE rule_book_id = $1)',
+            [ruleBookId]
+        );
 
         for (const entry of entries) {
             const originalData = entry.data;
@@ -175,7 +181,8 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Offline translation failed:', error);
-        return { success: false, error: 'Failed to translate and save rule book entries.' };
+        // Re-throw the error to be caught by the client-side caller
+        throw new Error('Failed to translate and save rule book entries.');
     } finally {
         client.release();
     }
