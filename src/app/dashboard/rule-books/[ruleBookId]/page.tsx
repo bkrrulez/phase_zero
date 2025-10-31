@@ -39,6 +39,16 @@ const columnOrder = [
   'Referenztabelle',
 ];
 
+const enColumnOrder = [
+  'Structure',
+  'Text',
+  'Usage',
+  'Column Type',
+  'Fulfillment',
+  'Checklist',
+  'Reference Table',
+];
+
 export default function RuleBookDetailPage() {
   const params = useParams();
   const ruleBookId = params.ruleBookId as string;
@@ -77,9 +87,12 @@ export default function RuleBookDetailPage() {
   const getColumnStyle = (header: string): React.CSSProperties => {
     const style: React.CSSProperties = { minWidth: '150px' };
 
-    if (header === 'Text') {
+    const isTextCol = viewLanguage === 'DE' ? header === 'Text' : header === 'Text';
+    const isGliederungCol = viewLanguage === 'DE' ? header === 'Gliederung' : header === 'Structure';
+
+    if (isTextCol) {
       style.maxWidth = '500px';
-    } else if (header === 'Gliederung') {
+    } else if (isGliederungCol) {
       style.maxWidth = '400px';
     } else {
       style.maxWidth = '300px';
@@ -104,18 +117,33 @@ export default function RuleBookDetailPage() {
 
   if (error) return <div className="text-destructive text-center p-8">{error}</div>;
   if (!details) return <div className="text-center p-8">{t('noRuleBooks')}</div>;
+  
+  const isEnglishView = viewLanguage === 'EN';
+  const hasTranslation = details.entries.length > 0 && details.entries[0].translation;
 
-  const originalHeaders =
-    details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
+  const deHeaders = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
+  const enHeaders = hasTranslation ? Object.keys(details.entries[0].translation!) : [];
 
-  const headers = [...originalHeaders].sort((a, b) => {
-    const indexA = columnOrder.indexOf(a);
-    const indexB = columnOrder.indexOf(b);
-    if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-    if (indexA === -1) return 1;
-    if (indexB === -1) return -1;
-    return indexA - indexB;
-  });
+  const getSortedHeaders = (headers: string[], order: string[]) => {
+    return [...headers].sort((a, b) => {
+        const indexA = order.indexOf(a);
+        const indexB = order.indexOf(b);
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
+  };
+
+  const headers = isEnglishView && hasTranslation 
+    ? getSortedHeaders(enHeaders, enColumnOrder) 
+    : getSortedHeaders(deHeaders, columnOrder);
+  
+  const originalHeadersSorted = getSortedHeaders(deHeaders, columnOrder);
+  
+  const headerMapping: Record<string, string> = isEnglishView && hasTranslation 
+    ? Object.fromEntries(enHeaders.map((enHeader, i) => [enHeader, deHeaders[i]]))
+    : {};
 
   return (
     <>
@@ -145,7 +173,7 @@ export default function RuleBookDetailPage() {
           </div>
         </div>
 
-        {viewLanguage === 'EN' && (
+        {isEnglishView && (
           <div className="flex items-center gap-2 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
             <AlertTriangle className="h-5 w-5" />
             <span>English version is not legally binding.</span>
@@ -201,18 +229,20 @@ export default function RuleBookDetailPage() {
                     {index + 1}
                   </td>
                   {headers.map((header) => {
-                    const dataToShow = viewLanguage === 'EN' && entry.translation ? entry.translation : entry.data;
-                    const cellValue = String(dataToShow[header] ?? '');
-                    const isTextColumn = header === 'Text' || header === 'Gliederung' || header === 'Nutzung' || header === 'Spaltentyp' || header === 'Erfüllbarkeit' || header === 'Checkliste';
-                    const isRefColumn = header === 'Referenztabelle';
+                    const dataObject = isEnglishView && entry.translation ? entry.translation : entry.data;
+                    const cellValue = String(dataObject[header] ?? '');
 
+                    const originalHeader = isEnglishView ? (headerMapping[header] || header) : header;
+                    const isTextColumn = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'].includes(originalHeader);
+                    const isRefColumn = originalHeader === 'Referenztabelle';
+                    
                     return (
                       <td
                         key={`${entry.id}-${header}`}
                         className="p-4 align-top border-r"
                         style={getColumnStyle(header)}
                       >
-                        {isRefColumn && cellValue.includes('Tabelle') ? (
+                         {isRefColumn && cellValue.includes('Tabelle') ? (
                           <div className="whitespace-normal">
                             {cellValue.split(/, | /).map((part, partIndex) => {
                               const trimmedPart = part.replace(/,$/, '');
@@ -239,7 +269,7 @@ export default function RuleBookDetailPage() {
                             })}
                           </div>
                         ) : (
-                          <div className={isTextColumn ? "whitespace-normal" : "whitespace-nowrap"}>
+                           <div className={isTextColumn ? "whitespace-normal" : "whitespace-nowrap"}>
                             {cellValue}
                           </div>
                         )}
@@ -261,3 +291,4 @@ export default function RuleBookDetailPage() {
     </>
   );
 }
+
