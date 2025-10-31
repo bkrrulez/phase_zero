@@ -6,6 +6,8 @@ import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/ty
 import { revalidatePath } from 'next/cache';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { translateTextOffline } from '@/lib/offline-translator';
+
 
 type AddRuleBookPayload = {
     name: string;
@@ -158,24 +160,18 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
       const translatedData: Record<string, any> = {};
       
       for (const key in originalData) {
-        const translatedKey = translations[key] || key;
+        const translatedKey = await translateTextOffline(key);
         const originalValue = originalData[key];
-        
-        if (typeof originalValue === 'string') {
-          translatedData[translatedKey] = translations[originalValue] || originalValue;
-        } else {
-          translatedData[translatedKey] = originalValue;
-        }
+        translatedData[translatedKey] = await translateTextOffline(originalValue);
       }
       
       const translationId = `rbet-${Date.now()}-${Math.random()}`;
 
-      // Use INSERT ... ON CONFLICT to prevent errors if a translation already exists.
       await client.query(
         `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
          VALUES ($1, $2, 'en', $3)
          ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = EXCLUDED.translated_data`,
-        [translationId, entry.id, JSON.stringify(translatedData)]
+        [translationId, entry.id, translatedData]
       );
     }
 
@@ -190,5 +186,3 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
     client.release();
   }
 }
-
-    
