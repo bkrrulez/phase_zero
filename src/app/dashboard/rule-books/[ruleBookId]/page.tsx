@@ -20,6 +20,7 @@ import { ReferenceTableDialog } from '../components/reference-table-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface RuleBookDetails {
   ruleBook: RuleBook;
@@ -118,11 +119,11 @@ export default function RuleBookDetailPage() {
         </div>
 
         {/* Scrolling Container */}
-        <div className="flex-1 relative border rounded-lg overflow-auto">
-          <Table className="min-w-max">
+        <div className="flex-1 relative overflow-auto border rounded-lg">
+          <Table>
             <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
               <TableRow>
-                <TableHead className="w-16">
+                <TableHead className="w-16 sticky left-0 bg-card">
                   Sl No.
                 </TableHead>
                 {headers.map((header) => (
@@ -138,7 +139,7 @@ export default function RuleBookDetailPage() {
             <TableBody>
               {details.entries.map((entry, index) => (
                 <TableRow key={entry.id}>
-                  <TableCell className="w-16">
+                  <TableCell className="w-16 sticky left-0 bg-card">
                     {index + 1}
                   </TableCell>
                   {headers.map((header) => {
