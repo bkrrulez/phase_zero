@@ -54,5 +54,22 @@
     "ist": "is",
     "sind": "are",
     "hat": "has",
-    "haben": "have"
+    "haben": "have",
+    "Wohnungen": "Apartments",
+    "Gebäude": "Buildings",
+    "Anforderungen": "Requirements",
+    "Brandschutz": "Fire Protection",
+    "Bauteile": "Components",
+    "Feuerwiderstand": "Fire Resistance",
+    "Wände": "Walls",
+    "Decken": "Ceilings",
+    "Türen": "Doors",
+    "Fenster": "Windows",
+    "Dach": "Roof",
+    "Geschoß": "Floor/Story",
+    "Treppenhaus": "Staircase",
+    "Fluchtweg": "Escape Route",
+    "Rettungsweg": "Rescue Route",
+    "Außenwand": "Exterior Wall",
+    "Brandabschnittsbildende": "Fire-compartment-forming"
 }

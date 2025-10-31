@@ -29,20 +29,28 @@ export async function translateTextOffline(text: string): Promise<string> {
     const dictionary = await getTranslations();
     let translatedText = text;
 
-    // Sort keys by length, longest first, to avoid partial replacements (e.g., "in" before "in Betrieb")
+    // Sort keys by length, longest first, to avoid partial replacements
     const sortedKeys = Object.keys(dictionary).sort((a, b) => b.length - a.length);
     
     for (const key of sortedKeys) {
-        // Create a case-insensitive regular expression for the key
-        // The 'g' flag ensures all occurrences are replaced, not just the first one.
-        const regex = new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-        translatedText = translatedText.replace(regex, (match) => {
-            const translation = dictionary[key];
-            // Attempt to preserve original case
-            if (match === match.toUpperCase()) return translation.toUpperCase();
-            if (match === match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()) return translation.charAt(0).toUpperCase() + translation.slice(1);
-            return translation;
-        });
+        // Create a case-insensitive regular expression for the key, without word boundaries
+        // This allows it to match phrases within a larger string
+        try {
+            const regex = new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+            translatedText = translatedText.replace(regex, (match) => {
+                const translation = dictionary[key];
+                // Attempt to preserve original case if possible, otherwise use default translation
+                 if (match === match.toUpperCase()) {
+                    return translation.toUpperCase();
+                }
+                if (match === match.charAt(0).toUpperCase() + match.slice(1).toLowerCase()) {
+                    return translation.charAt(0).toUpperCase() + translation.slice(1);
+                }
+                return translation;
+            });
+        } catch (e) {
+            console.error(`Invalid regex for key: ${key}`, e);
+        }
     }
 
     return translatedText;
