@@ -6,10 +6,6 @@ import { useParams } from 'next/navigation';
 import { getRuleBookDetails } from '../actions';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
-import {
   Table,
   TableBody,
   TableCell,
@@ -107,7 +103,7 @@ export default function RuleBookDetailPage() {
   return (
     <>
       <div className="space-y-6 h-full flex flex-col">
-        {/* Header */}
+        {/* Header - Stays Fixed */}
         <div className="flex items-start gap-4 shrink-0">
           <Button asChild variant="outline" size="icon">
             <Link href="/dashboard/rule-books">
@@ -121,18 +117,18 @@ export default function RuleBookDetailPage() {
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="flex-1 min-h-0 overflow-auto border rounded-lg">
-          <Table className="min-w-max border-collapse">
+        {/* Scrolling Container */}
+        <div className="flex-1 relative border rounded-lg overflow-auto">
+          <Table className="min-w-max">
             <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
               <TableRow>
-                <TableHead className="w-16 border-r">
+                <TableHead className="w-16">
                   Sl No.
                 </TableHead>
                 {headers.map((header) => (
                   <TableHead
                     key={header}
-                    className="border-r last:border-r-0 whitespace-nowrap px-4 py-2"
+                    className="whitespace-nowrap"
                   >
                     {header}
                   </TableHead>
@@ -142,7 +138,7 @@ export default function RuleBookDetailPage() {
             <TableBody>
               {details.entries.map((entry, index) => (
                 <TableRow key={entry.id}>
-                  <TableCell className="w-16 border-r">
+                  <TableCell className="w-16">
                     {index + 1}
                   </TableCell>
                   {headers.map((header) => {
@@ -155,7 +151,7 @@ export default function RuleBookDetailPage() {
                       <TableCell
                         key={`${entry.id}-${header}`}
                         className={cn(
-                          'border-r last:border-r-0 align-top whitespace-nowrap px-4 py-2',
+                          'align-top whitespace-nowrap',
                           isTextColumn && 'max-w-[450px] truncate'
                         )}
                       >
