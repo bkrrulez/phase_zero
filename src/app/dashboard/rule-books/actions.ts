@@ -136,53 +136,47 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
     }
 }
 
-async function getTranslations(): Promise<Record<string, string>> {
-  const filePath = path.join(process.cwd(), 'src', 'lib', 'translations.json');
-  const jsonData = await fs.readFile(filePath, 'utf-8');
-  return JSON.parse(jsonData);
-}
 
 export async function translateRuleBookOffline(ruleBookId: string): Promise<{ success: boolean; error?: string }> {
-  const client = await db.connect();
-  try {
-    const translations = await getTranslations();
-    const entriesRes = await client.query('SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
-    const entries = entriesRes.rows;
+    const client = await db.connect();
+    try {
+        const entriesRes = await client.query('SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
+        const entries = entriesRes.rows;
 
-    if (entries.length === 0) {
-      return { success: true }; // Nothing to translate
+        if (entries.length === 0) {
+            return { success: true };
+        }
+
+        await client.query('BEGIN');
+
+        for (const entry of entries) {
+            const originalData = entry.data;
+            const translatedData: Record<string, any> = {};
+            
+            for (const key in originalData) {
+                const translatedKey = await translateTextOffline(key);
+                const originalValue = originalData[key];
+                translatedData[translatedKey] = await translateTextOffline(String(originalValue));
+            }
+            
+            const translationId = `rbet-${Date.now()}-${Math.random()}`;
+
+            await client.query(
+                `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
+                VALUES ($1, $2, 'en', $3::jsonb)
+                ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = EXCLUDED.translated_data`,
+                [translationId, entry.id, JSON.stringify(translatedData)]
+            );
+        }
+
+        await client.query('COMMIT');
+        revalidatePath(`/dashboard/rule-books/${ruleBookId}`);
+        return { success: true };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Offline translation failed:', error);
+        return { success: false, error: 'Failed to translate and save rule book entries.' };
+    } finally {
+        client.release();
     }
-
-    await client.query('BEGIN');
-
-    for (const entry of entries) {
-      const originalData = entry.data;
-      const translatedData: Record<string, any> = {};
-      
-      for (const key in originalData) {
-        const translatedKey = await translateTextOffline(key);
-        const originalValue = originalData[key];
-        translatedData[translatedKey] = await translateTextOffline(originalValue);
-      }
-      
-      const translationId = `rbet-${Date.now()}-${Math.random()}`;
-
-      await client.query(
-        `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
-         VALUES ($1, $2, 'en', $3)
-         ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = EXCLUDED.translated_data`,
-        [translationId, entry.id, translatedData]
-      );
-    }
-
-    await client.query('COMMIT');
-    revalidatePath(`/dashboard/rule-books/${ruleBookId}`);
-    return { success: true };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Offline translation failed:', error);
-    throw error;
-  } finally {
-    client.release();
-  }
 }
