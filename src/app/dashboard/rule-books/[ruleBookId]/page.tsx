@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -103,7 +104,7 @@ export default function RuleBookDetailPage() {
     <>
       <div className="h-full flex flex-col gap-6">
         {/* Fixed Header */}
-        <div className="shrink-0 flex items-start gap-4">
+        <div className="flex items-start gap-4 shrink-0">
           <Button asChild variant="outline" size="icon">
             <Link href="/dashboard/rule-books">
               <ArrowLeft className="h-4 w-4" />
@@ -116,19 +117,19 @@ export default function RuleBookDetailPage() {
           </div>
         </div>
 
-        {/* Scrolling Table Container */}
-        <div className="flex-1 relative overflow-auto border rounded-lg">
+        {/* Table Container with fixed height and scroll */}
+        <div className="relative flex-1 overflow-auto border rounded-lg">
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
               <TableRow>
-                <TableHead className="sticky left-0 z-20 bg-card border-r w-[80px]">
+                <TableHead className="sticky left-0 bg-card border-r w-[80px]">
                   Sl No.
                 </TableHead>
                 {headers.map((header) => (
                   <TableHead
                     key={header}
                     className={cn(
-                      "whitespace-nowrap bg-card border-r",
+                      "whitespace-nowrap border-r",
                       header === 'Text' ? 'min-w-[400px]' : 'min-w-[150px]'
                     )}
                   >
@@ -140,7 +141,7 @@ export default function RuleBookDetailPage() {
             <TableBody>
               {details.entries.map((entry, index) => (
                 <TableRow key={entry.id}>
-                  <TableCell className="sticky left-0 z-10 bg-card border-r font-medium w-[80px]">
+                  <TableCell className="sticky left-0 bg-card border-r font-medium w-[80px]">
                     {index + 1}
                   </TableCell>
                   {headers.map((header) => {
