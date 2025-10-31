@@ -156,6 +156,7 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
     for (const entry of entries) {
       const originalData = entry.data;
       const translatedData: Record<string, any> = {};
+      const translationId = `rbet-${Date.now()}-${Math.random()}`;
 
       for (const key in originalData) {
         const translatedKey = translations[key] || key;
@@ -169,10 +170,10 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
       }
       
       await client.query(
-        `INSERT INTO rule_book_entry_translations (rule_book_entry_id, language, translated_data)
-         VALUES ($1, 'en', $2)
-         ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = $2`,
-        [entry.id, JSON.stringify(translatedData)]
+        `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
+         VALUES ($1, $2, 'en', $3)
+         ON CONFLICT (rule_book_entry_id, language) DO UPDATE SET translated_data = $3`,
+        [translationId, entry.id, JSON.stringify(translatedData)]
       );
     }
 
@@ -182,7 +183,7 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Offline translation failed:', error);
-    return { success: false, error: 'Failed to translate and save rule book.' };
+    throw error;
   } finally {
     client.release();
   }
