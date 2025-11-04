@@ -145,6 +145,13 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
     try {
         await client.query('BEGIN');
         
+        // Clear existing English translations for this rule book to ensure a fresh translation
+        await client.query(
+            `DELETE FROM rule_book_entry_translations 
+             WHERE language = 'en' AND rule_book_entry_id IN (SELECT id FROM rule_book_entries WHERE rule_book_id = $1)`,
+            [ruleBookId]
+        );
+        
         const entriesRes = await client.query('SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
         const entries = entriesRes.rows;
 
@@ -152,12 +159,6 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
             await client.query('COMMIT');
             return { success: true };
         }
-        
-        // Clear existing translations for this rule book to ensure a fresh translation
-        await client.query(
-            'DELETE FROM rule_book_entry_translations WHERE rule_book_entry_id IN (SELECT id FROM rule_book_entries WHERE rule_book_id = $1)',
-            [ruleBookId]
-        );
 
         for (const entry of entries) {
             const originalData = entry.data;
@@ -178,8 +179,11 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
         return { success: true };
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('AI translation failed:', error); // Log the specific error
-        throw new Error('Failed to translate and save rule book entries.');
+        console.error('AI translation failed:', error);
+        if (error instanceof Error) {
+            console.error('Stack trace:', error.stack);
+        }
+        throw error; // rethrow the original error for debugging
     } finally {
         client.release();
     }
