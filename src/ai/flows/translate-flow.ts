@@ -1,20 +1,80 @@
+'use server';
+/**
+ * @fileOverview A rule book translation AI flow.
+ *
+ * - translateText - A function that handles the rule book translation process.
+ */
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
+import { z } from 'zod';
 
-export const ai = genkit({
+// This AI instance is local to this file and should not be exported.
+const ai = genkit({
   plugins: [
     googleAI({
       apiVersion: 'v1',
-      // CRITICAL CHANGE: Use the Vertex AI endpoint for Gemini
-      // This is necessary because 'generativelanguage.googleapis.com' (the default) 
-      // may not support all model formats or regions.
       useVertex: true, 
-      
-      // You must also specify a location (region) when using Vertex
-      // 'us-central1' is a safe default.
       location: 'us-central1',
-
       apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY,
     }),
   ],
 });
+
+
+const TranslationInputSchema = z.object({
+  jsonString: z.string()
+});
+
+const translateToEnglishPrompt = ai.definePrompt({
+  name: 'translateToEnglishPrompt',
+  input: { schema: TranslationInputSchema },
+  model: 'googleai/gemini-1.5-flash-latest',
+  prompt: `
+Translate the following JSON object from German to English.
+
+Rules:
+1. Translate all string values from German to English
+2. Keep all keys exactly the same
+3. Do not translate proper nouns, technical terms, or variable names
+4. Return ONLY valid JSON with the same structure - no markdown, no explanations
+5. Maintain all special characters and formatting
+
+Original JSON:
+{{{jsonString}}}
+
+Return ONLY the translated JSON:
+`,
+  config: {
+    temperature: 0.1,
+  },
+});
+
+export async function translateText(
+  germanText: Record<string, string>
+): Promise<Record<string, string>> {
+  // Convert to JSON string for input
+  const jsonString = JSON.stringify(germanText, null, 2);
+  
+  const { text } = await translateToEnglishPrompt({ 
+    jsonString
+  });
+
+  if (!text) {
+    throw new Error('Translation failed: AI model did not return any output.');
+  }
+  
+  // Clean up the response (remove markdown code blocks if present)
+  let cleanedText = text.trim();
+  if (cleanedText.startsWith('```json')) {
+    cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+  } else if (cleanedText.startsWith('```')) {
+    cleanedText = cleanedText.replace(/```\n?/g, '');
+  }
+  
+  try {
+    return JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error('Failed to parse translation response:', cleanedText);
+    throw new Error('Translation returned invalid JSON');
+  }
+}
