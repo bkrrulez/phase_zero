@@ -162,7 +162,14 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
 
         for (const entry of entries) {
             const originalData = entry.data;
-            const translatedData = await translateText(originalData);
+
+            // Ensure all values are strings for the translation model
+            const stringifiedData: Record<string, string> = {};
+            for (const key in originalData) {
+                stringifiedData[key] = String(originalData[key]);
+            }
+
+            const translatedData = await translateText(stringifiedData);
             
             const translationId = `rbet-${Date.now()}-${Math.random()}`;
 
