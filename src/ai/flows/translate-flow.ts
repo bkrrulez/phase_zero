@@ -15,7 +15,7 @@ export async function translateText(
       name: 'translateToEnglishPrompt',
       input: { schema: TranslationInputSchema },
       output: { schema: TranslationOutputSchema },
-      model: 'googleai/gemini-1.5-flash-latest',
+      model: ai.model('googleai/gemini-1.5-flash-latest'),
       prompt: `Translate the following JSON object from German to English.
 
 You must follow these rules:
