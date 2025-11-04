@@ -4,22 +4,8 @@
  *
  * - translateText - A function that handles the rule book translation process.
  */
-import { genkit } from 'genkit';
-import { googleAI } from '@genkit-ai/google-genai';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-
-// This AI instance is local to this file and should not be exported.
-const ai = genkit({
-  plugins: [
-    googleAI({
-      apiVersion: 'v1',
-      useVertex: true, 
-      location: 'us-central1',
-      apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY,
-    }),
-  ],
-});
-
 
 const TranslationInputSchema = z.object({
   jsonString: z.string()
