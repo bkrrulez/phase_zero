@@ -14,6 +14,9 @@ import { useAuth } from '@/app/dashboard/contexts/AuthContext';
 import { useMembers } from '@/app/dashboard/contexts/MembersContext';
 import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { addProjectAnalysis } from '@/app/dashboard/actions';
 
 const projectSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -34,13 +37,15 @@ export type ProjectFormValues = z.infer<typeof projectSchema>;
 interface AddProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddProject: (data: ProjectFormValues) => void;
+  onAddProject: (data: ProjectFormValues) => Promise<string | undefined>;
 }
 
 export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProjectDialogProps) {
     const { currentUser } = useAuth();
     const { teamMembers } = useMembers();
     const { t, language } = useLanguage();
+    const router = useRouter();
+    const { toast } = useToast();
 
     const form = useForm<ProjectFormValues>({
         resolver: zodResolver(projectSchema),
@@ -76,12 +81,28 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         { value: 'Non Residential', label: 'Non Residential' },
     ];
     
-    function onSubmit(data: ProjectFormValues) {
-        onAddProject(data);
+    async function onSubmit(data: ProjectFormValues) {
+        await onAddProject(data);
         form.reset({
             ...form.formState.defaultValues,
             creator: currentUser?.id || ''
         });
+    }
+
+    async function handleAnalysis() {
+        const projectId = await onAddProject(form.getValues());
+        if (projectId) {
+            const { analysis } = await addProjectAnalysis(projectId);
+            if (analysis) {
+                router.push(`/dashboard/project-analysis/${analysis.id}`);
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: "Error",
+                    description: "Could not start analysis for the new project.",
+                });
+            }
+        }
     }
 
   return (
@@ -265,7 +286,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
             <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                 <Button type="submit">{t('save')}</Button>
-                <Button type="button" variant="secondary">{t('analysis')}</Button>
+                <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
             </DialogFooter>
           </form>
         </Form>

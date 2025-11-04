@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -14,6 +15,7 @@ import {
   type LogEntry,
   type Contract,
   type ContractEndNotification,
+  type ProjectAnalysis,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO, isAfter, isBefore } from 'date-fns';
 import { revalidatePath } from 'next/cache';
@@ -103,6 +105,16 @@ const mapDbContractEndNotification = (row: any): ContractEndNotification => ({
     recipientUserIds: row.recipient_user_ids,
     recipientEmails: row.recipient_emails,
     thresholdDays: row.threshold_days.map(Number) // Ensure numbers
+});
+
+const mapDbProjectAnalysis = (row: any): ProjectAnalysis => ({
+    id: row.id,
+    projectId: row.project_id,
+    version: row.version,
+    startDate: new Date(row.start_date).toISOString(),
+    lastModificationDate: new Date(row.last_modification_date).toISOString(),
+    newUse: row.new_use,
+    fulfillability: row.fulfillability,
 });
 
 
@@ -762,7 +774,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
                 project_owner, year_of_construction, number_of_floors, escape_level, 
-                listed_building, protection_zone, current_use
+                listedBuilding, protection_zone, current_use
              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 
@@ -803,7 +815,7 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
             `UPDATE projects SET 
                 name = $1, project_manager = $2, creator_id = $3, address = $4,
                 project_owner = $5, year_of_construction = $6, number_of_floors = $7,
-                escape_level = $8, listed_building = $9, protection_zone = $10, current_use = $11
+                escapeLevel = $8, listed_building = $9, protection_zone = $10, current_use = $11
              WHERE id = $12`,
             [
                 name, projectManager, creatorId, address, projectOwner, yearOfConstruction,
@@ -826,6 +838,67 @@ export async function deleteProject(projectId: string): Promise<void> {
     await db.query('DELETE FROM projects WHERE id = $1', [projectId]);
     revalidatePath('/dashboard/settings/projects');
 }
+
+// ========== Project Analysis ==========
+export async function getProjectAnalyses(): Promise<ProjectAnalysis[]> {
+    try {
+        const result = await db.query('SELECT * FROM project_analyses ORDER BY start_date DESC');
+        return result.rows.map(mapDbProjectAnalysis);
+    } catch (error) {
+        console.error('Failed to get project analyses:', error);
+        return [];
+    }
+}
+
+export async function addProjectAnalysis(projectId: string): Promise<{ analysis?: ProjectAnalysis, requiresConfirmation: boolean, nextVersion: number }> {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        const existingRes = await client.query(
+            `SELECT MAX(version) as max_version FROM project_analyses WHERE project_id = $1`,
+            [projectId]
+        );
+        const latestVersion = existingRes.rows[0]?.max_version || 0;
+        const newVersion = latestVersion + 1;
+
+        const id = `pa-${Date.now()}`;
+        const result = await client.query(
+            `INSERT INTO project_analyses (id, project_id, version) VALUES ($1, $2, $3) RETURNING *`,
+            [id, projectId, newVersion]
+        );
+
+        await client.query('COMMIT');
+        revalidatePath('/dashboard/project-analysis');
+        return { analysis: mapDbProjectAnalysis(result.rows[0]), requiresConfirmation: false, nextVersion: 0 };
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error adding project analysis:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+
+export async function getProjectAnalysisDetails(analysisId: string): Promise<{ analysis: ProjectAnalysis, project: Project } | null> {
+    try {
+        const analysisRes = await db.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
+        if (analysisRes.rows.length === 0) return null;
+
+        const analysis = mapDbProjectAnalysis(analysisRes.rows[0]);
+
+        const projectRes = await db.query('SELECT * FROM projects WHERE id = $1', [analysis.projectId]);
+        if (projectRes.rows.length === 0) return null;
+
+        const project = mapDbProjectToProject(projectRes.rows[0]);
+
+        return { analysis, project };
+    } catch (error) {
+        console.error(`Failed to get project analysis details for id ${analysisId}:`, error);
+        return null;
+    }
+}
+
 
 // ========== Teams ==========
 
@@ -1151,3 +1224,4 @@ export async function getIsHolidaysNavVisible(): Promise<boolean> {
 export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
   await setSystemSetting('isHolidaysNavVisible', String(isVisible));
 }
+

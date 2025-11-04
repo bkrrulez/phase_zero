@@ -38,7 +38,7 @@ export default function ProjectsSettingsPage() {
         return projects.filter(p => p.creatorId === currentUser.id);
     }, [projects, currentUser]);
 
-    const handleAddProject = async (data: ProjectFormValues) => {
+    const handleAddProject = async (data: ProjectFormValues): Promise<string | undefined> => {
         const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
             name: data.projectName,
             projectManager: data.projectManager,
@@ -53,13 +53,14 @@ export default function ProjectsSettingsPage() {
             currentUse: data.currentUse,
         };
 
-        await addProject(newProjectData);
+        const newProjectId = await addProject(newProjectData);
         setIsAddDialogOpen(false);
         toast({
             title: t('projectAdded'),
             description: t('projectAddedDesc', { name: data.projectName }),
         });
         logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
+        return newProjectId;
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
@@ -142,7 +143,7 @@ export default function ProjectsSettingsPage() {
                                         <TableCell className="font-medium">{project.name}</TableCell>
                                         <TableCell>{project.address}</TableCell>
                                         <TableCell>{project.projectManager}</TableCell>
-                                        <TableCell>{project.currentUse ? t(project.currentUse) : 'N/A'}</TableCell>
+                                        <TableCell>{project.currentUse ? t(project.currentUse as any) : 'N/A'}</TableCell>
                                         {canManageProjects && (
                                             <TableCell>
                                                 <DropdownMenu>

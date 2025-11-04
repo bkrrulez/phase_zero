@@ -6,7 +6,7 @@ import { getProjects, addProject as addProjectAction, updateProject as updatePro
 
 interface ProjectsContextType {
   projects: Project[];
-  addProject: (newProjectData: Omit<Project, 'id'>) => Promise<void>;
+  addProject: (newProjectData: Omit<Project, 'id'>) => Promise<string | undefined>;
   updateProject: (projectId: string, data: Omit<Project, 'id'>) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   isLoading: boolean;
@@ -35,9 +35,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     fetchProjects();
   }, [fetchProjects]);
 
-  const addProject = async (projectData: Omit<Project, 'id'>) => {
-      await addProjectAction(projectData);
+  const addProject = async (projectData: Omit<Project, 'id'>): Promise<string | undefined> => {
+      const newProjectId = await addProjectAction(projectData);
       await fetchProjects(); // Re-fetch to get the new project with its ID
+      return newProjectId;
   }
 
   const updateProject = async (projectId: string, data: Omit<Project, 'id'>) => {

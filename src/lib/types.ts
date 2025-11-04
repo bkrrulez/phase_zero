@@ -120,6 +120,16 @@ export type ReferenceTable = {
   data: Record<string, any>[];
 };
 
+export type ProjectAnalysis = {
+    id: string;
+    projectId: string;
+    version: number;
+    startDate: string;
+    lastModificationDate: string;
+    newUse?: string | null;
+    fulfillability?: 'Light' | 'Medium' | 'Heavy' | null;
+};
+
 
 export type InitialData = {
   teamMembers: Omit<User, 'contract' | 'contracts'>[];
@@ -132,3 +142,4 @@ export type InitialData = {
   notifications: AppNotification[];
   systemLogs: LogEntry[];
 };
+
