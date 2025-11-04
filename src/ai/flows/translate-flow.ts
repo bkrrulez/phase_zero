@@ -4,17 +4,33 @@
  *
  * - translateText - A function that handles the rule book translation process.
  */
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+// Import the shared 'ai' instance
+import { ai } from '../genkit'; 
 
+// --- SCHEMAS ---
+
+// Input schema (used for Zod validation on prompt input)
 const TranslationInputSchema = z.object({
   jsonString: z.string()
 });
 
+// Output schema (CRITICAL for Structured Output)
+// This forces the model to return a valid JSON object matching the input structure.
+const TranslationOutputSchema = z.record(z.string(), z.string());
+
+// --- PROMPT DEFINITION ---
+
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
-  model: 'googleai/gemini-2.5-flash-preview',
+  // 1. CRITICAL FIX: Use the stable, public API model name.
+  // This avoids the deprecated '*-latest' alias and the Vertex AI specific names.
+  model: 'googleai/gemini-2.5-flash', 
+  
+  // 2. RECOMMENDED: Enforce JSON output structure using Zod schema
+  output: { schema: TranslationOutputSchema },
+  
   prompt: `
 Translate the following JSON object from German to English.
 
@@ -22,45 +38,38 @@ Rules:
 1. Translate all string values from German to English
 2. Keep all keys exactly the same
 3. Do not translate proper nouns, technical terms, or variable names
-4. Return ONLY valid JSON with the same structure - no markdown, no explanations
-5. Maintain all special characters and formatting
+4. Maintain all special characters and formatting
+// Removed the instruction "Return ONLY valid JSON..." since responseSchema enforces it.
 
 Original JSON:
 {{{jsonString}}}
-
-Return ONLY the translated JSON:
 `,
   config: {
     temperature: 0.1,
+    // 3. RECOMMENDED: Specify the output format
+    responseMimeType: 'application/json', 
   },
 });
+
+// --- FLOW FUNCTION ---
 
 export async function translateText(
   germanText: Record<string, string>
 ): Promise<Record<string, string>> {
-  // Convert to JSON string for input
+  // Convert the JavaScript object to a JSON string for the prompt input
   const jsonString = JSON.stringify(germanText, null, 2);
   
-  const { text } = await translateToEnglishPrompt({ 
+  // Call the prompt. The response will contain a structured 'output' property 
+  // that is guaranteed (by the model/Genkit) to match TranslationOutputSchema.
+  const { output } = await translateToEnglishPrompt({ 
     jsonString
   });
 
-  if (!text) {
-    throw new Error('Translation failed: AI model did not return any output.');
+  if (!output) {
+    // This should only happen in rare cases, as the schema constrains the output.
+    throw new Error('Translation failed: AI model did not return a structured output.');
   }
   
-  // Clean up the response (remove markdown code blocks if present)
-  let cleanedText = text.trim();
-  if (cleanedText.startsWith('```json')) {
-    cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-  } else if (cleanedText.startsWith('```')) {
-    cleanedText = cleanedText.replace(/```\n?/g, '');
-  }
-  
-  try {
-    return JSON.parse(cleanedText);
-  } catch (parseError) {
-    console.error('Failed to parse translation response:', cleanedText);
-    throw new Error('Translation returned invalid JSON');
-  }
+  // The output is already a parsed JavaScript object (Record<string, string>).
+  return output as Record<string, string>;
 }
