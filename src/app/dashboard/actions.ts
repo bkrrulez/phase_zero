@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -1144,3 +1143,11 @@ export async function setSystemSetting(key: string, value: string): Promise<void
     }
 }
 
+export async function getIsHolidaysNavVisible(): Promise<boolean> {
+  const isVisible = await getSystemSetting('isHolidaysNavVisible');
+  return isVisible !== 'false';
+}
+
+export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
+  await setSystemSetting('isHolidaysNavVisible', String(isVisible));
+}
