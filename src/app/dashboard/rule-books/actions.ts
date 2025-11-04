@@ -167,7 +167,7 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
 
             await client.query(
                 `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
-                VALUES ($1, $2, 'en', $3::jsonb)`,
+                VALUES ($1, $2, 'en', $3)`,
                 [translationId, entry.id, translatedData]
             );
         }
