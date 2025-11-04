@@ -15,7 +15,7 @@ const TranslationInputSchema = z.object({
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
-  model: 'googleai/gemini-pro',
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `
 Translate the following JSON object from German to English.
 
@@ -27,7 +27,7 @@ Rules:
 5. Maintain all special characters and formatting
 
 Original JSON:
-{{{input.jsonString}}}
+{{{jsonString}}}
 
 Return ONLY the translated JSON:
 `,
@@ -43,7 +43,7 @@ export async function translateText(
   const jsonString = JSON.stringify(germanText, null, 2);
   
   const { text } = await translateToEnglishPrompt({ 
-    input: { jsonString } 
+    jsonString
   });
 
   if (!text) {
