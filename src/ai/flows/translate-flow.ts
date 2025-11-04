@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A rule book translation AI flow.
@@ -29,7 +28,7 @@ Rules:
 5. Maintain all special characters and formatting
 
 Original JSON:
-{{{json .}}}
+{{{json input}}}
 
 Return the translated JSON:
 `,
@@ -41,7 +40,7 @@ Return the translated JSON:
 export async function translateText(
   germanText: Record<string, string>
 ): Promise<Record<string, string>> {
-  const { output } = await translateToEnglishPrompt(germanText);
+  const { output } = await translateToEnglishPrompt({ input: germanText });
 
   if (!output) {
     throw new Error('Translation failed: AI model did not return any output.');
