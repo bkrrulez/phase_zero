@@ -1,52 +1,39 @@
 'use server';
-/**
- * @fileOverview A rule book translation AI flow.
- *
- * - translateText - A function that handles the rule book translation process.
- */
 import { z } from 'zod';
-// Import the shared 'ai' instance
-import { ai } from '../genkit'; 
+import { ai } from '../genkit';
 
-// --- SCHEMAS ---
-
-// Input schema (used for Zod validation on prompt input)
 const TranslationInputSchema = z.object({
   jsonString: z.string()
 });
 
-// Output schema (CRITICAL for Structured Output)
-// This forces the model to return a valid JSON object matching the input structure.
 const TranslationOutputSchema = z.record(z.string(), z.string());
-
-// --- PROMPT DEFINITION ---
 
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
-  // Use stable model name
-  model: 'googleai/gemini-1.5-flash-latest', 
+  model: 'googleai/gemini-1.5-flash', // Use 1.5 for better compatibility
   output: { schema: TranslationOutputSchema },
   
   prompt: `
 Translate the following JSON object from German to English.
 
-Rules:
-1. Translate all string values from German to English
-2. Keep all keys exactly the same
-3. Do not translate proper nouns, technical terms, or variable names
-4. Maintain all special characters and formatting
+RULES:
+- Translate only the string values from German to English
+- Keep all JSON keys exactly the same
+- Do not translate proper nouns, technical terms, or variable names
+- Maintain all special characters and formatting
+- Return ONLY the translated JSON object with identical structure
 
 Original JSON:
 {{{jsonString}}}
+
+Translated JSON:
 `,
   config: {
     temperature: 0.1,
-    responseMimeType: 'application/json',
+    // Remove responseMimeType for compatibility
   },
 });
-
-// --- FLOW FUNCTION ---
 
 export async function translateText(
   germanText: Record<string, string>
