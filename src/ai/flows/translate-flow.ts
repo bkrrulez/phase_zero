@@ -1,6 +1,11 @@
-
 'use server';
-
+/**
+ * @fileOverview A rule book translation AI flow.
+ *
+ * - translateText - A function that handles the rule book translation process.
+ * - TranslationInputSchema - The input type for the translateText function.
+ * - TranslationOutputSchema - The return type for the translateText function.
+ */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
@@ -11,7 +16,7 @@ const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
   output: { schema: TranslationOutputSchema },
-  model: ai.model('googleai/gemini-1.5-flash-latest'),
+  model: 'googleai/gemini-1.5-flash-latest',
   prompt: `Translate the following JSON object from German to English.
 
 You must follow these rules:
@@ -33,7 +38,7 @@ export async function translateText(
 ): Promise<z.infer<typeof TranslationOutputSchema>> {
   const { output } = await translateToEnglishPrompt({ input: germanText });
   if (!output) {
-      throw new Error('Translation failed: AI model did not return any output.');
+    throw new Error('Translation failed: AI model did not return any output.');
   }
 
   // The output from the model might be a string that needs parsing,
