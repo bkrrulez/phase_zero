@@ -23,7 +23,8 @@ export const storyFlow = ai.defineFlow(
   },
   async (input) => {
     const llmResponse = await ai.generate({
-      model: 'gemini-1.5-flash-latest',
+      // FIX: Prepend with 'googleai/'
+      model: 'googleai/gemini-1.5-flash-latest', 
       prompt: `Write a short story about ${input.topic}`,
       output: {
         schema: StoryOutput,
