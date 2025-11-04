@@ -1,29 +1,21 @@
-
 'use server';
 /**
  * @fileOverview A rule book translation AI flow.
  *
  * - translateText - A function that handles the rule book translation process.
- * - TranslationInputSchema - The input type for the translateText function.
- * - TranslationOutputSchema - The return type for the translateText function.
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-// Wrap the dynamic record in an object with an explicit property
 const TranslationInputSchema = z.object({
-  content: z.record(z.string())
-});
-
-const TranslationOutputSchema = z.object({
-  translatedJson: z.string()
+  jsonString: z.string()
 });
 
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
-  output: { schema: TranslationOutputSchema },
-  model: 'googleai/gemini-1.5-flash-latest',
+  // Use the correct model name - gemini-1.5-flash without -latest
+  model: 'googleai/gemini-1.5-flash',
   prompt: `
 Translate the following JSON object from German to English.
 
@@ -31,13 +23,13 @@ Rules:
 1. Translate all string values from German to English
 2. Keep all keys exactly the same
 3. Do not translate proper nouns, technical terms, or variable names
-4. Return ONLY valid JSON with the same structure
+4. Return ONLY valid JSON with the same structure - no markdown, no explanations
 5. Maintain all special characters and formatting
 
 Original JSON:
-{{{json input.content}}}
+{{input.jsonString}}
 
-Return ONLY the translated JSON string, nothing else:
+Return ONLY the translated JSON:
 `,
   config: {
     temperature: 0.1,
@@ -47,18 +39,29 @@ Return ONLY the translated JSON string, nothing else:
 export async function translateText(
   germanText: Record<string, string>
 ): Promise<Record<string, string>> {
-  const { output } = await translateToEnglishPrompt({ 
-    input: { content: germanText } 
+  // Convert to JSON string for input
+  const jsonString = JSON.stringify(germanText, null, 2);
+  
+  const { text } = await translateToEnglishPrompt({ 
+    input: { jsonString } 
   });
 
-  if (!output || !output.translatedJson) {
+  if (!text) {
     throw new Error('Translation failed: AI model did not return any output.');
   }
   
+  // Clean up the response (remove markdown code blocks if present)
+  let cleanedText = text.trim();
+  if (cleanedText.startsWith('```json')) {
+    cleanedText = cleanedText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+  } else if (cleanedText.startsWith('```')) {
+    cleanedText = cleanedText.replace(/```\n?/g, '');
+  }
+  
   try {
-    return JSON.parse(output.translatedJson);
-  } catch (e) {
-    console.error('Invalid translation JSON:', output.translatedJson);
-    throw new Error('Translation output was not valid JSON.');
+    return JSON.parse(cleanedText);
+  } catch (parseError) {
+    console.error('Failed to parse translation response:', cleanedText);
+    throw new Error('Translation returned invalid JSON');
   }
 }
