@@ -1,37 +1,29 @@
 'use server';
-import { z } from 'zod';
 import { ai } from '../genkit';
-
-const TranslationInputSchema = z.object({
-  jsonString: z.string()
-});
-
-const TranslationOutputSchema = z.record(z.string(), z.string());
 
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
-  input: { schema: TranslationInputSchema },
-  model: 'googleai/gemini-1.5-flash', // Use 1.5 for better compatibility
-  output: { schema: TranslationOutputSchema },
-  
+  model: 'googleai/gemini-1.5-flash',
   prompt: `
-Translate the following JSON object from German to English.
+You are a JSON translation assistant. Translate the following JSON object from German to English.
 
-RULES:
-- Translate only the string values from German to English
-- Keep all JSON keys exactly the same
-- Do not translate proper nouns, technical terms, or variable names
-- Maintain all special characters and formatting
-- Return ONLY the translated JSON object with identical structure
+CRITICAL RULES:
+1. Translate ONLY the string values from German to English
+2. Keep ALL keys exactly the same (do not translate keys)
+3. Do not translate proper nouns, brand names, technical terms
+4. Maintain all JSON structure, formatting, and special characters
+5. Return ONLY the translated JSON object - no additional text, no explanations, no markdown
 
-Original JSON:
+EXAMPLE:
+Input: {"title": "Willkommen", "message": "Guten Tag"}
+Output: {"title": "Welcome", "message": "Good day"}
+
+Now translate this JSON:
+
 {{{jsonString}}}
-
-Translated JSON:
 `,
   config: {
     temperature: 0.1,
-    // Remove responseMimeType for compatibility
   },
 });
 
@@ -40,13 +32,22 @@ export async function translateText(
 ): Promise<Record<string, string>> {
   const jsonString = JSON.stringify(germanText, null, 2);
   
-  const { output } = await translateToEnglishPrompt({ 
+  const { text } = await translateToEnglishPrompt({ 
     jsonString
   });
 
-  if (!output) {
-    throw new Error('Translation failed: AI model did not return a structured output.');
+  if (!text) {
+    throw new Error('Translation failed: No response from AI model.');
   }
-  
-  return output as Record<string, string>;
+
+  // Clean the response - remove any markdown code blocks
+  const cleanText = text.replace(/```json\s*|\s*```/g, '').trim();
+
+  try {
+    const translated = JSON.parse(cleanText);
+    return translated;
+  } catch (error) {
+    console.error('Failed to parse JSON:', cleanText);
+    throw new Error(`Translation failed: Invalid JSON response - ${error}`);
+  }
 }
