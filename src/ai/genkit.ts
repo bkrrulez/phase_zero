@@ -5,8 +5,6 @@ export const ai = genkit({
   plugins: [
     googleAI({
       apiVersion: 'v1',
-      useVertex: true,
-      location: 'us-central1',
       apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY,
     }),
   ],
