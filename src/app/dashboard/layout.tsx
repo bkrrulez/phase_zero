@@ -19,6 +19,7 @@ import {
   ScrollText,
   LifeBuoy,
   BookText,
+  BarChart2,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -214,6 +215,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                         <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/rule-books")}>
                             <Link href="/dashboard/rule-books">
                                 <BookText /> {t('ruleBooks')}
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/project-analysis")}>
+                            <Link href="/dashboard/project-analysis">
+                                <BarChart2 /> {t('projectAnalysis')}
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -371,5 +371,6 @@
     "missingSheetError": "A sheet named 'Main' or 'main' was not found in the file.",
     "missingColumnsError": "Missing mandatory columns in 'Main' sheet: {{columns}}",
     "missingTableSheetError": "Table sheet '{{name}}' is missing from the uploaded file. Please check.",
-    "ruleBookDeleted": "Rule Book Deleted"
+    "ruleBookDeleted": "Rule Book Deleted",
+    "projectAnalysis": "Project Analysis"
 }
