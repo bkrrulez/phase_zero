@@ -14,7 +14,6 @@ const TranslationInputSchema = z.object({
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
-  // Use a stable, valid model name
   model: 'googleai/gemini-pro',
   prompt: `
 Translate the following JSON object from German to English.
