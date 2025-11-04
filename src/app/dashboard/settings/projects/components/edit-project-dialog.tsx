@@ -268,7 +268,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
             <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                 <Button type="submit">{t('saveChanges')}</Button>
-                <Button type="button" variant="secondary">{t('toNewUsage')}</Button>
+                <Button type="button" variant="secondary">{t('analysis')}</Button>
             </DialogFooter>
           </form>
         </Form>
