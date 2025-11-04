@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A rule book translation AI flow.
@@ -16,7 +15,7 @@ const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
   // Use a stable, valid model name
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-pro',
   prompt: `
 Translate the following JSON object from German to English.
 
