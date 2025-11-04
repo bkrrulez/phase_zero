@@ -23,14 +23,13 @@ export const storyFlow = ai.defineFlow(
   },
   async (input) => {
     const llmResponse = await ai.generate({
-      // FIX: Prepend with 'googleai/'
-      model: 'googleai/gemini-1.5-flash-latest', 
+      model: 'googleai/gemini-pro', 
       prompt: `Write a short story about ${input.topic}`,
       output: {
         schema: StoryOutput,
       },
     });
 
-    return llmResponse.output()!;
+    return llmResponse.output!;
   }
 );
