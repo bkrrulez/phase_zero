@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A rule book translation AI flow.
@@ -15,7 +16,7 @@ const TranslationInputSchema = z.object({
 });
 
 const TranslationOutputSchema = z.object({
-  content: z.record(z.string())
+  translatedJson: z.string()
 });
 
 const translateToEnglishPrompt = ai.definePrompt({
@@ -36,7 +37,7 @@ Rules:
 Original JSON:
 {{{json input.content}}}
 
-Return the translated JSON wrapped in a "content" property:
+Return ONLY the translated JSON string, nothing else:
 `,
   config: {
     temperature: 0.1,
@@ -50,9 +51,14 @@ export async function translateText(
     input: { content: germanText } 
   });
 
-  if (!output || !output.content) {
+  if (!output || !output.translatedJson) {
     throw new Error('Translation failed: AI model did not return any output.');
   }
   
-  return output.content;
+  try {
+    return JSON.parse(output.translatedJson);
+  } catch (e) {
+    console.error('Invalid translation JSON:', output.translatedJson);
+    throw new Error('Translation output was not valid JSON.');
+  }
 }
