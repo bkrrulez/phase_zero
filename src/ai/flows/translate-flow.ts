@@ -27,7 +27,7 @@ Rules:
 5. Maintain all special characters and formatting
 
 Original JSON:
-{{input.jsonString}}
+{{{input.jsonString}}}
 
 Return ONLY the translated JSON:
 `,
