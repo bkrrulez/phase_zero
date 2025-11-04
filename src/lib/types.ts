@@ -100,7 +100,9 @@ export type ContractEndNotification = {
 
 export type RuleBook = {
   id: string;
-  name: string;
+  name: string; // This will now store the unique name (e.g., "OIB-RL-2-v1")
+  versionName: string; // This will store the user-provided name (e.g., "OIB-RL-2")
+  version: number;
   importedAt: Date;
   rowCount: number;
 }
@@ -109,7 +111,6 @@ export type RuleBookEntry = {
   id: string;
   ruleBookId: string;
   data: Record<string, any>;
-  translation?: Record<string, any> | null;
 };
 
 export type ReferenceTable = {

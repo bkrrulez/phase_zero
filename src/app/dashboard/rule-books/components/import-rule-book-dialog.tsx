@@ -31,7 +31,7 @@ const formSchema = z.object({
 interface ImportRuleBookDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onImport: (name: string, file: File) => void;
+  onImport: (name: string, file: File, isNewVersion: boolean) => void;
   importSettings: ImportSetting[];
 }
 
@@ -39,7 +39,9 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
   const { t } = useLanguage();
   const { toast } = useToast();
   const [isConfirming, setIsConfirming] = React.useState(false);
-  const [importData, setImportData] = React.useState<{ name: string; file: File, rowCount: number } | null>(null);
+  const [isVersionConfirming, setIsVersionConfirming] = React.useState(false);
+  const [importData, setImportData] = React.useState<{ name: string; file: File, rowCount: number, isNewVersion: boolean } | null>(null);
+  const [versionData, setVersionData] = React.useState<{ existingVersions: number } | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,9 +61,14 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
         reader.onload = (e) => {
             const data = e.target?.result;
             const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
+            const sheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'main');
+            if (!sheetName) {
+                reject(new Error(t('missingSheetError')));
+                return;
+            }
+            
             const worksheet = workbook.Sheets[sheetName];
-            const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+            const headers = (XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[]).map(h => h.trim());
 
             const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
 
@@ -74,24 +81,7 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
         };
         reader.onerror = () => reject(t('importFailed'));
 
-        if (file.type.includes('csv')) {
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    const headers = results.meta.fields || [];
-                    const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
-                    if (missingColumns.length > 0) {
-                        reject(t('missingColumnsError', { columns: missingColumns.join(', ') }));
-                    } else {
-                        resolve(results.data.length);
-                    }
-                },
-                error: (err) => reject(err.message)
-            });
-        } else {
-            reader.readAsArrayBuffer(file);
-        }
+        reader.readAsArrayBuffer(file);
     });
   };
 
@@ -99,8 +89,9 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
     const file = data.file[0];
     try {
         const rowCount = await checkFileHeaders(file);
-        setImportData({ name: data.name, file, rowCount });
-        setIsConfirming(true);
+        setImportData({ name: data.name, file, rowCount, isNewVersion: false });
+        // The actual import will be triggered after confirmation
+        onImport(data.name, file, false);
     } catch (error) {
         toast({
             variant: 'destructive',
@@ -112,12 +103,38 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
 
   const handleConfirmImport = () => {
     if (importData) {
-        onImport(importData.name, importData.file);
+        onImport(importData.name, importData.file, importData.isNewVersion);
     }
     setIsConfirming(false);
     setImportData(null);
     form.reset();
   }
+
+  const handleVersionConfirm = () => {
+    if (importData) {
+        onImport(importData.name, importData.file, true); // Set isNewVersion to true
+    }
+    setIsVersionConfirming(false);
+    setImportData(null);
+    form.reset();
+  }
+
+
+  React.useEffect(() => {
+    const handleImportResponse = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        if(customEvent.detail.requiresConfirmation) {
+            setVersionData({ existingVersions: customEvent.detail.existingVersions });
+            setIsVersionConfirming(true);
+        } else {
+            setImportData(null); // Clear data on successful import
+            form.reset();
+        }
+    };
+
+    window.addEventListener('import-response', handleImportResponse);
+    return () => window.removeEventListener('import-response', handleImportResponse);
+  }, [form]);
 
   return (
     <>
@@ -149,7 +166,7 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
                 <FormControl>
                     <Input
                         type="file"
-                        accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                        accept=".xlsx, .xls"
                         {...fileRef}
                       />
                 </FormControl>
@@ -167,17 +184,17 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
         </DialogContent>
       </Dialog>
       
-      <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
+      <AlertDialog open={isVersionConfirming} onOpenChange={setIsVersionConfirming}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>{t('confirmImport')}</AlertDialogTitle>
+                <AlertDialogTitle>Rule Book Already Exists</AlertDialogTitle>
                 <AlertDialogDescription>
-                    {t('confirmImportDesc', { count: importData?.rowCount || 0 })}
+                    A rule book named "{importData?.name}" with {versionData?.existingVersions} version(s) already exists. Do you want to import this file as a new version?
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setImportData(null)}>{t('cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmImport}>{t('confirm')}</AlertDialogAction>
+                <AlertDialogCancel onClick={() => { setIsVersionConfirming(false); setImportData(null); }}>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleVersionConfirm}>{t('confirm')}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

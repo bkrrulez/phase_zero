@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx-js-style';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const defaultImportSettings: ImportSetting[] = [
   { id: 'col-1', name: 'Gliederung', isMandatory: true, type: 'Free Text', values: '' },
@@ -41,7 +42,8 @@ export default function RuleBooksPage() {
   const [ruleBooks, setRuleBooks] = React.useState<RuleBook[]>([]);
   const [importSettings, setImportSettings] = React.useState<ImportSetting[]>(defaultImportSettings);
   const [isLoading, setIsLoading] = React.useState(true);
-  
+  const [deletingBook, setDeletingBook] = React.useState<{book: RuleBook, deleteAll: boolean} | null>(null);
+
   const fetchRuleBooks = React.useCallback(async () => {
     setIsLoading(true);
     const books = await getRuleBooks();
@@ -54,7 +56,7 @@ export default function RuleBooksPage() {
   }, [fetchRuleBooks]);
 
 
-  const handleImportRuleBook = async (name: string, file: File) => {
+  const handleImportRuleBook = async (name: string, file: File, isNewVersion: boolean) => {
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
     reader.onload = async (e) => {
@@ -115,11 +117,16 @@ export default function RuleBooksPage() {
             
             const plainReferenceTables = JSON.parse(JSON.stringify(referenceTables));
 
-            await addRuleBook({ name, entries: plainEntries, referenceTables: plainReferenceTables });
+            const result = await addRuleBook({ name, entries: plainEntries, referenceTables: plainReferenceTables, isNewVersion });
             
-            toast({ title: t('importSuccess'), description: t('importSuccessDesc', { name, count: plainEntries.length }) });
-            await fetchRuleBooks(); // Refresh the list
-            setIsImportOpen(false);
+            if (result.requiresConfirmation) {
+                const event = new CustomEvent('import-response', { detail: result });
+                window.dispatchEvent(event);
+            } else {
+                toast({ title: t('importSuccess'), description: t('importSuccessDesc', { name, count: plainEntries.length }) });
+                await fetchRuleBooks(); // Refresh the list
+                setIsImportOpen(false);
+            }
 
         } catch (error: any) {
             toast({
@@ -136,10 +143,12 @@ export default function RuleBooksPage() {
     setIsSettingsOpen(false);
   }
 
-  const handleDeleteRuleBook = async (bookId: string) => {
-      await deleteRuleBook(bookId);
-      await fetchRuleBooks();
-      toast({ title: t('ruleBookDeleted'), variant: "destructive" });
+  const handleDelete = async () => {
+    if (!deletingBook) return;
+    await deleteRuleBook(deletingBook.book.id, deletingBook.deleteAll);
+    await fetchRuleBooks();
+    toast({ title: t('ruleBookDeleted'), variant: "destructive" });
+    setDeletingBook(null);
   }
 
   const handleRowClick = (bookId: string) => {
@@ -185,6 +194,7 @@ export default function RuleBooksPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('ruleBookName')}</TableHead>
+                  <TableHead>Version</TableHead>
                   <TableHead>{t('importDate')}</TableHead>
                   <TableHead>{t('rows')}</TableHead>
                   <TableHead className="text-right">{t('actions')}</TableHead>
@@ -195,6 +205,7 @@ export default function RuleBooksPage() {
                     Array.from({ length: 3 }).map((_, i) => (
                         <TableRow key={`skeleton-${i}`}>
                             <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-40" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
@@ -203,7 +214,8 @@ export default function RuleBooksPage() {
                 ) : ruleBooks.length > 0 ? (
                   ruleBooks.map((book) => (
                     <TableRow key={book.id} onClick={() => handleRowClick(book.id)} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-medium">{book.name}</TableCell>
+                      <TableCell className="font-medium">{book.versionName}</TableCell>
+                      <TableCell>{String(book.version).padStart(3, '0')}</TableCell>
                       <TableCell>{format(new Date(book.importedAt), 'PPpp')}</TableCell>
                       <TableCell>{book.rowCount}</TableCell>
                       <TableCell className="text-right">
@@ -212,9 +224,20 @@ export default function RuleBooksPage() {
                                 <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4"/></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteRuleBook(book.id); }} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4"/> {t('delete')}
-                                </DropdownMenuItem>
+                                {book.version > 1 ? (
+                                    <>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingBook({book, deleteAll: false})}} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4"/> Delete Current Version
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingBook({book, deleteAll: true})}} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4"/> Delete All Versions
+                                        </DropdownMenuItem>
+                                    </>
+                                ) : (
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingBook({book, deleteAll: true})}} className="text-destructive focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4"/> {t('delete')}
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -222,7 +245,7 @@ export default function RuleBooksPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
+                    <TableCell colSpan={5} className="h-24 text-center">
                       {t('noRuleBooks')}
                     </TableCell>
                   </TableRow>
@@ -245,6 +268,22 @@ export default function RuleBooksPage() {
         onImport={handleImportRuleBook}
         importSettings={importSettings}
       />
+      <AlertDialog open={!!deletingBook} onOpenChange={() => setDeletingBook(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {deletingBook?.deleteAll
+                    ? `This will permanently delete all versions of "${deletingBook.book.versionName}". This action cannot be undone.`
+                    : `This will permanently delete version ${String(deletingBook?.book.version).padStart(3, '0')} of "${deletingBook?.book.versionName}".`}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">{t('delete')}</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

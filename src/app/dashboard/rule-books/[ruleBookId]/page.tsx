@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getRuleBookDetails } from '../actions';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import {
@@ -15,17 +15,23 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { ReferenceTableDialog } from '../components/reference-table-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronDown } from 'lucide-react';
 
 interface RuleBookDetails {
   ruleBook: RuleBook;
   entries: RuleBookEntry[];
   referenceTables: ReferenceTable[];
+  allVersions: {version: number, id: string}[];
 }
 
 const columnOrder = [
@@ -40,6 +46,7 @@ const columnOrder = [
 
 export default function RuleBookDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const ruleBookId = params.ruleBookId as string;
   const { t } = useLanguage();
 
@@ -70,6 +77,10 @@ export default function RuleBookDetailPage() {
   const handleOpenReferenceTable = (tableName: string) => {
     const table = details?.referenceTables.find((t) => t.name === tableName);
     if (table) setSelectedTable(table);
+  };
+  
+  const handleVersionChange = (newRuleBookId: string) => {
+    router.push(`/dashboard/rule-books/${newRuleBookId}`);
   };
 
   const getColumnStyle = (header: string): React.CSSProperties => {
@@ -134,10 +145,25 @@ export default function RuleBookDetailPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold font-headline">{details.ruleBook.name}</h1>
+              <h1 className="text-3xl font-bold font-headline">{details.ruleBook.versionName}</h1>
               <p className="text-muted-foreground">{t('ruleBookDetailsDesc')}</p>
             </div>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                    Version {String(details.ruleBook.version).padStart(3, '0')}
+                    <ChevronDown className="ml-2 h-4 w-4"/>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                {details.allVersions.map(v => (
+                    <DropdownMenuItem key={v.id} onSelect={() => handleVersionChange(v.id)}>
+                        Version {String(v.version).padStart(3, '0')}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Table Container */}

@@ -7,21 +7,37 @@ import { revalidatePath } from 'next/cache';
 
 type AddRuleBookPayload = {
     name: string;
-    entries: Omit<RuleBookEntry, 'id' | 'ruleBookId' | 'translation'>[];
+    entries: Omit<RuleBookEntry, 'id' | 'ruleBookId'>[];
     referenceTables: Record<string, any[]>;
+    isNewVersion: boolean;
 }
 
-export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
-    const { name, entries, referenceTables } = payload;
+export async function addRuleBook(payload: AddRuleBookPayload): Promise<{ success: boolean; requiresConfirmation: boolean; existingVersions: number; }> {
+    const { name, entries, referenceTables, isNewVersion } = payload;
     const client = await db.connect();
-    let ruleBookId = `rb-${Date.now()}`;
 
     try {
         await client.query('BEGIN');
-        
+
+        // Check for existing versions
+        const existingRes = await client.query(
+            `SELECT MAX(version) as max_version FROM rule_books WHERE version_name = $1`,
+            [name]
+        );
+
+        const latestVersion = existingRes.rows[0]?.max_version || 0;
+
+        if (latestVersion > 0 && !isNewVersion) {
+            await client.query('ROLLBACK');
+            return { success: false, requiresConfirmation: true, existingVersions: latestVersion };
+        }
+
+        const newVersion = latestVersion + 1;
+        const ruleBookId = `rb-${Date.now()}`;
+
         await client.query(
-            `INSERT INTO rule_books (id, name, imported_at, row_count) VALUES ($1, $2, NOW(), $3)`,
-            [ruleBookId, name, entries.length]
+            `INSERT INTO rule_books (id, name, version_name, version, imported_at, row_count) VALUES ($1, $2, $3, $4, NOW(), $5)`,
+            [ruleBookId, `${name}-v${newVersion}`, name, newVersion, entries.length]
         );
 
         for (const entry of entries) {
@@ -51,15 +67,27 @@ export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
     }
     
     revalidatePath('/dashboard/rule-books');
+    return { success: true, requiresConfirmation: false, existingVersions: 0 };
 }
-
 
 export async function getRuleBooks(): Promise<RuleBook[]> {
     try {
-        const result = await db.query('SELECT id, name, imported_at, row_count FROM rule_books ORDER BY imported_at DESC');
+        // This query fetches only the latest version for each rule book name
+        const result = await db.query(`
+            SELECT id, name, version_name, version, imported_at, row_count
+            FROM (
+                SELECT *,
+                       ROW_NUMBER() OVER (PARTITION BY version_name ORDER BY version DESC) as rn
+                FROM rule_books
+            ) as ranked_books
+            WHERE rn = 1
+            ORDER BY imported_at DESC;
+        `);
         return result.rows.map(row => ({
             id: row.id,
             name: row.name,
+            versionName: row.version_name,
+            version: row.version,
             importedAt: new Date(row.imported_at),
             rowCount: row.row_count,
         }));
@@ -69,16 +97,25 @@ export async function getRuleBooks(): Promise<RuleBook[]> {
     }
 }
 
-export async function deleteRuleBook(ruleBookId: string): Promise<void> {
+export async function deleteRuleBook(ruleBookId: string, deleteAllVersions: boolean = false): Promise<void> {
     const client = await db.connect();
      try {
         await client.query('BEGIN');
-        await client.query('DELETE FROM rule_books WHERE id = $1', [ruleBookId]);
+        
+        if (deleteAllVersions) {
+            const bookRes = await client.query('SELECT version_name FROM rule_books WHERE id = $1', [ruleBookId]);
+            if (bookRes.rows.length === 0) throw new Error('Rule book not found');
+            const { version_name } = bookRes.rows[0];
+            await client.query('DELETE FROM rule_books WHERE version_name = $1', [version_name]);
+        } else {
+            await client.query('DELETE FROM rule_books WHERE id = $1', [ruleBookId]);
+        }
+        
         await client.query('COMMIT');
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error(`Error deleting rule book with ID ${ruleBookId}:`, error);
-        throw new Error('Failed to delete rule book.');
+        console.error(`Error deleting rule book(s):`, error);
+        throw new Error('Failed to delete rule book(s).');
     } finally {
         client.release();
     }
@@ -86,7 +123,7 @@ export async function deleteRuleBook(ruleBookId: string): Promise<void> {
 }
 
 
-export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook: RuleBook, entries: RuleBookEntry[], referenceTables: ReferenceTable[] } | null> {
+export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook: RuleBook, entries: RuleBookEntry[], referenceTables: ReferenceTable[], allVersions: {version: number, id: string}[] } | null> {
     const client = await db.connect();
     try {
         const ruleBookRes = await client.query('SELECT * FROM rule_books WHERE id = $1', [ruleBookId]);
@@ -94,34 +131,35 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
             return null;
         }
 
-        const entriesRes = await client.query(`
-            SELECT 
-                rbe.*,
-                (SELECT translated_data FROM rule_book_entry_translations WHERE rule_book_entry_id = rbe.id AND language = 'en') as translation
-            FROM rule_book_entries rbe 
-            WHERE rbe.rule_book_id = $1
-            ORDER BY rbe.id
-        `, [ruleBookId]);
+        const currentBook = ruleBookRes.rows[0];
+        const { version_name } = currentBook;
+        
+        // Fetch all versions for the dropdown
+        const allVersionsRes = await client.query('SELECT id, version FROM rule_books WHERE version_name = $1 ORDER BY version DESC', [version_name]);
+
+        const entriesRes = await client.query('SELECT * FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY id', [ruleBookId]);
         
         const refTablesRes = await client.query('SELECT * FROM reference_tables WHERE rule_book_id = $1', [ruleBookId]);
 
         return {
             ruleBook: {
-                id: ruleBookRes.rows[0].id,
-                name: ruleBookRes.rows[0].name,
-                importedAt: new Date(ruleBookRes.rows[0].imported_at),
-                rowCount: ruleBookRes.rows[0].row_count,
+                id: currentBook.id,
+                name: currentBook.name,
+                versionName: currentBook.version_name,
+                version: currentBook.version,
+                importedAt: new Date(currentBook.imported_at),
+                rowCount: currentBook.row_count,
             },
             entries: entriesRes.rows.map(row => ({
                 id: row.id,
                 ruleBookId: row.rule_book_id,
                 data: row.data,
-                translation: row.translation || null,
             })),
             referenceTables: refTablesRes.rows.map(row => ({
                 ...row,
-                data: row.data
+                data: JSON.parse(row.data)
             })),
+            allVersions: allVersionsRes.rows.map(row => ({ id: row.id, version: row.version })),
         };
     } catch (error) {
         console.error(`Error getting details for rule book with ID ${ruleBookId}:`, error);
@@ -129,11 +167,4 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
     } finally {
         client.release();
     }
-}
-
-
-export async function translateRuleBookOffline(ruleBookId: string): Promise<{ success: boolean; error?: string }> {
-    // This functionality has been removed.
-    console.warn("translateRuleBookOffline is deprecated and will not be executed.");
-    return { success: false, error: 'AI translation module has been removed.' };
 }
