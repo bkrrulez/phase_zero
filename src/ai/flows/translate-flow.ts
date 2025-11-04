@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A rule book translation AI flow.
@@ -9,8 +10,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-const TranslationInputSchema = z.record(z.string(), z.any());
-const TranslationOutputSchema = z.record(z.string(), z.any());
+const TranslationInputSchema = z.record(z.string(), z.string());
+const TranslationOutputSchema = z.record(z.string(), z.string());
 
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
