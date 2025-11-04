@@ -1,10 +1,9 @@
+
 'use server';
 
 import { db } from '@/lib/db';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
-import { translateText } from '@/ai/flows/translate-flow';
-
 
 type AddRuleBookPayload = {
     name: string;
@@ -52,12 +51,6 @@ export async function addRuleBook(payload: AddRuleBookPayload): Promise<void> {
     }
     
     revalidatePath('/dashboard/rule-books');
-
-    // Trigger translation in the background after successful import.
-    // We don't await this so the UI can update immediately.
-    translateRuleBookOffline(ruleBookId).catch(err => {
-        console.error(`Background translation failed for new rule book ${ruleBookId}:`, err);
-    });
 }
 
 
@@ -140,60 +133,7 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
 
 
 export async function translateRuleBookOffline(ruleBookId: string): Promise<{ success: boolean; error?: string }> {
-    const client = await db.connect();
-    try {
-        await client.query('BEGIN');
-        
-        // Clear existing English translations for this rule book to ensure a fresh translation
-        await client.query(
-            `DELETE FROM rule_book_entry_translations 
-             WHERE language = 'en' AND rule_book_entry_id IN (SELECT id FROM rule_book_entries WHERE rule_book_id = $1)`,
-            [ruleBookId]
-        );
-        
-        const entriesRes = await client.query('SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1', [ruleBookId]);
-        const entries = entriesRes.rows;
-
-        if (entries.length === 0) {
-            await client.query('COMMIT');
-            return { success: true };
-        }
-
-        for (const entry of entries) {
-            const originalData = entry.data;
-
-            // Ensure all values are strings for the translation model
-            const stringifiedData: Record<string, string> = {};
-            for (const key in originalData) {
-                stringifiedData[key] = String(originalData[key]);
-            }
-
-            const translatedData = await translateText(stringifiedData);
-            
-            const translationId = `rbet-${Date.now()}-${Math.random()}`;
-
-            // PostgreSQL expects JSONB data - ensure we're passing a plain object
-            // The pg library will automatically convert it to JSONB format
-            await client.query(
-                `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
-                VALUES ($1, $2, 'en', $3)`,
-                [translationId, entry.id, translatedData]
-            );
-        }
-        
-        await client.query('COMMIT');
-
-        revalidatePath(`/dashboard/rule-books/${ruleBookId}`);
-        return { success: true };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('AI translation failed:', error);
-        if (error instanceof Error) {
-            console.error('Stack trace:', error.stack);
-            return { success: false, error: error.message };
-        }
-        return { success: false, error: 'Unknown error occurred during translation' };
-    } finally {
-        client.release();
-    }
+    // This functionality has been removed.
+    console.warn("translateRuleBookOffline is deprecated and will not be executed.");
+    return { success: false, error: 'AI translation module has been removed.' };
 }

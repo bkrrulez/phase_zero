@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useParams } from 'next/navigation';
-import { getRuleBookDetails, translateRuleBookOffline } from '../actions';
+import { getRuleBookDetails } from '../actions';
 import { type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import {
   Table,
@@ -58,7 +58,6 @@ export default function RuleBookDetailPage() {
 
   const [details, setDetails] = React.useState<RuleBookDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [isTranslating, setIsTranslating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
   const [viewLanguage, setViewLanguage] = React.useState<'DE' | 'EN'>('DE');
@@ -96,18 +95,13 @@ export default function RuleBookDetailPage() {
     const hasMissingTranslations = details?.entries.some(e => !e.translation);
 
     if (newLang === 'EN' && hasMissingTranslations) {
-        setIsTranslating(true);
-        const result = await translateRuleBookOffline(ruleBookId);
-        setIsTranslating(false);
-
-        if (result.success) {
-            toast({ title: "Translation complete", description: "The rule book has been translated."});
-            await fetchDetails(ruleBookId);
-            setViewLanguage('EN');
-        } else {
-            toast({ variant: 'destructive', title: "Translation failed", description: result.error });
-        }
-    } else {
+      toast({ 
+        variant: 'destructive', 
+        title: "Translation Not Available", 
+        description: "The AI module has been removed, so translations cannot be generated."
+      });
+      // Don't switch the view
+    } else if (newLang === 'EN') {
         setViewLanguage('EN');
     }
   }
@@ -201,10 +195,9 @@ export default function RuleBookDetailPage() {
               id="translation-toggle"
               checked={viewLanguage === 'EN'}
               onCheckedChange={handleLanguageToggle}
-              disabled={isTranslating}
             />
             <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'EN' ? 'text-foreground' : 'text-muted-foreground')}>
-                {isTranslating ? "Translating..." : "EN (Translated)"}
+                EN (Translated)
             </Label>
           </div>
         </div>
