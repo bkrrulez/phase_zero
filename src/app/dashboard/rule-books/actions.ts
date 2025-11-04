@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -173,6 +172,8 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
             
             const translationId = `rbet-${Date.now()}-${Math.random()}`;
 
+            // PostgreSQL expects JSONB data - ensure we're passing a plain object
+            // The pg library will automatically convert it to JSONB format
             await client.query(
                 `INSERT INTO rule_book_entry_translations (id, rule_book_entry_id, language, translated_data)
                 VALUES ($1, $2, 'en', $3)`,
@@ -189,8 +190,9 @@ export async function translateRuleBookOffline(ruleBookId: string): Promise<{ su
         console.error('AI translation failed:', error);
         if (error instanceof Error) {
             console.error('Stack trace:', error.stack);
+            return { success: false, error: error.message };
         }
-        throw error; // rethrow the original error for debugging
+        return { success: false, error: 'Unknown error occurred during translation' };
     } finally {
         client.release();
     }
