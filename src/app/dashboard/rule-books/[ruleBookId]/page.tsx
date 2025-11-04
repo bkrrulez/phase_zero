@@ -20,8 +20,6 @@ import { ReferenceTableDialog } from '../components/reference-table-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 interface RuleBookDetails {
@@ -40,71 +38,34 @@ const columnOrder = [
   'Referenztabelle',
 ];
 
-const enColumnOrder = [
-  'Structure',
-  'Text',
-  'Usage',
-  'Column Type',
-  'Fulfillment',
-  'Checklist',
-  'Reference Table',
-];
-
 export default function RuleBookDetailPage() {
   const params = useParams();
   const ruleBookId = params.ruleBookId as string;
   const { t } = useLanguage();
-  const { toast } = useToast();
 
   const [details, setDetails] = React.useState<RuleBookDetails | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
-  const [viewLanguage, setViewLanguage] = React.useState<'DE' | 'EN'>('DE');
 
   const fetchDetails = React.useCallback(async (id: string) => {
     try {
       setLoading(true);
       const fetchedDetails = await getRuleBookDetails(id);
       setDetails(fetchedDetails);
-      const hasTranslations = fetchedDetails?.entries.every(e => e.translation);
-      if (viewLanguage === 'EN' && !hasTranslations) {
-          setViewLanguage('DE');
-      }
     } catch (err) {
       setError(t('importErrorDesc'));
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [t, viewLanguage]);
+  }, [t]);
 
   React.useEffect(() => {
     if (ruleBookId) {
       fetchDetails(ruleBookId);
     }
   }, [ruleBookId, fetchDetails]);
-
-  const handleLanguageToggle = async (checked: boolean) => {
-    const newLang = checked ? 'EN' : 'DE';
-    if (newLang === 'DE') {
-        setViewLanguage('DE');
-        return;
-    }
-
-    const hasMissingTranslations = details?.entries.some(e => !e.translation);
-
-    if (newLang === 'EN' && hasMissingTranslations) {
-      toast({ 
-        variant: 'destructive', 
-        title: "Translation Not Available", 
-        description: "The AI module has been removed, so translations cannot be generated."
-      });
-      // Don't switch the view
-    } else if (newLang === 'EN') {
-        setViewLanguage('EN');
-    }
-  }
 
   const handleOpenReferenceTable = (tableName: string) => {
     const table = details?.referenceTables.find((t) => t.name === tableName);
@@ -114,8 +75,8 @@ export default function RuleBookDetailPage() {
   const getColumnStyle = (header: string): React.CSSProperties => {
     const style: React.CSSProperties = { minWidth: '150px' };
 
-    const isTextCol = viewLanguage === 'DE' ? header === 'Text' : header === 'Text';
-    const isGliederungCol = viewLanguage === 'DE' ? header === 'Gliederung' : header === 'Structure';
+    const isTextCol = header === 'Text';
+    const isGliederungCol = header === 'Gliederung';
 
     if (isTextCol) {
       style.maxWidth = '500px';
@@ -145,11 +106,7 @@ export default function RuleBookDetailPage() {
   if (error) return <div className="text-destructive text-center p-8">{error}</div>;
   if (!details) return <div className="text-center p-8">{t('noRuleBooks')}</div>;
   
-  const isEnglishView = viewLanguage === 'EN';
-  const hasTranslation = details.entries.length > 0 && details.entries.every(e => e.translation);
-
-  const deHeaders = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
-  const enHeaders = hasTranslation && details.entries[0].translation ? Object.keys(details.entries[0].translation) : [];
+  const headers = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
 
   const getSortedHeaders = (headers: string[], order: string[]) => {
     return [...headers].sort((a, b) => {
@@ -162,16 +119,8 @@ export default function RuleBookDetailPage() {
     });
   };
 
-  const headers = isEnglishView && hasTranslation 
-    ? getSortedHeaders(enHeaders, enColumnOrder) 
-    : getSortedHeaders(deHeaders, columnOrder);
+  const sortedHeaders = getSortedHeaders(headers, columnOrder);
   
-  const originalHeadersSorted = getSortedHeaders(deHeaders, columnOrder);
-  
-  const headerMapping: Record<string, string> = isEnglishView && hasTranslation 
-    ? Object.fromEntries(originalHeadersSorted.map((deHeader, i) => [headers[i] || deHeader, deHeader]))
-    : {};
-
   return (
     <>
       <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
@@ -189,25 +138,7 @@ export default function RuleBookDetailPage() {
               <p className="text-muted-foreground">{t('ruleBookDetailsDesc')}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'DE' ? 'text-foreground' : 'text-muted-foreground')}>DE (Original)</Label>
-            <Switch
-              id="translation-toggle"
-              checked={viewLanguage === 'EN'}
-              onCheckedChange={handleLanguageToggle}
-            />
-            <Label htmlFor="translation-toggle" className={cn(viewLanguage === 'EN' ? 'text-foreground' : 'text-muted-foreground')}>
-                EN (Translated)
-            </Label>
-          </div>
         </div>
-
-        {isEnglishView && (
-          <div className="flex items-center gap-2 rounded-md border border-yellow-400 bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300">
-            <AlertTriangle className="h-5 w-5" />
-            <span>English version is not legally binding.</span>
-          </div>
-        )}
 
         {/* Table Container */}
         <div className="flex-1 border rounded-lg" style={{ overflow: 'auto', position: 'relative' }}>
@@ -227,7 +158,7 @@ export default function RuleBookDetailPage() {
                 >
                   {t('serialNumber')}
                 </th>
-                {headers.map((header) => (
+                {sortedHeaders.map((header) => (
                   <th
                     key={header}
                     className="h-12 px-4 text-left align-middle font-medium text-muted-foreground border-r whitespace-nowrap"
@@ -257,13 +188,12 @@ export default function RuleBookDetailPage() {
                   >
                     {index + 1}
                   </td>
-                  {headers.map((header) => {
-                    const dataObject = isEnglishView && entry.translation ? entry.translation : entry.data;
+                  {sortedHeaders.map((header) => {
+                    const dataObject = entry.data;
                     const cellValue = String(dataObject[header] ?? '');
 
-                    const originalHeader = isEnglishView && hasTranslation ? (headerMapping[header] || header) : header;
-                    const isTextColumn = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'].includes(originalHeader);
-                    const isRefColumn = originalHeader === 'Referenztabelle';
+                    const isTextColumn = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'].includes(header);
+                    const isRefColumn = header === 'Referenztabelle';
                     
                     return (
                       <td
