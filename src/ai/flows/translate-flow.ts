@@ -9,8 +9,14 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-const TranslationInputSchema = z.record(z.string());
-const TranslationOutputSchema = z.record(z.string());
+// Wrap the dynamic record in an object with an explicit property
+const TranslationInputSchema = z.object({
+  content: z.record(z.string())
+});
+
+const TranslationOutputSchema = z.object({
+  content: z.record(z.string())
+});
 
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
@@ -28,9 +34,9 @@ Rules:
 5. Maintain all special characters and formatting
 
 Original JSON:
-{{{json input}}}
+{{{json input.content}}}
 
-Return the translated JSON:
+Return the translated JSON wrapped in a "content" property:
 `,
   config: {
     temperature: 0.1,
@@ -40,11 +46,13 @@ Return the translated JSON:
 export async function translateText(
   germanText: Record<string, string>
 ): Promise<Record<string, string>> {
-  const { output } = await translateToEnglishPrompt({ input: germanText });
+  const { output } = await translateToEnglishPrompt({ 
+    input: { content: germanText } 
+  });
 
-  if (!output) {
+  if (!output || !output.content) {
     throw new Error('Translation failed: AI model did not return any output.');
   }
   
-  return output;
+  return output.content;
 }
