@@ -7,16 +7,12 @@ import { z } from 'zod';
 const TranslationInputSchema = z.object({}).catchall(z.any());
 const TranslationOutputSchema = z.object({}).catchall(z.any());
 
-export async function translateText(
-  germanText: z.infer<typeof TranslationInputSchema>
-): Promise<z.infer<typeof TranslationOutputSchema>> {
-  const prompt = ai.definePrompt(
-    {
-      name: 'translateToEnglishPrompt',
-      input: { schema: TranslationInputSchema },
-      output: { schema: TranslationOutputSchema },
-      model: ai.model('googleai/gemini-1.5-flash-latest'),
-      prompt: `Translate the following JSON object from German to English.
+const translateToEnglishPrompt = ai.definePrompt({
+  name: 'translateToEnglishPrompt',
+  input: { schema: TranslationInputSchema },
+  output: { schema: TranslationOutputSchema },
+  model: ai.model('googleai/gemini-1.5-flash-latest'),
+  prompt: `Translate the following JSON object from German to English.
 
 You must follow these rules:
 1.  Translate all values of all keys in the JSON object.
@@ -27,21 +23,14 @@ You must follow these rules:
 Original German JSON:
 {{{json .}}}
 `,
-      config: {
-        temperature: 0.1,
-      },
-    },
-    async (input) => {
-      const { output } = await ai.generate({
-        prompt: input.prompt,
-        model: input.model,
-        config: input.config,
-        output: { schema: input.output?.schema },
-      });
-      return output;
-    }
-  );
+  config: {
+    temperature: 0.1,
+  },
+});
 
-  const result = await prompt(germanText);
+export async function translateText(
+  germanText: z.infer<typeof TranslationInputSchema>
+): Promise<z.infer<typeof TranslationOutputSchema>> {
+  const result = await translateToEnglishPrompt(germanText);
   return result;
 }
