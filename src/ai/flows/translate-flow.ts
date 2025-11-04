@@ -2,7 +2,7 @@
 'use server';
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 
 const TranslationInputSchema = z.object({}).catchall(z.any());
 const TranslationOutputSchema = z.object({}).catchall(z.any());
