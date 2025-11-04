@@ -4,8 +4,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-const TranslationInputSchema = z.object({}).catchall(z.any());
-const TranslationOutputSchema = z.object({}).catchall(z.any());
+const TranslationInputSchema = z.record(z.string(), z.any());
+const TranslationOutputSchema = z.record(z.string(), z.any());
 
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
@@ -31,6 +31,19 @@ Original German JSON:
 export async function translateText(
   germanText: z.infer<typeof TranslationInputSchema>
 ): Promise<z.infer<typeof TranslationOutputSchema>> {
-  const result = await translateToEnglishPrompt(germanText);
+  const { output } = await translateToEnglishPrompt({ input: germanText });
+  if (!output) {
+      throw new Error('Translation failed: AI model did not return any output.');
+  }
+
+  // The output from the model might be a string that needs parsing,
+  // or it could already be a JSON object if the framework handles it.
+  let result;
+  try {
+    result = typeof output === 'string' ? JSON.parse(output) : output;
+  } catch (e) {
+    console.error('Invalid JSON received from translation AI:', output);
+    throw new Error('Translation output was not valid JSON.');
+  }
   return result;
 }
