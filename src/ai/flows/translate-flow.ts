@@ -24,11 +24,8 @@ const TranslationOutputSchema = z.record(z.string(), z.string());
 const translateToEnglishPrompt = ai.definePrompt({
   name: 'translateToEnglishPrompt',
   input: { schema: TranslationInputSchema },
-  // 1. CRITICAL FIX: Use the stable, public API model name.
-  // This avoids the deprecated '*-latest' alias and the Vertex AI specific names.
-  model: 'googleai/gemini-2.5-flash', 
-  
-  // 2. RECOMMENDED: Enforce JSON output structure using Zod schema
+  // Use stable model name
+  model: 'googleai/gemini-1.5-flash-latest', 
   output: { schema: TranslationOutputSchema },
   
   prompt: `
@@ -39,15 +36,13 @@ Rules:
 2. Keep all keys exactly the same
 3. Do not translate proper nouns, technical terms, or variable names
 4. Maintain all special characters and formatting
-// Removed the instruction "Return ONLY valid JSON..." since responseSchema enforces it.
 
 Original JSON:
 {{{jsonString}}}
 `,
   config: {
     temperature: 0.1,
-    // 3. RECOMMENDED: Specify the output format
-    responseMimeType: 'application/json', 
+    responseMimeType: 'application/json',
   },
 });
 
@@ -56,20 +51,15 @@ Original JSON:
 export async function translateText(
   germanText: Record<string, string>
 ): Promise<Record<string, string>> {
-  // Convert the JavaScript object to a JSON string for the prompt input
   const jsonString = JSON.stringify(germanText, null, 2);
   
-  // Call the prompt. The response will contain a structured 'output' property 
-  // that is guaranteed (by the model/Genkit) to match TranslationOutputSchema.
   const { output } = await translateToEnglishPrompt({ 
     jsonString
   });
 
   if (!output) {
-    // This should only happen in rare cases, as the schema constrains the output.
     throw new Error('Translation failed: AI model did not return a structured output.');
   }
   
-  // The output is already a parsed JavaScript object (Record<string, string>).
   return output as Record<string, string>;
 }
