@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -81,14 +80,12 @@ export default function SegmentDetailPage() {
         const currentData = analysisData[entryId] || {};
         const newData = { ...currentData, [field]: value };
         
-        // If checklist status is not Unachievable/Not verifiable, clear revised fulfillability
         if (field === 'checklistStatus' && !['Unachievable', 'Not verifiable'].includes(value || '')) {
             newData.revisedFulfillability = null;
         }
 
         setAnalysisData(prev => ({ ...prev, [entryId]: newData }));
 
-        // Autosave
         try {
             await saveAnalysisResult({
                 projectAnalysisId: analysisId,
@@ -102,22 +99,19 @@ export default function SegmentDetailPage() {
         }
     };
     
-    const columnOrder = ['Gliederung', 'Text', 'Spaltentyp', 'Checkliste', 'Überarbeitete Erfüllbarkeit'];
-
     if (loading) return <Skeleton className="h-screen w-full" />;
     if (error) return <div className="text-destructive p-8 text-center">{error}</div>;
     if (!details) return <div className="p-8 text-center">No details found for this segment.</div>;
 
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
-    // Filter out columns that are handled separately or in the header
     const displayHeaders = headersFromData.filter(
         h => h !== 'Nutzung' && h !== 'Erfüllbarkeit' && h !== 'Referenztabelle' && h !== 'Checkliste'
     );
+    
+    const columnOrder: string[] = ['Gliederung', 'Text', 'Spaltentyp', 'Checkliste', 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'];
 
-    const headersForSorting = [...displayHeaders, 'Checkliste', 'Überarbeitete Erfüllbarkeit'];
-
-    const sortedHeaders = headersForSorting.sort((a,b) => {
+    const sortedHeaders = [...displayHeaders, 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'].sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
         const indexB = columnOrder.indexOf(b);
         if (indexA === -1 && indexB === -1) return a.localeCompare(b);
@@ -161,7 +155,7 @@ export default function SegmentDetailPage() {
                                 <TableRow key={entry.id}>
                                     {sortedHeaders.map(header => (
                                         <TableCell key={header} className="align-top">
-                                            {header === 'Checkliste' ? (
+                                            {header === 'Revised Checklist' ? (
                                                 entry.data['Spaltentyp'] === 'Parameter' ? (
                                                     <Select
                                                         value={currentAnalysis.checklistStatus}
