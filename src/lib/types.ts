@@ -1,5 +1,6 @@
 
 
+
 export type Contract = {
   id: string;
   userId: string;
@@ -142,5 +143,6 @@ export type InitialData = {
   notifications: AppNotification[];
   systemLogs: LogEntry[];
 };
+
 
 

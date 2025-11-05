@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -86,7 +87,16 @@ export default function AnalysisDetailPage() {
         }
     }, [analysisId, fetchDetails]);
 
-    const handleSave = async () => {
+    const handleSave = async (andProceed: boolean = false) => {
+        if (!newUse || fulfillability.length === 0) {
+            toast({
+                variant: 'destructive',
+                title: "Missing Information",
+                description: "Please select both a 'New Use' and at least one 'Fulfillability' option before proceeding.",
+            });
+            return;
+        }
+
         setIsSaving(true);
         try {
             const updatedAnalysis = await updateProjectAnalysis(analysisId, {
@@ -94,9 +104,12 @@ export default function AnalysisDetailPage() {
                 fulfillability,
             });
             if (updatedAnalysis) {
-                toast({ title: "Saved", description: "Analysis details have been saved." });
-                // Re-fetch to confirm data persistence and update state
-                await fetchDetails(analysisId);
+                if (andProceed) {
+                    router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
+                } else {
+                    toast({ title: "Saved", description: "Analysis details have been saved." });
+                    await fetchDetails(analysisId);
+                }
             } else {
                 throw new Error('Failed to save data.');
             }
@@ -174,12 +187,13 @@ export default function AnalysisDetailPage() {
                 </CardContent>
                 <CardContent className="flex justify-end gap-2 pt-6">
                     <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={isSaving}>
+                    <Button onClick={() => handleSave(false)} disabled={isSaving}>
                         {isSaving ? 'Saving...' : 'Save'}
                     </Button>
-                    <Button variant="secondary" disabled={isSaving}>Next</Button>
+                    <Button variant="secondary" onClick={() => handleSave(true)} disabled={isSaving}>Next</Button>
                 </CardContent>
             </Card>
         </div>
     );
 }
+

@@ -1,4 +1,5 @@
 
+
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -337,7 +338,6 @@
     "importDate": "Import Date",
     "rows": "Rows",
     "noRuleBooks": "No rule books have been imported yet.",
-    "error": "Error",
     "importError": "Import Error",
     "importSuccess": "Import Successful",
     "importSuccessDesc": "{{name}} with {{count}} rows has been imported.",
@@ -372,5 +372,11 @@
     "missingColumnsError": "Missing mandatory columns in 'Main' sheet: {{columns}}",
     "missingTableSheetError": "Table sheet '{{name}}' is missing from the uploaded file. Please check.",
     "ruleBookDeleted": "Rule Book Deleted",
-    "projectAnalysis": "Project Analysis"
+    "projectAnalysis": "Project Analysis",
+    "Checkliste": "Checklist",
+    "Revised Fulfillability": "Revised Fulfillability",
+    "Leicht": "Light",
+    "Mittel": "Medium",
+    "Schwer": "Heavy"
 }
+
