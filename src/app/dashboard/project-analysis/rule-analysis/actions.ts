@@ -38,10 +38,8 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
         if (!details) continue;
 
         const filteredEntries = details.entries.filter(entry => {
-            const nutzung = (entry.data['Nutzung'] || '').trim();
-            const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
-
             // Handle Nutzung (Usage) match
+            const nutzung = (entry.data['Nutzung'] || '').trim();
             let nutzungMatch = false;
             if (nutzung === '' || nutzung === 'Bitte auswaehlen') {
                 nutzungMatch = true;
@@ -56,12 +54,15 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
             }
             
             // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
+            const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
             let erfullbarkeitMatch = false;
-            const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
-            if (lowerErfullbarkeitValue === '' || lowerErfullbarkeitValue === 'bitte auswaehlen') {
+            if (erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen') {
                 erfullbarkeitMatch = true;
-            } else if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
-                erfullbarkeitMatch = true;
+            } else {
+                const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
+                if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
+                    erfullbarkeitMatch = true;
+                }
             }
             
             return nutzungMatch && erfullbarkeitMatch;
@@ -169,9 +170,6 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
         const nutzung = (entry.data['Nutzung'] || '').trim();
-        const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
-        
-        // Handle Nutzung (Usage) match
         let nutzungMatch = false;
         if (nutzung === '' || nutzung === 'Bitte auswaehlen') {
             nutzungMatch = true;
@@ -185,13 +183,15 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
             }
         }
         
-        // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
+        const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
         let erfullbarkeitMatch = false;
-        const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
-        if (lowerErfullbarkeitValue === '' || lowerErfullbarkeitValue === 'bitte auswaehlen') {
+        if (erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen') {
             erfullbarkeitMatch = true;
-        } else if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
-            erfullbarkeitMatch = true;
+        } else {
+            const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
+            if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
+                erfullbarkeitMatch = true;
+            }
         }
         
         return nutzungMatch && erfullbarkeitMatch;
