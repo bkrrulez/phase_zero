@@ -90,10 +90,25 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     }
 
     async function handleAnalysis() {
-        const projectId = await onAddProject(form.getValues());
+        const data = form.getValues();
+        const { isDirty, isValid } = form.formState;
+        
+        // Ensure form is filled and valid before proceeding
+        if (!isValid && !isDirty) {
+             form.trigger(); // Manually trigger validation to show errors
+             toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all required project details first."});
+             return;
+        }
+        if (!isValid) {
+            toast({ variant: 'destructive', title: "Invalid Data", description: "Please correct the errors before proceeding."});
+            return;
+        }
+
+        const projectId = await onAddProject(data);
         if (projectId) {
             const { analysis } = await addProjectAnalysis(projectId);
             if (analysis) {
+                onOpenChange(false);
                 router.push(`/dashboard/project-analysis/${analysis.id}`);
             } else {
                  toast({

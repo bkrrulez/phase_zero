@@ -114,7 +114,7 @@ const mapDbProjectAnalysis = (row: any): ProjectAnalysis => ({
     startDate: new Date(row.start_date).toISOString(),
     lastModificationDate: new Date(row.last_modification_date).toISOString(),
     newUse: row.new_use,
-    fulfillability: row.fulfillability,
+    fulfillability: row.fulfillability, // Is now an array
 });
 
 
@@ -744,7 +744,7 @@ export async function getProjects(): Promise<Project[]> {
     return result.rows.map(mapDbProjectToProject);
 }
 
-export async function addProject(projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<void> {
+export async function addProject(projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<string | undefined> {
     const { 
         name, 
         projectManager,
@@ -774,7 +774,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
                 project_owner, year_of_construction, number_of_floors, escape_level, 
-                listedBuilding, protection_zone, current_use
+                listed_building, protection_zone, current_use
              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 
@@ -785,6 +785,8 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
         
         await client.query('COMMIT');
         revalidatePath('/dashboard/settings/projects');
+        revalidatePath('/dashboard');
+        return id;
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error adding project:', error);
@@ -826,6 +828,7 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
         
         await client.query('COMMIT');
         revalidatePath('/dashboard/settings/projects');
+        revalidatePath('/dashboard');
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error updating project:', error);
@@ -897,6 +900,29 @@ export async function getProjectAnalysisDetails(analysisId: string): Promise<{ a
         console.error(`Failed to get project analysis details for id ${analysisId}:`, error);
         return null;
     }
+}
+
+export async function updateProjectAnalysis(
+  analysisId: string,
+  data: { newUse?: string | null; fulfillability?: string[] | null }
+): Promise<ProjectAnalysis | null> {
+  const { newUse, fulfillability } = data;
+  try {
+    const result = await db.query(
+      `UPDATE project_analyses 
+       SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
+       WHERE id = $3 RETURNING *`,
+      [newUse, fulfillability, analysisId]
+    );
+    if (result.rows.length > 0) {
+      revalidatePath(`/dashboard/project-analysis/${analysisId}`);
+      return mapDbProjectAnalysis(result.rows[0]);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error updating project analysis:', error);
+    return null;
+  }
 }
 
 
@@ -1224,4 +1250,5 @@ export async function getIsHolidaysNavVisible(): Promise<boolean> {
 export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
   await setSystemSetting('isHolidaysNavVisible', String(isVisible));
 }
+
 

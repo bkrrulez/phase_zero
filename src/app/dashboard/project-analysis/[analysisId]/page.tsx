@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getProjectAnalysisDetails } from '../../actions';
+import { getProjectAnalysisDetails, updateProjectAnalysis } from '../../actions';
 import { type ProjectAnalysis, type Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -16,6 +16,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+
 
 interface AnalysisDetails {
     analysis: ProjectAnalysis;
@@ -37,11 +39,11 @@ const currentUseOptions = [
     { value: 'Non Residential', label: 'Non Residential' },
 ];
 
-const fulfillabilityOptions = [
-    { value: 'Light', label: 'Light', de: 'Leicht' },
-    { value: 'Medium', label: 'Medium', de: 'Mittel' },
-    { value: 'Heavy', label: 'Heavy', de: 'Schwer' },
-]
+const fulfillabilityOptions: MultiSelectOption[] = [
+    { value: 'Light', label: 'Light' },
+    { value: 'Medium', label: 'Medium' },
+    { value: 'Heavy', label: 'Heavy' },
+];
 
 export default function AnalysisDetailPage() {
     const params = useParams();
@@ -52,36 +54,61 @@ export default function AnalysisDetailPage() {
 
     const [details, setDetails] = React.useState<AnalysisDetails | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [isSaving, setIsSaving] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     
     // Form state
     const [newUse, setNewUse] = React.useState<string | undefined>(undefined);
-    const [fulfillability, setFulfillability] = React.useState<string | undefined>(undefined);
+    const [fulfillability, setFulfillability] = React.useState<string[]>([]);
+
+    const fetchDetails = React.useCallback(async (id: string) => {
+        setIsLoading(true);
+        try {
+            const data = await getProjectAnalysisDetails(id);
+            if (data) {
+                setDetails(data);
+                setNewUse(data.analysis.newUse || undefined);
+                setFulfillability(data.analysis.fulfillability || []);
+            } else {
+                setError('Analysis not found.');
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load analysis details.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     React.useEffect(() => {
         if (analysisId) {
-            setIsLoading(true);
-            getProjectAnalysisDetails(analysisId)
-                .then(data => {
-                    if (data) {
-                        setDetails(data);
-                        setNewUse(data.analysis.newUse || undefined);
-                        setFulfillability(data.analysis.fulfillability || undefined);
-                    } else {
-                        setError('Analysis not found.');
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    setError('Failed to load analysis details.');
-                })
-                .finally(() => setIsLoading(false));
+            fetchDetails(analysisId);
         }
-    }, [analysisId]);
+    }, [analysisId, fetchDetails]);
 
-    const handleSave = () => {
-        // Here you would call a server action to save the analysis
-        toast({ title: "Saved", description: "Analysis details have been saved." });
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const updatedAnalysis = await updateProjectAnalysis(analysisId, {
+                newUse,
+                fulfillability,
+            });
+            if (updatedAnalysis) {
+                toast({ title: "Saved", description: "Analysis details have been saved." });
+                // Re-fetch to confirm data persistence and update state
+                await fetchDetails(analysisId);
+            } else {
+                throw new Error('Failed to save data.');
+            }
+        } catch (err) {
+            toast({
+                variant: 'destructive',
+                title: "Error",
+                description: "Could not save analysis details.",
+            });
+        } finally {
+            setIsSaving(false);
+        }
     }
     
     if (isLoading) {
@@ -136,28 +163,23 @@ export default function AnalysisDetailPage() {
                         </div>
                         <div className="space-y-2">
                             <Label>Fulfillability</Label>
-                             <Select value={fulfillability} onValueChange={setFulfillability}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select fulfillability..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {fulfillabilityOptions.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value}>
-                                            {language === 'de' ? opt.de : opt.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                             <MultiSelect
+                                options={fulfillabilityOptions}
+                                selected={fulfillability}
+                                onChange={setFulfillability}
+                                placeholder="Select fulfillability..."
+                             />
                         </div>
                      </div>
                 </CardContent>
                 <CardContent className="flex justify-end gap-2 pt-6">
-                    <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-                    <Button onClick={handleSave}>Save</Button>
-                    <Button variant="secondary">Next</Button>
+                    <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button variant="secondary" disabled={isSaving}>Next</Button>
                 </CardContent>
             </Card>
         </div>
     );
 }
-

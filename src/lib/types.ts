@@ -127,7 +127,7 @@ export type ProjectAnalysis = {
     startDate: string;
     lastModificationDate: string;
     newUse?: string | null;
-    fulfillability?: 'Light' | 'Medium' | 'Heavy' | null;
+    fulfillability?: string[] | null;
 };
 
 
@@ -142,4 +142,5 @@ export type InitialData = {
   notifications: AppNotification[];
   systemLogs: LogEntry[];
 };
+
 
