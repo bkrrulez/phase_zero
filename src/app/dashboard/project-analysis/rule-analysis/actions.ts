@@ -5,6 +5,10 @@ import { db } from '@/lib/db';
 import { getRuleBookDetails, getRuleBooks } from '../../rule-books/actions';
 import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
 import { getProjectAnalysisDetails } from '../../actions';
+import de from '@/locales/de.json';
+import en from '@/locales/en.json';
+
+const locales = { de, en };
 
 type RuleAnalysisResult = {
     id: string;
@@ -26,7 +30,10 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
         return [];
     }
     
-    const lowerCaseNewUseWords = new Set(newUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+    // --- FIX: Translate English key to German value for comparison ---
+    const germanNewUse = (locales.de as any)[newUse] || newUse;
+    
+    const lowerCaseNewUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
     const lowerCaseFulfillability = fulfillability.map(f => f.toLowerCase());
 
     const allRuleBooks = await getRuleBooks();
@@ -38,22 +45,19 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
 
         const filteredEntries = details.entries.filter(entry => {
             const nutzungValue = (entry.data['Nutzung'] || '').trim();
-            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim();
+            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
 
             // --- Fulfillability Check ---
             let erfullbarkeitMatch = false;
-            if (erfullbarkeitValue === '' || erfullbarkeitValue === 'Bitte auswaehlen') {
+            if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
                 erfullbarkeitMatch = true;
-            } else {
-                const entryFulfillabilityLower = erfullbarkeitValue.toLowerCase();
-                if (lowerCaseFulfillability.includes(entryFulfillabilityLower)) {
-                    erfullbarkeitMatch = true;
-                }
+            } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
+                erfullbarkeitMatch = true;
             }
             
             // --- Usage Check ---
             let nutzungMatch = false;
-            if (nutzungValue === '' || nutzungValue === 'Bitte auswaehlen') {
+            if (nutzungValue === '' || nutzungValue.toLowerCase() === 'bitte auswaehlen') {
                 nutzungMatch = true;
             } else {
                 const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
@@ -172,28 +176,26 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const { newUse, fulfillability } = analysisDetails.analysis;
     if (!newUse || !fulfillability) throw new Error('Analysis criteria not set.');
 
-    const lowerCaseNewUseWords = new Set(newUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+    const germanNewUse = (locales.de as any)[newUse] || newUse;
+    const lowerCaseNewUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
     const lowerCaseFulfillability = fulfillability.map(f => f.toLowerCase());
 
     // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
         const nutzungValue = (entry.data['Nutzung'] || '').trim();
-        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim();
+        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
 
         // --- Fulfillability Check ---
         let erfullbarkeitMatch = false;
-        if (erfullbarkeitValue === '' || erfullbarkeitValue === 'Bitte auswaehlen') {
+        if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
             erfullbarkeitMatch = true;
-        } else {
-            const entryFulfillabilityLower = erfullbarkeitValue.toLowerCase();
-            if (lowerCaseFulfillability.includes(entryFulfillabilityLower)) {
-                erfullbarkeitMatch = true;
-            }
+        } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
+            erfullbarkeitMatch = true;
         }
         
         // --- Usage Check ---
         let nutzungMatch = false;
-        if (nutzungValue === '' || nutzungValue === 'Bitte auswaehlen') {
+        if (nutzungValue === '' || nutzungValue.toLowerCase() === 'bitte auswaehlen') {
             nutzungMatch = true;
         } else {
             const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
@@ -263,3 +265,4 @@ export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, c
 export async function deleteAnalysisResults(projectAnalysisId: string) {
     await db.query('DELETE FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
 }
+
