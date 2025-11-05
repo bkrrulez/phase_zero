@@ -45,8 +45,8 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
             if (erfullbarkeitValue === '' || erfullbarkeitValue === 'Bitte auswaehlen') {
                 erfullbarkeitMatch = true;
             } else {
-                const lowerCaseErfullbarkeitValue = erfullbarkeitValue.toLowerCase();
-                if (lowerCaseFulfillability.includes(lowerCaseErfullbarkeitValue)) {
+                const entryFulfillabilityLower = erfullbarkeitValue.toLowerCase();
+                if (lowerCaseFulfillability.includes(entryFulfillabilityLower)) {
                     erfullbarkeitMatch = true;
                 }
             }
@@ -153,7 +153,13 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
 export async function getAnalysisResults(projectAnalysisId: string): Promise<RuleAnalysisResult[]> {
     const res = await db.query('SELECT * FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
-    return res.rows;
+    return res.rows.map(row => ({
+        id: row.id,
+        projectAnalysisId: row.project_analysis_id,
+        ruleBookEntryId: row.rule_book_entry_id,
+        checklistStatus: row.checklist_status,
+        revisedFulfillability: row.revised_fulfillability,
+    }));
 }
 
 export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segmentKey }: { projectAnalysisId: string, ruleBookId: string, segmentKey: string }) {
@@ -179,8 +185,8 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         if (erfullbarkeitValue === '' || erfullbarkeitValue === 'Bitte auswaehlen') {
             erfullbarkeitMatch = true;
         } else {
-            const lowerCaseErfullbarkeitValue = erfullbarkeitValue.toLowerCase();
-            if (lowerCaseFulfillability.includes(lowerCaseErfullbarkeitValue)) {
+            const entryFulfillabilityLower = erfullbarkeitValue.toLowerCase();
+            if (lowerCaseFulfillability.includes(entryFulfillabilityLower)) {
                 erfullbarkeitMatch = true;
             }
         }
