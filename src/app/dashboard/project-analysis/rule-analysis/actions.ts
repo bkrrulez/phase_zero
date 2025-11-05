@@ -112,7 +112,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             const completedCount = segmentEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
                 // An entry is "complete" if it's not a parameter type, or if it is and has a status.
-                return entry.data['Spaltentyp'] !== 'Parameter' || (analysis && analysis.checklistStatus);
+                return e.data['Spaltentyp'] !== 'Parameter' || (analysis && analysis.checklistStatus);
             }).length;
 
             return {
