@@ -26,9 +26,8 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
         return [];
     }
     
-    const germanNewUse = newUse;
-    const lowerFulfillabilityOptions = fulfillability.map(f => f.toLowerCase());
-    const newUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
+    const lowerCaseNewUseWords = new Set(newUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+    const lowerCaseFulfillability = fulfillability.map(f => f.toLowerCase());
 
     const allRuleBooks = await getRuleBooks();
     const filteredRuleBooksData = [];
@@ -38,33 +37,34 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
         if (!details) continue;
 
         const filteredEntries = details.entries.filter(entry => {
-            // Handle Nutzung (Usage) match
-            const nutzung = (entry.data['Nutzung'] || '').trim();
+            const nutzungValue = (entry.data['Nutzung'] || '').trim();
+            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim();
+
+            // --- Fulfillability Check ---
+            let erfullbarkeitMatch = false;
+            if (erfullbarkeitValue === '' || erfullbarkeitValue === 'Bitte auswaehlen') {
+                erfullbarkeitMatch = true;
+            } else {
+                const lowerCaseErfullbarkeitValue = erfullbarkeitValue.toLowerCase();
+                if (lowerCaseFulfillability.includes(lowerCaseErfullbarkeitValue)) {
+                    erfullbarkeitMatch = true;
+                }
+            }
+            
+            // --- Usage Check ---
             let nutzungMatch = false;
-            if (nutzung === '' || nutzung === 'Bitte auswaehlen') {
+            if (nutzungValue === '' || nutzungValue === 'Bitte auswaehlen') {
                 nutzungMatch = true;
             } else {
-                const entryNutzungWords = new Set(nutzung.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
+                const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
                 if (entryNutzungWords.size > 0) {
-                    const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
+                    const matchingWords = [...entryNutzungWords].filter(word => lowerCaseNewUseWords.has(word));
                     if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
                         nutzungMatch = true;
                     }
                 }
             }
-            
-            // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
-            const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
-            let erfullbarkeitMatch = false;
-            if (erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen') {
-                erfullbarkeitMatch = true;
-            } else {
-                const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
-                if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
-                    erfullbarkeitMatch = true;
-                }
-            }
-            
+
             return nutzungMatch && erfullbarkeitMatch;
         });
 
@@ -163,34 +163,39 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
-    const germanNewUse = analysisDetails.analysis.newUse || '';
-    const lowerFulfillabilityOptions = (analysisDetails.analysis.fulfillability || []).map(f => f.toLowerCase());
-    const newUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
+    const { newUse, fulfillability } = analysisDetails.analysis;
+    if (!newUse || !fulfillability) throw new Error('Analysis criteria not set.');
+
+    const lowerCaseNewUseWords = new Set(newUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+    const lowerCaseFulfillability = fulfillability.map(f => f.toLowerCase());
 
     // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
-        const nutzung = (entry.data['Nutzung'] || '').trim();
-        let nutzungMatch = false;
-        if (nutzung === '' || nutzung === 'Bitte auswaehlen') {
-            nutzungMatch = true;
+        const nutzungValue = (entry.data['Nutzung'] || '').trim();
+        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim();
+
+        // --- Fulfillability Check ---
+        let erfullbarkeitMatch = false;
+        if (erfullbarkeitValue === '' || erfullbarkeitValue === 'Bitte auswaehlen') {
+            erfullbarkeitMatch = true;
         } else {
-            const entryNutzungWords = new Set(nutzung.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
-            if (entryNutzungWords.size > 0) {
-                const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
-                if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
-                    nutzungMatch = true;
-                }
+            const lowerCaseErfullbarkeitValue = erfullbarkeitValue.toLowerCase();
+            if (lowerCaseFulfillability.includes(lowerCaseErfullbarkeitValue)) {
+                erfullbarkeitMatch = true;
             }
         }
         
-        const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
-        let erfullbarkeitMatch = false;
-        if (erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen') {
-            erfullbarkeitMatch = true;
+        // --- Usage Check ---
+        let nutzungMatch = false;
+        if (nutzungValue === '' || nutzungValue === 'Bitte auswaehlen') {
+            nutzungMatch = true;
         } else {
-            const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
-            if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
-                erfullbarkeitMatch = true;
+            const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+            if (entryNutzungWords.size > 0) {
+                const matchingWords = [...entryNutzungWords].filter(word => lowerCaseNewUseWords.has(word));
+                if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
+                    nutzungMatch = true;
+                }
             }
         }
         
