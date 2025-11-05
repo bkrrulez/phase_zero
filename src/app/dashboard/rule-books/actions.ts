@@ -157,7 +157,7 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
             })),
             referenceTables: refTablesRes.rows.map(row => ({
                 ...row,
-                data: JSON.parse(row.data)
+                data: typeof row.data === 'string' ? JSON.parse(row.data) : [],
             })),
             allVersions: allVersionsRes.rows.map(row => ({ id: row.id, version: row.version })),
         };
