@@ -27,6 +27,8 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
     }
     
     const germanNewUse = newUse;
+    const lowerFulfillability = fulfillability.map(f => f.toLowerCase());
+    const newUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
 
     const allRuleBooks = await getRuleBooks();
     const filteredRuleBooksData = [];
@@ -39,8 +41,21 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
             const nutzung = (entry.data['Nutzung'] || '').trim();
             const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
 
-            const nutzungMatch = nutzung === germanNewUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
-            const erfullbarkeitMatch = fulfillability.includes(erfullbarkeit) || erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen';
+            // Handle Nutzung (Usage) match
+            let nutzungMatch = false;
+            if (nutzung === '' || nutzung === 'Bitte auswaehlen') {
+                nutzungMatch = true;
+            } else {
+                const entryNutzungWords = new Set(nutzung.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
+                const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
+                if (matchingWords.length >= 2) {
+                    nutzungMatch = true;
+                }
+            }
+            
+            // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
+            const lowerErfullbarkeit = erfullbarkeit.toLowerCase();
+            const erfullbarkeitMatch = lowerFulfillability.includes(lowerErfullbarkeit) || lowerErfullbarkeit === '' || lowerErfullbarkeit === 'bitte auswaehlen';
             
             return nutzungMatch && erfullbarkeitMatch;
         });
@@ -140,16 +155,30 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
-    const germanNewUse = analysisDetails.analysis.newUse;
-    const germanFulfillability = analysisDetails.analysis.fulfillability || [];
+    const germanNewUse = analysisDetails.analysis.newUse || '';
+    const lowerFulfillability = (analysisDetails.analysis.fulfillability || []).map(f => f.toLowerCase());
+    const newUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
 
     // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
         const nutzung = (entry.data['Nutzung'] || '').trim();
         const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
         
-        const nutzungMatch = nutzung === germanNewUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
-        const erfullbarkeitMatch = germanFulfillability.includes(erfullbarkeit) || erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen';
+        // Handle Nutzung (Usage) match
+        let nutzungMatch = false;
+        if (nutzung === '' || nutzung === 'Bitte auswaehlen') {
+            nutzungMatch = true;
+        } else {
+            const entryNutzungWords = new Set(nutzung.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
+            const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
+            if (matchingWords.length >= 2) {
+                nutzungMatch = true;
+            }
+        }
+        
+        // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
+        const lowerErfullbarkeit = erfullbarkeit.toLowerCase();
+        const erfullbarkeitMatch = lowerFulfillability.includes(lowerErfullbarkeit) || lowerErfullbarkeit === '' || lowerErfullbarkeit === 'bitte auswaehlen';
         
         return nutzungMatch && erfullbarkeitMatch;
     });
