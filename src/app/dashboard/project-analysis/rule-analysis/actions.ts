@@ -26,9 +26,7 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
         return [];
     }
     
-    // The user's selection for 'newUse' might be the German translation.
-    // The data in the rulebook might be in German. Let's find the corresponding German value.
-    const germanNewUse = newUse; // Assuming the value is already correct from the select dropdown
+    const germanNewUse = newUse;
 
     const allRuleBooks = await getRuleBooks();
     const filteredRuleBooksData = [];
@@ -42,10 +40,9 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
             const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
 
             const nutzungMatch = nutzung === germanNewUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
-            if (!nutzungMatch) return false;
-
             const erfullbarkeitMatch = fulfillability.includes(erfullbarkeit) || erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen';
-            return erfullbarkeitMatch;
+            
+            return nutzungMatch && erfullbarkeitMatch;
         });
 
         if (filteredEntries.length > 0) {
@@ -152,10 +149,9 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
         
         const nutzungMatch = nutzung === germanNewUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
-        if (!nutzungMatch) return false;
-
         const erfullbarkeitMatch = germanFulfillability.includes(erfullbarkeit) || erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen';
-        return erfullbarkeitMatch;
+        
+        return nutzungMatch && erfullbarkeitMatch;
     });
 
     // Then, get all entries for the requested segment
