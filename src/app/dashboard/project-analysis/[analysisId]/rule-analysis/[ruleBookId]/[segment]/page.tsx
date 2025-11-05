@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSegmentDetails, saveAnalysisResult } from '../../actions';
+import { getSegmentDetails, saveAnalysisResult } from '@/app/dashboard/project-analysis/rule-analysis/actions';
 import { type ProjectAnalysis, type RuleBook, type RuleBookEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -108,9 +108,9 @@ export default function SegmentDetailPage() {
         h => h !== 'Nutzung' && h !== 'Erfüllbarkeit' && h !== 'Referenztabelle' && h !== 'Checkliste'
     );
     
-    const columnOrder: string[] = ['Gliederung', 'Text', 'Spaltentyp', 'Checkliste', 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'];
+    const columnOrder: string[] = ['Gliederung', 'Text', 'Spaltentyp', 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
 
-    const sortedHeaders = ['Checkliste', ...displayHeaders, 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'].sort((a,b) => {
+    const sortedHeaders = displayHeaders.sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
         const indexB = columnOrder.indexOf(b);
         if (indexA === -1 && indexB === -1) return a.localeCompare(b);
@@ -118,6 +118,9 @@ export default function SegmentDetailPage() {
         if (indexB === -1) return -1;
         return indexA - indexB;
     });
+
+    // Manually add the interactive columns
+    const finalHeaders = [...sortedHeaders, 'Revised Checklist', 'Revised Fulfillability'];
 
     return (
         <div className="space-y-6">
@@ -142,7 +145,7 @@ export default function SegmentDetailPage() {
                 <Table>
                     <TableHeader className="sticky top-0 bg-card z-10">
                         <TableRow>
-                            {sortedHeaders.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
+                            {finalHeaders.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -152,7 +155,7 @@ export default function SegmentDetailPage() {
 
                             return (
                                 <TableRow key={entry.id}>
-                                    {sortedHeaders.map(header => (
+                                    {finalHeaders.map(header => (
                                         <TableCell key={header} className="align-top">
                                             {header === 'Revised Checklist' ? (
                                                 entry.data['Spaltentyp'] === 'Parameter' ? (
@@ -166,7 +169,7 @@ export default function SegmentDetailPage() {
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">N/A</span>
-                                            ) : header === 'Überarbeitete Erfüllbarkeit' ? (
+                                            ) : header === 'Revised Fulfillability' ? (
                                                 showRevisedFulfillability ? (
                                                     <Select
                                                         value={currentAnalysis.revisedFulfillability || ''}
