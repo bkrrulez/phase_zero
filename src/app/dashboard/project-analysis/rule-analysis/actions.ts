@@ -205,3 +205,7 @@ export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, c
         );
     }
 }
+
+export async function deleteAnalysisResults(projectAnalysisId: string) {
+    await db.query('DELETE FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
+}
