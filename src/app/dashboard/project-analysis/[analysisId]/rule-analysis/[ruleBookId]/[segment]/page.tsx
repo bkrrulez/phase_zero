@@ -107,12 +107,21 @@ export default function SegmentDetailPage() {
     if (error) return <div className="text-destructive p-8 text-center">{error}</div>;
     if (!details) return <div className="p-8 text-center">No details found for this segment.</div>;
 
-    const headers = details.entries.length > 0
-        ? Object.keys(details.entries[0].data).filter(h => ['Gliederung', 'Text', 'Spaltentyp'].includes(h))
-        : [];
+    const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
-    const sortedHeaders = [...headers, 'Checkliste', 'Revised Fulfillability'].sort((a,b) => columnOrder.indexOf(a) - columnOrder.indexOf(b));
+    // Filter out Nutzung and Erfüllbarkeit as they are in the header now
+    const displayHeaders = headersFromData.filter(h => h !== 'Nutzung' && h !== 'Erfüllbarkeit' && h !== 'Referenztabelle');
 
+    const headersForSorting = [...displayHeaders, 'Checkliste', 'Überarbeitete Erfüllbarkeit'];
+
+    const sortedHeaders = headersForSorting.sort((a,b) => {
+        const indexA = columnOrder.indexOf(a);
+        const indexB = columnOrder.indexOf(b);
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+    });
 
     return (
         <div className="space-y-6">
@@ -161,7 +170,7 @@ export default function SegmentDetailPage() {
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">N/A</span>
-                                            ) : header === 'Revised Fulfillability' ? (
+                                            ) : header === 'Überarbeitete Erfüllbarkeit' ? (
                                                 showRevisedFulfillability ? (
                                                     <Select
                                                         value={currentAnalysis.revisedFulfillability || ''}

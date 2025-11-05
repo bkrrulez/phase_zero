@@ -55,10 +55,10 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
 }
 
 
-const getSegmentKey = (gliederung: string): string => {
-    if (!gliederung) return 'Uncategorized';
+const getSegmentKey = (gliederung: string): string | null => {
+    if (!gliederung || typeof gliederung !== 'string') return null;
     const match = gliederung.match(/^\d+/);
-    return match ? match[0] : gliederung.split('.')[0] || 'Uncategorized';
+    return match ? match[0] : null;
 };
 
 export async function getSegmentedRuleBookData(projectAnalysisId: string) {
@@ -69,12 +69,24 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
 
     return filteredData.map(({ ruleBook, entries }) => {
+        let lastSegmentKey: string | null = null;
         const segments = entries.reduce((acc, entry) => {
-            const segmentKey = getSegmentKey(String(entry.data['Gliederung']));
-            if (!acc[segmentKey]) {
-                acc[segmentKey] = [];
+            const gliederung = String(entry.data['Gliederung'] || '');
+            let currentSegmentKey = getSegmentKey(gliederung);
+            
+            if (currentSegmentKey) {
+                lastSegmentKey = currentSegmentKey;
+            } else {
+                currentSegmentKey = lastSegmentKey;
             }
-            acc[segmentKey].push(entry);
+
+            if (currentSegmentKey) {
+                if (!acc[currentSegmentKey]) {
+                    acc[currentSegmentKey] = [];
+                }
+                acc[currentSegmentKey].push(entry);
+            }
+            
             return acc;
         }, {} as Record<string, RuleBookEntry[]>);
 
@@ -109,6 +121,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
+    // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
         const nutzung = entry.data['Nutzung'] || '';
         const erfullbarkeit = entry.data['Erfüllbarkeit'] || '';
@@ -118,7 +131,23 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         return erfullbarkeitMatch;
     });
 
-    const segmentEntries = filteredEntries.filter(entry => getSegmentKey(String(entry.data['Gliederung'])) === segmentKey);
+    // Then, get all entries for the requested segment
+    const segmentEntries: RuleBookEntry[] = [];
+    let lastSegmentKey: string | null = null;
+    for (const entry of filteredEntries) {
+        const gliederung = String(entry.data['Gliederung'] || '');
+        let currentSegmentKey = getSegmentKey(gliederung);
+
+        if (currentSegmentKey) {
+            lastSegmentKey = currentSegmentKey;
+        } else {
+            currentSegmentKey = lastSegmentKey;
+        }
+
+        if (currentSegmentKey === segmentKey) {
+            segmentEntries.push(entry);
+        }
+    }
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
     const resultsMap = new Map<string, RuleAnalysisResult>();
