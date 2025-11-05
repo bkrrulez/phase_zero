@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -16,7 +17,10 @@ import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { addProjectAnalysis } from '@/app/dashboard/actions';
+import { addProjectAnalysis, getLatestProjectAnalysis, addNewProjectAnalysisVersion } from '@/app/dashboard/actions';
+import * as React from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const projectSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -46,6 +50,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     const { t, language } = useLanguage();
     const router = useRouter();
     const { toast } = useToast();
+    const [analysisPrompt, setAnalysisPrompt] = React.useState<{projectId: string, latestAnalysisId: string} | null>(null);
 
     const form = useForm<ProjectFormValues>({
         resolver: zodResolver(projectSchema),
@@ -93,34 +98,49 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         const data = form.getValues();
         const { isDirty, isValid } = form.formState;
         
-        // Ensure form is filled and valid before proceeding
-        if (!isValid && !isDirty) {
-             form.trigger(); // Manually trigger validation to show errors
+        form.trigger();
+        const isFormValid = await form.trigger();
+        if (!isFormValid) {
              toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all required project details first."});
              return;
         }
-        if (!isValid) {
-            toast({ variant: 'destructive', title: "Invalid Data", description: "Please correct the errors before proceeding."});
-            return;
-        }
 
         const projectId = await onAddProject(data);
-        if (projectId) {
-            const { analysis } = await addProjectAnalysis(projectId);
-            if (analysis) {
-                onOpenChange(false);
-                router.push(`/dashboard/project-analysis/${analysis.id}`);
-            } else {
-                 toast({
-                    variant: 'destructive',
-                    title: "Error",
-                    description: "Could not start analysis for the new project.",
-                });
-            }
+        if (!projectId) {
+             toast({ variant: 'destructive', title: "Error", description: "Could not create project." });
+             return;
+        }
+        
+        const latestAnalysis = await getLatestProjectAnalysis(projectId);
+
+        if (latestAnalysis) {
+            setAnalysisPrompt({ projectId: projectId, latestAnalysisId: latestAnalysis.id });
+        } else {
+            handleNewAnalysis(projectId);
         }
     }
 
+    const handleNewAnalysis = async (projectId: string) => {
+        const newAnalysis = await addNewProjectAnalysisVersion(projectId);
+        if (newAnalysis) {
+            onOpenChange(false);
+            router.push(`/dashboard/project-analysis/${newAnalysis.id}`);
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not create a new analysis version.'});
+        }
+        setAnalysisPrompt(null);
+    }
+    
+    const handleOpenLastAnalysis = () => {
+        if(analysisPrompt) {
+            onOpenChange(false);
+            router.push(`/dashboard/project-analysis/${analysisPrompt.latestAnalysisId}`);
+        }
+        setAnalysisPrompt(null);
+    }
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
@@ -307,5 +327,23 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         </Form>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={!!analysisPrompt} onOpenChange={() => setAnalysisPrompt(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Analysis Already Exists</AlertDialogTitle>
+                <AlertDialogDescription>
+                    An analysis for this project is already present.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleOpenLastAnalysis}>Open Last Analysis</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleNewAnalysis(analysisPrompt!.projectId)}>New Analysis</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
+

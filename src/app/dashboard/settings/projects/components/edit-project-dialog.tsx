@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,7 +18,9 @@ import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { addProjectAnalysis } from '@/app/dashboard/actions';
+import { addProjectAnalysis, getLatestProjectAnalysis, addNewProjectAnalysisVersion } from '@/app/dashboard/actions';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 const projectSchema = z.object({
   projectName: z.string().min(1, 'Project name is required.'),
@@ -48,6 +51,8 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
   const { t, language } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
+  const [analysisPrompt, setAnalysisPrompt] = useState<{latestAnalysisId: string} | null>(null);
+
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
@@ -93,20 +98,35 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
   }
 
   async function handleAnalysis() {
-    const { analysis } = await addProjectAnalysis(project.id);
-    if (analysis) {
-        onOpenChange(false); // Close the edit dialog
-        router.push(`/dashboard/project-analysis/${analysis.id}`);
+    const latestAnalysis = await getLatestProjectAnalysis(project.id);
+    if (latestAnalysis) {
+        setAnalysisPrompt({ latestAnalysisId: latestAnalysis.id });
     } else {
-            toast({
-            variant: 'destructive',
-            title: "Error",
-            description: "Could not start analysis for this project.",
-        });
+        handleNewAnalysis();
     }
   }
 
+  const handleNewAnalysis = async () => {
+    const newAnalysis = await addNewProjectAnalysisVersion(project.id);
+    if (newAnalysis) {
+        onOpenChange(false);
+        router.push(`/dashboard/project-analysis/${newAnalysis.id}`);
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not create a new analysis version.'});
+    }
+    setAnalysisPrompt(null);
+  }
+
+  const handleOpenLastAnalysis = () => {
+    if(analysisPrompt) {
+        onOpenChange(false);
+        router.push(`/dashboard/project-analysis/${analysisPrompt.latestAnalysisId}`);
+    }
+    setAnalysisPrompt(null);
+  }
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
@@ -293,5 +313,22 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         </Form>
       </DialogContent>
     </Dialog>
+    
+     <AlertDialog open={!!analysisPrompt} onOpenChange={() => setAnalysisPrompt(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Analysis Already Exists</AlertDialogTitle>
+                <AlertDialogDescription>
+                    An analysis for this project is already present.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleOpenLastAnalysis}>Open Last Analysis</AlertDialogAction>
+                <AlertDialogAction onClick={handleNewAnalysis}>New Analysis</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

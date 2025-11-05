@@ -853,31 +853,67 @@ export async function getProjectAnalyses(): Promise<ProjectAnalysis[]> {
     }
 }
 
-export async function addProjectAnalysis(projectId: string): Promise<{ analysis?: ProjectAnalysis, requiresConfirmation: boolean, nextVersion: number }> {
+export async function getLatestProjectAnalysis(projectId: string): Promise<ProjectAnalysis | null> {
+    try {
+        const res = await db.query('SELECT * FROM project_analyses WHERE project_id = $1 ORDER BY version DESC LIMIT 1', [projectId]);
+        if (res.rows.length > 0) {
+            return mapDbProjectAnalysis(res.rows[0]);
+        }
+        return null;
+    } catch (error) {
+        console.error('Failed to get latest project analysis:', error);
+        return null;
+    }
+}
+
+export async function addProjectAnalysis(projectId: string): Promise<{ analysis?: ProjectAnalysis, requiresConfirmation: boolean, latestAnalysis?: ProjectAnalysis | null }> {
     const client = await db.connect();
     try {
         await client.query('BEGIN');
 
-        const existingRes = await client.query(
-            `SELECT MAX(version) as max_version FROM project_analyses WHERE project_id = $1`,
-            [projectId]
-        );
-        const latestVersion = existingRes.rows[0]?.max_version || 0;
-        const newVersion = latestVersion + 1;
+        const latestAnalysis = await getLatestProjectAnalysis(projectId);
+        
+        if (latestAnalysis) {
+            return { requiresConfirmation: true, latestAnalysis: latestAnalysis };
+        }
+
+        const newVersion = 1; // It's the first one
 
         const id = `pa-${Date.now()}`;
         const result = await client.query(
             `INSERT INTO project_analyses (id, project_id, version) VALUES ($1, $2, $3) RETURNING *`,
             [id, projectId, newVersion]
         );
-
+        
         await client.query('COMMIT');
         revalidatePath('/dashboard/project-analysis');
-        return { analysis: mapDbProjectAnalysis(result.rows[0]), requiresConfirmation: false, nextVersion: 0 };
+        return { analysis: mapDbProjectAnalysis(result.rows[0]), requiresConfirmation: false };
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error adding project analysis:', error);
         throw error;
+    } finally {
+        client.release();
+    }
+}
+
+export async function addNewProjectAnalysisVersion(projectId: string): Promise<ProjectAnalysis | null> {
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        const existingRes = await client.query('SELECT MAX(version) as max_version FROM project_analyses WHERE project_id = $1', [projectId]);
+        const newVersion = (existingRes.rows[0]?.max_version || 0) + 1;
+        
+        const id = `pa-${Date.now()}`;
+        const result = await client.query('INSERT INTO project_analyses (id, project_id, version) VALUES ($1, $2, $3) RETURNING *', [id, projectId, newVersion]);
+        
+        await client.query('COMMIT');
+        revalidatePath('/dashboard/project-analysis');
+        return mapDbProjectAnalysis(result.rows[0]);
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error adding new project analysis version:', error);
+        return null;
     } finally {
         client.release();
     }
@@ -916,6 +952,7 @@ export async function updateProjectAnalysis(
     );
     if (result.rows.length > 0) {
       revalidatePath(`/dashboard/project-analysis/${analysisId}`);
+      revalidatePath('/dashboard/project-analysis');
       return mapDbProjectAnalysis(result.rows[0]);
     }
     return null;
@@ -923,6 +960,11 @@ export async function updateProjectAnalysis(
     console.error('Error updating project analysis:', error);
     return null;
   }
+}
+
+export async function deleteProjectAnalysis(analysisId: string): Promise<void> {
+    await db.query('DELETE FROM project_analyses WHERE id = $1', [analysisId]);
+    revalidatePath('/dashboard/project-analysis');
 }
 
 
@@ -1250,5 +1292,6 @@ export async function getIsHolidaysNavVisible(): Promise<boolean> {
 export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
   await setSystemSetting('isHolidaysNavVisible', String(isVisible));
 }
+
 
 
