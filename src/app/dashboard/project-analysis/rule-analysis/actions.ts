@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/db';
 import { getRuleBookDetails, getRuleBooks } from '../../rule-books/actions';
-import { type RuleBookEntry } from '@/lib/types';
+import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
 import { getProjectAnalysisDetails } from '../../actions';
 
 type RuleAnalysisResult = {
@@ -25,6 +25,10 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
     if (!newUse || !fulfillability || fulfillability.length === 0) {
         return [];
     }
+    
+    // The user's selection for 'newUse' might be the German translation.
+    // The data in the rulebook might be in German. Let's find the corresponding German value.
+    const germanNewUse = newUse; // Assuming the value is already correct from the select dropdown
 
     const allRuleBooks = await getRuleBooks();
     const filteredRuleBooksData = [];
@@ -34,13 +38,13 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
         if (!details) continue;
 
         const filteredEntries = details.entries.filter(entry => {
-            const nutzung = entry.data['Nutzung'] || '';
-            const erfullbarkeit = entry.data['Erfüllbarkeit'] || '';
+            const nutzung = (entry.data['Nutzung'] || '').trim();
+            const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
 
-            const nutzungMatch = nutzung === newUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
+            const nutzungMatch = nutzung === germanNewUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
             if (!nutzungMatch) return false;
 
-            const erfullbarkeitMatch = fulfillability.includes(erfullbarkeit) || erfullbarkeit === '';
+            const erfullbarkeitMatch = fulfillability.includes(erfullbarkeit) || erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen';
             return erfullbarkeitMatch;
         });
 
@@ -57,8 +61,20 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
 
 const getSegmentKey = (gliederung: string): string | null => {
     if (!gliederung || typeof gliederung !== 'string') return null;
-    const match = gliederung.match(/^\d+/);
-    return match ? match[0] : null;
+    
+    // Match the first number sequence at the start of the string
+    const match = gliederung.trim().match(/^\d+/);
+    if (match) {
+        return match[0];
+    }
+
+    // Handle cases like '§ 123'
+    const paragraphMatch = gliederung.trim().match(/^§\s*(\d+)/);
+    if (paragraphMatch && paragraphMatch[1]) {
+        return paragraphMatch[1];
+    }
+    
+    return null;
 };
 
 export async function getSegmentedRuleBookData(projectAnalysisId: string) {
@@ -77,6 +93,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             if (currentSegmentKey) {
                 lastSegmentKey = currentSegmentKey;
             } else {
+                // If there's no segment key for this row, use the last valid one.
                 currentSegmentKey = lastSegmentKey;
             }
 
@@ -92,7 +109,12 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
         const segmentStats = Object.keys(segments).map(key => {
             const segmentEntries = segments[key];
-            const completedCount = segmentEntries.filter(e => resultsMap.has(e.id)).length;
+            const completedCount = segmentEntries.filter(e => {
+                const analysis = resultsMap.get(e.id);
+                // An entry is "complete" if it's not a parameter type, or if it is and has a status.
+                return entry.data['Spaltentyp'] !== 'Parameter' || (analysis && analysis.checklistStatus);
+            }).length;
+
             return {
                 key,
                 total: segmentEntries.length,
@@ -104,7 +126,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             ruleBook,
             segments: segmentStats,
             totalEntries: entries.length,
-            totalCompleted: analysisResults.filter(r => entries.some(e => e.id === r.ruleBookEntryId)).length
+            totalCompleted: segmentStats.reduce((sum, s) => sum + s.completed, 0)
         };
     });
 }
@@ -121,13 +143,18 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
+    const germanNewUse = analysisDetails.analysis.newUse;
+    const germanFulfillability = analysisDetails.analysis.fulfillability || [];
+
     // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
-        const nutzung = entry.data['Nutzung'] || '';
-        const erfullbarkeit = entry.data['Erfüllbarkeit'] || '';
-        const nutzungMatch = nutzung === analysisDetails.analysis.newUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
+        const nutzung = (entry.data['Nutzung'] || '').trim();
+        const erfullbarkeit = (entry.data['Erfüllbarkeit'] || '').trim();
+        
+        const nutzungMatch = nutzung === germanNewUse || nutzung === '' || nutzung === 'Bitte auswaehlen';
         if (!nutzungMatch) return false;
-        const erfullbarkeitMatch = analysisDetails.analysis.fulfillability?.includes(erfullbarkeit) || erfullbarkeit === '';
+
+        const erfullbarkeitMatch = germanFulfillability.includes(erfullbarkeit) || erfullbarkeit === '' || erfullbarkeit === 'Bitte auswaehlen';
         return erfullbarkeitMatch;
     });
 
