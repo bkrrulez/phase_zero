@@ -27,7 +27,7 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
     }
     
     const germanNewUse = newUse;
-    const lowerFulfillability = fulfillability.map(f => f.toLowerCase());
+    const lowerFulfillabilityOptions = fulfillability.map(f => f.toLowerCase());
     const newUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
 
     const allRuleBooks = await getRuleBooks();
@@ -47,15 +47,22 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
                 nutzungMatch = true;
             } else {
                 const entryNutzungWords = new Set(nutzung.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
-                const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
-                if (matchingWords.length >= 2) {
-                    nutzungMatch = true;
+                if (entryNutzungWords.size > 0) {
+                    const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
+                    if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
+                        nutzungMatch = true;
+                    }
                 }
             }
             
             // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
-            const lowerErfullbarkeit = erfullbarkeit.toLowerCase();
-            const erfullbarkeitMatch = lowerFulfillability.includes(lowerErfullbarkeit) || lowerErfullbarkeit === '' || lowerErfullbarkeit === 'bitte auswaehlen';
+            let erfullbarkeitMatch = false;
+            const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
+            if (lowerErfullbarkeitValue === '' || lowerErfullbarkeitValue === 'bitte auswaehlen') {
+                erfullbarkeitMatch = true;
+            } else if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
+                erfullbarkeitMatch = true;
+            }
             
             return nutzungMatch && erfullbarkeitMatch;
         });
@@ -156,7 +163,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
     const germanNewUse = analysisDetails.analysis.newUse || '';
-    const lowerFulfillability = (analysisDetails.analysis.fulfillability || []).map(f => f.toLowerCase());
+    const lowerFulfillabilityOptions = (analysisDetails.analysis.fulfillability || []).map(f => f.toLowerCase());
     const newUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
 
     // First, filter based on New Use and Fulfillability
@@ -170,15 +177,22 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
             nutzungMatch = true;
         } else {
             const entryNutzungWords = new Set(nutzung.toLowerCase().replace(/[,;]/g, '').split(' ').filter(Boolean));
-            const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
-            if (matchingWords.length >= 2) {
-                nutzungMatch = true;
+            if (entryNutzungWords.size > 0) {
+                const matchingWords = [...entryNutzungWords].filter(word => newUseWords.has(word));
+                if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
+                    nutzungMatch = true;
+                }
             }
         }
         
         // Handle Erfüllbarkeit (Fulfillability) match (case-insensitive)
-        const lowerErfullbarkeit = erfullbarkeit.toLowerCase();
-        const erfullbarkeitMatch = lowerFulfillability.includes(lowerErfullbarkeit) || lowerErfullbarkeit === '' || lowerErfullbarkeit === 'bitte auswaehlen';
+        let erfullbarkeitMatch = false;
+        const lowerErfullbarkeitValue = erfullbarkeit.toLowerCase();
+        if (lowerErfullbarkeitValue === '' || lowerErfullbarkeitValue === 'bitte auswaehlen') {
+            erfullbarkeitMatch = true;
+        } else if (lowerFulfillabilityOptions.includes(lowerErfullbarkeitValue)) {
+            erfullbarkeitMatch = true;
+        }
         
         return nutzungMatch && erfullbarkeitMatch;
     });
