@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSegmentDetails, saveAnalysisResult } from '../../../rule-analysis/actions';
+import { getSegmentDetails, saveAnalysisResult } from '../../actions';
 import { type ProjectAnalysis, type RuleBook, type RuleBookEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
