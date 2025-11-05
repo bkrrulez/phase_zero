@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSegmentDetails, saveAnalysisResult } from '../../../../rule-analysis/actions';
+import { getSegmentDetails, saveAnalysisResult } from '../../actions';
 import { type ProjectAnalysis, type RuleBook, type RuleBookEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -109,8 +110,10 @@ export default function SegmentDetailPage() {
 
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
-    // Filter out Nutzung and Erfüllbarkeit as they are in the header now
-    const displayHeaders = headersFromData.filter(h => h !== 'Nutzung' && h !== 'Erfüllbarkeit' && h !== 'Referenztabelle');
+    // Filter out columns that are handled separately or in the header
+    const displayHeaders = headersFromData.filter(
+        h => h !== 'Nutzung' && h !== 'Erfüllbarkeit' && h !== 'Referenztabelle' && h !== 'Checkliste'
+    );
 
     const headersForSorting = [...displayHeaders, 'Checkliste', 'Überarbeitete Erfüllbarkeit'];
 
