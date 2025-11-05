@@ -110,7 +110,7 @@ export default function SegmentDetailPage() {
     
     const columnOrder: string[] = ['Gliederung', 'Text', 'Spaltentyp', 'Checkliste', 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'];
 
-    const sortedHeaders = [...displayHeaders, 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'].sort((a,b) => {
+    const sortedHeaders = ['Checkliste', ...displayHeaders, 'Revised Checklist', 'Überarbeitete Erfüllbarkeit'].sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
         const indexB = columnOrder.indexOf(b);
         if (indexA === -1 && indexB === -1) return a.localeCompare(b);
