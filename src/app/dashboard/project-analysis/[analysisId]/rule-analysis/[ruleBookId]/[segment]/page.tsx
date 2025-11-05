@@ -105,10 +105,10 @@ export default function SegmentDetailPage() {
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
     const displayHeaders = headersFromData.filter(
-        h => h !== 'Nutzung' && h !== 'Erfüllbarkeit' && h !== 'Referenztabelle' && h !== 'Checkliste'
+        h => h !== 'Referenztabelle' && h !== 'Checkliste'
     );
     
-    const columnOrder: string[] = ['Gliederung', 'Text', 'Spaltentyp', 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
+    const columnOrder: string[] = ['Gliederung', 'Text', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
 
     const sortedHeaders = displayHeaders.sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
