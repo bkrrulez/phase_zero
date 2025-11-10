@@ -74,7 +74,7 @@ export default function AnalysisDetailPage() {
     const [initialFulfillability, setInitialFulfillability] = React.useState<string[]>([]);
 
     const translatedFulfillabilityOptions = React.useMemo(() => {
-        return fulfillabilityOptions.map(opt => ({...opt, label: t(opt.label as any)}));
+        return fulfillabilityOptions.map(opt => ({...opt, label: t(opt.value as any)}));
     }, [t]);
 
 
@@ -142,7 +142,7 @@ export default function AnalysisDetailPage() {
         setIsConfirmingSave(false);
         setIsSaving(true);
         try {
-            const filteredRuleBooks = await getFilteredRuleBooks(analysisId, { newUse, fulfillability });
+            const filteredRuleBooks = await getFilteredRuleBooks(analysisId);
             const hasApplicableRules = filteredRuleBooks.length > 0;
 
             if (shouldDeleteOldResults) {
@@ -255,6 +255,7 @@ export default function AnalysisDetailPage() {
                                     selected={fulfillability}
                                     onChange={setFulfillability}
                                     placeholder={t('selectFulfillability')}
+                                    getDisplayValue={(value) => t(value as any) || value}
                                 />
                             </div>
                         </div>

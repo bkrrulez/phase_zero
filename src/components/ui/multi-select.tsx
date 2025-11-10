@@ -19,9 +19,10 @@ interface MultiSelectProps {
   onChange: (selected: string[]) => void;
   className?: string;
   placeholder?: string;
+  getDisplayValue?: (value: string) => string;
 }
 
-export function MultiSelect({ options, selected, onChange, className, placeholder = 'Select...' }: MultiSelectProps) {
+export function MultiSelect({ options, selected, onChange, className, placeholder = 'Select...', getDisplayValue }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
   const handleSelect = (value: string) => {
@@ -33,7 +34,7 @@ export function MultiSelect({ options, selected, onChange, className, placeholde
   };
 
   const displayValue = selected.length > 0 
-    ? selected.map(val => options.find(opt => opt.value === val)?.label).join(', ')
+    ? selected.map(val => getDisplayValue ? getDisplayValue(val) : options.find(opt => opt.value === val)?.label).join(', ')
     : placeholder;
 
   return (
