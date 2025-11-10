@@ -64,11 +64,6 @@ export const initialData: InitialData = {
     { id: 'contract-user1-1', userId: 'user-1', startDate: '2023-05-20', endDate: null, weeklyHours: 40 },
     { id: 'contract-user2-1', userId: 'user-2', startDate: '2023-07-01', endDate: '2024-12-31', weeklyHours: 32 },
   ],
-  timeEntries: [
-    { id: 'te-1', userId: 'user-1', date: '2024-07-01', startTime: '09:00', endTime: '12:00', task: 'Mobile App - Backend Development', duration: 3, remarks: 'Worked on user auth API.' },
-    { id: 'te-2', userId: 'user-1', date: '2024-07-01', startTime: '13:00', endTime: '17:00', task: 'Mobile App - Backend Development', duration: 4, remarks: 'Database schema design.' },
-    { id: 'te-3', userId: 'user-2', date: '2024-07-02', startTime: '10:00', endTime: '16:00', task: 'Website Redesign - UI Design', duration: 5.5, remarks: 'Created new landing page mockups.' },
-  ],
   holidayRequests: [
     { id: 'hr-1', userId: 'user-1', startDate: '2024-08-05', endDate: '2024-08-09', status: 'Approved' },
     { id: 'hr-2', userId: 'user-2', startDate: '2024-09-02', endDate: '2024-09-02', status: 'Pending' },

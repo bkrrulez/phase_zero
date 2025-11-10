@@ -58,9 +58,7 @@ import {
 } from "@/components/ui/collapsible";
 import { LogoIcon } from "@/components/ui/logo-icon";
 import { cn } from "@/lib/utils";
-import { LogTimeDialog, type LogTimeFormValues } from "./components/log-time-dialog";
 import { NotificationPopover } from "./components/notification-popover";
-import { TimeTrackingProvider, useTimeTracking } from "./contexts/TimeTrackingContext";
 import { MembersProvider, useMembers } from "./contexts/MembersContext";
 import { ProjectsProvider } from "./contexts/ProjectsContext";
 import { TeamsProvider } from "./contexts/TeamsContext";
@@ -113,13 +111,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { currentUser, logout, isLoading: isAuthLoading } = useAuth();
   const { teamMembers, fetchMembers } = useMembers();
   const { fetchContracts } = useContracts();
-  const { logTime } = useTimeTracking();
   const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   const { t } = useLanguage();
   const { pushMessages, userMessageStates } = usePushMessages();
   const { notifications } = useNotifications();
 
-  const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
 
   const isSettingsOpen = pathname.startsWith('/dashboard/settings');
@@ -149,15 +145,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const unreadRequestCount = 0; // Holiday requests are removed
 
   const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
-
-  const handleLogTime = (data: LogTimeFormValues, entryId?: string) => {
-    if (entryId) {
-      console.error("Attempted to edit an entry from the main log time dialog.");
-      return Promise.resolve({ success: false });
-    }
-    const userIdToLogFor = data.userId || currentUser!.id;
-    return logTime(data, userIdToLogFor, teamMembers);
-  };
   
   const isLoading = isAuthLoading || isSettingsLoading;
 
@@ -188,16 +175,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <Button
-                variant="default"
-                className="w-full justify-start"
-                onClick={() => setIsLogTimeDialogOpen(true)}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                {t('logTime')}
-              </Button>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === "/dashboard"}>
                 <Link href="/dashboard">
@@ -385,11 +362,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </div>
         </div>
       </SidebarInset>
-        <LogTimeDialog
-          isOpen={isLogTimeDialogOpen}
-          onOpenChange={setIsLogTimeDialogOpen}
-          onSave={handleLogTime}
-        />
     </SidebarProvider>
   );
 }
@@ -403,7 +375,7 @@ function DataProviders({
   return (
     <LanguageProvider>
       <NotificationsProvider>
-        <ContractsProvider>
+          <ContractsProvider>
             <MembersProvider>
                 <AuthProvider>
                     <SystemLogProvider>
@@ -413,9 +385,7 @@ function DataProviders({
                                     <PushMessagesProvider>
                                         <RosterProvider>
                                             <AccessControlProvider>
-                                                <TimeTrackingProvider>
-                                                    {children}
-                                                </TimeTrackingProvider>
+                                                {children}
                                             </AccessControlProvider>
                                         </RosterProvider>
                                     </PushMessagesProvider>

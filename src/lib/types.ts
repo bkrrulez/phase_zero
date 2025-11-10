@@ -1,6 +1,4 @@
 
-
-
 export type Contract = {
   id: string;
   userId: string;
@@ -23,18 +21,6 @@ export type User = {
   },
   contracts: Omit<Contract, 'userId'>[];
   contractPdf?: string | null;
-};
-
-export type TimeEntry = {
-  id: string;
-  userId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  project: string;
-  duration: number; // in hours
-  placeOfWork: 'Home Office' | 'In Office';
-  remarks?: string;
 };
 
 export type Project = {
@@ -130,19 +116,3 @@ export type ProjectAnalysis = {
     newUse?: string | null;
     fulfillability?: string[] | null;
 };
-
-
-export type InitialData = {
-  teamMembers: Omit<User, 'contract' | 'contracts'>[];
-  contracts: Omit<Contract, 'userId'>[];
-  timeEntries: TimeEntry[];
-  projects: Project[];
-  teams: Team[];
-  pushMessages: PushMessage[];
-  userMessageStates: Record<string, UserMessageState>;
-  notifications: AppNotification[];
-  systemLogs: LogEntry[];
-};
-
-
-

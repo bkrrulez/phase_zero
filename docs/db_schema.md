@@ -61,20 +61,6 @@ Stores task definitions that can be associated with projects.
 
 ## Activity & Tracking Tables
 
-### `time_entries`
-
-Logs work time for users.
-
--   `id` (PK, TEXT): Unique identifier for the time entry.
--   `user_id` (FK -> `users.id`, TEXT, NOT NULL): The user who logged the time.
--   `project_id` (FK -> `projects.id`, TEXT, NOT NULL): The project the time was logged for.
--   `task_id` (FK -> `tasks.id`, TEXT, NOT NULL): The task performed.
--   `date` (DATE, NOT NULL): The date the work was performed.
--   `start_time` (TIME, NOT NULL): The start time of the work.
--   `end_time` (TIME, NOT NULL): The end time of the work.
--   `duration` (NUMERIC, NOT NULL): The duration of the work in hours.
--   `remarks` (TEXT): Optional notes about the time entry.
-
 ### `holiday_requests`
 
 Stores user requests for holidays.

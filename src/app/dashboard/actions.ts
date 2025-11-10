@@ -1,12 +1,10 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
 import { sendContractEndNotifications, sendPasswordResetConfirmationEmail } from '@/lib/mail';
 import {
   type User,
-  type TimeEntry,
   type Project,
   type Team,
   type PushMessage,
@@ -376,7 +374,6 @@ export async function deleteUser(userId: string): Promise<void> {
 
         // Delete associated records in other tables to maintain referential integrity
         await client.query('DELETE FROM contracts WHERE user_id = $1', [userId]);
-        await client.query('DELETE FROM time_entries WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM user_projects WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM notification_recipients WHERE user_id = $1', [userId]);
         await client.query('DELETE FROM notification_read_by WHERE user_id = $1', [userId]);
@@ -438,116 +435,6 @@ export async function resetUserPassword(email: string, newPassword: string): Pro
     } finally {
         client.release();
     }
-}
-
-
-// ========== Time Tracking ==========
-
-export async function getTimeEntries(): Promise<TimeEntry[]> {
-    const result = await db.query(`
-      SELECT te.*, p.name as project_name
-      FROM time_entries te
-      JOIN projects p ON te.project_id = p.id
-      ORDER BY te.date DESC, te.start_time DESC
-    `);
-    return result.rows.map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      date: format(new Date(row.date), 'yyyy-MM-dd'),
-      startTime: row.start_time,
-      endTime: row.end_time,
-      project: row.project_name,
-      duration: Number(row.duration),
-      placeOfWork: row.place_of_work,
-      remarks: row.remarks
-    }));
-}
-
-export async function logTime(entry: Omit<TimeEntry, 'id'|'duration'>): Promise<TimeEntry | null> {
-    const { userId, date, startTime, endTime, project: projectName, placeOfWork, remarks } = entry;
-    const client = await db.connect();
-    try {
-        const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
-        if (projectResult.rows.length === 0) throw new Error(`Project not found: ${projectName}`);
-        const projectId = projectResult.rows[0].id;
-
-        const start = new Date(`1970-01-01T${startTime}`);
-        const end = new Date(`1970-01-01T${endTime}`);
-        const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-        const id = `te-${Date.now()}`;
-        const result = await client.query(
-            `INSERT INTO time_entries (id, user_id, project_id, date, start_time, end_time, duration, place_of_work, remarks)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [id, userId, projectId, date, startTime, endTime, duration, placeOfWork, remarks]
-        );
-        revalidatePath('/dashboard');
-        
-        const inserted = result.rows[0];
-        return {
-            id: inserted.id,
-            userId: inserted.user_id,
-            date: format(new Date(inserted.date), 'yyyy-MM-dd'),
-            startTime: inserted.start_time,
-            endTime: inserted.end_time,
-            project: projectName,
-            duration: Number(inserted.duration),
-            placeOfWork: inserted.place_of_work,
-            remarks: inserted.remarks,
-        };
-    } catch (error) {
-        console.error('Error logging time:', error);
-        return null;
-    } finally {
-        client.release();
-    }
-}
-
-export async function updateTimeEntry(entryId: string, entry: Omit<TimeEntry, 'id' | 'duration'>): Promise<TimeEntry | null> {
-  const { userId, date, startTime, endTime, project: projectName, placeOfWork, remarks } = entry;
-  const client = await db.connect();
-  try {
-    const projectResult = await client.query('SELECT id FROM projects WHERE name = $1', [projectName]);
-    if (projectResult.rows.length === 0) throw new Error(`Project not found: ${projectName}`);
-    const projectId = projectResult.rows[0].id;
-
-    const start = new Date(`1970-01-01T${startTime}`);
-    const end = new Date(`1970-01-01T${endTime}`);
-    const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-
-    const result = await client.query(
-      `UPDATE time_entries 
-       SET project_id = $1, date = $2, start_time = $3, end_time = $4, duration = $5, place_of_work = $6, remarks = $7
-       WHERE id = $8 RETURNING *`,
-      [projectId, date, startTime, endTime, duration, placeOfWork, remarks, entryId]
-    );
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/reports');
-
-    const updated = result.rows[0];
-    return {
-      id: updated.id,
-      userId: updated.user_id,
-      date: format(new Date(updated.date), 'yyyy-MM-dd'),
-      startTime: updated.start_time,
-      endTime: updated.end_time,
-      project: projectName,
-      duration: Number(updated.duration),
-      placeOfWork: updated.place_of_work,
-      remarks: updated.remarks,
-    };
-  } catch (error) {
-    console.error('Error updating time entry:', error);
-    return null;
-  } finally {
-    client.release();
-  }
-}
-
-export async function deleteTimeEntry(entryId: string): Promise<void> {
-    await db.query('DELETE FROM time_entries WHERE id = $1', [entryId]);
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/reports');
 }
 
 // ========== Contracts ==========
@@ -1292,6 +1179,3 @@ export async function getIsHolidaysNavVisible(): Promise<boolean> {
 export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
   await setSystemSetting('isHolidaysNavVisible', String(isVisible));
 }
-
-
-
