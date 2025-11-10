@@ -1,12 +1,15 @@
 
+
 'use client';
 import * as React from 'react';
 import { type Project } from "@/lib/types";
 import { getProjects, addProject as addProjectAction, updateProject as updateProjectAction, deleteProject as deleteProjectAction } from '../actions';
+import { useSystemLog } from './SystemLogContext';
+import { useAuth } from './AuthContext';
 
 interface ProjectsContextType {
   projects: Project[];
-  addProject: (newProjectData: Omit<Project, 'id'>) => Promise<string | undefined>;
+  addProject: (newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>) => Promise<string | undefined>;
   updateProject: (projectId: string, data: Omit<Project, 'id'>) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   isLoading: boolean;
@@ -18,6 +21,8 @@ export const ProjectsContext = React.createContext<ProjectsContextType | undefin
 export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const { currentUser } = useAuth();
+  const { logAction } = useSystemLog();
 
   const fetchProjects = React.useCallback(async () => {
       setIsLoading(true);
@@ -35,26 +40,32 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     fetchProjects();
   }, [fetchProjects]);
 
-  const addProject = async (projectData: Omit<Project, 'id'>): Promise<string | undefined> => {
+  const addProject = async (projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<string | undefined> => {
+      if (!currentUser) return;
       const newProjectId = await addProjectAction(projectData);
-      await fetchProjects(); // Re-fetch to get the new project with its ID
+      await logAction(`User '${currentUser.name}' created project '${projectData.name}' (ID: ${newProjectId}).`);
+      await fetchProjects(); // Re-fetch to get the new project with its ID and number
       return newProjectId;
   }
 
   const updateProject = async (projectId: string, data: Omit<Project, 'id'>) => {
+      if (!currentUser) return;
       await updateProjectAction(projectId, data);
+      await logAction(`User '${currentUser.name}' updated project '${data.name}' (ID: ${projectId}).`);
       await fetchProjects();
   }
 
   const deleteProject = async (projectId: string) => {
+      if (!currentUser) return;
+      const projectToDelete = projects.find(p => p.id === projectId);
       await deleteProjectAction(projectId);
+      if (projectToDelete) {
+        await logAction(`User '${currentUser.name}' deleted project '${projectToDelete.name}' (ID: ${projectId}).`);
+      }
       setProjects(prev => prev.filter(p => p.id !== projectId));
   }
 
   const getNextProjectNumber = async (): Promise<string> => {
-    // This is now handled on the backend, but we can keep a client-side estimation
-    // to avoid waiting for the backend response if needed for UI purposes.
-    // For now, we'll just return a placeholder as the backend is the source of truth.
     return "auto";
   }
 

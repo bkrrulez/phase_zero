@@ -1,8 +1,11 @@
 
+
 'use client';
 import * as React from 'react';
 import { type Team } from "@/lib/types";
 import { getTeams, addTeam as addTeamAction, updateTeam as updateTeamAction, deleteTeam as deleteTeamAction } from '../actions';
+import { useSystemLog } from './SystemLogContext';
+import { useAuth } from './AuthContext';
 
 interface TeamsContextType {
   teams: Team[];
@@ -17,6 +20,8 @@ export const TeamsContext = React.createContext<TeamsContextType | undefined>(un
 export function TeamsProvider({ children }: { children: React.ReactNode }) {
   const [teams, setTeams] = React.useState<Team[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const { currentUser } = useAuth();
+  const { logAction } = useSystemLog();
 
   const fetchTeams = React.useCallback(async () => {
     setIsLoading(true);
@@ -35,17 +40,26 @@ export function TeamsProvider({ children }: { children: React.ReactNode }) {
   }, [fetchTeams]);
 
   const addTeam = async (teamData: Omit<Team, 'id'>) => {
+    if (!currentUser) return;
     await addTeamAction(teamData);
+    await logAction(`User '${currentUser.name}' created team '${teamData.name}'.`);
     await fetchTeams();
   };
 
   const updateTeam = async (teamId: string, teamData: Omit<Team, 'id'>) => {
+    if (!currentUser) return;
     await updateTeamAction(teamId, teamData);
+    await logAction(`User '${currentUser.name}' updated team '${teamData.name}' (ID: ${teamId}).`);
     await fetchTeams();
   };
 
   const deleteTeam = async (teamId: string) => {
+    if (!currentUser) return;
+    const teamToDelete = teams.find(t => t.id === teamId);
     await deleteTeamAction(teamId);
+    if(teamToDelete) {
+      await logAction(`User '${currentUser.name}' deleted team '${teamToDelete.name}' (ID: ${teamId}).`);
+    }
     await fetchTeams();
   }
 

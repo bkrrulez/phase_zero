@@ -1,24 +1,28 @@
 
+
 'use client';
 
 import * as React from 'react';
+import { format } from 'date-fns';
+import { MoreHorizontal, UploadCloud, Settings, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as XLSX from 'xlsx-js-style';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, UploadCloud, Settings, Trash2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
-import { format } from 'date-fns';
+import { type RuleBook, type RuleBookEntry } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { getRuleBooks, addRuleBook, deleteRuleBook } from './actions';
 import { ImportSettingsDialog, type ImportSetting } from './components/import-settings-dialog';
 import { ImportRuleBookDialog } from './components/import-rule-book-dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { type RuleBook, type RuleBookEntry } from '@/lib/types';
-import { getRuleBooks, addRuleBook, deleteRuleBook } from './actions';
-import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx-js-style';
-import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useSystemLog } from '../contexts/SystemLogContext';
+
 
 const defaultImportSettings: ImportSetting[] = [
   { id: 'col-1', name: 'Gliederung', isMandatory: true, type: 'Free Text', values: '' },
@@ -36,6 +40,7 @@ export default function RuleBooksPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const router = useRouter();
+  const { logAction } = useSystemLog();
   
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isImportOpen, setIsImportOpen] = React.useState(false);
@@ -57,6 +62,7 @@ export default function RuleBooksPage() {
 
 
   const handleImportRuleBook = async (name: string, file: File, isNewVersion: boolean) => {
+    if (!currentUser) return;
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
     reader.onload = async (e) => {
@@ -128,6 +134,7 @@ export default function RuleBooksPage() {
 
             if (result.success) {
                 toast({ title: t('importSuccess'), description: t('importSuccessDesc', { name, count: plainEntries.length }) });
+                await logAction(`User '${currentUser.name}' imported rule book '${name}' with ${plainEntries.length} rows.`);
                 await fetchRuleBooks(); // Refresh the list
                 setIsImportOpen(false);
             }
@@ -151,9 +158,17 @@ export default function RuleBooksPage() {
   }
 
   const handleDelete = async () => {
-    if (!deletingBook) return;
-    await deleteRuleBook(deletingBook.book.id, deletingBook.deleteAll);
+    if (!deletingBook || !currentUser) return;
+    const { book, deleteAll } = deletingBook;
+    
+    await deleteRuleBook(book.id, deleteAll);
     await fetchRuleBooks();
+    
+    const logMessage = deleteAll 
+      ? `User '${currentUser.name}' deleted all versions of rule book '${book.versionName}'.`
+      : `User '${currentUser.name}' deleted version ${book.version} of rule book '${book.versionName}'.`;
+    await logAction(logMessage);
+
     toast({ title: t('ruleBookDeleted'), variant: "destructive" });
     setDeletingBook(null);
   }

@@ -45,6 +45,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
   }, [fetchEntries]);
 
   const logTime = async (data: LogTimeFormValues, userId: string, allUsers: User[]): Promise<{ success: boolean }> => {
+    if (!currentUser) return { success: false };
     try {
       const start = new Date(`1970-01-01T${data.startTime}`);
       const end = new Date(`1970-01-01T${data.endTime}`);
@@ -97,8 +98,8 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
             description: `Logged ${newEntry.duration.toFixed(2)} hours for ${format(new Date(newEntry.date), 'PPP')}.`
         });
         const logMessage = currentUser.id === userId 
-            ? `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours.`
-            : `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours on behalf of '${targetUser?.name || 'Unknown User'}'.`;
+            ? `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours for project '${newEntry.project}' on ${format(new Date(newEntry.date), 'yyyy-MM-dd')}.`
+            : `User '${currentUser.name}' logged ${newEntry.duration.toFixed(2)} hours for project '${newEntry.project}' on behalf of '${targetUser?.name || 'Unknown User'}' for date ${format(new Date(newEntry.date), 'yyyy-MM-dd')}.`;
         await logAction(logMessage);
         return { success: true };
       }
@@ -115,6 +116,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
   };
 
   const updateTimeEntry = async (entryId: string, data: Omit<LogTimeFormValues, 'userId'>, userId: string, allUsers: User[]): Promise<{ success: boolean }> => {
+    if (!currentUser) return { success: false };
     try {
       const updatedEntryData = {
         userId: userId,
@@ -135,7 +137,7 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
             description: `Entry for ${format(new Date(updatedEntry.date), 'PPP')} has been updated.`
         });
         const targetUser = allUsers.find(u => u.id === userId);
-        await logAction(`User '${currentUser.name}' updated a time entry for '${targetUser?.name || userId}'.`);
+        await logAction(`User '${currentUser.name}' updated time entry ID ${entryId} for '${targetUser?.name || userId}'.`);
         return { success: true };
       }
       return { success: false };
@@ -151,14 +153,16 @@ export function TimeTrackingProvider({ children }: { children: React.ReactNode }
   };
 
   const deleteTimeEntry = async (entryId: string): Promise<{ success: boolean }> => {
+    if (!currentUser) return { success: false };
     try {
+        const entryToDelete = timeEntries.find(e => e.id === entryId);
         await deleteTimeEntryAction(entryId);
         setTimeEntries(prev => prev.filter(e => e.id !== entryId));
         toast({
             title: "Time Entry Deleted",
             description: "The time entry has been successfully deleted."
         });
-        await logAction(`User '${currentUser.name}' deleted time entry ${entryId}.`);
+        await logAction(`User '${currentUser.name}' deleted time entry ID ${entryId} (originally for date: ${entryToDelete ? format(new Date(entryToDelete.date), 'yyyy-MM-dd') : 'N/A'}).`);
         return { success: true };
     } catch (error) {
         console.error("Failed to delete time entry:", error);

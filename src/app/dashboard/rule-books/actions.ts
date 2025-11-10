@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -102,10 +103,11 @@ export async function deleteRuleBook(ruleBookId: string, deleteAllVersions: bool
      try {
         await client.query('BEGIN');
         
+        const bookRes = await client.query('SELECT version_name, version FROM rule_books WHERE id = $1', [ruleBookId]);
+        if (bookRes.rows.length === 0) throw new Error('Rule book not found');
+        const { version_name, version } = bookRes.rows[0];
+
         if (deleteAllVersions) {
-            const bookRes = await client.query('SELECT version_name FROM rule_books WHERE id = $1', [ruleBookId]);
-            if (bookRes.rows.length === 0) throw new Error('Rule book not found');
-            const { version_name } = bookRes.rows[0];
             await client.query('DELETE FROM rule_books WHERE version_name = $1', [version_name]);
         } else {
             await client.query('DELETE FROM rule_books WHERE id = $1', [ruleBookId]);
