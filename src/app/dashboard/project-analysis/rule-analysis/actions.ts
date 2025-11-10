@@ -135,16 +135,16 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             if (currentSegmentKey) {
                 lastSegmentKey = currentSegmentKey;
             } else {
-                // If there's no segment key for this row, use the last valid one.
                 currentSegmentKey = lastSegmentKey;
             }
 
-            if (currentSegmentKey) {
-                if (!acc[currentSegmentKey]) {
-                    acc[currentSegmentKey] = [];
-                }
-                acc[currentSegmentKey].push(entry);
+            // Fallback for entries that still don't have a segment key
+            const finalSegmentKey = currentSegmentKey || '0';
+            
+            if (!acc[finalSegmentKey]) {
+                acc[finalSegmentKey] = [];
             }
+            acc[finalSegmentKey].push(entry);
             
             return acc;
         }, {} as Record<string, RuleBookEntry[]>);
@@ -243,8 +243,10 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         } else {
             currentSegmentKey = lastSegmentKey;
         }
+        
+        const finalSegmentKey = currentSegmentKey || '0';
 
-        if (currentSegmentKey === segmentKey) {
+        if (finalSegmentKey === segmentKey) {
             segmentEntries.push(entry);
         }
     }
