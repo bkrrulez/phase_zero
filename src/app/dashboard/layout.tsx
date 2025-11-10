@@ -74,6 +74,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractsProvider, useContracts } from "./contexts/ContractsContext";
+import { RosterProvider } from "./contexts/RosterContext";
+import { AccessControlProvider } from "./contexts/AccessControlContext";
+
 
 const getStatus = (startDate: string, endDate: string) => {
   const now = new Date();
@@ -116,19 +119,18 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { pushMessages, userMessageStates } = usePushMessages();
   const { notifications } = useNotifications();
 
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [isLogTimeDialogOpen, setIsLogTimeDialogOpen] = React.useState(false);
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
+
+  const isSettingsOpen = pathname.startsWith('/dashboard/settings');
+  const isTeamOpen = pathname.startsWith('/dashboard/team');
+
 
   React.useEffect(() => {
     // This effect ensures that contract data is consistent when member data changes.
     fetchContracts();
   }, [teamMembers, fetchContracts]);
 
-
-  React.useEffect(() => {
-    setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
-  }, [pathname]);
 
   const activeUnreadPushCount = React.useMemo(() => {
     if (!currentUser) return 0;
@@ -187,6 +189,16 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
+              <Button
+                variant="default"
+                className="w-full justify-start"
+                onClick={() => setIsLogTimeDialogOpen(true)}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                {t('logTime')}
+              </Button>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === "/dashboard"}>
                 <Link href="/dashboard">
                   <Home />
@@ -195,12 +207,28 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/team")}>
-                <Link href="/dashboard/team">
-                  <Users />
-                  {t('team')}
-                </Link>
-              </SidebarMenuButton>
+                <Collapsible open={isTeamOpen}>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="justify-between w-full">
+                            <div className="flex items-center gap-2">
+                                <Users />
+                                <span>{t('team')}</span>
+                            </div>
+                            <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isTeamOpen && "rotate-90")} />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <SidebarMenu className="pl-6 py-2 space-y-1">
+                            <SidebarMenuItem>
+                                <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/team")}>
+                                    <Link href="/dashboard/team">
+                                        <Users /> {t('teamMembers')}
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </CollapsibleContent>
+                </Collapsible>
             </SidebarMenuItem>
              {currentUser.role === 'Super Admin' && (
                 <>
@@ -231,7 +259,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <Collapsible open={isSettingsOpen}>
                 <SidebarMenuItem>
                     <CollapsibleTrigger className="w-full" asChild>
                         <SidebarMenuButton className="justify-between w-full">
@@ -357,6 +385,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </div>
         </div>
       </SidebarInset>
+        <LogTimeDialog
+          isOpen={isLogTimeDialogOpen}
+          onOpenChange={setIsLogTimeDialogOpen}
+          onSave={handleLogTime}
+        />
     </SidebarProvider>
   );
 }
@@ -369,27 +402,31 @@ function DataProviders({
 }) {
   return (
     <LanguageProvider>
-      <TeamsProvider>
-        <ProjectsProvider>
-          <NotificationsProvider>
-            <PushMessagesProvider>
-              <ContractsProvider>
-                <MembersProvider>
-                  <AuthProvider>
+        <NotificationsProvider>
+            <ContractsProvider>
+                <AuthProvider>
                     <SystemLogProvider>
-                      <SettingsProvider>
-                        <TimeTrackingProvider>
-                          {children}
-                        </TimeTrackingProvider>
-                      </SettingsProvider>
+                        <SettingsProvider>
+                            <TeamsProvider>
+                                <ProjectsProvider>
+                                    <MembersProvider>
+                                        <PushMessagesProvider>
+                                            <RosterProvider>
+                                                <AccessControlProvider>
+                                                    <TimeTrackingProvider>
+                                                        {children}
+                                                    </TimeTrackingProvider>
+                                                </AccessControlProvider>
+                                            </RosterProvider>
+                                        </PushMessagesProvider>
+                                    </MembersProvider>
+                                </ProjectsProvider>
+                            </TeamsProvider>
+                        </SettingsProvider>
                     </SystemLogProvider>
-                  </AuthProvider>
-                </MembersProvider>
-              </ContractsProvider>
-            </PushMessagesProvider>
-          </NotificationsProvider>
-        </ProjectsProvider>
-      </TeamsProvider>
+                </AuthProvider>
+            </ContractsProvider>
+        </NotificationsProvider>
     </LanguageProvider>
   );
 }
