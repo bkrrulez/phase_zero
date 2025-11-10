@@ -117,8 +117,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
 
-  const isSettingsOpen = pathname.startsWith('/dashboard/settings');
   const isTeamOpen = pathname.startsWith('/dashboard/team');
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(pathname.startsWith('/dashboard/settings'));
+
+  React.useEffect(() => {
+    setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
+  }, [pathname]);
 
 
   React.useEffect(() => {
@@ -235,7 +239,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <Collapsible open={isSettingsOpen}>
+            <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                 <SidebarMenuItem>
                     <CollapsibleTrigger className="w-full" asChild>
                         <SidebarMenuButton className="justify-between w-full">
