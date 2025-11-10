@@ -1,5 +1,4 @@
 
-
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -322,7 +321,7 @@
     "Garage/ Covered Parking, Parking Deck": "Garage/ Überdachte Stellplätze, Parkdeck",
     "Gas Station": "Tankstelle",
     "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters": "Sonderbauten: Krankenhaus/ Pflegeheim/ Versammlungsstätten/ Schutzbauten",
-    "Non Residential": "Nicht-Wohngebäude",
+    "Non Residential": "Nicht-Wohnen",
     "projectDashboard": "Projekt-Dashboard",
     "sortBy": "Sortieren nach",
     "byCreationDate": "Nach Erstellungsdatum",

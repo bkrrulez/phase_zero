@@ -1,5 +1,4 @@
 
-
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -322,7 +321,7 @@
     "Garage/ Covered Parking, Parking Deck": "Garage/ Covered Parking, Parking Deck",
     "Gas Station": "Gas Station",
     "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters": "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters",
-    "Non Residential": "Non Residential",
+    "Non Residential": "Non-residential",
     "projectDashboard": "Project Dashboard",
     "sortBy": "Sort By",
     "byCreationDate": "By Creation Date",
@@ -358,7 +357,7 @@
     "columnType": "Column Type",
     "values": "Values",
     "freeText": "Free Text",
-    "dropDown": "Drop Down",
+    "dropDown": "Dropdown",
     "table": "Table",
     "columnNameRequired": "Column name is required.",
     "valuesRequired": "Values are required for Drop Down type.",
@@ -409,9 +408,9 @@
     "segmentRuleBook": "Rule Book",
     "Checkliste": "Checklist",
     "Revised Fulfillability": "Revised Fulfillability",
-    "Leicht": "Light",
-    "Mittel": "Medium",
-    "Schwer": "Heavy",
+    "Light": "Light",
+    "Medium": "Medium",
+    "Heavy": "Heavy",
     "Revised Checklist": "Revised Checklist",
     "selectPlaceholder": "Select...",
     "Nutzung": "Usage",

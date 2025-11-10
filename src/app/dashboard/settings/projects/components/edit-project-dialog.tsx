@@ -90,7 +90,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         { value: 'Garage/ Covered Parking, Parking Deck', label: 'Garage/ Covered Parking, Parking Deck' },
         { value: 'Gas Station', label: 'Gas Station' },
         { value: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters', label: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters' },
-        { value: 'Non Residential', label: 'Non Residential' },
+        { value: 'Non-residential', label: 'Non-residential' },
     ];
 
   function onSubmit(data: ProjectFormValues) {
