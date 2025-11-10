@@ -48,7 +48,7 @@ interface EditProjectDialogProps {
 export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project }: EditProjectDialogProps) {
   const { currentUser } = useAuth();
   const { teamMembers } = useMembers();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
   const [analysisPrompt, setAnalysisPrompt] = useState<{latestAnalysisId: string} | null>(null);
@@ -291,7 +291,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                                         <ScrollArea className="h-48">
                                             {currentUseOptions.map(opt => (
                                                 <SelectItem key={opt.value} value={opt.value}>
-                                                    {language === 'de' ? t(opt.value as any) : opt.label}
+                                                    {t(opt.value as any) || opt.label}
                                                 </SelectItem>
                                             ))}
                                         </ScrollArea>
