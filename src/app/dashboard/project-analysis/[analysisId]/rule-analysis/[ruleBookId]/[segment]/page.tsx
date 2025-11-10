@@ -50,6 +50,10 @@ export default function SegmentDetailPage() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [analysisData, setAnalysisData] = React.useState<Record<string, { checklistStatus?: string; revisedFulfillability?: string | null }>>({});
+    
+    const translatedFulfillabilityOptions = React.useMemo(() => {
+        return fulfillabilityOptions.map(opt => ({value: opt, label: t(opt as any)}));
+    }, [t]);
 
     React.useEffect(() => {
         async function fetchData() {
@@ -124,8 +128,8 @@ export default function SegmentDetailPage() {
     const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
+            <div className="flex items-start justify-between gap-4 shrink-0">
                  <div className="flex items-start gap-4">
                     <Button asChild variant="outline" size="icon">
                         <Link href={`/dashboard/project-analysis/${analysisId}/rule-analysis`}>
@@ -140,9 +144,14 @@ export default function SegmentDetailPage() {
                         </p>
                     </div>
                 </div>
+                 <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => router.back()}>{t('cancel')}</Button>
+                    <Button onClick={() => router.back()}>{t('save')}</Button>
+                    <Button variant="secondary" onClick={() => router.back()}>{t('next')}</Button>
+                </div>
             </div>
             
-            <div className="border rounded-lg overflow-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
+            <div className="flex-1 border rounded-lg overflow-auto" style={{ position: 'relative' }}>
                 <Table>
                     <TableHeader className="sticky top-0 bg-card z-10">
                         <TableRow>
@@ -178,7 +187,7 @@ export default function SegmentDetailPage() {
                                                     >
                                                         <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
-                                                            {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any) || opt}</SelectItem>)}
+                                                            {translatedFulfillabilityOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">-</span>
@@ -194,11 +203,6 @@ export default function SegmentDetailPage() {
                         })}
                     </TableBody>
                 </Table>
-            </div>
-             <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => router.back()}>{t('cancel')}</Button>
-                <Button onClick={() => router.back()}>{t('save')}</Button>
-                <Button variant="secondary" onClick={() => router.back()}>{t('next')}</Button>
             </div>
         </div>
     );
