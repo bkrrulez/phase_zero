@@ -117,12 +117,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   const [isNotificationPopoverOpen, setIsNotificationPopoverOpen] = React.useState(false);
 
-  const isTeamOpen = pathname.startsWith('/dashboard/team');
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(pathname.startsWith('/dashboard/settings'));
 
   React.useEffect(() => {
-    setIsSettingsOpen(pathname.startsWith('/dashboard/settings'));
-  }, [pathname]);
+    if(!pathname.startsWith('/dashboard/settings') && isSettingsOpen){
+      setIsSettingsOpen(false);
+    } else if (pathname.startsWith('/dashboard/settings') && !isSettingsOpen) {
+      setIsSettingsOpen(true);
+    }
+  }, [pathname, isSettingsOpen]);
 
 
   React.useEffect(() => {
@@ -187,28 +190,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <Collapsible open={isTeamOpen}>
-                    <CollapsibleTrigger asChild>
-                        <SidebarMenuButton className="justify-between w-full">
-                            <div className="flex items-center gap-2">
-                                <Users />
-                                <span>{t('team')}</span>
-                            </div>
-                            <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", isTeamOpen && "rotate-90")} />
-                        </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                        <SidebarMenu className="pl-6 py-2 space-y-1">
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/team")}>
-                                    <Link href="/dashboard/team">
-                                        <Users /> {t('teamMembers')}
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </CollapsibleContent>
-                </Collapsible>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/team")}>
+                    <Link href="/dashboard/team">
+                        <Users /> {t('team')}
+                    </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
              {currentUser.role === 'Super Admin' && (
                 <>
