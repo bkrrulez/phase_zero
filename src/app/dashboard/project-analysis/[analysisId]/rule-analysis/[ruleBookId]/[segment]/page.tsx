@@ -152,12 +152,12 @@ export default function SegmentDetailPage() {
             </div>
             
             <div className="flex-1 border rounded-lg overflow-auto" style={{ position: 'relative' }}>
-                <Table>
-                    <TableHeader className="sticky top-0 bg-card z-10">
+                <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-card z-10">
                         <TableRow>
                             {finalHeaders.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
                         </TableRow>
-                    </TableHeader>
+                    </thead>
                     <TableBody>
                         {details.entries.map(entry => {
                             const currentAnalysis = analysisData[entry.id] || {};
@@ -202,7 +202,7 @@ export default function SegmentDetailPage() {
                             );
                         })}
                     </TableBody>
-                </Table>
+                </table>
             </div>
         </div>
     );
