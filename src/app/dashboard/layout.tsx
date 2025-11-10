@@ -402,31 +402,31 @@ function DataProviders({
 }) {
   return (
     <LanguageProvider>
-        <NotificationsProvider>
+      <NotificationsProvider>
+          <SystemLogProvider>
             <ContractsProvider>
+              <MembersProvider>
                 <AuthProvider>
-                    <SystemLogProvider>
-                        <SettingsProvider>
-                            <TeamsProvider>
-                                <ProjectsProvider>
-                                    <MembersProvider>
-                                        <PushMessagesProvider>
-                                            <RosterProvider>
-                                                <AccessControlProvider>
-                                                    <TimeTrackingProvider>
-                                                        {children}
-                                                    </TimeTrackingProvider>
-                                                </AccessControlProvider>
-                                            </RosterProvider>
-                                        </PushMessagesProvider>
-                                    </MembersProvider>
-                                </ProjectsProvider>
-                            </TeamsProvider>
-                        </SettingsProvider>
-                    </SystemLogProvider>
+                    <SettingsProvider>
+                      <TeamsProvider>
+                        <ProjectsProvider>
+                          <PushMessagesProvider>
+                            <RosterProvider>
+                              <AccessControlProvider>
+                                <TimeTrackingProvider>
+                                  {children}
+                                </TimeTrackingProvider>
+                              </AccessControlProvider>
+                            </RosterProvider>
+                          </PushMessagesProvider>
+                        </ProjectsProvider>
+                      </TeamsProvider>
+                    </SettingsProvider>
                 </AuthProvider>
+              </MembersProvider>
             </ContractsProvider>
-        </NotificationsProvider>
+          </SystemLogProvider>
+      </NotificationsProvider>
     </LanguageProvider>
   );
 }
