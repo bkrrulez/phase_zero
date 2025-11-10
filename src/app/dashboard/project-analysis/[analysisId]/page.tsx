@@ -20,6 +20,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
+import { useSystemLog } from '../../contexts/SystemLogContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AnalysisDetails {
     analysis: ProjectAnalysis;
@@ -53,6 +55,8 @@ export default function AnalysisDetailPage() {
     const analysisId = params.analysisId as string;
     const { t, language } = useLanguage();
     const { toast } = useToast();
+    const { logAction } = useSystemLog();
+    const { currentUser } = useAuth();
 
     const [details, setDetails] = React.useState<AnalysisDetails | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
@@ -139,7 +143,23 @@ export default function AnalysisDetailPage() {
                 newUse,
                 fulfillability,
             });
-            if (updatedAnalysis) {
+
+            if (updatedAnalysis && details) {
+                // Construct detailed log message
+                const changes: string[] = [];
+                if (newUse !== initialNewUse) {
+                    changes.push(`'New Use' from "${initialNewUse || 'none'}" to "${newUse}"`);
+                }
+                if (JSON.stringify(fulfillability.sort()) !== JSON.stringify(initialFulfillability.sort())) {
+                    changes.push(`'Fulfillability' from "${initialFulfillability.join(', ') || 'none'}" to "${fulfillability.join(', ')}"`);
+                }
+
+                if (changes.length > 0) {
+                    const logMessage = `User "${currentUser?.name}" changed Project Analysis details for '${details.project.name}' (Version ${String(details.analysis.version).padStart(3,'0')}): ${changes.join(' and ')}.`;
+                    await logAction(logMessage);
+                }
+
+
                 if (andProceed) {
                     router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
                 } else {
