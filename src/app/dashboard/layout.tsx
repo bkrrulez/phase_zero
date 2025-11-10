@@ -403,29 +403,29 @@ function DataProviders({
   return (
     <LanguageProvider>
       <NotificationsProvider>
-          <SystemLogProvider>
-            <ContractsProvider>
-              <MembersProvider>
+        <ContractsProvider>
+            <MembersProvider>
                 <AuthProvider>
-                    <SettingsProvider>
-                      <TeamsProvider>
-                        <ProjectsProvider>
-                          <PushMessagesProvider>
-                            <RosterProvider>
-                              <AccessControlProvider>
-                                <TimeTrackingProvider>
-                                  {children}
-                                </TimeTrackingProvider>
-                              </AccessControlProvider>
-                            </RosterProvider>
-                          </PushMessagesProvider>
-                        </ProjectsProvider>
-                      </TeamsProvider>
-                    </SettingsProvider>
+                    <SystemLogProvider>
+                        <SettingsProvider>
+                            <TeamsProvider>
+                                <ProjectsProvider>
+                                    <PushMessagesProvider>
+                                        <RosterProvider>
+                                            <AccessControlProvider>
+                                                <TimeTrackingProvider>
+                                                    {children}
+                                                </TimeTrackingProvider>
+                                            </AccessControlProvider>
+                                        </RosterProvider>
+                                    </PushMessagesProvider>
+                                </ProjectsProvider>
+                            </TeamsProvider>
+                        </SettingsProvider>
+                    </SystemLogProvider>
                 </AuthProvider>
-              </MembersProvider>
-            </ContractsProvider>
-          </SystemLogProvider>
+            </MembersProvider>
+        </ContractsProvider>
       </NotificationsProvider>
     </LanguageProvider>
   );
