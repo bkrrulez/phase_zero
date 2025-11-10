@@ -24,7 +24,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Rule book name is required.'),
-  file: z.instanceof(FileList).refine(files => files?.length > 0, 'A file is required.'),
+  file: z.any().refine((files) => {
+    // This check will only run on the client
+    if (typeof window === 'undefined') return true;
+    return files instanceof FileList && files.length > 0;
+  }, 'A file is required.'),
 });
 
 interface ImportRuleBookDialogProps {
