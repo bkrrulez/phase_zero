@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-
+import { format } from 'date-fns';
 
 interface AnalysisDetails {
     analysis: ProjectAnalysis;
@@ -64,6 +64,11 @@ export default function AnalysisDetailPage() {
     // Form state
     const [newUse, setNewUse] = React.useState<string | undefined>(undefined);
     const [fulfillability, setFulfillability] = React.useState<string[]>([]);
+    
+    // State to track initial values
+    const [initialNewUse, setInitialNewUse] = React.useState<string | undefined>(undefined);
+    const [initialFulfillability, setInitialFulfillability] = React.useState<string[]>([]);
+
 
     const fetchDetails = React.useCallback(async (id: string) => {
         setIsLoading(true);
@@ -71,8 +76,12 @@ export default function AnalysisDetailPage() {
             const data = await getProjectAnalysisDetails(id);
             if (data) {
                 setDetails(data);
-                setNewUse(data.analysis.newUse || undefined);
-                setFulfillability(data.analysis.fulfillability || []);
+                const initialUse = data.analysis.newUse || undefined;
+                const initialFulfill = data.analysis.fulfillability || [];
+                setNewUse(initialUse);
+                setFulfillability(initialFulfill);
+                setInitialNewUse(initialUse);
+                setInitialFulfillability(initialFulfill);
             } else {
                 setError('Analysis not found.');
             }
@@ -90,6 +99,14 @@ export default function AnalysisDetailPage() {
         }
     }, [analysisId, fetchDetails]);
 
+    const hasChanges = React.useCallback(() => {
+        if (newUse !== initialNewUse) return true;
+        if (fulfillability.length !== initialFulfillability.length) return true;
+        const sortedCurrent = [...fulfillability].sort();
+        const sortedInitial = [...initialFulfillability].sort();
+        return sortedCurrent.some((val, i) => val !== sortedInitial[i]);
+    }, [newUse, initialNewUse, fulfillability, initialFulfillability]);
+
     const handleSaveInitiation = (andProceed: boolean) => {
         if (!newUse || fulfillability.length === 0) {
             toast({
@@ -100,23 +117,21 @@ export default function AnalysisDetailPage() {
             return;
         }
 
-        const hadPreviousValues = details?.analysis.newUse || (details?.analysis.fulfillability && details.analysis.fulfillability.length > 0);
+        const hadPreviousValues = initialNewUse || initialFulfillability.length > 0;
         
-        if (hadPreviousValues) {
+        if (hadPreviousValues && hasChanges()) {
             setSaveAndProceed(andProceed);
             setIsConfirmingSave(true);
         } else {
-            proceedWithSave(andProceed);
+            proceedWithSave(andProceed, false); // No need to delete if no previous values or no changes
         }
     }
 
-    const proceedWithSave = async (andProceed: boolean) => {
+    const proceedWithSave = async (andProceed: boolean, shouldDeleteOldResults: boolean) => {
         setIsConfirmingSave(false);
         setIsSaving(true);
         try {
-            // Delete previous results if values existed
-            const hadPreviousValues = details?.analysis.newUse || (details?.analysis.fulfillability && details.analysis.fulfillability.length > 0);
-            if (hadPreviousValues) {
+            if (shouldDeleteOldResults) {
                 await deleteAnalysisResults(analysisId);
             }
 
@@ -128,8 +143,8 @@ export default function AnalysisDetailPage() {
                 if (andProceed) {
                     router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
                 } else {
-                    toast({ title: "Saved", description: "Analysis details have been saved and rule analysis has been refreshed." });
-                    await fetchDetails(analysisId);
+                    toast({ title: "Saved", description: "Analysis details have been saved." });
+                    await fetchDetails(analysisId); // Re-fetch to update state and modification date
                 }
             } else {
                 throw new Error('Failed to save data.');
@@ -163,9 +178,12 @@ export default function AnalysisDetailPage() {
                         <span className="sr-only">{t('back')}</span>
                         </Link>
                     </Button>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-3xl font-bold font-headline">Analysis for {details.project.name}</h1>
-                        <p className="text-muted-foreground">Version {String(details.analysis.version).padStart(3, '0')}</p>
+                        <div className="flex justify-between items-center text-muted-foreground">
+                            <p>Version {String(details.analysis.version).padStart(3, '0')}</p>
+                             <p className="text-xs">Last Modified: {format(new Date(details.analysis.lastModificationDate), "PPpp")}</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -227,7 +245,7 @@ export default function AnalysisDetailPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => proceedWithSave(saveAndProceed)}>Proceed</AlertDialogAction>
+                        <AlertDialogAction onClick={() => proceedWithSave(saveAndProceed, true)}>Proceed</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

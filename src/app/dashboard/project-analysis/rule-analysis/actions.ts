@@ -11,14 +11,13 @@ import en from '@/locales/en.json';
 const locales: Record<string, Record<string, string>> = { de, en };
 
 const getGermanTranslation = (key: string, fromLocale: 'en' | 'de' = 'en'): string => {
-    if (fromLocale === 'de') return key;
+    if (fromLocale === 'de' || !key) return key;
 
-    const germanKey = Object.keys(locales.de).find(k => locales.en[k] === key);
-    if (germanKey && locales.de[germanKey]) {
-        return locales.de[germanKey];
+    const germanKey = Object.keys(locales.de).find(k => locales.en[k as keyof typeof en] === key);
+    if (germanKey && locales.de[germanKey as keyof typeof de]) {
+        return locales.de[germanKey as keyof typeof de];
     }
     
-    // Fallback if a direct key match is not found (e.g. for multi-word values)
     const deTranslation = (locales.de as any)[key];
     if (deTranslation) {
         return deTranslation;
@@ -54,6 +53,7 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
 
+    // Always fetch the latest versions of all rule books
     const allRuleBooks = await getRuleBooks();
     const filteredRuleBooksData = [];
 
@@ -63,13 +63,13 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
 
         const filteredEntries = details.entries.filter(entry => {
             const nutzungValue = (entry.data['Nutzung'] || '').trim();
-            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim();
+            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
 
             // --- Fulfillability Check ---
             let erfullbarkeitMatch = false;
-            if (erfullbarkeitValue === '' || erfullbarkeitValue.toLowerCase() === 'bitte auswaehlen') {
+            if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
                 erfullbarkeitMatch = true;
-            } else if (lowerCaseFulfillability.includes(erfullbarkeitValue.toLowerCase())) {
+            } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
                 erfullbarkeitMatch = true;
             }
             
@@ -204,13 +204,13 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     // First, filter based on New Use and Fulfillability
     const filteredEntries = ruleBookDetails.entries.filter(entry => {
         const nutzungValue = (entry.data['Nutzung'] || '').trim();
-        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim();
+        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
 
         // --- Fulfillability Check ---
         let erfullbarkeitMatch = false;
-        if (erfullbarkeitValue === '' || erfullbarkeitValue.toLowerCase() === 'bitte auswaehlen') {
+        if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
             erfullbarkeitMatch = true;
-        } else if (lowerCaseFulfillability.includes(erfullbarkeitValue.toLowerCase())) {
+        } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
             erfullbarkeitMatch = true;
         }
         
@@ -286,5 +286,3 @@ export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, c
 export async function deleteAnalysisResults(projectAnalysisId: string) {
     await db.query('DELETE FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
 }
-
-
