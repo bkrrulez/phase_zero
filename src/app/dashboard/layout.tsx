@@ -119,14 +119,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(pathname.startsWith('/dashboard/settings'));
 
-  React.useEffect(() => {
-    if(!pathname.startsWith('/dashboard/settings') && isSettingsOpen){
-      setIsSettingsOpen(false);
-    } else if (pathname.startsWith('/dashboard/settings') && !isSettingsOpen) {
-      setIsSettingsOpen(true);
-    }
-  }, [pathname, isSettingsOpen]);
-
 
   React.useEffect(() => {
     // This effect ensures that contract data is consistent when member data changes.
