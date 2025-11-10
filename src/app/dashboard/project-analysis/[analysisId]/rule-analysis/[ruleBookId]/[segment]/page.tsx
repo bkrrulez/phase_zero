@@ -120,7 +120,6 @@ export default function SegmentDetailPage() {
         return indexA - indexB;
     });
 
-    // Manually add the interactive columns
     const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
 
     return (
@@ -136,7 +135,7 @@ export default function SegmentDetailPage() {
                     <div>
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSegmentTitle', {key: details.segmentKey})}</h1>
                         <p className="text-muted-foreground">
-                            <span className="font-semibold">{t('segmentRuleBook')}:</span> {details.ruleBook.versionName} | <span className="font-semibold">{t('newUse')}:</span> {details.projectAnalysis.newUse} | <span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.join(', ')}
+                            <span className="font-semibold">{t('segmentRuleBook')}:</span> {details.ruleBook.versionName} | <span className="font-semibold">{t('newUse')}:</span> {t(details.projectAnalysis.newUse as any) || details.projectAnalysis.newUse} | <span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.map(f => t(f as any) || f).join(', ')}
                         </p>
                     </div>
                 </div>
@@ -203,5 +202,3 @@ export default function SegmentDetailPage() {
         </div>
     );
 }
-
-    

@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getProjectAnalysisDetails, updateProjectAnalysis } from '../../actions';
-import { deleteAnalysisResults } from '../rule-analysis/actions';
+import { deleteAnalysisResults, getFilteredRuleBooks } from '../rule-analysis/actions';
 import { type ProjectAnalysis, type Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -74,6 +73,10 @@ export default function AnalysisDetailPage() {
     const [initialNewUse, setInitialNewUse] = React.useState<string | undefined>(undefined);
     const [initialFulfillability, setInitialFulfillability] = React.useState<string[]>([]);
 
+    const translatedFulfillabilityOptions = React.useMemo(() => {
+        return fulfillabilityOptions.map(opt => ({...opt, label: t(opt.label as any)}));
+    }, [t]);
+
 
     const fetchDetails = React.useCallback(async (id: string) => {
         setIsLoading(true);
@@ -127,8 +130,11 @@ export default function AnalysisDetailPage() {
         if (hadPreviousValues && hasChanges()) {
             setSaveAndProceed(andProceed);
             setIsConfirmingSave(true);
-        } else {
-            proceedWithSave(andProceed, false); // No need to delete if no previous values or no changes
+        } else if (!hasChanges() && andProceed) {
+            // If no changes but user wants to proceed, just navigate
+            router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
+        } else if (hasChanges()) { // Handles saving for the first time
+            proceedWithSave(andProceed, false);
         }
     }
 
@@ -136,6 +142,9 @@ export default function AnalysisDetailPage() {
         setIsConfirmingSave(false);
         setIsSaving(true);
         try {
+            const filteredRuleBooks = await getFilteredRuleBooks(analysisId, { newUse, fulfillability });
+            const hasApplicableRules = filteredRuleBooks.length > 0;
+
             if (shouldDeleteOldResults) {
                 await deleteAnalysisResults(analysisId);
             }
@@ -146,7 +155,6 @@ export default function AnalysisDetailPage() {
             });
 
             if (updatedAnalysis && details) {
-                // Construct detailed log message
                 const changes: string[] = [];
                 if (newUse !== initialNewUse) {
                     changes.push(`'New Use' from "${initialNewUse || 'none'}" to "${newUse}"`);
@@ -162,10 +170,14 @@ export default function AnalysisDetailPage() {
 
 
                 if (andProceed) {
-                    router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
+                    if (hasApplicableRules) {
+                        router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
+                    } else {
+                         toast({ variant: 'destructive', title: "No Applicable Rules", description: "No rule books match the selected criteria. Please adjust your selection or import relevant rule books." });
+                    }
                 } else {
                     toast({ title: t('save'), description: t('analysisDetails') + " " + t('save') + "d." });
-                    await fetchDetails(analysisId); // Re-fetch to update state and modification date
+                    await fetchDetails(analysisId);
                 }
             } else {
                 throw new Error('Failed to save data.');
@@ -174,8 +186,9 @@ export default function AnalysisDetailPage() {
             toast({
                 variant: 'destructive',
                 title: t('error'),
-                description: t('error'),
+                description: 'An error occurred while saving. Please check the console for details.',
             });
+            console.error(err);
         } finally {
             setIsSaving(false);
         }
@@ -216,7 +229,7 @@ export default function AnalysisDetailPage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label>{t('currentUse')}</Label>
-                                <Input value={details.project.currentUse || 'N/A'} disabled />
+                                <Input value={t(details.project.currentUse as any) || details.project.currentUse || 'N/A'} disabled />
                             </div>
                             <div className="space-y-2">
                                 <Label>{t('newUse')}</Label>
@@ -228,7 +241,7 @@ export default function AnalysisDetailPage() {
                                         <ScrollArea className="h-48">
                                             {currentUseOptions.map(opt => (
                                                 <SelectItem key={opt.value} value={opt.value}>
-                                                    {language === 'de' ? t(opt.value as any) : opt.label}
+                                                    {t(opt.value as any) || opt.label}
                                                 </SelectItem>
                                             ))}
                                         </ScrollArea>
@@ -238,7 +251,7 @@ export default function AnalysisDetailPage() {
                             <div className="space-y-2">
                                 <Label>{t('fulfillability')}</Label>
                                 <MultiSelect
-                                    options={fulfillabilityOptions}
+                                    options={translatedFulfillabilityOptions}
                                     selected={fulfillability}
                                     onChange={setFulfillability}
                                     placeholder={t('selectFulfillability')}
@@ -248,7 +261,7 @@ export default function AnalysisDetailPage() {
                     </CardContent>
                     <CardContent className="flex justify-end gap-2 pt-6">
                         <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>{t('cancel')}</Button>
-                        <Button onClick={() => handleSaveInitiation(false)} disabled={isSaving}>
+                        <Button onClick={() => handleSaveInitiation(false)} disabled={isSaving || !hasChanges()}>
                             {isSaving ? t('sending') : t('save')}
                         </Button>
                         <Button variant="secondary" onClick={() => handleSaveInitiation(true)} disabled={isSaving}>{t('next')}</Button>
@@ -273,5 +286,3 @@ export default function AnalysisDetailPage() {
         </>
     );
 }
-
-    
