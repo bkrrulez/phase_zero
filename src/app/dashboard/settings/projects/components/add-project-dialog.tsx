@@ -83,7 +83,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         { value: 'Garage/ Covered Parking, Parking Deck', label: 'Garage/ Covered Parking, Parking Deck' },
         { value: 'Gas Station', label: 'Gas Station' },
         { value: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters', label: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters' },
-        { value: 'Non-residential', label: 'Non-residential' },
+        { value: 'Non-residential', label: 'Non Residential' },
     ];
     
     async function onSubmit(data: ProjectFormValues) {
@@ -304,7 +304,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                                         <ScrollArea className="h-48">
                                             {currentUseOptions.map(opt => (
                                                 <SelectItem key={opt.value} value={opt.value}>
-                                                    {t(opt.value as any) || opt.label}
+                                                    {t(opt.label as any) || opt.label}
                                                 </SelectItem>
                                             ))}
                                         </ScrollArea>
@@ -348,3 +348,6 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
 
 
 
+
+
+    
