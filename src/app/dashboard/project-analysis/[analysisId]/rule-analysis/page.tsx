@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getSegmentedRuleBookData } from '@/app/dashboard/project-analysis/rule-analysis/actions';
 import { getProjectAnalysisDetails } from '@/app/dashboard/actions';
-import { type RuleBook, type ProjectAnalysis } from '@/lib/types';
+import { type RuleBook, type ProjectAnalysis, type Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -35,6 +35,7 @@ export default function RuleAnalysisPage() {
     const { t } = useLanguage();
 
     const [projectAnalysis, setProjectAnalysis] = React.useState<ProjectAnalysis | null>(null);
+    const [project, setProject] = React.useState<Project | null>(null);
     const [segmentedData, setSegmentedData] = React.useState<SegmentedRuleBook[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function RuleAnalysisPage() {
                 if (!analysisDetails) throw new Error('Project analysis not found.');
                 
                 setProjectAnalysis(analysisDetails.analysis);
+                setProject(analysisDetails.project);
                 setSegmentedData(segmentedBooks);
             } catch (err) {
                 console.error(err);
@@ -85,16 +87,16 @@ export default function RuleAnalysisPage() {
                     </Link>
                 </Button>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')}</h1>
+                    <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
                     <div className="flex justify-between items-center text-muted-foreground text-sm">
                         <p>{t('forAnalysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
                          {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
                             <div className="flex items-center gap-4">
                                 {projectAnalysis.newUse && (
-                                    <p><span className="font-semibold">{t('newUse')}:</span> {projectAnalysis.newUse}</p>
+                                    <p><span className="font-semibold">{t('newUse')}:</span> {t(projectAnalysis.newUse as any) || projectAnalysis.newUse}</p>
                                 )}
                                 {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
-                                     <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.join(', ')}</p>
+                                     <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.map(f => t(f as any) || f).join(', ')}</p>
                                 )}
                             </div>
                         )}
@@ -142,4 +144,3 @@ export default function RuleAnalysisPage() {
     );
 }
 
-    
