@@ -84,9 +84,21 @@ export default function RuleAnalysisPage() {
                         <span className="sr-only">{t('back')}</span>
                     </Link>
                 </Button>
-                <div>
+                <div className="flex-1">
                     <h1 className="text-3xl font-bold font-headline">Rule Analysis</h1>
-                    <p className="text-muted-foreground">For analysis version {String(projectAnalysis?.version).padStart(3, '0')}</p>
+                    <div className="flex justify-between items-center text-muted-foreground text-sm">
+                        <p>For analysis version {String(projectAnalysis?.version).padStart(3, '0')}</p>
+                         {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
+                            <div className="flex items-center gap-4">
+                                {projectAnalysis.newUse && (
+                                    <p><span className="font-semibold">New Use:</span> {projectAnalysis.newUse}</p>
+                                )}
+                                {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
+                                     <p><span className="font-semibold">Fulfillability:</span> {projectAnalysis.fulfillability.join(', ')}</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
