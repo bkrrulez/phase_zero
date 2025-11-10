@@ -72,8 +72,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractsProvider, useContracts } from "./contexts/ContractsContext";
-import { RosterProvider } from "./contexts/RosterContext";
-import { AccessControlProvider } from "./contexts/AccessControlContext";
 
 
 const getStatus = (startDate: string, endDate: string) => {
@@ -383,11 +381,7 @@ function DataProviders({
                             <TeamsProvider>
                                 <ProjectsProvider>
                                     <PushMessagesProvider>
-                                        <RosterProvider>
-                                            <AccessControlProvider>
-                                                {children}
-                                            </AccessControlProvider>
-                                        </RosterProvider>
+                                        {children}
                                     </PushMessagesProvider>
                                 </ProjectsProvider>
                             </TeamsProvider>
