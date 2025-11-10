@@ -85,16 +85,16 @@ export default function RuleAnalysisPage() {
                     </Link>
                 </Button>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold font-headline">Rule Analysis</h1>
+                    <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')}</h1>
                     <div className="flex justify-between items-center text-muted-foreground text-sm">
-                        <p>For analysis version {String(projectAnalysis?.version).padStart(3, '0')}</p>
+                        <p>{t('forAnalysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
                          {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
                             <div className="flex items-center gap-4">
                                 {projectAnalysis.newUse && (
-                                    <p><span className="font-semibold">New Use:</span> {projectAnalysis.newUse}</p>
+                                    <p><span className="font-semibold">{t('newUse')}:</span> {projectAnalysis.newUse}</p>
                                 )}
                                 {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
-                                     <p><span className="font-semibold">Fulfillability:</span> {projectAnalysis.fulfillability.join(', ')}</p>
+                                     <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.join(', ')}</p>
                                 )}
                             </div>
                         )}
@@ -113,7 +113,7 @@ export default function RuleAnalysisPage() {
                                {totalCompleted === totalEntries && totalEntries > 0 && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                             </div>
                         </CardTitle>
-                        <CardDescription>Filtered based on your analysis criteria.</CardDescription>
+                        <CardDescription>{t('ruleAnalysisDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -126,10 +126,10 @@ export default function RuleAnalysisPage() {
                                         className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
                                     >
                                         <div className="flex justify-between items-center">
-                                            <h3 className="font-semibold text-lg">Segment {segment.key}</h3>
+                                            <h3 className="font-semibold text-lg">{t('segment', { key: segment.key })}</h3>
                                             {progress === 100 && segment.total > 0 && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                                         </div>
-                                        <p className="text-sm text-muted-foreground">{segment.completed} / {segment.total} Analyzed</p>
+                                        <p className="text-sm text-muted-foreground">{segment.completed} / {segment.total} {t('analyzed')}</p>
                                         <Progress value={progress} className="h-2" />
                                     </div>
                                 );
@@ -141,3 +141,5 @@ export default function RuleAnalysisPage() {
         </div>
     );
 }
+
+    

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -163,7 +164,7 @@ export default function AnalysisDetailPage() {
                 if (andProceed) {
                     router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
                 } else {
-                    toast({ title: "Saved", description: "Analysis details have been saved." });
+                    toast({ title: t('save'), description: t('analysisDetails') + " " + t('save') + "d." });
                     await fetchDetails(analysisId); // Re-fetch to update state and modification date
                 }
             } else {
@@ -172,8 +173,8 @@ export default function AnalysisDetailPage() {
         } catch (err) {
             toast({
                 variant: 'destructive',
-                title: "Error",
-                description: "Could not save analysis details.",
+                title: t('error'),
+                description: t('error'),
             });
         } finally {
             setIsSaving(false);
@@ -199,29 +200,29 @@ export default function AnalysisDetailPage() {
                         </Link>
                     </Button>
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold font-headline">Analysis for {details.project.name}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{t('analysisFor', { name: details.project.name })}</h1>
                         <div className="flex justify-between items-center text-muted-foreground">
-                            <p>Version {String(details.analysis.version).padStart(3, '0')}</p>
-                             <p className="text-xs">Last Modified: {format(new Date(details.analysis.lastModificationDate), "PPpp")}</p>
+                            <p>{t('version')} {String(details.analysis.version).padStart(3, '0')}</p>
+                             <p className="text-xs">{t('lastModified')}: {format(new Date(details.analysis.lastModificationDate), "PPpp")}</p>
                         </div>
                     </div>
                 </div>
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Analysis Details</CardTitle>
+                        <CardTitle>{t('analysisDetails')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <Label>Current Use</Label>
+                                <Label>{t('currentUse')}</Label>
                                 <Input value={details.project.currentUse || 'N/A'} disabled />
                             </div>
                             <div className="space-y-2">
-                                <Label>New Use</Label>
+                                <Label>{t('newUse')}</Label>
                                 <Select value={newUse} onValueChange={setNewUse}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select new use..." />
+                                        <SelectValue placeholder={t('selectNewUse')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <ScrollArea className="h-48">
@@ -235,22 +236,22 @@ export default function AnalysisDetailPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Fulfillability</Label>
+                                <Label>{t('fulfillability')}</Label>
                                 <MultiSelect
                                     options={fulfillabilityOptions}
                                     selected={fulfillability}
                                     onChange={setFulfillability}
-                                    placeholder="Select fulfillability..."
+                                    placeholder={t('selectFulfillability')}
                                 />
                             </div>
                         </div>
                     </CardContent>
                     <CardContent className="flex justify-end gap-2 pt-6">
-                        <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>Cancel</Button>
+                        <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>{t('cancel')}</Button>
                         <Button onClick={() => handleSaveInitiation(false)} disabled={isSaving}>
-                            {isSaving ? 'Saving...' : 'Save'}
+                            {isSaving ? t('sending') : t('save')}
                         </Button>
-                        <Button variant="secondary" onClick={() => handleSaveInitiation(true)} disabled={isSaving}>Next</Button>
+                        <Button variant="secondary" onClick={() => handleSaveInitiation(true)} disabled={isSaving}>{t('next')}</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -258,17 +259,19 @@ export default function AnalysisDetailPage() {
             <AlertDialog open={isConfirmingSave} onOpenChange={setIsConfirmingSave}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+                        <AlertDialogTitle>{t('confirmChangesTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Saving new values will refresh the rule analysis. Do you want to proceed?
+                            {t('confirmChangesDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => proceedWithSave(saveAndProceed, true)}>Proceed</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => proceedWithSave(saveAndProceed, true)}>{t('proceed')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </>
     );
 }
+
+    

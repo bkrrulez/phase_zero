@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -372,25 +373,25 @@ function DataProviders({
 }) {
   return (
     <LanguageProvider>
-      <NotificationsProvider>
-          <ContractsProvider>
-            <MembersProvider>
-                <AuthProvider>
-                    <SystemLogProvider>
-                        <SettingsProvider>
-                            <TeamsProvider>
-                                <ProjectsProvider>
-                                    <PushMessagesProvider>
+      <ContractsProvider>
+        <MembersProvider>
+            <AuthProvider>
+                <SystemLogProvider>
+                    <SettingsProvider>
+                        <TeamsProvider>
+                            <ProjectsProvider>
+                                <PushMessagesProvider>
+                                    <NotificationsProvider>
                                         {children}
-                                    </PushMessagesProvider>
-                                </ProjectsProvider>
-                            </TeamsProvider>
-                        </SettingsProvider>
-                    </SystemLogProvider>
-                </AuthProvider>
-            </MembersProvider>
-        </ContractsProvider>
-      </NotificationsProvider>
+                                    </NotificationsProvider>
+                                </PushMessagesProvider>
+                            </ProjectsProvider>
+                        </TeamsProvider>
+                    </SettingsProvider>
+                </SystemLogProvider>
+            </AuthProvider>
+        </MembersProvider>
+    </ContractsProvider>
     </LanguageProvider>
   );
 }
@@ -406,3 +407,5 @@ export default function DashboardLayout({
     </DataProviders>
   );
 }
+
+    

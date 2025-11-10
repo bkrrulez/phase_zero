@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type Project } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const formSchema = z.object({
   projectId: z.string().min(1, 'Please select a project.'),
@@ -26,6 +27,7 @@ interface AddAnalysisDialogProps {
 
 export function AddAnalysisDialog({ isOpen, onOpenChange, onStartAnalysis, projects }: AddAnalysisDialogProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const form = useForm<AddAnalysisFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,9 +43,9 @@ export function AddAnalysisDialog({ isOpen, onOpenChange, onStartAnalysis, proje
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Start New Project Analysis</DialogTitle>
+          <DialogTitle>{t('startNewAnalysisTitle')}</DialogTitle>
           <DialogDescription>
-            Select a project to begin a new analysis.
+            {t('startNewAnalysisDesc')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -53,11 +55,11 @@ export function AddAnalysisDialog({ isOpen, onOpenChange, onStartAnalysis, proje
               name="projectId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Project</FormLabel>
+                  <FormLabel>{t('project')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a project" />
+                        <SelectValue placeholder={t('selectPlaceholder')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -74,9 +76,9 @@ export function AddAnalysisDialog({ isOpen, onOpenChange, onStartAnalysis, proje
             />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
-              <Button type="submit">Analysis</Button>
+              <Button type="submit">{t('startAnalysisBtn')}</Button>
             </DialogFooter>
           </form>
         </Form>
@@ -84,3 +86,5 @@ export function AddAnalysisDialog({ isOpen, onOpenChange, onStartAnalysis, proje
     </Dialog>
   );
 }
+
+    

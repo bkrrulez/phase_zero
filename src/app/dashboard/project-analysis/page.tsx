@@ -88,7 +88,7 @@ export default function ProjectAnalysisPage() {
         if (!deletingAnalysis) return;
         try {
             await deleteProjectAnalysis(deletingAnalysis.id);
-            toast({ title: 'Analysis Deleted', description: `Version ${String(deletingAnalysis.version).padStart(3,'0')} has been deleted.`});
+            toast({ title: t('analysisDeleted'), description: `Version ${String(deletingAnalysis.version).padStart(3,'0')} has been deleted.`});
             fetchAnalyses();
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete analysis.' });
@@ -106,28 +106,28 @@ export default function ProjectAnalysisPage() {
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">Project Analysis</h1>
-                        <p className="text-muted-foreground">Manage and conduct analyses on your projects.</p>
+                        <h1 className="text-3xl font-bold font-headline">{t('projectAnalysis')}</h1>
+                        <p className="text-muted-foreground">{t('projectAnalysisSubtitle')}</p>
                     </div>
                     <Button onClick={() => setIsAddDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add New
+                        <PlusCircle className="mr-2 h-4 w-4" /> {t('addNewAnalysis')}
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>All Analyses</CardTitle>
-                        <CardDescription>A list of all project analyses that have been started.</CardDescription>
+                        <CardTitle>{t('allAnalyses')}</CardTitle>
+                        <CardDescription>{t('allAnalysesDesc')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Project Name</TableHead>
-                                    <TableHead>Analysis Version</TableHead>
-                                    <TableHead>Analysis Start Date</TableHead>
-                                    <TableHead>Last Modification Date</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>{t('projectName')}</TableHead>
+                                    <TableHead>{t('analysisVersion')}</TableHead>
+                                    <TableHead>{t('analysisStartDate')}</TableHead>
+                                    <TableHead>{t('lastModificationDate')}</TableHead>
+                                    <TableHead className="text-right">{t('actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -149,7 +149,7 @@ export default function ProjectAnalysisPage() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent>
                                                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setDeletingAnalysis(analysis)}} className="text-destructive focus:text-destructive">
-                                                           <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                           <Trash2 className="mr-2 h-4 w-4" /> {t('delete')}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -157,7 +157,7 @@ export default function ProjectAnalysisPage() {
                                         </TableRow>
                                     ))
                                 ) : (
-                                    <TableRow><TableCell colSpan={5} className="h-24 text-center">No analyses started yet.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} className="h-24 text-center">{t('noAnalysesStarted')}</TableCell></TableRow>
                                 )}
                             </TableBody>
                         </Table>
@@ -175,14 +175,15 @@ export default function ProjectAnalysisPage() {
             <AlertDialog open={!!confirmingNewVersion} onOpenChange={() => setConfirmingNewVersion(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Start New Analysis Version?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('confirmNewVersionTitle')}</AlertDialogTitle>
+
                         <AlertDialogDescription>
-                            An analysis for this project already exists. Do you want to start a new analysis (Version {String(confirmingNewVersion?.nextVersion).padStart(3, '0')})?
+                            {t('confirmNewVersionDesc', { version: String(confirmingNewVersion?.nextVersion).padStart(3, '0') })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => createNewAnalysis(confirmingNewVersion!.projectId)}>Confirm</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => createNewAnalysis(confirmingNewVersion!.projectId)}>{t('confirm')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -190,17 +191,19 @@ export default function ProjectAnalysisPage() {
             <AlertDialog open={!!deletingAnalysis} onOpenChange={() => setDeletingAnalysis(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('areYouSure')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete analysis version {String(deletingAnalysis?.version).padStart(3,'0')} for "{getProjectName(deletingAnalysis?.projectId || '')}". This action cannot be undone.
+                           {t('analysisDeleted')} Version {String(deletingAnalysis?.version).padStart(3,'0')} for "{getProjectName(deletingAnalysis?.projectId || '')}". {t('unfreezeConfirmation')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAnalysis} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAnalysis} className="bg-destructive hover:bg-destructive/90">{t('delete')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </>
     );
 }
+
+    

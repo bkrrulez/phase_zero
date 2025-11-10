@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -92,7 +93,7 @@ export default function SegmentDetailPage() {
                 checklistStatus: newData.checklistStatus!,
                 revisedFulfillability: newData.revisedFulfillability
             });
-            toast({ title: 'Auto-saved!', description: 'Your changes have been saved.', duration: 2000 });
+            toast({ title: t('save') + "d!", description: 'Your changes have been saved.', duration: 2000 });
         } catch {
             toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save your changes.' });
         }
@@ -108,7 +109,7 @@ export default function SegmentDetailPage() {
         h => h !== 'Referenztabelle' && h !== 'Checkliste'
     );
     
-    const columnOrder: string[] = ['Gliederung', 'Text', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
+    const columnOrder: string[] = ['Gliederung', 'Text', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit'];
 
     const sortedHeaders = displayHeaders.sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
@@ -120,7 +121,7 @@ export default function SegmentDetailPage() {
     });
 
     // Manually add the interactive columns
-    const finalHeaders = [...sortedHeaders, 'Revised Checklist', 'Revised Fulfillability'];
+    const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
 
     return (
         <div className="space-y-6">
@@ -133,9 +134,9 @@ export default function SegmentDetailPage() {
                         </Link>
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">Rule Analysis: Segment {details.segmentKey}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSegmentTitle', {key: details.segmentKey})}</h1>
                         <p className="text-muted-foreground">
-                            <span className="font-semibold">Rule Book:</span> {details.ruleBook.versionName} | <span className="font-semibold">New Use:</span> {details.projectAnalysis.newUse} | <span className="font-semibold">Fulfillability:</span> {details.projectAnalysis.fulfillability?.join(', ')}
+                            <span className="font-semibold">{t('segmentRuleBook')}:</span> {details.ruleBook.versionName} | <span className="font-semibold">{t('newUse')}:</span> {details.projectAnalysis.newUse} | <span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.join(', ')}
                         </p>
                     </div>
                 </div>
@@ -163,7 +164,7 @@ export default function SegmentDetailPage() {
                                                         value={currentAnalysis.checklistStatus}
                                                         onValueChange={value => handleAnalysisChange(entry.id, 'checklistStatus', value)}
                                                     >
-                                                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
                                                             {checklistOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
                                                         </SelectContent>
@@ -175,9 +176,9 @@ export default function SegmentDetailPage() {
                                                         value={currentAnalysis.revisedFulfillability || ''}
                                                         onValueChange={value => handleAnalysisChange(entry.id, 'revisedFulfillability', value)}
                                                     >
-                                                        <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
-                                                            {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                                            {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any) || opt}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">-</span>
@@ -195,10 +196,12 @@ export default function SegmentDetailPage() {
                 </Table>
             </div>
              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-                <Button onClick={() => router.back()}>Save</Button>
-                <Button variant="secondary" onClick={() => router.back()}>Next</Button>
+                <Button variant="outline" onClick={() => router.back()}>{t('cancel')}</Button>
+                <Button onClick={() => router.back()}>{t('save')}</Button>
+                <Button variant="secondary" onClick={() => router.back()}>{t('next')}</Button>
             </div>
         </div>
     );
 }
+
+    
