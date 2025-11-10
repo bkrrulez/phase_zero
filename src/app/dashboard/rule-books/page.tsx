@@ -70,7 +70,11 @@ export default function RuleBooksPage() {
             }
             
             const mainWorksheet = workbook.Sheets[mainSheetName];
-            const sheetHeaders = (XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0] as string[]).map(h => h.trim());
+            const headerRow = XLSX.utils.sheet_to_json(mainWorksheet, { header: 1 })[0];
+            if (!headerRow) {
+                throw new Error("The 'Main' sheet is empty or does not contain a header row.");
+            }
+            const sheetHeaders = (headerRow as string[]).map(h => String(h || '').trim());
             
             const normalizedSheetHeaders = sheetHeaders.map(h => h.toLowerCase());
             const normalizedMandatoryColumns = importSettings
@@ -119,10 +123,10 @@ export default function RuleBooksPage() {
 
             const result = await addRuleBook({ name, entries: plainEntries, referenceTables: plainReferenceTables, isNewVersion });
             
-            if (result.requiresConfirmation) {
-                const event = new CustomEvent('import-response', { detail: result });
-                window.dispatchEvent(event);
-            } else {
+            const event = new CustomEvent('import-response', { detail: result });
+            window.dispatchEvent(event);
+
+            if (result.success) {
                 toast({ title: t('importSuccess'), description: t('importSuccessDesc', { name, count: plainEntries.length }) });
                 await fetchRuleBooks(); // Refresh the list
                 setIsImportOpen(false);
@@ -134,6 +138,9 @@ export default function RuleBooksPage() {
                 title: t('importFailed'),
                 description: error.message || t('importErrorDesc'),
             });
+            // Also dispatch an event to close any confirmation dialogs in the child
+             const event = new CustomEvent('import-response', { detail: { success: false, error: true } });
+             window.dispatchEvent(event);
         }
     };
   };

@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as XLSX from 'xlsx-js-style';
-import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -59,27 +58,36 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
         
         const reader = new FileReader();
         reader.onload = (e) => {
-            const data = e.target?.result;
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'main');
-            if (!sheetName) {
-                reject(new Error(t('missingSheetError')));
-                return;
-            }
-            
-            const worksheet = workbook.Sheets[sheetName];
-            const headers = (XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[]).map(h => h.trim());
+            try {
+                const data = e.target?.result;
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames.find(name => name.toLowerCase() === 'main');
+                if (!sheetName) {
+                    throw new Error(t('missingSheetError'));
+                }
+                
+                const worksheet = workbook.Sheets[sheetName];
+                const headerRow = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0];
+                
+                if (!headerRow) {
+                    throw new Error("The 'Main' sheet is empty or does not contain a header row.");
+                }
 
-            const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
+                const headers = (headerRow as string[]).map(h => String(h || '').trim());
 
-            if (missingColumns.length > 0) {
-                reject(t('missingColumnsError', { columns: missingColumns.join(', ') }));
-            } else {
-                const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                resolve(jsonData.length);
+                const missingColumns = mandatoryColumns.filter(col => !headers.includes(col));
+
+                if (missingColumns.length > 0) {
+                    throw new Error(t('missingColumnsError', { columns: missingColumns.join(', ') }));
+                } else {
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    resolve(jsonData.length);
+                }
+            } catch(error: any) {
+                reject(error);
             }
         };
-        reader.onerror = () => reject(t('importFailed'));
+        reader.onerror = () => reject(new Error(t('importFailed')));
 
         reader.readAsArrayBuffer(file);
     });
@@ -90,13 +98,12 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
     try {
         const rowCount = await checkFileHeaders(file);
         setImportData({ name: data.name, file, rowCount, isNewVersion: false });
-        // The actual import will be triggered after confirmation
-        onImport(data.name, file, false);
-    } catch (error) {
+        setIsConfirming(true);
+    } catch (error: any) {
         toast({
             variant: 'destructive',
             title: t('importError'),
-            description: typeof error === 'string' ? error : t('importErrorDesc'),
+            description: error.message || t('importErrorDesc'),
         });
     }
   };
@@ -106,8 +113,6 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
         onImport(importData.name, importData.file, importData.isNewVersion);
     }
     setIsConfirming(false);
-    setImportData(null);
-    form.reset();
   }
 
   const handleVersionConfirm = () => {
@@ -123,11 +128,13 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
   React.useEffect(() => {
     const handleImportResponse = (event: Event) => {
         const customEvent = event as CustomEvent;
-        if(customEvent.detail.requiresConfirmation) {
+        if(customEvent.detail.success === false && customEvent.detail.requiresConfirmation) {
             setVersionData({ existingVersions: customEvent.detail.existingVersions });
             setIsVersionConfirming(true);
         } else {
-            setImportData(null); // Clear data on successful import
+            // On successful import or any other case, just close and reset
+            setIsConfirming(false);
+            setImportData(null); 
             form.reset();
         }
     };
@@ -183,6 +190,21 @@ export function ImportRuleBookDialog({ isOpen, onOpenChange, onImport, importSet
           </Form>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('confirmImport')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('confirmImportDesc', { count: importData?.rowCount || 0 })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setImportData(null)}>{t('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmImport}>{t('confirm')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <AlertDialog open={isVersionConfirming} onOpenChange={setIsVersionConfirming}>
         <AlertDialogContent>
