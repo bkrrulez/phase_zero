@@ -152,9 +152,18 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
         const segmentStats = Object.keys(segments).map(key => {
             const segmentEntries = segments[key];
             const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
+            
             const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
-                return !!(analysis && analysis.checklistStatus);
+                if (!analysis || !analysis.checklistStatus) {
+                    return false; // Not started
+                }
+                if (['Unachievable', 'Not verifiable'].includes(analysis.checklistStatus)) {
+                    // If it requires fulfillability, it must have a value.
+                    return !!analysis.revisedFulfillability;
+                }
+                // For other statuses, just having the status is enough.
+                return true;
             }).length;
 
             return {
