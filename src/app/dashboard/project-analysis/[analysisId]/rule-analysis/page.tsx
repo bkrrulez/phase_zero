@@ -115,12 +115,14 @@ export default function RuleAnalysisPage() {
                             <CardTitle className="flex justify-between items-center">
                                 <span>{ruleBook.versionName}</span>
                                 <div className="flex items-center gap-4 text-sm font-medium">
-                                    <span className="text-muted-foreground">{totalRows} Rows</span>
-                                    <div className="flex items-center gap-2">
-                                       <span>{totalCompleted} / {totalParameters}</span>
-                                       <Progress value={overallProgress} className="w-24 h-2" />
-                                       {isComplete && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                                    </div>
+                                    <span className="text-muted-foreground">{totalRows} {totalRows === 1 ? 'Row' : 'Rows'}</span>
+                                    {totalParameters > 0 && (
+                                        <div className="flex items-center gap-2">
+                                            <span>{totalCompleted} / {totalParameters}</span>
+                                            <Progress value={overallProgress} className="w-24 h-2" />
+                                            {isComplete && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                                        </div>
+                                    )}
                                 </div>
                             </CardTitle>
                             <CardDescription>{t('ruleAnalysisDesc')}</CardDescription>
@@ -130,6 +132,8 @@ export default function RuleAnalysisPage() {
                                 {segments.map(segment => {
                                     const progress = segment.totalParameters > 0 ? (segment.completedParameters / segment.totalParameters) * 100 : 0;
                                     const isSegmentComplete = segment.totalParameters > 0 && segment.completedParameters === segment.totalParameters;
+                                    const hasNoParameters = segment.totalParameters === 0;
+
                                     return (
                                         <div
                                             key={segment.key}
@@ -138,13 +142,16 @@ export default function RuleAnalysisPage() {
                                         >
                                             <div className="flex justify-between items-center">
                                                 <h3 className="font-semibold text-lg">{t('segment', { key: segment.key })}</h3>
-                                                {isSegmentComplete && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                                                {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                                             </div>
-                                            <p className="text-xs text-muted-foreground">{segment.totalRows} Rows</p>
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
-                                                <Progress value={progress} className="h-2 mt-1" />
-                                            </div>
+                                            <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? 'Row' : 'Rows'}</p>
+                                            
+                                            {!hasNoParameters && (
+                                                <div>
+                                                    <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
+                                                    <Progress value={progress} className="h-2 mt-1" />
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
