@@ -136,8 +136,10 @@ export default function AnalysisResultPage() {
                                     />
                                     <Legend 
                                         formatter={(value) => {
-                                            const translationKey = value.toLowerCase().replace(/ /g, '');
-                                            return t(translationKey as any) || value;
+                                            const translationKey = value.replace(/ /g, '');
+                                            // Ensure the first letter is lowercase for camelCase keys
+                                            const finalKey = translationKey.charAt(0).toLowerCase() + translationKey.slice(1);
+                                            return t(finalKey as any) || value;
                                         }} 
                                     />
                                 </PieChart>
