@@ -422,5 +422,10 @@
     "achievable": "Erfüllbar",
     "unachievable": "Nicht erfüllbar",
     "notRelevant": "Nicht relevant",
-    "notVerifiable": "Nicht überprüfbar"
+    "notVerifiable": "Nicht überprüfbar",
+    "analysisResultFor": "Analyseergebnis für {{name}}",
+    "analysisResultDesc": "Eine Zusammenfassung der abgeschlossenen Regelanalyse.",
+    "endAnalysis": "Analyse beenden",
+    "revisedChecklistSummary": "Zusammenfassung der überarbeiteten Checkliste",
+    "revisedFulfillabilitySummary": "Zusammenfassung der überarbeiteten Erfüllbarkeit"
 }

@@ -423,5 +423,10 @@
     "achievable": "Achievable",
     "unachievable": "Unachievable",
     "notRelevant": "Not relevant",
-    "notVerifiable": "Not verifiable"
+    "notVerifiable": "Not verifiable",
+    "analysisResultFor": "Analysis Result for {{name}}",
+    "analysisResultDesc": "A summary of the completed rule analysis.",
+    "endAnalysis": "End Analysis",
+    "revisedChecklistSummary": "Revised Checklist Summary",
+    "revisedFulfillabilitySummary": "Revised Fulfillability Summary"
 }

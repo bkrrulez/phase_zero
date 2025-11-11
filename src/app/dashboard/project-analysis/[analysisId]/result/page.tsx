@@ -96,17 +96,17 @@ export default function AnalysisResultPage() {
                         </Link>
                     </Button>
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold font-headline">Analysis Result for {projectName}</h1>
-                        <p className="text-muted-foreground">A summary of the completed rule analysis.</p>
+                        <h1 className="text-3xl font-bold font-headline">{t('analysisResultFor', { name: projectName })}</h1>
+                        <p className="text-muted-foreground">{t('analysisResultDesc')}</p>
                     </div>
                 </div>
-                 <Button onClick={handleEndAnalysis}>End Analysis</Button>
+                 <Button onClick={handleEndAnalysis}>{t('endAnalysis')}</Button>
             </div>
             
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Revised Checklist Summary</CardTitle>
+                        <CardTitle>{t('revisedChecklistSummary')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                          {chartData && chartData.checklistData.length > 0 ? (
@@ -128,16 +128,16 @@ export default function AnalysisResultPage() {
                                     </Pie>
                                     <Tooltip
                                         formatter={(value, name) => {
-                                            const translationKey = name.toLowerCase().replace(' ', '');
-                                            const translatedName = t(translationKey as any);
+                                            const translationKey = name.toLowerCase().replace(/ /g, '');
+                                            const translatedName = t(translationKey as any) || name;
                                             const percentage = ((value as number / chartData.checklistData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1);
                                             return [`${value} (${percentage}%)`, translatedName];
                                         }}
                                     />
                                     <Legend 
                                         formatter={(value) => {
-                                            const translationKey = value.toLowerCase().replace(' ', '');
-                                            return t(translationKey as any)
+                                            const translationKey = value.toLowerCase().replace(/ /g, '');
+                                            return t(translationKey as any) || value;
                                         }} 
                                     />
                                 </PieChart>
@@ -149,7 +149,7 @@ export default function AnalysisResultPage() {
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Revised Fulfillability Summary</CardTitle>
+                        <CardTitle>{t('revisedFulfillabilitySummary')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {chartData && chartData.fulfillabilityData.length > 0 ? (
@@ -171,7 +171,7 @@ export default function AnalysisResultPage() {
                                     </Pie>
                                     <Tooltip 
                                         formatter={(value, name) => {
-                                            const translatedName = t(name as any);
+                                            const translatedName = t(name as any) || name;
                                             const percentage = ((value as number / chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1);
                                             return [`${value} (${percentage}%)`, translatedName];
                                         }}
