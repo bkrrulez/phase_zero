@@ -151,11 +151,11 @@ export default function SegmentDetailPage() {
                 </div>
             </div>
             
-            <div className="flex-1 border rounded-lg overflow-auto" style={{ position: 'relative' }}>
-                <table className="w-full text-sm">
+            <div style={{ position: 'relative', flex: '1 1 0%', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)', overflow: 'auto' }}>
+                <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                     <thead className="sticky top-0 bg-card z-10">
                         <TableRow>
-                            {finalHeaders.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
+                            {finalHeaders.map(header => <TableHead key={header} className="border-b">{t(header as any) || header}</TableHead>)}
                         </TableRow>
                     </thead>
                     <TableBody>
@@ -166,7 +166,7 @@ export default function SegmentDetailPage() {
                             return (
                                 <TableRow key={entry.id}>
                                     {finalHeaders.map(header => (
-                                        <TableCell key={header} className="align-top">
+                                        <TableCell key={header} className="align-top border-b">
                                             {header === 'Revised Checklist' ? (
                                                 entry.data['Spaltentyp'] === 'Parameter' ? (
                                                     <Select
@@ -175,7 +175,7 @@ export default function SegmentDetailPage() {
                                                     >
                                                         <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
-                                                            {checklistOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                                            {checklistOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any) || opt}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">N/A</span>
@@ -207,3 +207,4 @@ export default function SegmentDetailPage() {
         </div>
     );
 }
+
