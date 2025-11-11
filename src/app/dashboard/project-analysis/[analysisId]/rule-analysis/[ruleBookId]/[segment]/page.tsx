@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSegmentDetails, saveAnalysisResult } from '@/app/dashboard/project-analysis/rule-analysis/actions';
+import { getSegmentDetails, saveAnalysisResult, getOrderedSegments } from '@/app/dashboard/project-analysis/rule-analysis/actions';
 import { type ProjectAnalysis, type RuleBook, type RuleBookEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -15,6 +15,8 @@ import { useLanguage } from '../../../../../contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
 
 type AnalysisResult = {
     id: string;
@@ -55,7 +57,11 @@ export default function SegmentDetailPage() {
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [analysisData, setAnalysisData] = React.useState<Record<string, { checklistStatus?: string; revisedFulfillability?: string | null }>>({});
+    const [orderedSegments, setOrderedSegments] = React.useState<{ ruleBookId: string; segmentKey: string; }[]>([]);
     
+    const [showNoMoreSegmentsAlert, setShowNoMoreSegmentsAlert] = React.useState(false);
+
+
     const translatedFulfillabilityOptions = React.useMemo(() => {
         return fulfillabilityOptions.map(opt => ({value: opt, label: t(opt as any)}));
     }, [t]);
@@ -64,8 +70,14 @@ export default function SegmentDetailPage() {
         async function fetchData() {
             setLoading(true);
             try {
-                const data = await getSegmentDetails({ projectAnalysisId: analysisId, ruleBookId, segmentKey: segment });
+                const [data, segmentsOrder] = await Promise.all([
+                    getSegmentDetails({ projectAnalysisId: analysisId, ruleBookId, segmentKey: segment }),
+                    getOrderedSegments(analysisId)
+                ]);
+
                 setDetails(data);
+                setOrderedSegments(segmentsOrder);
+                
                 const initialAnalysisData: Record<string, any> = {};
                 data.entries.forEach(entry => {
                     if (entry.analysis) {
@@ -109,6 +121,24 @@ export default function SegmentDetailPage() {
         }
     };
     
+    const handleNext = () => {
+        const currentIndex = orderedSegments.findIndex(
+            s => s.ruleBookId === ruleBookId && s.segmentKey === segment
+        );
+
+        if (currentIndex !== -1 && currentIndex < orderedSegments.length - 1) {
+            const nextSegment = orderedSegments[currentIndex + 1];
+            router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis/${nextSegment.ruleBookId}/${nextSegment.segmentKey}`);
+        } else {
+            setShowNoMoreSegmentsAlert(true);
+        }
+    };
+
+    const handleCloseAlert = () => {
+        setShowNoMoreSegmentsAlert(false);
+        router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
+    };
+
     if (loading) return <Skeleton className="h-screen w-full" />;
     if (error) return <div className="text-destructive p-8 text-center">{error}</div>;
     if (!details) return <div className="p-8 text-center">No details found for this segment.</div>;
@@ -133,6 +163,7 @@ export default function SegmentDetailPage() {
     const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
 
     return (
+        <>
         <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
             <div className="flex items-start justify-between gap-4 shrink-0">
                  <div className="flex items-start gap-4">
@@ -151,8 +182,7 @@ export default function SegmentDetailPage() {
                 </div>
                  <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => router.back()}>{t('cancel')}</Button>
-                    <Button onClick={() => router.back()}>{t('save')}</Button>
-                    <Button variant="secondary" onClick={() => router.back()}>{t('next')}</Button>
+                    <Button onClick={handleNext}>{t('next')}</Button>
                 </div>
             </div>
             
@@ -180,7 +210,7 @@ export default function SegmentDetailPage() {
                                                     >
                                                         <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
-                                                            {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any) || opt.value}</SelectItem>)}
+                                                            {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">N/A</span>
@@ -210,6 +240,20 @@ export default function SegmentDetailPage() {
                 </table>
             </div>
         </div>
+        <AlertDialog open={showNoMoreSegmentsAlert} onOpenChange={setShowNoMoreSegmentsAlert}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Analysis Complete</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        No more segments left for analysis.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={handleCloseAlert}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }
 

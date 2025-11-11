@@ -158,7 +158,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 if (!analysis || !analysis.checklistStatus) {
                     return false; // Not started
                 }
-                if (['Unachievable', 'Not verifiable'].includes(analysis.checklistStatus)) {
+                 if (['Unachievable', 'Not verifiable'].includes(analysis.checklistStatus)) {
                     // If it requires fulfillability, it must have a value.
                     return !!analysis.revisedFulfillability;
                 }
@@ -184,6 +184,22 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
         };
     });
+}
+
+export async function getOrderedSegments(projectAnalysisId: string): Promise<{ ruleBookId: string; segmentKey: string; }[]> {
+    const segmentedData = await getSegmentedRuleBookData(projectAnalysisId);
+    const orderedSegments: { ruleBookId: string; segmentKey: string; }[] = [];
+
+    for (const ruleBookData of segmentedData) {
+        for (const segment of ruleBookData.segments) {
+            orderedSegments.push({
+                ruleBookId: ruleBookData.ruleBook.id,
+                segmentKey: segment.key,
+            });
+        }
+    }
+
+    return orderedSegments;
 }
 
 
