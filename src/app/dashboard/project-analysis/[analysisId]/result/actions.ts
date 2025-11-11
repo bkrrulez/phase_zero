@@ -16,16 +16,16 @@ export interface AnalysisResultData {
 }
 
 const checklistColors = {
-  achievable: 'hsl(221, 44%, 41%)',     // Primary Blue
-  unachievable: 'hsl(0, 72%, 51%)',     // Destructive Maroon
-  notRelevant: 'hsl(220, 13%, 65%)',    // Muted Gray
-  notVerifiable: 'hsl(217, 91%, 60%)',  // Accent Blue
+  achievable: '#4E79A7',        // Steel Blue
+  unachievable: '#E15759',      // Muted Red
+  notRelevant: '#BAB0AC',       // Soft Grey
+  notVerifiable: '#B07AA1',     // Muted Purple
 };
 
 const fulfillabilityColors = {
-  'Light': 'hsl(221, 44%, 71%)',  // Light Blue
-  'Medium': 'hsl(217, 91%, 60%)', // Accent Blue
-  'Heavy': 'hsl(221, 44%, 41%)',  // Primary Blue
+  'Light': '#A0CBE8',  // Light Blue
+  'Medium': '#4E79A7', // Steel Blue
+  'Heavy': '#B07AA1',  // Muted Purple
 };
 
 
