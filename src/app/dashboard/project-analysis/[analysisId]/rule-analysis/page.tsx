@@ -17,14 +17,16 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface SegmentStat {
     key: string;
-    total: number;
-    completed: number;
+    totalRows: number;
+    totalParameters: number;
+    completedParameters: number;
 }
 
 interface SegmentedRuleBook {
     ruleBook: RuleBook;
     segments: SegmentStat[];
-    totalEntries: number;
+    totalRows: number;
+    totalParameters: number;
     totalCompleted: number;
 }
 
@@ -104,43 +106,53 @@ export default function RuleAnalysisPage() {
                 </div>
             </div>
 
-            {segmentedData.map(({ ruleBook, segments, totalCompleted, totalEntries }) => (
-                <Card key={ruleBook.id}>
-                    <CardHeader>
-                        <CardTitle className="flex justify-between items-center">
-                            <span>{ruleBook.versionName}</span>
-                            <div className="flex items-center gap-2 text-sm font-medium">
-                               <span>{totalCompleted} / {totalEntries}</span>
-                               <Progress value={(totalEntries > 0 ? (totalCompleted / totalEntries) * 100 : 0)} className="w-24 h-2" />
-                               {totalCompleted === totalEntries && totalEntries > 0 && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                            </div>
-                        </CardTitle>
-                        <CardDescription>{t('ruleAnalysisDesc')}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {segments.map(segment => {
-                                const progress = segment.total > 0 ? (segment.completed / segment.total) * 100 : 0;
-                                return (
-                                    <div
-                                        key={segment.key}
-                                        onClick={() => handleSegmentClick(ruleBook.id, segment.key)}
-                                        className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="font-semibold text-lg">{t('segment', { key: segment.key })}</h3>
-                                            {progress === 100 && segment.total > 0 && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{segment.completed} / {segment.total} {t('analyzed')}</p>
-                                        <Progress value={progress} className="h-2" />
+            {segmentedData.map(({ ruleBook, segments, totalCompleted, totalParameters, totalRows }) => {
+                const isComplete = totalParameters > 0 && totalCompleted === totalParameters;
+                const overallProgress = totalParameters > 0 ? (totalCompleted / totalParameters) * 100 : 0;
+                return (
+                    <Card key={ruleBook.id}>
+                        <CardHeader>
+                            <CardTitle className="flex justify-between items-center">
+                                <span>{ruleBook.versionName}</span>
+                                <div className="flex items-center gap-4 text-sm font-medium">
+                                    <span className="text-muted-foreground">{totalRows} Rows</span>
+                                    <div className="flex items-center gap-2">
+                                       <span>{totalCompleted} / {totalParameters}</span>
+                                       <Progress value={overallProgress} className="w-24 h-2" />
+                                       {isComplete && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+                                </div>
+                            </CardTitle>
+                            <CardDescription>{t('ruleAnalysisDesc')}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                {segments.map(segment => {
+                                    const progress = segment.totalParameters > 0 ? (segment.completedParameters / segment.totalParameters) * 100 : 0;
+                                    const isSegmentComplete = segment.totalParameters > 0 && segment.completedParameters === segment.totalParameters;
+                                    return (
+                                        <div
+                                            key={segment.key}
+                                            onClick={() => handleSegmentClick(ruleBook.id, segment.key)}
+                                            className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="font-semibold text-lg">{t('segment', { key: segment.key })}</h3>
+                                                {isSegmentComplete && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">{segment.totalRows} Rows</p>
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
+                                                <Progress value={progress} className="h-2 mt-1" />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            })}
         </div>
     );
 }
-

@@ -151,27 +151,32 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
         const segmentStats = Object.keys(segments).map(key => {
             const segmentEntries = segments[key];
-            const completedCount = segmentEntries.filter(e => {
+            const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
+            const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
-                // An entry is "complete" if it's not a parameter type, or if it is and has a status.
-                return e.data['Spaltentyp'] !== 'Parameter' || (analysis && analysis.checklistStatus);
+                return !!(analysis && analysis.checklistStatus);
             }).length;
 
             return {
                 key,
-                total: segmentEntries.length,
-                completed: completedCount,
+                totalRows: segmentEntries.length,
+                totalParameters: parameterEntries.length,
+                completedParameters: completedCount,
             };
         });
+
+        const totalParameterRows = entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length;
 
         return {
             ruleBook,
             segments: segmentStats,
-            totalEntries: entries.length,
-            totalCompleted: segmentStats.reduce((sum, s) => sum + s.completed, 0)
+            totalRows: entries.length,
+            totalParameters: totalParameterRows,
+            totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
         };
     });
 }
+
 
 export async function getAnalysisResults(projectAnalysisId: string): Promise<RuleAnalysisResult[]> {
     const res = await db.query('SELECT * FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
