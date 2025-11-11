@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -111,17 +112,17 @@ export default function RuleAnalysisPage() {
                     </Button>
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
-                        <div className="flex justify-between items-center text-muted-foreground text-sm">
-                            <p>{t('forAnalysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
+                        <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
+                            <p>{t('analysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
                             {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
-                                <div className="flex items-center gap-4">
+                                <>
                                     {projectAnalysis.newUse && (
                                         <p><span className="font-semibold">{t('newUse')}:</span> {t(projectAnalysis.newUse as any) || projectAnalysis.newUse}</p>
                                     )}
                                     {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
                                         <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.map(f => t(f as any) || f).join(', ')}</p>
                                     )}
-                                </div>
+                                </>
                             )}
                         </div>
                     </div>
