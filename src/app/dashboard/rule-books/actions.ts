@@ -158,8 +158,10 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
                 data: row.data,
             })),
             referenceTables: refTablesRes.rows.map(row => ({
-                ...row,
-                data: typeof row.data === 'string' ? JSON.parse(row.data) : [],
+                id: row.id,
+                ruleBookId: row.rule_book_id,
+                name: row.name,
+                data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data || [],
             })),
             allVersions: allVersionsRes.rows.map(row => ({ id: row.id, version: row.version })),
         };
