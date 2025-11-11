@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -14,6 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface SegmentStat {
     key: string;
@@ -35,12 +36,15 @@ export default function RuleAnalysisPage() {
     const router = useRouter();
     const analysisId = params.analysisId as string;
     const { t } = useLanguage();
+    const { toast } = useToast();
 
     const [projectAnalysis, setProjectAnalysis] = React.useState<ProjectAnalysis | null>(null);
     const [project, setProject] = React.useState<Project | null>(null);
     const [segmentedData, setSegmentedData] = React.useState<SegmentedRuleBook[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [isAnalysisComplete, setIsAnalysisComplete] = React.useState(false);
+
 
     React.useEffect(() => {
         async function fetchData() {
@@ -57,6 +61,10 @@ export default function RuleAnalysisPage() {
                 setProjectAnalysis(analysisDetails.analysis);
                 setProject(analysisDetails.project);
                 setSegmentedData(segmentedBooks);
+
+                const isComplete = segmentedBooks.every(book => book.totalParameters === 0 || book.totalCompleted === book.totalParameters);
+                setIsAnalysisComplete(isComplete);
+
             } catch (err) {
                 console.error(err);
                 setError('Failed to load rule analysis data.');
@@ -71,6 +79,18 @@ export default function RuleAnalysisPage() {
         router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis/${ruleBookId}/${segmentKey}`);
     };
 
+    const handleResultClick = () => {
+        if (isAnalysisComplete) {
+            router.push(`/dashboard/project-analysis/${analysisId}/result`);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Analysis Incomplete',
+                description: 'Please analyze the remaining segments.'
+            });
+        }
+    };
+
     if (isLoading) {
         return <Skeleton className="w-full h-96" />;
     }
@@ -81,29 +101,32 @@ export default function RuleAnalysisPage() {
     
     return (
         <div className="space-y-6">
-            <div className="flex items-start gap-4">
-                <Button asChild variant="outline" size="icon">
-                    <Link href={`/dashboard/project-analysis/${analysisId}`}>
-                        <ArrowLeft className="h-4 w-4" />
-                        <span className="sr-only">{t('back')}</span>
-                    </Link>
-                </Button>
-                <div className="flex-1">
-                    <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
-                    <div className="flex justify-between items-center text-muted-foreground text-sm">
-                        <p>{t('forAnalysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
-                         {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
-                            <div className="flex items-center gap-4">
-                                {projectAnalysis.newUse && (
-                                    <p><span className="font-semibold">{t('newUse')}:</span> {t(projectAnalysis.newUse as any) || projectAnalysis.newUse}</p>
-                                )}
-                                {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
-                                     <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.map(f => t(f as any) || f).join(', ')}</p>
-                                )}
-                            </div>
-                        )}
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                    <Button asChild variant="outline" size="icon">
+                        <Link href={`/dashboard/project-analysis/${analysisId}`}>
+                            <ArrowLeft className="h-4 w-4" />
+                            <span className="sr-only">{t('back')}</span>
+                        </Link>
+                    </Button>
+                    <div className="flex-1">
+                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
+                        <div className="flex justify-between items-center text-muted-foreground text-sm">
+                            <p>{t('forAnalysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
+                            {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
+                                <div className="flex items-center gap-4">
+                                    {projectAnalysis.newUse && (
+                                        <p><span className="font-semibold">{t('newUse')}:</span> {t(projectAnalysis.newUse as any) || projectAnalysis.newUse}</p>
+                                    )}
+                                    {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
+                                        <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.map(f => t(f as any) || f).join(', ')}</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
+                 <Button onClick={handleResultClick}>Result</Button>
             </div>
 
             {segmentedData.map(({ ruleBook, segments, totalCompleted, totalParameters, totalRows }) => {
@@ -131,8 +154,8 @@ export default function RuleAnalysisPage() {
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 {segments.map(segment => {
                                     const progress = segment.totalParameters > 0 ? (segment.completedParameters / segment.totalParameters) * 100 : 0;
-                                    const isSegmentComplete = segment.totalParameters > 0 && segment.completedParameters === segment.totalParameters;
                                     const hasNoParameters = segment.totalParameters === 0;
+                                    const isSegmentComplete = !hasNoParameters && segment.completedParameters === segment.totalParameters;
 
                                     return (
                                         <div
