@@ -16,16 +16,16 @@ export interface AnalysisResultData {
 }
 
 const checklistColors = {
-  achievable: '#4E79A7',        // Steel Blue
-  unachievable: '#E15759',      // Muted Red
-  notRelevant: '#BAB0AC',       // Soft Grey
-  notVerifiable: '#B07AA1',     // Muted Purple
+  fulfilled: '#4E79A7',
+  notFulfilled: '#E15759',
+  notRelevant: '#BAB0AC',
+  notVerifiable: '#B07AA1',
 };
 
 const fulfillabilityColors = {
-  'Light': '#A0CBE8',  // Light Blue
-  'Medium': '#4E79A7', // Steel Blue
-  'Heavy': '#B07AA1',  // Muted Purple
+  'Light': '#A0CBE8',
+  'Medium': '#4E79A7',
+  'Heavy': '#B07AA1',
 };
 
 
@@ -33,15 +33,15 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   const results = await getAllResults(projectAnalysisId);
 
   const checklistTranslationMap: Record<string, keyof typeof checklistColors> = {
-    'Achievable': 'achievable',
-    'Unachievable': 'unachievable',
+    'Fulfilled': 'fulfilled',
+    'Not Fulfilled': 'notFulfilled',
     'Not relevant': 'notRelevant',
     'Not verifiable': 'notVerifiable',
   };
 
   const checklistCounts: Record<keyof typeof checklistColors, number> = {
-    'achievable': 0,
-    'unachievable': 0,
+    'fulfilled': 0,
+    'notFulfilled': 0,
     'notRelevant': 0,
     'notVerifiable': 0,
   };

@@ -36,8 +36,8 @@ interface SegmentDetails {
 }
 
 const checklistOptions = [
-    { key: 'achievable', value: 'Achievable' },
-    { key: 'unachievable', value: 'Unachievable' },
+    { key: 'fulfilled', value: 'Fulfilled' },
+    { key: 'notFulfilled', value: 'Not Fulfilled' },
     { key: 'notRelevant', value: 'Not relevant' },
     { key: 'notVerifiable', value: 'Not verifiable' },
 ];
@@ -102,7 +102,7 @@ export default function SegmentDetailPage() {
         const currentData = analysisData[entryId] || {};
         const newData = { ...currentData, [field]: value };
         
-        if (field === 'checklistStatus' && !['Unachievable', 'Not verifiable'].includes(value || '')) {
+        if (field === 'checklistStatus' && !['Not Fulfilled', 'Not verifiable'].includes(value || '')) {
             newData.revisedFulfillability = null;
         }
 
@@ -196,7 +196,7 @@ export default function SegmentDetailPage() {
                     <TableBody>
                         {details.entries.map(entry => {
                             const currentAnalysis = analysisData[entry.id] || {};
-                            const showRevisedFulfillability = ['Unachievable', 'Not verifiable'].includes(currentAnalysis.checklistStatus || '');
+                            const showRevisedFulfillability = ['Not Fulfilled', 'Not verifiable'].includes(currentAnalysis.checklistStatus || '');
 
                             return (
                                 <TableRow key={entry.id}>
