@@ -120,9 +120,19 @@ export default function AnalysisResultPage() {
                                         ))}
                                     </Pie>
                                     <Tooltip
-                                        formatter={(value, name) => [`${value} (${((value as number / chartData.checklistData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1)}%)`, t(name.toLowerCase().replace(' ', '') as any) || name]}
+                                        formatter={(value, name) => {
+                                            const translationKey = name.toLowerCase().replace(' ', '');
+                                            const translatedName = t(translationKey as any);
+                                            const percentage = ((value as number / chartData.checklistData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1);
+                                            return [`${value} (${percentage}%)`, translatedName];
+                                        }}
                                     />
-                                    <Legend formatter={(value) => t(value.toLowerCase().replace(' ', '') as any) || value} />
+                                    <Legend 
+                                        formatter={(value) => {
+                                            const translationKey = value.toLowerCase().replace(' ', '');
+                                            return t(translationKey as any)
+                                        }} 
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         ) : (
@@ -153,7 +163,11 @@ export default function AnalysisResultPage() {
                                         ))}
                                     </Pie>
                                     <Tooltip 
-                                        formatter={(value, name) => [`${value} (${((value as number / chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1)}%)`, t(name as any) || name]}
+                                        formatter={(value, name) => {
+                                            const translatedName = t(name as any);
+                                            const percentage = ((value as number / chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1);
+                                            return [`${value} (${percentage}%)`, translatedName];
+                                        }}
                                     />
                                      <Legend formatter={(value) => t(value as any) || value} />
                                 </PieChart>
