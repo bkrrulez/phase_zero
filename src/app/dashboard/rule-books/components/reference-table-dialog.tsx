@@ -24,7 +24,8 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
     const { t } = useLanguage();
     if (!table) return null;
 
-    const headers = table.data.length > 0 ? Object.keys(table.data[0]) : [];
+    const tableData = Array.isArray(table.data) ? table.data : [];
+    const headers = tableData.length > 0 ? Object.keys(tableData[0]) : [];
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -45,7 +46,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {table.data.map((row, rowIndex) => (
+                            {tableData.map((row, rowIndex) => (
                                 <TableRow key={rowIndex}>
                                     {headers.map(header => (
                                         <TableCell key={`${rowIndex}-${header}`} className="max-w-[200px] break-words align-top">
