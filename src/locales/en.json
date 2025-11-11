@@ -378,6 +378,7 @@
     "allAnalyses": "All Analyses",
     "allAnalysesDesc": "A list of all project analyses that have been started.",
     "analysisVersion": "Analysis Version {{version}}",
+    "analysisVersionHeader": "Analysis Version",
     "analysisStartDate": "Analysis Start Date",
     "lastModificationDate": "Last Modification Date",
     "noAnalysesStarted": "No analyses started yet.",

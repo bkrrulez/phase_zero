@@ -124,7 +124,7 @@ export default function ProjectAnalysisPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>{t('projectName')}</TableHead>
-                                    <TableHead>{t('analysisVersion')}</TableHead>
+                                    <TableHead>{t('analysisVersionHeader')}</TableHead>
                                     <TableHead>{t('analysisStartDate')}</TableHead>
                                     <TableHead>{t('lastModificationDate')}</TableHead>
                                     <TableHead className="text-right">{t('actions')}</TableHead>
