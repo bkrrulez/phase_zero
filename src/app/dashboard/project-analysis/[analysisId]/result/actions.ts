@@ -16,10 +16,10 @@ export interface AnalysisResultData {
 }
 
 const checklistColors = {
-  'Achievable': '#16a34a',     // green-600
-  'Unachievable': '#dc2626',   // red-600
-  'Not relevant': '#9ca3af',   // gray-400
-  'Not verifiable': '#f97316', // orange-500
+  achievable: '#16a34a',     // green-600
+  unachievable: '#dc2626',   // red-600
+  notRelevant: '#9ca3af',   // gray-400
+  notVerifiable: '#f97316', // orange-500
 };
 
 const fulfillabilityColors = {
@@ -32,11 +32,18 @@ const fulfillabilityColors = {
 export async function getAnalysisResultData(projectAnalysisId: string): Promise<AnalysisResultData> {
   const results = await getAllResults(projectAnalysisId);
 
-  const checklistCounts: Record<string, number> = {
-    'Achievable': 0,
-    'Unachievable': 0,
-    'Not relevant': 0,
-    'Not verifiable': 0,
+  const checklistTranslationMap: Record<string, keyof typeof checklistColors> = {
+    'Achievable': 'achievable',
+    'Unachievable': 'unachievable',
+    'Not relevant': 'notRelevant',
+    'Not verifiable': 'notVerifiable',
+  };
+
+  const checklistCounts: Record<keyof typeof checklistColors, number> = {
+    'achievable': 0,
+    'unachievable': 0,
+    'notRelevant': 0,
+    'notVerifiable': 0,
   };
 
   const fulfillabilityCounts: Record<string, number> = {
@@ -46,20 +53,23 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   };
 
   results.forEach(result => {
-    if (result.checklistStatus && checklistCounts.hasOwnProperty(result.checklistStatus)) {
-      checklistCounts[result.checklistStatus]++;
+    if (result.checklistStatus) {
+        const key = checklistTranslationMap[result.checklistStatus];
+        if (key && checklistCounts.hasOwnProperty(key)) {
+            checklistCounts[key]++;
+        }
     }
     if (result.revisedFulfillability && fulfillabilityCounts.hasOwnProperty(result.revisedFulfillability)) {
       fulfillabilityCounts[result.revisedFulfillability]++;
     }
   });
 
-  const checklistData = Object.entries(checklistCounts)
+  const checklistData = (Object.entries(checklistCounts) as [keyof typeof checklistColors, number][])
     .filter(([, value]) => value > 0)
     .map(([name, value]) => ({
       name,
       value,
-      fill: checklistColors[name as keyof typeof checklistColors] || '#cccccc',
+      fill: checklistColors[name] || '#cccccc',
     }));
 
   const fulfillabilityData = Object.entries(fulfillabilityCounts)

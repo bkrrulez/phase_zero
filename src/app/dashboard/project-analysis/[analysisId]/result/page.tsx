@@ -128,19 +128,14 @@ export default function AnalysisResultPage() {
                                     </Pie>
                                     <Tooltip
                                         formatter={(value, name) => {
-                                            const translationKey = name.toLowerCase().replace(/ /g, '');
-                                            const translatedName = t(translationKey as any) || name;
-                                            const percentage = ((value as number / chartData.checklistData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1);
+                                            const translatedName = t(name as any) || name;
+                                            const total = chartData.checklistData.reduce((acc, item) => acc + item.value, 0);
+                                            const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
                                             return [`${value} (${percentage}%)`, translatedName];
                                         }}
                                     />
                                     <Legend 
-                                        formatter={(value) => {
-                                            const translationKey = value.replace(/ /g, '');
-                                            // Ensure the first letter is lowercase for camelCase keys
-                                            const finalKey = translationKey.charAt(0).toLowerCase() + translationKey.slice(1);
-                                            return t(finalKey as any) || value;
-                                        }} 
+                                        formatter={(value) => t(value as any) || value} 
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -174,7 +169,8 @@ export default function AnalysisResultPage() {
                                     <Tooltip 
                                         formatter={(value, name) => {
                                             const translatedName = t(name as any) || name;
-                                            const percentage = ((value as number / chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0)) * 100).toFixed(1);
+                                            const total = chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0);
+                                            const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
                                             return [`${value} (${percentage}%)`, translatedName];
                                         }}
                                     />
