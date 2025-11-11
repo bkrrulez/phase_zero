@@ -33,7 +33,12 @@ interface SegmentDetails {
     entries: EntryWithAnalysis[];
 }
 
-const checklistOptions = ['Achievable', 'Unachievable', 'Not relevant', 'Not verifiable'];
+const checklistOptions = [
+    { key: 'achievable', value: 'Achievable' },
+    { key: 'unachievable', value: 'Unachievable' },
+    { key: 'notRelevant', value: 'Not relevant' },
+    { key: 'notVerifiable', value: 'Not verifiable' },
+];
 const fulfillabilityOptions = ['Light', 'Medium', 'Heavy'];
 
 export default function SegmentDetailPage() {
@@ -175,7 +180,7 @@ export default function SegmentDetailPage() {
                                                     >
                                                         <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
-                                                            {checklistOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any) || opt}</SelectItem>)}
+                                                            {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any) || opt.value}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">N/A</span>

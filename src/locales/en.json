@@ -321,7 +321,8 @@
     "Garage/ Covered Parking, Parking Deck": "Garage/ Covered Parking, Parking Deck",
     "Gas Station": "Gas Station",
     "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters": "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters",
-    "Non Residential": "Non-residential",
+    "Non-residential": "Non-residential",
+    "Non Residential": "Non Residential",
     "projectDashboard": "Project Dashboard",
     "sortBy": "Sort By",
     "byCreationDate": "By Creation Date",
@@ -418,10 +419,9 @@
     "Spaltentyp": "Column Type",
     "Gliederung": "Structure",
     "Text": "Text",
-    "Referenztabelle": "Reference Table"
+    "Referenztabelle": "Reference Table",
+    "achievable": "Achievable",
+    "unachievable": "Unachievable",
+    "notRelevant": "Not relevant",
+    "notVerifiable": "Not verifiable"
 }
-
-
-
-
-    

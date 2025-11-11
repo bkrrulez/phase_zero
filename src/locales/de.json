@@ -418,7 +418,9 @@
     "Spaltentyp": "Spaltentyp",
     "Gliederung": "Gliederung",
     "Text": "Text",
-    "Referenztabelle": "Referenztabelle"
+    "Referenztabelle": "Referenztabelle",
+    "achievable": "Erreichbar",
+    "unachievable": "Nicht erreichbar",
+    "notRelevant": "Nicht relevant",
+    "notVerifiable": "Nicht überprüfbar"
 }
-
-    
