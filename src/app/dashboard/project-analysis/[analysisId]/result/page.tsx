@@ -106,7 +106,7 @@ export default function AnalysisResultPage() {
             <div className="grid md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('revisedChecklistSummary')}</CardTitle>
+                        <CardTitle className="text-center">{t('revisedChecklistSummary')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                          {chartData && chartData.checklistData.length > 0 ? (
@@ -128,14 +128,14 @@ export default function AnalysisResultPage() {
                                     </Pie>
                                     <Tooltip
                                         formatter={(value, name) => {
-                                            const translatedName = t(name as any) || name;
+                                            const translatedName = t(name as any);
                                             const total = chartData.checklistData.reduce((acc, item) => acc + item.value, 0);
                                             const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
                                             return [`${value} (${percentage}%)`, translatedName];
                                         }}
                                     />
                                     <Legend 
-                                        formatter={(value) => t(value as any) || value} 
+                                        formatter={(value) => t(value as any)} 
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
@@ -146,7 +146,7 @@ export default function AnalysisResultPage() {
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>{t('revisedFulfillabilitySummary')}</CardTitle>
+                        <CardTitle className="text-center">{t('satisfiabilityOfUnmetParameters')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {chartData && chartData.fulfillabilityData.length > 0 ? (
@@ -168,13 +168,13 @@ export default function AnalysisResultPage() {
                                     </Pie>
                                     <Tooltip 
                                         formatter={(value, name) => {
-                                            const translatedName = t(name as any) || name;
+                                            const translatedName = t(name as any);
                                             const total = chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0);
                                             const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
                                             return [`${value} (${percentage}%)`, translatedName];
                                         }}
                                     />
-                                     <Legend formatter={(value) => t(value as any) || value} />
+                                     <Legend formatter={(value) => t(value as any)} />
                                 </PieChart>
                             </ResponsiveContainer>
                          ) : (

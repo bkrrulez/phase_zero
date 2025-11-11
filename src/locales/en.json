@@ -428,5 +428,5 @@
     "analysisResultDesc": "A summary of the completed rule analysis.",
     "endAnalysis": "End Analysis",
     "revisedChecklistSummary": "Revised Checklist Summary",
-    "revisedFulfillabilitySummary": "Revised Fulfillability Summary"
+    "satisfiabilityOfUnmetParameters": "Satisfiability of unmet parameters"
 }

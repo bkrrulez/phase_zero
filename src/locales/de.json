@@ -427,5 +427,5 @@
     "analysisResultDesc": "Eine Zusammenfassung der abgeschlossenen Regelanalyse.",
     "endAnalysis": "Analyse beenden",
     "revisedChecklistSummary": "Zusammenfassung der überarbeiteten Checkliste",
-    "revisedFulfillabilitySummary": "Zusammenfassung der überarbeiteten Erfüllbarkeit"
+    "satisfiabilityOfUnmetParameters": "Erfüllbarkeit nicht erfüllter parameter"
 }
