@@ -1,9 +1,10 @@
+
 'use client';
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getAnalysisResultData, type AnalysisResultData } from '../result/actions';
+import { getAnalysisResultData, type AnalysisResultData } from './actions';
 import { getProjectAnalysisDetails } from '../../../actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -166,4 +167,3 @@ export default function AnalysisResultPage() {
         </div>
     );
 }
-

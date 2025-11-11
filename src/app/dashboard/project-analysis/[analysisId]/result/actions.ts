@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { getAnalysisResults as getAllResults } from '../rule-analysis/actions';
+import { getAnalysisResults as getAllResults } from '../../rule-analysis/actions';
 
 interface ChartData {
   name: string;
