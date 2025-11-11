@@ -23,7 +23,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   if (percent < 0.05) return null;
 
   return (
-    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+    <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="font-semibold">
       {`${value} (${(percent * 100).toFixed(0)}%)`}
     </text>
   );
@@ -64,6 +64,10 @@ export default function AnalysisResultPage() {
         }
         fetchData();
     }, [analysisId]);
+    
+    const handleEndAnalysis = () => {
+        router.push('/dashboard/project-analysis');
+    }
 
     if (isLoading) {
         return (
@@ -83,17 +87,20 @@ export default function AnalysisResultPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-start gap-4">
-                <Button asChild variant="outline" size="icon">
-                    <Link href={`/dashboard/project-analysis/${analysisId}/rule-analysis`}>
-                        <ArrowLeft className="h-4 w-4" />
-                        <span className="sr-only">{t('back')}</span>
-                    </Link>
-                </Button>
-                <div className="flex-1">
-                    <h1 className="text-3xl font-bold font-headline">Analysis Result for {projectName}</h1>
-                    <p className="text-muted-foreground">A summary of the completed rule analysis.</p>
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                    <Button asChild variant="outline" size="icon">
+                        <Link href={`/dashboard/project-analysis/${analysisId}/rule-analysis`}>
+                            <ArrowLeft className="h-4 w-4" />
+                            <span className="sr-only">{t('back')}</span>
+                        </Link>
+                    </Button>
+                    <div className="flex-1">
+                        <h1 className="text-3xl font-bold font-headline">Analysis Result for {projectName}</h1>
+                        <p className="text-muted-foreground">A summary of the completed rule analysis.</p>
+                    </div>
                 </div>
+                 <Button onClick={handleEndAnalysis}>End Analysis</Button>
             </div>
             
             <div className="grid md:grid-cols-2 gap-6">

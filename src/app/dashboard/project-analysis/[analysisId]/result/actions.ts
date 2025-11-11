@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -15,16 +16,16 @@ export interface AnalysisResultData {
 }
 
 const checklistColors = {
-  'Achievable': '#22c55e', // green-500
-  'Unachievable': '#ef4444', // red-500
-  'Not relevant': '#a1a1aa', // zinc-400
+  'Achievable': '#16a34a',     // green-600
+  'Unachievable': '#dc2626',   // red-600
+  'Not relevant': '#9ca3af',   // gray-400
   'Not verifiable': '#f97316', // orange-500
 };
 
 const fulfillabilityColors = {
-  'Light': '#84cc16', // lime-500
-  'Medium': '#eab308', // yellow-500
-  'Heavy': '#dc2626', // red-600
+  'Light': '#84cc16',  // lime-500
+  'Medium': '#f59e0b', // amber-500
+  'Heavy': '#ef4444',  // red-500
 };
 
 
