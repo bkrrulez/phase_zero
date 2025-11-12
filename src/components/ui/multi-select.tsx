@@ -32,9 +32,11 @@ export function MultiSelect({ options, selected, onChange, className, placeholde
         : [...selected, value]
     );
   };
+  
+  const safeSelected = Array.isArray(selected) ? selected : [];
 
-  const displayValue = selected.length > 0 
-    ? selected.map(val => getDisplayValue ? getDisplayValue(val) : options.find(opt => opt.value === val)?.label).join(', ')
+  const displayValue = safeSelected.length > 0 
+    ? safeSelected.map(val => getDisplayValue ? getDisplayValue(val) : options.find(opt => opt.value === val)?.label).join(', ')
     : placeholder;
 
   return (
@@ -65,7 +67,7 @@ export function MultiSelect({ options, selected, onChange, className, placeholde
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      selected.includes(option.value) ? 'opacity-100' : 'opacity-0'
+                      safeSelected.includes(option.value) ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                   {option.label}
