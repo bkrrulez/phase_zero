@@ -835,15 +835,19 @@ export async function updateProjectAnalysis(
   const { newUse, fulfillability } = data;
   const client = await db.connect();
   try {
-    // First, perform the update.
+    // Explicitly cast to TEXT[] to avoid ambiguity
+    const safeNewUse = newUse || [];
+    const safeFulfillability = fulfillability || [];
+
+    // Perform the update
     await client.query(
       `UPDATE project_analyses 
-       SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
+       SET new_use = $1::TEXT[], fulfillability = $2::TEXT[], last_modification_date = NOW() 
        WHERE id = $3`,
-      [newUse || [], fulfillability || [], analysisId]
+      [safeNewUse, safeFulfillability, analysisId]
     );
 
-    // Then, fetch the updated row to ensure we return the correct state.
+    // Fetch the updated record to ensure we always return data
     const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
 
     if (result.rows.length > 0) {
