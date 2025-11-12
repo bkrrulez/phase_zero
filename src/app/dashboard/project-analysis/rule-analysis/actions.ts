@@ -42,13 +42,13 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
 
     const { newUse, fulfillability } = analysisDetails.analysis;
 
-    if (!newUse || !fulfillability || fulfillability.length === 0) {
+    if (!newUse || newUse.length === 0 || !fulfillability || fulfillability.length === 0) {
         return [];
     }
     
-    const germanNewUse = getGermanTranslation(newUse);
-    const lowerCaseNewUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
-    
+    const germanNewUses = newUse.map(use => getGermanTranslation(use));
+    const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
+
     const germanFulfillability = fulfillability.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
@@ -222,10 +222,10 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
     const { newUse, fulfillability } = analysisDetails.analysis;
-    if (!newUse || !fulfillability) throw new Error('Analysis criteria not set.');
+    if (!newUse || newUse.length === 0 || !fulfillability) throw new Error('Analysis criteria not set.');
 
-    const germanNewUse = getGermanTranslation(newUse);
-    const lowerCaseNewUseWords = new Set(germanNewUse.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+    const germanNewUses = newUse.map(use => getGermanTranslation(use));
+    const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
     
     const germanFulfillability = fulfillability.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());

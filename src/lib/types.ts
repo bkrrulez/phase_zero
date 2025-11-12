@@ -113,6 +113,6 @@ export type ProjectAnalysis = {
     version: number;
     startDate: string;
     lastModificationDate: string;
-    newUse?: string | null;
+    newUse?: string[] | null;
     fulfillability?: string[] | null;
 };

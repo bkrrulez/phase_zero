@@ -28,7 +28,7 @@ interface AnalysisDetails {
     project: Project;
 }
 
-const currentUseOptions = [
+const currentUseOptions: MultiSelectOption[] = [
     { value: 'General', label: 'General' },
     { value: 'Residential', label: 'Residential' },
     { value: 'Office', label: 'Office' },
@@ -66,12 +66,16 @@ export default function AnalysisDetailPage() {
     const [saveAndProceed, setSaveAndProceed] = React.useState(false);
     
     // Form state
-    const [newUse, setNewUse] = React.useState<string | undefined>(undefined);
+    const [newUse, setNewUse] = React.useState<string[]>([]);
     const [fulfillability, setFulfillability] = React.useState<string[]>([]);
     
     // State to track initial values
-    const [initialNewUse, setInitialNewUse] = React.useState<string | undefined>(undefined);
+    const [initialNewUse, setInitialNewUse] = React.useState<string[]>([]);
     const [initialFulfillability, setInitialFulfillability] = React.useState<string[]>([]);
+
+    const translatedCurrentUseOptions = React.useMemo(() => {
+        return currentUseOptions.map(opt => ({...opt, label: t(opt.value as any) || opt.label}));
+    }, [t]);
 
     const translatedFulfillabilityOptions = React.useMemo(() => {
         return fulfillabilityOptions.map(opt => ({...opt, label: t(opt.value as any)}));
@@ -84,7 +88,7 @@ export default function AnalysisDetailPage() {
             const data = await getProjectAnalysisDetails(id);
             if (data) {
                 setDetails(data);
-                const initialUse = data.analysis.newUse || undefined;
+                const initialUse = data.analysis.newUse || [];
                 const initialFulfill = data.analysis.fulfillability || [];
                 setNewUse(initialUse);
                 setFulfillability(initialFulfill);
@@ -108,24 +112,29 @@ export default function AnalysisDetailPage() {
     }, [analysisId, fetchDetails]);
 
     const hasChanges = React.useCallback(() => {
-        if (newUse !== initialNewUse) return true;
+        if (newUse.length !== initialNewUse.length) return true;
         if (fulfillability.length !== initialFulfillability.length) return true;
-        const sortedCurrent = [...fulfillability].sort();
-        const sortedInitial = [...initialFulfillability].sort();
-        return sortedCurrent.some((val, i) => val !== sortedInitial[i]);
+
+        const sortedCurrentUse = [...newUse].sort();
+        const sortedInitialUse = [...initialNewUse].sort();
+        if (sortedCurrentUse.some((val, i) => val !== sortedInitialUse[i])) return true;
+
+        const sortedCurrentFulfill = [...fulfillability].sort();
+        const sortedInitialFulfill = [...initialFulfillability].sort();
+        return sortedCurrentFulfill.some((val, i) => val !== sortedInitialFulfill[i]);
     }, [newUse, initialNewUse, fulfillability, initialFulfillability]);
 
     const handleSaveInitiation = (andProceed: boolean) => {
-        if (!newUse || fulfillability.length === 0) {
+        if (newUse.length === 0 || fulfillability.length === 0) {
             toast({
                 variant: 'destructive',
                 title: "Missing Information",
-                description: "Please select both a 'New Use' and at least one 'Fulfillability' option before proceeding.",
+                description: "Please select at least one 'New Use' and one 'Fulfillability' option before proceeding.",
             });
             return;
         }
 
-        const hadPreviousValues = initialNewUse || initialFulfillability.length > 0;
+        const hadPreviousValues = initialNewUse.length > 0 || initialFulfillability.length > 0;
         
         if (hadPreviousValues && hasChanges()) {
             setSaveAndProceed(andProceed);
@@ -156,8 +165,8 @@ export default function AnalysisDetailPage() {
 
             if (updatedAnalysis && details) {
                 const changes: string[] = [];
-                if (newUse !== initialNewUse) {
-                    changes.push(`'New Use' from "${initialNewUse || 'none'}" to "${newUse}"`);
+                if (JSON.stringify(newUse.sort()) !== JSON.stringify(initialNewUse.sort())) {
+                     changes.push(`'New Use' from "${initialNewUse.join(', ') || 'none'}" to "${newUse.join(', ')}"`);
                 }
                 if (JSON.stringify(fulfillability.sort()) !== JSON.stringify(initialFulfillability.sort())) {
                     changes.push(`'Fulfillability' from "${initialFulfillability.join(', ') || 'none'}" to "${fulfillability.join(', ')}"`);
@@ -233,20 +242,13 @@ export default function AnalysisDetailPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>{t('newUse')}</Label>
-                                <Select value={newUse} onValueChange={setNewUse}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={t('selectNewUse')} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <ScrollArea className="h-48">
-                                            {currentUseOptions.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    {t(opt.value as any) || opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </ScrollArea>
-                                    </SelectContent>
-                                </Select>
+                                <MultiSelect
+                                    options={translatedCurrentUseOptions}
+                                    selected={newUse}
+                                    onChange={setNewUse}
+                                    placeholder={t('selectNewUse')}
+                                    getDisplayValue={(value) => t(value as any) || value}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label>{t('fulfillability')}</Label>
