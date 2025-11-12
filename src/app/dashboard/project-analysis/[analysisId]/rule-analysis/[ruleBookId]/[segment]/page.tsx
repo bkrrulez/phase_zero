@@ -160,6 +160,17 @@ export default function SegmentDetailPage() {
     });
 
     const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
+    
+    const getColumnStyle = (header: string): React.CSSProperties => {
+        const style: React.CSSProperties = { minWidth: '150px' };
+
+        if (header === 'Text') {
+            style.maxWidth = '45rem'; // ~55-60 chars
+        } else {
+            style.maxWidth = '20rem'; // ~30-35 chars
+        }
+        return style;
+    };
 
     return (
         <>
@@ -189,7 +200,7 @@ export default function SegmentDetailPage() {
                 <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                     <thead className="sticky top-0 bg-card z-10">
                         <TableRow>
-                            {finalHeaders.map(header => <TableHead key={header} className="border-b">{t(header as any) || header}</TableHead>)}
+                            {finalHeaders.map(header => <TableHead key={header} className="border-b" style={getColumnStyle(header)}>{t(header as any) || header}</TableHead>)}
                         </TableRow>
                     </thead>
                     <TableBody>
@@ -200,7 +211,7 @@ export default function SegmentDetailPage() {
                             return (
                                 <TableRow key={entry.id}>
                                     {finalHeaders.map(header => (
-                                        <TableCell key={header} className="align-top border-b">
+                                        <TableCell key={header} className="align-top border-b" style={getColumnStyle(header)}>
                                             {header === 'Revised Checklist' ? (
                                                 entry.data['Spaltentyp'] === 'Parameter' ? (
                                                     <Select
@@ -226,7 +237,7 @@ export default function SegmentDetailPage() {
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">-</span>
                                             ) : (
-                                                <div className={cn(header === 'Text' ? 'whitespace-normal' : 'whitespace-nowrap')}>
+                                                <div className="whitespace-normal">
                                                    {String(entry.data[header] ?? '')}
                                                 </div>
                                             )}
