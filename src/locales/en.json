@@ -139,6 +139,7 @@
     "memberAddedDesc": "{{name}} has been added to the team.",
     "passwordChanged": "Password Changed",
     "passwordChangedDesc": "Password for {{name}} has been changed and a notification email has been sent.",
+    "error": "Error",
     "smtpError": "Could not send password change notification. Please check SMTP settings.",
     "userDeleted": "User Deleted",
     "userDeletedDesc": "Successfully deleted user {{name}}.",
@@ -426,6 +427,6 @@
     "analysisResultFor": "Analysis Result for {{name}}",
     "analysisResultDesc": "A summary of the completed rule analysis.",
     "endAnalysis": "End Analysis",
-    "revisedChecklistSummary": "Revised Checklist Summary",
-    "satisfiabilityOfUnmetParameters": "Satisfiability of unmet parameters"
+    "revisedChecklistSummary": "Results of the parameter analysis",
+    "satisfiabilityOfUnmetParameters": "Result of the project-specific feasibility of the unfulfilled and unverifiable parameters"
 }

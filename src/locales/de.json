@@ -426,6 +426,6 @@
     "analysisResultFor": "Analyseergebnis für {{name}}",
     "analysisResultDesc": "Eine Zusammenfassung der abgeschlossenen Regelanalyse.",
     "endAnalysis": "Analyse beenden",
-    "revisedChecklistSummary": "Zusammenfassung der überarbeiteten Checkliste",
-    "satisfiabilityOfUnmetParameters": "Erfüllbarkeit nicht erfüllter parameter"
+    "revisedChecklistSummary": "Ergebnis der Parameteranalyse",
+    "satisfiabilityOfUnmetParameters": "Ergebnis der projektspezifischen Erfüllbarkeit der nicht erfüllten und nicht überprüfbaren Parameter"
 }
