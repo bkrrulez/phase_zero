@@ -165,9 +165,9 @@ export default function SegmentDetailPage() {
         const style: React.CSSProperties = { minWidth: '150px' };
 
         if (header === 'Text') {
-            style.maxWidth = '45rem'; // ~55-60 chars
+            style.maxWidth = '55ch';
         } else {
-            style.maxWidth = '20rem'; // ~30-35 chars
+            style.maxWidth = '30ch';
         }
         return style;
     };
