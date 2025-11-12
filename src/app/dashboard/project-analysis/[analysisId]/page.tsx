@@ -247,7 +247,6 @@ export default function AnalysisDetailPage() {
                                     selected={newUse}
                                     onChange={setNewUse}
                                     placeholder={t('selectNewUse')}
-                                    getDisplayValue={(value) => t(value as any) || value}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -257,7 +256,6 @@ export default function AnalysisDetailPage() {
                                     selected={fulfillability}
                                     onChange={setFulfillability}
                                     placeholder={t('selectFulfillability')}
-                                    getDisplayValue={(value) => t(value as any) || value}
                                 />
                             </div>
                         </div>
