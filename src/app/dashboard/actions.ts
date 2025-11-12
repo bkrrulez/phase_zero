@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -835,7 +836,7 @@ export async function updateProjectAnalysis(
       `UPDATE project_analyses 
        SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
        WHERE id = $3 RETURNING *`,
-      [newUse, fulfillability, analysisId]
+      [newUse || [], fulfillability || [], analysisId]
     );
     if (result.rows.length > 0) {
       revalidatePath(`/dashboard/project-analysis/${analysisId}`);
