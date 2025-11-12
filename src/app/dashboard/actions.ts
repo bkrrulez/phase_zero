@@ -488,7 +488,7 @@ export async function addContractEndNotification(notificationData: Omit<Contract
     try {
         const result = await db.query(
             `INSERT INTO contract_end_notifications (id, team_ids, recipient_user_ids, recipient_emails, threshold_days) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [id, teamIds, recipientUserIds || [], recipientEmails || [], thresholdDays]
+            [teamIds, recipientUserIds || [], recipientEmails || [], thresholdDays]
         );
         revalidatePath('/dashboard/contracts');
         return mapDbContractEndNotification(result.rows[0]);
@@ -660,7 +660,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
                 project_owner, year_of_construction, number_of_floors, escape_level, 
-                listed_building, protection_zone, current_use
+                listedBuilding, protectionZone, current_use
              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 
@@ -767,8 +767,8 @@ export async function addProjectAnalysis(projectId: string): Promise<{ analysis?
 
         const id = `pa-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
-            [id, projectId, newVersion]
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [id, projectId, newVersion, [], []]
         );
         
         await client.query('COMMIT');
@@ -792,8 +792,8 @@ export async function addNewProjectAnalysisVersion(projectId: string): Promise<P
         
         const id = `pa-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
-            [id, projectId, newVersion]
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [id, projectId, newVersion, [], []]
         );
         
         await client.query('COMMIT');
@@ -837,7 +837,7 @@ export async function updateProjectAnalysis(
       `UPDATE project_analyses 
        SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
        WHERE id = $3 RETURNING *`,
-      [newUse || '{}', fulfillability || '{}', analysisId]
+      [newUse || [], fulfillability || [], analysisId]
     );
     if (result.rows.length > 0) {
       revalidatePath(`/dashboard/project-analysis/${analysisId}`);
