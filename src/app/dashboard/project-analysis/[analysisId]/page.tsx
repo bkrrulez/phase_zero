@@ -88,8 +88,19 @@ export default function AnalysisDetailPage() {
             const data = await getProjectAnalysisDetails(id);
             if (data) {
                 setDetails(data);
-                const initialUse = data.analysis.newUse || [];
-                const initialFulfill = data.analysis.fulfillability || [];
+
+                const initialUse = Array.isArray(data.analysis.newUse)
+                    ? data.analysis.newUse
+                    : data.analysis.newUse
+                    ? [data.analysis.newUse]
+                    : [];
+                
+                const initialFulfill = Array.isArray(data.analysis.fulfillability)
+                    ? data.analysis.fulfillability
+                    : data.analysis.fulfillability
+                    ? [data.analysis.fulfillability]
+                    : [];
+
                 setNewUse(initialUse);
                 setFulfillability(initialFulfill);
                 setInitialNewUse(initialUse);
