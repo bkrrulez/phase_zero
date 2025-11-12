@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -111,8 +110,8 @@ const mapDbProjectAnalysis = (row: any): ProjectAnalysis => ({
     version: row.version,
     startDate: new Date(row.start_date).toISOString(),
     lastModificationDate: new Date(row.last_modification_date).toISOString(),
-    newUse: row.new_use || [], // Ensure it's an array
-    fulfillability: row.fulfillability || [], // Ensure it's an array
+    newUse: row.new_use || [],
+    fulfillability: row.fulfillability || [],
 });
 
 
@@ -1182,3 +1181,5 @@ export async function getIsHolidaysNavVisible(): Promise<boolean> {
 export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
   await setSystemSetting('isHolidaysNavVisible', String(isVisible));
 }
+
+    
