@@ -27,7 +27,7 @@ type AnalysisResult = {
 
 type EntryWithAnalysis = RuleBookEntry & { analysis?: AnalysisResult };
 
-interface SegmentDetails {
+interface SectionDetails {
     projectAnalysis: ProjectAnalysis;
     ruleBook: RuleBook;
     segmentKey: string;
@@ -52,7 +52,7 @@ export default function SegmentDetailPage() {
     const ruleBookId = params.ruleBookId as string;
     const segment = params.segment as string;
 
-    const [details, setDetails] = React.useState<SegmentDetails | null>(null);
+    const [details, setDetails] = React.useState<SectionDetails | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [analysisData, setAnalysisData] = React.useState<Record<string, { checklistStatus?: string; revisedFulfillability?: string | null }>>({});
@@ -162,7 +162,7 @@ export default function SegmentDetailPage() {
     const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
     
     const getColumnStyle = (header: string): React.CSSProperties => {
-        const style: React.CSSProperties = { minWidth: '150px' };
+        const style: React.CSSProperties = { width: 'auto' };
 
         if (header === 'Text') {
             style.maxWidth = '55ch';
@@ -185,9 +185,11 @@ export default function SegmentDetailPage() {
                     </Button>
                     <div>
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSectionTitle', {key: details.segmentKey})}</h1>
-                        <p className="text-muted-foreground">
-                            <span className="font-semibold">{t('sectionRuleBook')}:</span> {details.ruleBook.versionName} | <span className="font-semibold">{t('newUse')}:</span> {t(details.projectAnalysis.newUse as any) || details.projectAnalysis.newUse} | <span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.map(f => t(f as any) || f).join(', ')}
-                        </p>
+                        <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
+                            <p><span className="font-semibold">{t('sectionRuleBook')}:</span> {details.ruleBook.versionName}</p>
+                            <p><span className="font-semibold">{t('newUse')}:</span> {t(details.projectAnalysis.newUse as any) || details.projectAnalysis.newUse}</p>
+                            <p><span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.map(f => t(f as any) || f).join(', ')}</p>
+                        </div>
                     </div>
                 </div>
                  <div className="flex justify-end gap-2">
