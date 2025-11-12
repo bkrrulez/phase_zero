@@ -172,6 +172,9 @@ export default function SegmentDetailPage() {
         return style;
     };
 
+    const newUseDisplay = (details.projectAnalysis.newUse || []).map(u => t(u as any) || u).join(', ');
+    const fulfillabilityDisplay = (details.projectAnalysis.fulfillability || []).map(f => t(f as any) || f).join(', ');
+
     return (
         <>
         <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
@@ -187,8 +190,8 @@ export default function SegmentDetailPage() {
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSectionTitle', {key: details.segmentKey})}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
                             <p><span className="font-semibold">{t('sectionRuleBook')}:</span> {details.ruleBook.versionName}</p>
-                            <p><span className="font-semibold">{t('newUse')}:</span> {t(details.projectAnalysis.newUse as any) || details.projectAnalysis.newUse}</p>
-                            <p><span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.map(f => t(f as any) || f).join(', ')}</p>
+                            <p><span className="font-semibold">{t('newUse')}:</span> {newUseDisplay}</p>
+                            <p><span className="font-semibold">{t('fulfillability')}:</span> {fulfillabilityDisplay}</p>
                         </div>
                     </div>
                 </div>

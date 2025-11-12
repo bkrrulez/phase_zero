@@ -17,6 +17,7 @@ import {
   type ProjectAnalysis,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO, isAfter, isBefore } from 'date-fns';
+import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
 // Map DB rows to application types
@@ -835,19 +836,13 @@ export async function updateProjectAnalysis(
   const { newUse, fulfillability } = data;
   const client = await db.connect();
   try {
-    // Explicitly cast to TEXT[] to avoid ambiguity
-    const safeNewUse = newUse || [];
-    const safeFulfillability = fulfillability || [];
-
-    // Perform the update
     await client.query(
       `UPDATE project_analyses 
-       SET new_use = $1::TEXT[], fulfillability = $2::TEXT[], last_modification_date = NOW() 
+       SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
        WHERE id = $3`,
-      [safeNewUse, safeFulfillability, analysisId]
+      [newUse, fulfillability, analysisId]
     );
 
-    // Fetch the updated record to ensure we always return data
     const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
 
     if (result.rows.length > 0) {
@@ -856,7 +851,7 @@ export async function updateProjectAnalysis(
       return mapDbProjectAnalysis(result.rows[0]);
     }
 
-    return null; // Should not happen if the ID is correct
+    return null; 
   } catch (error) {
     console.error('Error updating project analysis:', error);
     return null;
