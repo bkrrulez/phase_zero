@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -767,8 +768,8 @@ export async function addProjectAnalysis(projectId: string): Promise<{ analysis?
 
         const id = `pa-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [id, projectId, newVersion, [], []]
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
+            [id, projectId, newVersion]
         );
         
         await client.query('COMMIT');
@@ -792,8 +793,8 @@ export async function addNewProjectAnalysisVersion(projectId: string): Promise<P
         
         const id = `pa-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [id, projectId, newVersion, [], []]
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
+            [id, projectId, newVersion]
         );
         
         await client.query('COMMIT');
@@ -832,22 +833,31 @@ export async function updateProjectAnalysis(
   data: { newUse?: string[] | null; fulfillability?: string[] | null }
 ): Promise<ProjectAnalysis | null> {
   const { newUse, fulfillability } = data;
+  const client = await db.connect();
   try {
-    const result = await db.query(
+    // First, perform the update.
+    await client.query(
       `UPDATE project_analyses 
        SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
-       WHERE id = $3 RETURNING *`,
+       WHERE id = $3`,
       [newUse || [], fulfillability || [], analysisId]
     );
+
+    // Then, fetch the updated row to ensure we return the correct state.
+    const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
+
     if (result.rows.length > 0) {
       revalidatePath(`/dashboard/project-analysis/${analysisId}`);
       revalidatePath('/dashboard/project-analysis');
       return mapDbProjectAnalysis(result.rows[0]);
     }
-    return null;
+
+    return null; // Should not happen if the ID is correct
   } catch (error) {
     console.error('Error updating project analysis:', error);
     return null;
+  } finally {
+      client.release();
   }
 }
 
