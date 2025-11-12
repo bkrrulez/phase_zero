@@ -17,7 +17,6 @@ import {
   type ProjectAnalysis,
 } from '@/lib/types';
 import { format, subYears, isWithinInterval, addDays, differenceInDays, parse, getYear, startOfToday, parseISO, isAfter, isBefore } from 'date-fns';
-import { revalidatePath } from 'next/cache';
 
 // ========== Mappers ==========
 // Map DB rows to application types
@@ -765,11 +764,11 @@ export async function addProjectAnalysis(projectId: string): Promise<{ analysis?
             return { requiresConfirmation: true, latestAnalysis: latestAnalysis };
         }
 
-        const newVersion = 1; // It's the first one
+        const newVersion = 1;
 
         const id = `pa-${Date.now()}`;
         const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version) VALUES ($1, $2, $3) RETURNING *`,
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
             [id, projectId, newVersion]
         );
         
@@ -793,7 +792,10 @@ export async function addNewProjectAnalysisVersion(projectId: string): Promise<P
         const newVersion = (existingRes.rows[0]?.max_version || 0) + 1;
         
         const id = `pa-${Date.now()}`;
-        const result = await client.query('INSERT INTO project_analyses (id, project_id, version) VALUES ($1, $2, $3) RETURNING *', [id, projectId, newVersion]);
+        const result = await client.query(
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
+            [id, projectId, newVersion]
+        );
         
         await client.query('COMMIT');
         revalidatePath('/dashboard/project-analysis');
@@ -836,7 +838,7 @@ export async function updateProjectAnalysis(
       `UPDATE project_analyses 
        SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
        WHERE id = $3 RETURNING *`,
-      [newUse || [], fulfillability || [], analysisId]
+      [newUse || '{}', fulfillability || '{}', analysisId]
     );
     if (result.rows.length > 0) {
       revalidatePath(`/dashboard/project-analysis/${analysisId}`);
