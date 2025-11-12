@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -90,7 +89,7 @@ export default function SegmentDetailPage() {
                 setAnalysisData(initialAnalysisData);
             } catch (err) {
                 console.error(err);
-                setError('Failed to load segment details.');
+                setError('Failed to load section details.');
             } finally {
                 setLoading(false);
             }
@@ -141,7 +140,7 @@ export default function SegmentDetailPage() {
 
     if (loading) return <Skeleton className="h-screen w-full" />;
     if (error) return <div className="text-destructive p-8 text-center">{error}</div>;
-    if (!details) return <div className="p-8 text-center">No details found for this segment.</div>;
+    if (!details) return <div className="p-8 text-center">No details found for this section.</div>;
 
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
@@ -174,9 +173,9 @@ export default function SegmentDetailPage() {
                         </Link>
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSegmentTitle', {key: details.segmentKey})}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSectionTitle', {key: details.segmentKey})}</h1>
                         <p className="text-muted-foreground">
-                            <span className="font-semibold">{t('segmentRuleBook')}:</span> {details.ruleBook.versionName} | <span className="font-semibold">{t('newUse')}:</span> {t(details.projectAnalysis.newUse as any) || details.projectAnalysis.newUse} | <span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.map(f => t(f as any) || f).join(', ')}
+                            <span className="font-semibold">{t('sectionRuleBook')}:</span> {details.ruleBook.versionName} | <span className="font-semibold">{t('newUse')}:</span> {t(details.projectAnalysis.newUse as any) || details.projectAnalysis.newUse} | <span className="font-semibold">{t('fulfillability')}:</span> {details.projectAnalysis.fulfillability?.map(f => t(f as any) || f).join(', ')}
                         </p>
                     </div>
                 </div>
@@ -245,7 +244,7 @@ export default function SegmentDetailPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Analysis Complete</AlertDialogTitle>
                     <AlertDialogDescription>
-                        No more segments left for analysis.
+                        No more sections left for analysis.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -256,4 +255,3 @@ export default function SegmentDetailPage() {
         </>
     );
 }
-

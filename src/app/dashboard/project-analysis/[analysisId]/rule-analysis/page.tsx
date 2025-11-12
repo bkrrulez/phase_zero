@@ -87,7 +87,7 @@ export default function RuleAnalysisPage() {
             toast({
                 variant: 'destructive',
                 title: 'Analysis Incomplete',
-                description: 'Please analyze the remaining segments.'
+                description: 'Please analyze the remaining sections.'
             });
         }
     };
@@ -113,7 +113,7 @@ export default function RuleAnalysisPage() {
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
-                            <p>{t('analysisVersion', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
+                            <p>{t('analysisVersionHeader', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
                             {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
                                 <>
                                     {projectAnalysis.newUse && (
@@ -165,7 +165,7 @@ export default function RuleAnalysisPage() {
                                             className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
                                         >
                                             <div className="flex justify-between items-center">
-                                                <h3 className="font-semibold text-lg">{t('segment', { key: segment.key })}</h3>
+                                                <h3 className="font-semibold text-lg">{t('section', { key: segment.key })}</h3>
                                                 {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                                             </div>
                                             <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? 'Row' : 'Rows'}</p>

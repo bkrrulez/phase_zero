@@ -138,7 +138,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 currentSegmentKey = lastSegmentKey;
             }
 
-            // Fallback for entries that still don't have a segment key
+            // Fallback for entries that still don't have a section key
             const finalSegmentKey = currentSegmentKey || '0';
             
             if (!acc[finalSegmentKey]) {
@@ -261,7 +261,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         return nutzungMatch && erfullbarkeitMatch;
     });
 
-    // Then, get all entries for the requested segment
+    // Then, get all entries for the requested section
     const segmentEntries: RuleBookEntry[] = [];
     let lastSegmentKey: string | null = null;
     for (const entry of filteredEntries) {
