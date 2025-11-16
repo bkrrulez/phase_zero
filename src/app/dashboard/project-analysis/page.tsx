@@ -52,12 +52,21 @@ export default function ProjectAnalysisPage() {
     }, [fetchAnalyses]);
 
     const handleStartAnalysis = async ({ projectId }: AddAnalysisFormValues) => {
-        const { requiresConfirmation, latestAnalysis } = await addProjectAnalysis(projectId);
+        const { analysis, requiresConfirmation, latestAnalysis } = await addProjectAnalysis(projectId);
+
         if (requiresConfirmation && latestAnalysis) {
             setConfirmingNewVersion({ projectId, nextVersion: latestAnalysis.version + 1 });
+        } else if (analysis) {
+            toast({
+                title: "Analysis Started",
+                description: `A new analysis version for the project has been created.`,
+            });
+            fetchAnalyses();
+            router.push(`/dashboard/project-analysis/${analysis.id}`);
         } else {
-            await createNewAnalysis(projectId);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not start new analysis.' });
         }
+        setIsAddDialogOpen(false);
     };
     
     const createNewAnalysis = async (projectId: string) => {

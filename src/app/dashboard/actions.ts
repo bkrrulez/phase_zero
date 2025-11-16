@@ -24,39 +24,45 @@ import { revalidatePath } from 'next/cache';
 
 const cleanUpArrayField = (field: any): string[] => {
     if (!field) return [];
-    if (Array.isArray(field)) {
-        // Handle cases where some items might still be the weird postgres format
-        return field.flatMap(item => {
-            if (typeof item === 'string' && item.startsWith('{') && item.endsWith('}')) {
-                 const cleaned = item.replace(/^{"|"}$/g, '');
-                 if (cleaned.includes(',')) {
-                     // Heuristic for exploded characters
-                    if (cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
-                         return [cleaned.replace(/,/g, '')];
-                    }
-                    return cleaned.split(',');
-                 }
-                 return [cleaned];
-            }
-            return item;
-        }).filter(Boolean);
+    // If the field is already a clean array, return it.
+    if (Array.isArray(field) && !field.some(item => typeof item === 'string' && (item.includes('{') || item.includes(',')))) {
+        return field;
     }
-    if (typeof field === 'string') {
-        // Handle the '{"A","c","c",...}' string format
-        if (field.startsWith('{') && field.endsWith('}')) {
-            const cleaned = field.replace(/^{"|"}$/g, '');
-            if (cleaned.includes(',')) {
-                // Heuristic for exploded characters
-                if (cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
-                    return [cleaned.replace(/,/g, '')];
-                }
-                return cleaned.split(',');
+    
+    // Flatten whatever we have into a single string.
+    const rawString = Array.isArray(field) ? field.join(',') : String(field);
+
+    // Clean the string of postgres array characters.
+    const cleanedString = rawString.replace(/["{}]/g, '');
+    
+    // If after cleaning, we have an empty string, return empty array.
+    if (!cleanedString) return [];
+    
+    // The string is now just comma-separated values.
+    const potentialValues = cleanedString.split(',');
+
+    // A final check to merge single characters back together if they were exploded.
+    const finalValues: string[] = [];
+    let characterBuffer: string[] = [];
+
+    for (const value of potentialValues) {
+        if (value.length === 1) {
+            characterBuffer.push(value);
+        } else {
+            if (characterBuffer.length > 0) {
+                finalValues.push(characterBuffer.join(''));
+                characterBuffer = [];
             }
-            return [cleaned];
+            if (value) { // Don't add empty strings from multiple commas
+                finalValues.push(value);
+            }
         }
-        return [field];
     }
-    return [];
+    if (characterBuffer.length > 0) {
+        finalValues.push(characterBuffer.join(''));
+    }
+
+    return finalValues;
 };
 
 
@@ -793,35 +799,18 @@ export async function getLatestProjectAnalysis(projectId: string): Promise<Proje
 }
 
 export async function addProjectAnalysis(projectId: string): Promise<{ analysis?: ProjectAnalysis, requiresConfirmation: boolean, latestAnalysis?: ProjectAnalysis | null }> {
-    const client = await db.connect();
-    try {
-        await client.query('BEGIN');
-
-        const latestAnalysis = await getLatestProjectAnalysis(projectId);
-        
-        if (latestAnalysis) {
-            return { requiresConfirmation: true, latestAnalysis: latestAnalysis };
-        }
-
-        const newVersion = 1;
-
-        const id = `pa-${Date.now()}`;
-        const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
-            [id, projectId, newVersion]
-        );
-        
-        await client.query('COMMIT');
-        revalidatePath('/dashboard/project-analysis');
-        return { analysis: mapDbProjectAnalysis(result.rows[0]), requiresConfirmation: false };
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error adding project analysis:', error);
-        throw error;
-    } finally {
-        client.release();
+    const latestAnalysis = await getLatestProjectAnalysis(projectId);
+    
+    if (latestAnalysis) {
+        return { requiresConfirmation: true, latestAnalysis: latestAnalysis };
     }
+    
+    // No existing analysis, so create version 1 directly
+    const newAnalysis = await addNewProjectAnalysisVersion(projectId);
+    
+    return { analysis: newAnalysis || undefined, requiresConfirmation: false, latestAnalysis: newAnalysis };
 }
+
 
 export async function addNewProjectAnalysisVersion(projectId: string): Promise<ProjectAnalysis | null> {
     const client = await db.connect();
@@ -873,28 +862,24 @@ export async function updateProjectAnalysis(
 ): Promise<ProjectAnalysis | null> {
     const client = await db.connect();
     try {
-        // Use COALESCE to handle null values, ensuring they become empty arrays
-        const newUseValue = data.newUse || [];
-        const fulfillabilityValue = data.fulfillability || [];
-        
-        await client.query(
+        await db.query(
             `UPDATE project_analyses 
              SET 
                 new_use = $1, 
                 fulfillability = $2, 
                 last_modification_date = NOW() 
              WHERE id = $3`,
-            [newUseValue, fulfillabilityValue, analysisId]
+            [data.newUse, data.fulfillability, analysisId]
         );
         
-        const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
+        const result = await db.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
 
         if (result.rows.length > 0) {
             revalidatePath(`/dashboard/project-analysis/${analysisId}`);
             revalidatePath('/dashboard/project-analysis');
             return mapDbProjectAnalysis(result.rows[0]);
         }
-        return null; 
+        return null;
     } catch (error) {
         console.error('Error updating project analysis:', error);
         return null;
