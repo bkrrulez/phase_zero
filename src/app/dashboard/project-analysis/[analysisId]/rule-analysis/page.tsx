@@ -100,6 +100,9 @@ export default function RuleAnalysisPage() {
         return <div className="text-center text-destructive p-8">{error}</div>;
     }
     
+    const newUseDisplay = (projectAnalysis?.newUse || []).map(u => t(u as any) || u).join(', ');
+    const fulfillabilityDisplay = (projectAnalysis?.fulfillability || []).map(f => t(f as any) || f).join(', ');
+
     return (
         <div className="space-y-6">
             <div className="flex items-start justify-between gap-4">
@@ -114,13 +117,13 @@ export default function RuleAnalysisPage() {
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
                             <p>{t('analysisVersionHeader', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
-                            {projectAnalysis && (projectAnalysis.newUse || projectAnalysis.fulfillability) && (
+                           {projectAnalysis && (
                                 <>
-                                    {projectAnalysis.newUse && (
-                                        <p><span className="font-semibold">{t('newUse')}:</span> {t(projectAnalysis.newUse as any) || projectAnalysis.newUse}</p>
+                                    {newUseDisplay && (
+                                        <p><span className="font-semibold">{t('newUse')}:</span> {newUseDisplay}</p>
                                     )}
-                                    {projectAnalysis.fulfillability && projectAnalysis.fulfillability.length > 0 && (
-                                        <p><span className="font-semibold">{t('fulfillability')}:</span> {projectAnalysis.fulfillability.map(f => t(f as any) || f).join(', ')}</p>
+                                    {fulfillabilityDisplay && (
+                                        <p><span className="font-semibold">{t('fulfillability')}:</span> {fulfillabilityDisplay}</p>
                                     )}
                                 </>
                             )}

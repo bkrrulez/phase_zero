@@ -190,8 +190,8 @@ export default function SegmentDetailPage() {
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSectionTitle', {key: details.segmentKey})}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
                             <p><span className="font-semibold">{t('sectionRuleBook')}:</span> {details.ruleBook.versionName}</p>
-                            <p><span className="font-semibold">{t('newUse')}:</span> {newUseDisplay}</p>
-                            <p><span className="font-semibold">{t('fulfillability')}:</span> {fulfillabilityDisplay}</p>
+                            {newUseDisplay && <p><span className="font-semibold">{t('newUse')}:</span> {newUseDisplay}</p>}
+                            {fulfillabilityDisplay && <p><span className="font-semibold">{t('fulfillability')}:</span> {fulfillabilityDisplay}</p>}
                         </div>
                     </div>
                 </div>
