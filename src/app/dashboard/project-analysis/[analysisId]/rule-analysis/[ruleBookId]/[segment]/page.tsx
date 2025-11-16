@@ -42,6 +42,26 @@ const checklistOptions = [
 ];
 const fulfillabilityOptions = ['Light', 'Medium', 'Heavy'];
 
+const cleanUpArrayField = (field: any): string[] => {
+    if (Array.isArray(field)) {
+        return field.flatMap(item => {
+            if (typeof item === 'string' && item.startsWith('{') && item.endsWith('}')) {
+                const cleaned = item.replace(/^{"|"}$/g, '');
+                if (cleaned.length > 1 && cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
+                    return [cleaned.replace(/,/g, '')];
+                }
+                return cleaned.split(',');
+            }
+            return item;
+        }).filter(Boolean);
+    }
+    if (typeof field === 'string') {
+        return [field];
+    }
+    return [];
+};
+
+
 export default function SegmentDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -172,7 +192,7 @@ export default function SegmentDetailPage() {
         return style;
     };
 
-    const newUseDisplay = (details.projectAnalysis.newUse || []).map(u => t(u as any) || u).join(', ');
+    const newUseDisplay = (details.projectAnalysis.newUse ? cleanUpArrayField(details.projectAnalysis.newUse) : []).map(u => t(u as any) || u).join(', ');
     const fulfillabilityDisplay = (details.projectAnalysis.fulfillability || []).map(f => t(f as any) || f).join(', ');
 
     return (

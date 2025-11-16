@@ -26,6 +26,34 @@ const getGermanTranslation = (key: string, fromLocale: 'en' | 'de' = 'en'): stri
     return key;
 };
 
+// Helper function to clean up corrupted array data from the database
+const cleanUpArrayField = (field: any): string[] => {
+    if (Array.isArray(field)) {
+        return field.flatMap(item => {
+            if (typeof item === 'string' && item.startsWith('{') && item.endsWith('}')) {
+                // It's a string representation of a postgres array literal, e.g., '{"a","b","c"}'
+                // Or a corrupted one e.g. '{"A","c","c","o"...}'
+                // We'll try to parse it, but a simple flatmap might be enough if it's an array of strings
+                const cleaned = item.replace(/^{"|"}$/g, '').replace(/","/g, '');
+                // This will not correctly parse names with commas, but it will fix the character explosion issue
+                if (cleaned.length > 1 && cleaned.includes(',')) {
+                     // Heuristic: If it looks like exploded characters, join them
+                    if (cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
+                         return [cleaned.replace(/,/g, '')];
+                    }
+                }
+                return item;
+            }
+            return item;
+        }).filter(Boolean);
+    }
+    if (typeof field === 'string') {
+        return [field];
+    }
+    return [];
+};
+
+
 type RuleAnalysisResult = {
     id: string;
     projectAnalysisId: string;
@@ -41,16 +69,17 @@ export async function getFilteredRuleBooks(projectAnalysisId: string) {
     }
 
     const { newUse, fulfillability } = analysisDetails.analysis;
-    const newUseArray = Array.isArray(newUse) ? newUse : (newUse ? [newUse] : []);
+    const newUseArray = cleanUpArrayField(newUse);
+    const fulfillabilityArray = cleanUpArrayField(fulfillability);
 
-    if (newUseArray.length === 0 || !fulfillability || fulfillability.length === 0) {
+    if (newUseArray.length === 0 || !fulfillabilityArray || fulfillabilityArray.length === 0) {
         return [];
     }
     
     const germanNewUses = newUseArray.map(use => getGermanTranslation(use));
     const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
 
-    const germanFulfillability = fulfillability.map(f => getGermanTranslation(f));
+    const germanFulfillability = fulfillabilityArray.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
 
@@ -223,14 +252,15 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
     const { newUse, fulfillability } = analysisDetails.analysis;
-    const newUseArray = Array.isArray(newUse) ? newUse : (newUse ? [newUse] : []);
+    const newUseArray = cleanUpArrayField(newUse);
+    const fulfillabilityArray = cleanUpArrayField(fulfillability);
 
-    if (newUseArray.length === 0 || !fulfillability) throw new Error('Analysis criteria not set.');
+    if (newUseArray.length === 0 || !fulfillabilityArray) throw new Error('Analysis criteria not set.');
 
     const germanNewUses = newUseArray.map(use => getGermanTranslation(use));
     const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
     
-    const germanFulfillability = fulfillability.map(f => getGermanTranslation(f));
+    const germanFulfillability = fulfillabilityArray.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
 

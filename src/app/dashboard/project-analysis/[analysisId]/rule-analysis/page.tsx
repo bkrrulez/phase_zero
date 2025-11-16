@@ -32,6 +32,26 @@ interface SegmentedRuleBook {
     totalCompleted: number;
 }
 
+const cleanUpArrayField = (field: any): string[] => {
+    if (Array.isArray(field)) {
+        return field.flatMap(item => {
+            if (typeof item === 'string' && item.startsWith('{') && item.endsWith('}')) {
+                const cleaned = item.replace(/^{"|"}$/g, '');
+                if (cleaned.length > 1 && cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
+                    return [cleaned.replace(/,/g, '')];
+                }
+                return cleaned.split(',');
+            }
+            return item;
+        }).filter(Boolean);
+    }
+    if (typeof field === 'string') {
+        return [field];
+    }
+    return [];
+};
+
+
 export default function RuleAnalysisPage() {
     const params = useParams();
     const router = useRouter();
@@ -100,7 +120,7 @@ export default function RuleAnalysisPage() {
         return <div className="text-center text-destructive p-8">{error}</div>;
     }
     
-    const newUseDisplay = (projectAnalysis?.newUse || []).map(u => t(u as any) || u).join(', ');
+    const newUseDisplay = (projectAnalysis?.newUse ? cleanUpArrayField(projectAnalysis.newUse) : []).map(u => t(u as any) || u).join(', ');
     const fulfillabilityDisplay = (projectAnalysis?.fulfillability || []).map(f => t(f as any) || f).join(', ');
 
     return (
@@ -116,7 +136,7 @@ export default function RuleAnalysisPage() {
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
-                            <p>{t('analysisVersionHeader', { version: String(projectAnalysis?.version).padStart(3, '0') })}</p>
+                            <p>{t('analysisVersionHeader', { version: String(projectAnalysis?.version || 0).padStart(3, '0') })}</p>
                            {projectAnalysis && (
                                 <>
                                     {newUseDisplay && (
