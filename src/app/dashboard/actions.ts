@@ -22,6 +22,44 @@ import { revalidatePath } from 'next/cache';
 // ========== Mappers ==========
 // Map DB rows to application types
 
+const cleanUpArrayField = (field: any): string[] => {
+    if (!field) return [];
+    if (Array.isArray(field)) {
+        // Handle cases where some items might still be the weird postgres format
+        return field.flatMap(item => {
+            if (typeof item === 'string' && item.startsWith('{') && item.endsWith('}')) {
+                 const cleaned = item.replace(/^{"|"}$/g, '');
+                 if (cleaned.includes(',')) {
+                     // Heuristic for exploded characters
+                    if (cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
+                         return [cleaned.replace(/,/g, '')];
+                    }
+                    return cleaned.split(',');
+                 }
+                 return [cleaned];
+            }
+            return item;
+        }).filter(Boolean);
+    }
+    if (typeof field === 'string') {
+        // Handle the '{"A","c","c",...}' string format
+        if (field.startsWith('{') && field.endsWith('}')) {
+            const cleaned = field.replace(/^{"|"}$/g, '');
+            if (cleaned.includes(',')) {
+                // Heuristic for exploded characters
+                if (cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
+                    return [cleaned.replace(/,/g, '')];
+                }
+                return cleaned.split(',');
+            }
+            return [cleaned];
+        }
+        return [field];
+    }
+    return [];
+};
+
+
 const mapDbUserToUser = (dbUser: any): User => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -112,8 +150,8 @@ const mapDbProjectAnalysis = (row: any): ProjectAnalysis => ({
     version: row.version,
     startDate: new Date(row.start_date).toISOString(),
     lastModificationDate: new Date(row.last_modification_date).toISOString(),
-    newUse: row.new_use || [],
-    fulfillability: row.fulfillability || [],
+    newUse: cleanUpArrayField(row.new_use),
+    fulfillability: cleanUpArrayField(row.fulfillability),
 });
 
 
@@ -835,6 +873,10 @@ export async function updateProjectAnalysis(
 ): Promise<ProjectAnalysis | null> {
     const client = await db.connect();
     try {
+        // Use COALESCE to handle null values, ensuring they become empty arrays
+        const newUseValue = data.newUse || [];
+        const fulfillabilityValue = data.fulfillability || [];
+        
         await client.query(
             `UPDATE project_analyses 
              SET 
@@ -842,7 +884,7 @@ export async function updateProjectAnalysis(
                 fulfillability = $2, 
                 last_modification_date = NOW() 
              WHERE id = $3`,
-            [data.newUse, data.fulfillability, analysisId]
+            [newUseValue, fulfillabilityValue, analysisId]
         );
         
         const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
