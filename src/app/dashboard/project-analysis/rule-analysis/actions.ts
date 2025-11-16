@@ -29,30 +29,21 @@ const getGermanTranslation = (key: string, fromLocale: 'en' | 'de' = 'en'): stri
 // Helper function to clean up corrupted array data from the database
 const cleanUpArrayField = (field: any): string[] => {
     if (Array.isArray(field)) {
-        return field.flatMap(item => {
-            if (typeof item === 'string' && item.startsWith('{') && item.endsWith('}')) {
-                // It's a string representation of a postgres array literal, e.g., '{"a","b","c"}'
-                // Or a corrupted one e.g. '{"A","c","c","o"...}'
-                // We'll try to parse it, but a simple flatmap might be enough if it's an array of strings
-                const cleaned = item.replace(/^{"|"}$/g, '').replace(/","/g, '');
-                // This will not correctly parse names with commas, but it will fix the character explosion issue
-                if (cleaned.length > 1 && cleaned.includes(',')) {
-                     // Heuristic: If it looks like exploded characters, join them
-                    if (cleaned.split(',').every(c => c.length === 1 || c === ' ')) {
-                         return [cleaned.replace(/,/g, '')];
-                    }
-                }
-                return item;
-            }
-            return item;
-        }).filter(Boolean);
+        // If it's a clean array of strings, just return it.
+        if (field.every(item => typeof item === 'string')) {
+            return field;
+        }
     }
     if (typeof field === 'string') {
-        return [field];
+        // Handle PostgreSQL array literal format, e.g., '{"Value1","Value2"}'
+        if (field.startsWith('{') && field.endsWith('}')) {
+            return field.substring(1, field.length - 1).split(',').map(item => item.replace(/"/g, '').trim());
+        }
+        // Handle simple comma-separated string
+        return field.split(',').map(item => item.trim());
     }
     return [];
 };
-
 
 type RuleAnalysisResult = {
     id: string;
@@ -62,15 +53,30 @@ type RuleAnalysisResult = {
     revisedFulfillability: string | null;
 }
 
-export async function getFilteredRuleBooks(projectAnalysisId: string) {
-    const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
-    if (!analysisDetails) {
-        throw new Error('Analysis details not found');
+type GetFilteredRuleBooksParams = {
+    projectAnalysisId: string;
+    newUse?: string[];
+    fulfillability?: string[];
+}
+
+export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
+    const { projectAnalysisId, newUse: newUseParam, fulfillability: fulfillabilityParam } = params;
+    
+    let analysisNewUse: string[] | null | undefined = newUseParam;
+    let analysisFulfillability: string[] | null | undefined = fulfillabilityParam;
+
+    // If newUse or fulfillability are not passed directly, fetch them.
+    if (!analysisNewUse || !analysisFulfillability) {
+        const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
+        if (!analysisDetails) {
+            throw new Error('Analysis details not found');
+        }
+        analysisNewUse = analysisDetails.analysis.newUse;
+        analysisFulfillability = analysisDetails.analysis.fulfillability;
     }
 
-    const { newUse, fulfillability } = analysisDetails.analysis;
-    const newUseArray = cleanUpArrayField(newUse);
-    const fulfillabilityArray = cleanUpArrayField(fulfillability);
+    const newUseArray = cleanUpArrayField(analysisNewUse);
+    const fulfillabilityArray = cleanUpArrayField(analysisFulfillability);
 
     if (newUseArray.length === 0 || !fulfillabilityArray || fulfillabilityArray.length === 0) {
         return [];
@@ -150,7 +156,7 @@ const getSegmentKey = (gliederung: string): string | null => {
 };
 
 export async function getSegmentedRuleBookData(projectAnalysisId: string) {
-    const filteredData = await getFilteredRuleBooks(projectAnalysisId);
+    const filteredData = await getFilteredRuleBooks({ projectAnalysisId });
     const analysisResults = await getAnalysisResults(projectAnalysisId);
 
     const resultsMap = new Map<string, RuleAnalysisResult>();

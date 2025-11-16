@@ -162,13 +162,6 @@ export default function AnalysisDetailPage() {
         setIsConfirmingSave(false);
         setIsSaving(true);
         try {
-            const filteredRuleBooks = await getFilteredRuleBooks(analysisId);
-            const hasApplicableRules = filteredRuleBooks.length > 0;
-
-            if (shouldDeleteOldResults) {
-                await deleteAnalysisResults(analysisId);
-            }
-
             const updatedAnalysis = await updateProjectAnalysis(analysisId, {
                 newUse,
                 fulfillability,
@@ -188,8 +181,19 @@ export default function AnalysisDetailPage() {
                     await logAction(logMessage);
                 }
 
+                if (shouldDeleteOldResults) {
+                    await deleteAnalysisResults(analysisId);
+                }
 
                 if (andProceed) {
+                    // Pass the newly saved data directly to the filtering function
+                    const filteredRuleBooks = await getFilteredRuleBooks({
+                        projectAnalysisId: analysisId,
+                        newUse,
+                        fulfillability,
+                    });
+                    const hasApplicableRules = filteredRuleBooks.length > 0;
+
                     if (hasApplicableRules) {
                         router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
                     } else {
