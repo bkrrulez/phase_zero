@@ -36,7 +36,7 @@ export function MultiSelect({ options, selected, onChange, className, placeholde
   const safeSelected = Array.isArray(selected) ? selected : [];
 
   const displayValue = safeSelected.length > 0 
-    ? safeSelected.map(val => getDisplayValue ? getDisplayValue(val) : options.find(opt => opt.value === val)?.label).join(', ')
+    ? safeSelected.map(val => getDisplayValue ? getDisplayValue(val) : options.find(opt => opt.value === val)?.label).filter(Boolean).join(', ')
     : placeholder;
 
   return (
