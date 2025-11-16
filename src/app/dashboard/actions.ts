@@ -833,31 +833,32 @@ export async function updateProjectAnalysis(
   analysisId: string,
   data: { newUse?: string[] | null; fulfillability?: string[] | null }
 ): Promise<ProjectAnalysis | null> {
-  const { newUse, fulfillability } = data;
-  const client = await db.connect();
-  try {
-    await client.query(
-      `UPDATE project_analyses 
-       SET new_use = $1, fulfillability = $2, last_modification_date = NOW() 
-       WHERE id = $3`,
-      [newUse, fulfillability, analysisId]
-    );
+    const client = await db.connect();
+    try {
+        await client.query(
+            `UPDATE project_analyses 
+             SET 
+                new_use = $1, 
+                fulfillability = $2, 
+                last_modification_date = NOW() 
+             WHERE id = $3`,
+            [data.newUse, data.fulfillability, analysisId]
+        );
+        
+        const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
 
-    const result = await client.query('SELECT * FROM project_analyses WHERE id = $1', [analysisId]);
-
-    if (result.rows.length > 0) {
-      revalidatePath(`/dashboard/project-analysis/${analysisId}`);
-      revalidatePath('/dashboard/project-analysis');
-      return mapDbProjectAnalysis(result.rows[0]);
+        if (result.rows.length > 0) {
+            revalidatePath(`/dashboard/project-analysis/${analysisId}`);
+            revalidatePath('/dashboard/project-analysis');
+            return mapDbProjectAnalysis(result.rows[0]);
+        }
+        return null; 
+    } catch (error) {
+        console.error('Error updating project analysis:', error);
+        return null;
+    } finally {
+        client.release();
     }
-
-    return null; 
-  } catch (error) {
-    console.error('Error updating project analysis:', error);
-    return null;
-  } finally {
-      client.release();
-  }
 }
 
 export async function deleteProjectAnalysis(analysisId: string): Promise<void> {
