@@ -116,7 +116,7 @@ export default function RuleAnalysisPage() {
                     <div className="flex-1">
                         <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
-                            <p>{t('analysisVersionHeader', { version: String(projectAnalysis?.version || 0).padStart(3, '0') })}</p>
+                            {projectAnalysis && <p>{t('analysisVersionHeader', { version: String(projectAnalysis.version).padStart(3, '0') })}</p>}
                            {projectAnalysis && (
                                 <>
                                     {newUseDisplay && (
