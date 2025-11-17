@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown } from 'lucide-react';
+import { LatexRenderer } from '../components/latex-renderer';
 
 interface RuleBookDetails {
   ruleBook: RuleBook;
@@ -218,8 +219,8 @@ export default function RuleBookDetailPage() {
                     const dataObject = entry.data;
                     const cellValue = String(dataObject[header] ?? '');
 
-                    const isTextColumn = ['Text', 'Gliederung', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'].includes(header);
                     const isRefColumn = header === 'Referenztabelle';
+                    const isTextColumn = header === 'Text';
                     
                     return (
                       <td
@@ -253,8 +254,10 @@ export default function RuleBookDetailPage() {
                               );
                             })}
                           </div>
-                        ) : (
-                           <div className={isTextColumn ? "whitespace-normal" : "whitespace-nowrap"}>
+                         ) : isTextColumn ? (
+                            <LatexRenderer text={cellValue} />
+                         ) : (
+                           <div className="whitespace-normal">
                             {cellValue}
                           </div>
                         )}
