@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { LatexRenderer } from '@/app/dashboard/rule-books/components/latex-renderer';
 
 
 type AnalysisResult = {
@@ -216,39 +217,44 @@ export default function SegmentDetailPage() {
 
                             return (
                                 <TableRow key={entry.id}>
-                                    {finalHeaders.map(header => (
-                                        <TableCell key={header} className="align-top border-b" style={getColumnStyle(header)}>
-                                            {header === 'Revised Checklist' ? (
-                                                entry.data['Spaltentyp'] === 'Parameter' ? (
-                                                    <Select
-                                                        value={currentAnalysis.checklistStatus}
-                                                        onValueChange={value => handleAnalysisChange(entry.id, 'checklistStatus', value)}
-                                                    >
-                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : <span className="text-muted-foreground">N/A</span>
-                                            ) : header === 'Revised Fulfillability' ? (
-                                                showRevisedFulfillability ? (
-                                                    <Select
-                                                        value={currentAnalysis.revisedFulfillability || ''}
-                                                        onValueChange={value => handleAnalysisChange(entry.id, 'revisedFulfillability', value)}
-                                                    >
-                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {translatedFulfillabilityOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : <span className="text-muted-foreground">-</span>
-                                            ) : (
-                                                <div className="whitespace-normal">
-                                                   {String(entry.data[header] ?? '')}
-                                                </div>
-                                            )}
-                                        </TableCell>
-                                    ))}
+                                    {finalHeaders.map(header => {
+                                        const cellValue = String(entry.data[header] ?? '');
+                                        return (
+                                            <TableCell key={header} className="align-top border-b" style={getColumnStyle(header)}>
+                                                {header === 'Revised Checklist' ? (
+                                                    entry.data['Spaltentyp'] === 'Parameter' ? (
+                                                        <Select
+                                                            value={currentAnalysis.checklistStatus}
+                                                            onValueChange={value => handleAnalysisChange(entry.id, 'checklistStatus', value)}
+                                                        >
+                                                            <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                                                            <SelectContent>
+                                                                {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : <span className="text-muted-foreground">N/A</span>
+                                                ) : header === 'Revised Fulfillability' ? (
+                                                    showRevisedFulfillability ? (
+                                                        <Select
+                                                            value={currentAnalysis.revisedFulfillability || ''}
+                                                            onValueChange={value => handleAnalysisChange(entry.id, 'revisedFulfillability', value)}
+                                                        >
+                                                            <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                                                            <SelectContent>
+                                                                {translatedFulfillabilityOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : <span className="text-muted-foreground">-</span>
+                                                ) : header === 'Text' ? (
+                                                    <LatexRenderer text={cellValue} />
+                                                ) : (
+                                                    <div className="whitespace-normal">
+                                                       {cellValue}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                        );
+                                    })}
                                 </TableRow>
                             );
                         })}
