@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -146,11 +145,13 @@ export default function SegmentDetailPage() {
 
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
+    const columnsToHide = ['Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
+
     const displayHeaders = headersFromData.filter(
-        h => h !== 'Referenztabelle' && h !== 'Checkliste'
+        h => h !== 'Referenztabelle' && !columnsToHide.includes(h)
     );
     
-    const columnOrder: string[] = ['Gliederung', 'Text', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit'];
+    const columnOrder: string[] = ['Gliederung', 'Text'];
 
     const sortedHeaders = displayHeaders.sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
@@ -161,7 +162,7 @@ export default function SegmentDetailPage() {
         return indexA - indexB;
     });
 
-    const finalHeaders = [...sortedHeaders, 'Checkliste', 'Revised Checklist', 'Revised Fulfillability'];
+    const finalHeaders = [...sortedHeaders, 'Revised Checklist', 'Revised Fulfillability'];
     
     const getColumnStyle = (header: string): React.CSSProperties => {
         const style: React.CSSProperties = { width: 'auto' };
