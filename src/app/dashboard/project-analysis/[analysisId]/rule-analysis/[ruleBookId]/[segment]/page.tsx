@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -162,7 +163,7 @@ export default function SegmentDetailPage() {
         return indexA - indexB;
     });
 
-    const finalHeaders = [...sortedHeaders, 'Revised Checklist', 'Revised Fulfillability'];
+    const finalHeaders = [...sortedHeaders, 'Revised Checklist', 'projectBasedFulfillability'];
     
     const getColumnStyle = (header: string): React.CSSProperties => {
         const style: React.CSSProperties = { width: 'auto' };
@@ -234,7 +235,7 @@ export default function SegmentDetailPage() {
                                                             </SelectContent>
                                                         </Select>
                                                     ) : <span className="text-muted-foreground">-</span>
-                                                ) : header === 'Revised Fulfillability' ? (
+                                                ) : header === 'projectBasedFulfillability' ? (
                                                     showRevisedFulfillability ? (
                                                         <Select
                                                             value={currentAnalysis.revisedFulfillability || ''}
