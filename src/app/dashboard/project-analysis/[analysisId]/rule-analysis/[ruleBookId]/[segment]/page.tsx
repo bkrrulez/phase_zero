@@ -232,7 +232,7 @@ export default function SegmentDetailPage() {
                                                                 {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
                                                             </SelectContent>
                                                         </Select>
-                                                    ) : <span className="text-muted-foreground">N/A</span>
+                                                    ) : <span className="text-muted-foreground">-</span>
                                                 ) : header === 'Revised Fulfillability' ? (
                                                     showRevisedFulfillability ? (
                                                         <Select
