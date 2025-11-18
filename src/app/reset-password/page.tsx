@@ -21,7 +21,7 @@ export default function ResetPasswordPage() {
                 </Card>
             </main>
             <footer className="p-4 text-center text-xs text-muted-foreground">
-                Created by Bikramjit Chowdhury
+                Created by TU Wien, Structural Engineering and Building Preservation Team
             </footer>
         </div>
     )

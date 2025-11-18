@@ -427,5 +427,6 @@
     "analysisResultDesc": "A summary of the completed rule analysis.",
     "endAnalysis": "End Analysis",
     "revisedChecklistSummary": "Results of the parameter analysis",
-    "satisfiabilityOfUnmetParameters": "Result of the project-specific feasibility of the unfulfilled and unverifiable parameters"
+    "satisfiabilityOfUnmetParameters": "Result of the project-specific feasibility of the unfulfilled and unverifiable parameters",
+    "footerText": "Created by TU Wien, Structural Engineering and Building Preservation Team"
 }

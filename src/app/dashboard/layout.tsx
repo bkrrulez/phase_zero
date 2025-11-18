@@ -338,7 +338,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                   {children}
               </main>
               <footer className="p-4 text-center text-xs text-muted-foreground border-t shrink-0">
-                  Created by Bikramjit Chowdhury
+                  {t('footerText')}
               </footer>
             </div>
         </div>
@@ -389,5 +389,3 @@ export default function DashboardLayout({
     </DataProviders>
   );
 }
-
-    
