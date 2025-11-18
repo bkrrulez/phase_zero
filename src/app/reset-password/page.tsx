@@ -1,3 +1,4 @@
+
 import { Suspense } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { LogoIcon } from '@/components/ui/logo-icon';
@@ -21,7 +22,7 @@ export default function ResetPasswordPage() {
                 </Card>
             </main>
             <footer className="p-4 text-center text-xs text-muted-foreground">
-                Created by TU Wien, Structural Engineering and Building Preservation Team
+                Created by TU Wien, Res. Unit of Structural Engineering and Building Preservation
             </footer>
         </div>
     )
