@@ -146,7 +146,7 @@ export default function SegmentDetailPage() {
 
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
-    const columnsToHide = ['Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
+    const columnsToHide = ['Usage', 'Column Type', 'Fulfillability', 'Checklist', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
 
     const displayHeaders = headersFromData.filter(
         h => h !== 'Referenztabelle' && !columnsToHide.includes(h)
@@ -163,7 +163,7 @@ export default function SegmentDetailPage() {
         return indexA - indexB;
     });
 
-    const finalHeaders = [...sortedHeaders, 'Revised Checklist', 'projectBasedFulfillability'];
+    const finalHeaders = [...sortedHeaders, 'projectChecklist', 'projectBasedFulfillability'];
     
     const getColumnStyle = (header: string): React.CSSProperties => {
         const style: React.CSSProperties = { width: 'auto' };
@@ -223,7 +223,7 @@ export default function SegmentDetailPage() {
                                         const cellValue = String(entry.data[header] ?? '');
                                         return (
                                             <TableCell key={header} className="align-top border-b" style={getColumnStyle(header)}>
-                                                {header === 'Revised Checklist' ? (
+                                                {header === 'projectChecklist' ? (
                                                     entry.data['Spaltentyp'] === 'Parameter' ? (
                                                         <Select
                                                             value={currentAnalysis.checklistStatus}

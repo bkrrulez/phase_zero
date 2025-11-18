@@ -427,5 +427,6 @@
     "endAnalysis": "Analyse beenden",
     "revisedChecklistSummary": "Ergebnis der Parameteranalyse",
     "satisfiabilityOfUnmetParameters": "Ergebnis der projektspezifischen Erfüllbarkeit der nicht erfüllten und nicht überprüfbaren Parameter",
-    "footerText": "Erstellt vom Team für Hochbau und Gebäudeerhaltung der TU Wien"
+    "footerText": "Erstellt vom Team für Hochbau und Gebäudeerhaltung der TU Wien",
+    "projectChecklist": "Projekt Checkliste"
 }
