@@ -200,7 +200,7 @@ export default function AnalysisDetailPage() {
                          toast({ variant: 'destructive', title: "No Applicable Rules", description: "No rule books match the selected criteria. Please adjust your selection or import relevant rule books." });
                     }
                 } else {
-                    toast({ title: t('save'), description: t('analysisDetails') + " " + t('save') + "d." });
+                    toast({ title: t('save'), description: t('analysisSavedDesc') });
                     await fetchDetails(analysisId);
                 }
             } else {
@@ -302,3 +302,5 @@ export default function AnalysisDetailPage() {
         </>
     );
 }
+
+    

@@ -405,7 +405,7 @@
     "analyzed": "Analysiert",
     "ruleAnalysisSectionTitle": "Regelanalyse: Abschnitt {{key}}",
     "sectionRuleBook": "Regelwerk",
-    "Checkliste": "Checkliste",
+    "projectChecklist": "Projekt Checkliste",
     "projectBasedFulfillability": "Projektbezogene Erfüllbarkeit",
     "Light": "Leicht",
     "Medium": "Mittel",
@@ -428,5 +428,7 @@
     "revisedChecklistSummary": "Ergebnis der Parameteranalyse",
     "satisfiabilityOfUnmetParameters": "Ergebnis der projektspezifischen Erfüllbarkeit der nicht erfüllten und nicht überprüfbaren Parameter",
     "footerText": "Erstellt von der TU Wien, FOB für Hochbau und Gebäudeerhaltung",
-    "projectChecklist": "Projekt Checkliste"
+    "analysisSavedDesc": "Analyse-Details wurden gespeichert."
 }
+
+    
