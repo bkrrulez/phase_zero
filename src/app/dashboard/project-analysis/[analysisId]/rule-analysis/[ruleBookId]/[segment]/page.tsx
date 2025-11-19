@@ -154,7 +154,12 @@ export default function SegmentDetailPage() {
 
     const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
     
+    const hasReferenceTableContent = details.entries.some(entry => entry.data['Referenztabelle'] && String(entry.data['Referenztabelle']).trim() !== '');
+
     const columnsToHide = ['Usage', 'Column Type', 'Fulfillability', 'Checklist', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
+    if (!hasReferenceTableContent) {
+        columnsToHide.push('Referenztabelle');
+    }
 
     const displayHeaders = headersFromData.filter(
         h => !columnsToHide.includes(h)
