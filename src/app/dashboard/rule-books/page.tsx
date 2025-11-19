@@ -114,7 +114,7 @@ export default function RuleBooksPage() {
                                 }
 
                                 const tableSheet = workbook.Sheets[actualSheetName];
-                                referenceTables[tableName] = XLSX.utils.sheet_to_json(tableSheet, { defval: "" });
+                                referenceTables[tableName] = XLSX.utils.sheet_to_json(tableSheet, { header: 1, defval: "" });
                             }
                         }
                     }
