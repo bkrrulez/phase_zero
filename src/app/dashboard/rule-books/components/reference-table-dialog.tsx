@@ -26,7 +26,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
     if (!table) return null;
 
     const tableData = Array.isArray(table.data) ? table.data : [];
-    const headers = tableData.length > 0 ? (tableData[0] as string[]) : [];
+    const headers = (tableData.length > 0 && Array.isArray(tableData[0])) ? tableData[0] : [];
     const bodyRows = tableData.slice(1);
 
     return (
