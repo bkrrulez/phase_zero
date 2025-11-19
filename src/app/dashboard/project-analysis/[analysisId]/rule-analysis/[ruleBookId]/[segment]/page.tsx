@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getSegmentDetails, saveAnalysisResult, getOrderedSegments } from '@/app/dashboard/project-analysis/rule-analysis/actions';
-import { type ProjectAnalysis, type RuleBook, type RuleBookEntry } from '@/lib/types';
+import { type ProjectAnalysis, type RuleBook, type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { LatexRenderer } from '@/app/dashboard/rule-books/components/latex-renderer';
+import { ReferenceTableDialog } from '@/app/dashboard/rule-books/components/reference-table-dialog';
 
 
 type AnalysisResult = {
@@ -33,6 +34,7 @@ interface SectionDetails {
     ruleBook: RuleBook;
     segmentKey: string;
     entries: EntryWithAnalysis[];
+    referenceTables: ReferenceTable[];
 }
 
 const checklistOptions = [
@@ -61,6 +63,7 @@ export default function SegmentDetailPage() {
     const [orderedSegments, setOrderedSegments] = React.useState<{ ruleBookId: string; segmentKey: string; }[]>([]);
     
     const [showNoMoreSegmentsAlert, setShowNoMoreSegmentsAlert] = React.useState(false);
+    const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
 
 
     const translatedFulfillabilityOptions = React.useMemo(() => {
@@ -134,6 +137,11 @@ export default function SegmentDetailPage() {
             setShowNoMoreSegmentsAlert(true);
         }
     };
+    
+    const handleOpenReferenceTable = (tableName: string) => {
+        const table = details?.referenceTables.find((t) => t.name === tableName);
+        if (table) setSelectedTable(table);
+    };
 
     const handleCloseAlert = () => {
         setShowNoMoreSegmentsAlert(false);
@@ -149,10 +157,10 @@ export default function SegmentDetailPage() {
     const columnsToHide = ['Usage', 'Column Type', 'Fulfillability', 'Checklist', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
 
     const displayHeaders = headersFromData.filter(
-        h => h !== 'Referenztabelle' && !columnsToHide.includes(h)
+        h => !columnsToHide.includes(h)
     );
     
-    const columnOrder: string[] = ['Gliederung', 'Text'];
+    const columnOrder: string[] = ['Gliederung', 'Text', 'Referenztabelle'];
 
     const sortedHeaders = displayHeaders.sort((a,b) => {
         const indexA = columnOrder.indexOf(a);
@@ -247,6 +255,32 @@ export default function SegmentDetailPage() {
                                                             </SelectContent>
                                                         </Select>
                                                     ) : <span className="text-muted-foreground">-</span>
+                                                ) : header === 'Referenztabelle' && cellValue.includes('Tabelle') ? (
+                                                    <div className="whitespace-normal">
+                                                      {cellValue.split(/, | /).map((part, partIndex) => {
+                                                        const trimmedPart = part.replace(/,$/, '');
+                                                        const isRefTable = details.referenceTables.some(
+                                                          (t) => t.name === trimmedPart
+                                                        );
+                                                        if (isRefTable) {
+                                                          return (
+                                                            <React.Fragment key={partIndex}>
+                                                              <Button
+                                                                variant="link"
+                                                                className="p-0 h-auto text-left"
+                                                                onClick={() => handleOpenReferenceTable(trimmedPart)}
+                                                              >
+                                                                {trimmedPart}
+                                                              </Button>
+                                                              {partIndex < cellValue.split(/, | /).length - 1 ? ', ' : ''}
+                                                            </React.Fragment>
+                                                          );
+                                                        }
+                                                        return (
+                                                          <span key={partIndex}>{part}{partIndex < cellValue.split(/, | /).length - 1 ? ' ' : ''}</span>
+                                                        );
+                                                      })}
+                                                    </div>
                                                 ) : header === 'Text' ? (
                                                     <LatexRenderer text={cellValue} />
                                                 ) : (
@@ -277,6 +311,11 @@ export default function SegmentDetailPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <ReferenceTableDialog
+            isOpen={!!selectedTable}
+            onOpenChange={() => setSelectedTable(null)}
+            table={selectedTable}
+        />
         </>
     );
 }
