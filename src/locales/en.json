@@ -429,7 +429,9 @@
     "revisedChecklistSummary": "Results of the parameter analysis",
     "satisfiabilityOfUnmetParameters": "Result of the project-specific feasibility of the unfulfilled and unverifiable parameters",
     "footerText": "Created by TU Wien, Res. Unit of Structural Engineering and Building Preservation",
-    "analysisSavedDesc": "Analysis details have been saved."
+    "analysisSavedDesc": "Analysis details have been saved.",
+    "analysisStartedTitle": "Analysis Started",
+    "analysisStartedDesc": "A new analysis version for project has been created."
 }
 
     

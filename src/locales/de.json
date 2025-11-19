@@ -428,7 +428,9 @@
     "revisedChecklistSummary": "Ergebnis der Parameteranalyse",
     "satisfiabilityOfUnmetParameters": "Ergebnis der projektspezifischen Erfüllbarkeit der nicht erfüllten und nicht überprüfbaren Parameter",
     "footerText": "Erstellt von der TU Wien, FOB für Hochbau und Gebäudeerhaltung",
-    "analysisSavedDesc": "Analyse-Details wurden gespeichert."
+    "analysisSavedDesc": "Analyse-Details wurden gespeichert.",
+    "analysisStartedTitle": "Analyse gestartet",
+    "analysisStartedDesc": "Eine neue Analyseversion für das Projekt wurde erstellt."
 }
 
     

@@ -58,8 +58,8 @@ export default function ProjectAnalysisPage() {
             setConfirmingNewVersion({ projectId, nextVersion: latestAnalysis.version + 1 });
         } else if (analysis) {
             toast({
-                title: "Analysis Started",
-                description: `A new analysis version for the project has been created.`,
+                title: t('analysisStartedTitle'),
+                description: t('analysisStartedDesc'),
             });
             fetchAnalyses();
             router.push(`/dashboard/project-analysis/${analysis.id}`);
@@ -74,8 +74,8 @@ export default function ProjectAnalysisPage() {
             const newAnalysis = await addNewProjectAnalysisVersion(projectId);
             if(newAnalysis) {
                 toast({
-                    title: "Analysis Started",
-                    description: `A new analysis version for project has been created.`,
+                    title: t('analysisStartedTitle'),
+                    description: t('analysisStartedDesc'),
                 });
                 fetchAnalyses();
                 router.push(`/dashboard/project-analysis/${newAnalysis.id}`);
@@ -214,5 +214,7 @@ export default function ProjectAnalysisPage() {
         </>
     );
 }
+
+    
 
     
