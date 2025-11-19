@@ -331,7 +331,8 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         entries: segmentEntries.map(entry => ({
             ...entry,
             analysis: resultsMap.get(entry.id)
-        }))
+        })),
+        referenceTables: ruleBookDetails.referenceTables || []
     };
 }
 

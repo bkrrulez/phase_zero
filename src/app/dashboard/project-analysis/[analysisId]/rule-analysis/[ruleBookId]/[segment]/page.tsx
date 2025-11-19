@@ -262,9 +262,9 @@ export default function SegmentDetailPage() {
                                                     ) : <span className="text-muted-foreground">-</span>
                                                 ) : header === 'Referenztabelle' && cellValue.includes('Tabelle') ? (
                                                     <div className="whitespace-normal">
-                                                      {cellValue.split(/, | /).map((part, partIndex) => {
+                                                      {(cellValue.split(/, | /) || []).map((part, partIndex) => {
                                                         const trimmedPart = part.replace(/,$/, '');
-                                                        const isRefTable = details.referenceTables.some(
+                                                        const isRefTable = (details.referenceTables || []).some(
                                                           (t) => t.name === trimmedPart
                                                         );
                                                         if (isRefTable) {
