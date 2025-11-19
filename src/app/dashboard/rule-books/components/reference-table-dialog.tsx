@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type ReferenceTable } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { LatexRenderer } from './latex-renderer';
 
 interface ReferenceTableDialogProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                                 <TableRow key={rowIndex}>
                                     {headers.map(header => (
                                         <TableCell key={`${rowIndex}-${header}`} className="max-w-[200px] break-words align-top">
-                                            {String(row[header])}
+                                            <LatexRenderer text={String(row[header])} />
                                         </TableCell>
                                     ))}
                                 </TableRow>
