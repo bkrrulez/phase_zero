@@ -50,9 +50,9 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                         <TableBody>
                             {bodyRows.map((row, rowIndex) => (
                                 <TableRow key={rowIndex}>
-                                    {(row as string[]).map((cell, cellIndex) => (
+                                    {Array.isArray(row) && (row as string[]).map((cell, cellIndex) => (
                                         <TableCell key={`${rowIndex}-${cellIndex}`} className="max-w-[200px] break-words align-top">
-                                            <LatexRenderer text={String(cell)} />
+                                            <LatexRenderer text={String(cell ?? '')} />
                                         </TableCell>
                                     ))}
                                 </TableRow>
