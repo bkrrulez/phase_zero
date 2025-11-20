@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -60,14 +59,14 @@ export default function ProjectsSettingsPage() {
         };
 
         const result = await addProject(newProjectData);
-        if (result.id) {
-            setIsAddDialogOpen(false);
+        
+        if (result?.id) {
             toast({
                 title: t('projectAdded'),
                 description: t('projectAddedDesc', { name: data.projectName }),
             });
             logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
-        } else if (result.error) {
+        } else if (result?.error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
