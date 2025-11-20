@@ -168,8 +168,8 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 min-h-0 flex flex-col">
-            <ScrollArea className="flex-1 pr-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            <ScrollArea className="flex-1 pr-6 -mr-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 pr-1">
                     {/* Left Column */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg">{t('projectData')}</h3>
