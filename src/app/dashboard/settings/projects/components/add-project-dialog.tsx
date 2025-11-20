@@ -40,7 +40,7 @@ export type ProjectFormValues = z.infer<typeof projectSchema>;
 interface AddProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddProject: (data: ProjectFormValues) => Promise<{id?: string, error?: string} | void>;
+  onAddProject: (data: ProjectFormValues) => Promise<{id?: string, error?: string} | undefined>;
 }
 
 export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProjectDialogProps) {
@@ -120,17 +120,17 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         }
 
         const result = await onAddProject(data);
-        if (!result || !result.id) {
+        if (!result || result.error) {
              // Error toast will be shown by the calling component
              return;
         }
         
-        const latestAnalysis = await getLatestProjectAnalysis(result.id);
+        const latestAnalysis = await getLatestProjectAnalysis(result.id!);
 
         if (latestAnalysis) {
-            setAnalysisPrompt({ projectId: result.id, latestAnalysisId: latestAnalysis.id });
+            setAnalysisPrompt({ projectId: result.id!, latestAnalysisId: latestAnalysis.id });
         } else {
-            handleNewAnalysis(result.id);
+            handleNewAnalysis(result.id!);
         }
     }
 

@@ -9,7 +9,7 @@ import { useAuth } from './AuthContext';
 
 interface ProjectsContextType {
   projects: Project[];
-  addProject: (newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>) => Promise<{ id?: string, error?: string }>;
+  addProject: (newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>) => Promise<{ id?: string, error?: string } | undefined>;
   updateProject: (projectId: string, data: Omit<Project, 'id'>) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
   isLoading: boolean;
@@ -40,13 +40,12 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
     fetchProjects();
   }, [fetchProjects]);
 
-  const addProject = async (projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<{ id?: string, error?: string }> => {
+  const addProject = async (projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<{ id?: string, error?: string } | undefined> => {
       if (!currentUser) return { error: "User not authenticated" };
       
       const result = await addProjectAction(projectData);
       
       if (result.id) {
-          await logAction(`User '${currentUser.name}' created project '${projectData.name}' (ID: ${result.id}).`);
           await fetchProjects(); // Re-fetch to get the new project with its ID and number
       }
       
