@@ -159,7 +159,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-4xl flex flex-col h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t('addProject')}</DialogTitle>
           <DialogDescription>
@@ -168,7 +168,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 min-h-0 flex flex-col">
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            <ScrollArea className="flex-1 pr-6">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     {/* Left Column */}
                     <div className="space-y-4">
@@ -335,7 +335,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                     </div>
                  </div>
             </ScrollArea>
-            <DialogFooter className="pt-6 -mx-6 px-6 border-t bg-background">
+            <DialogFooter className="pt-6 border-t">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                 <Button type="submit">{t('save')}</Button>
                 <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
@@ -363,5 +363,3 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     </>
   );
 }
-
-    
