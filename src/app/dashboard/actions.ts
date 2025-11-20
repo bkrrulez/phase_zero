@@ -702,12 +702,12 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
 
         const id = `proj-${Date.now()}`;
         
-        await client.query(
+        const result = await client.query(
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
                 project_owner, year_of_construction, number_of_floors, escape_level, 
                 listedBuilding, protectionZone, current_use
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 
                 projectOwner, yearOfConstruction || null, numberOfFloors || null, escapeLevel || null, 
@@ -718,7 +718,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
         await client.query('COMMIT');
         revalidatePath('/dashboard/settings/projects');
         revalidatePath('/dashboard');
-        return id;
+        return result.rows[0].id;
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error adding project:', error);
