@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -90,7 +89,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         { value: 'Garage/ Covered Parking, Parking Deck', label: 'Garage/ Covered Parking, Parking Deck' },
         { value: 'Gas Station', label: 'Gas Station' },
         { value: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters', label: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters' },
-        { value: 'Non-residential', label: 'Non Residential' },
+        { value: 'Non-residential', label: 'Non-residential' },
     ];
 
   function onSubmit(data: ProjectFormValues) {
@@ -128,7 +127,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-4xl flex flex-col h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t('editProject')}</DialogTitle>
           <DialogDescription>
@@ -136,7 +135,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 min-h-0 flex flex-col">
+          <form onSubmit={form.handleSubmit(onSubmit)} id="edit-project-form" className="flex-1 flex flex-col min-h-0">
             <ScrollArea className="flex-1 -mx-6 px-6">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     {/* Left Column */}
@@ -304,13 +303,13 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                     </div>
                  </div>
             </ScrollArea>
-            <DialogFooter className="pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-                <Button type="submit">{t('saveChanges')}</Button>
-                <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
-            </DialogFooter>
           </form>
         </Form>
+        <DialogFooter className="pt-6 mt-auto border-t">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
+            <Button type="submit" form="edit-project-form">{t('saveChanges')}</Button>
+            <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
     
@@ -332,7 +331,3 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
     </>
   );
 }
-
-    
-
-    
