@@ -68,6 +68,12 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
             currentUse: 'General',
         },
     });
+
+    React.useEffect(() => {
+        if (currentUser) {
+            form.setValue('creator', currentUser.id);
+        }
+    }, [currentUser, form]);
     
     const canChangeCreator = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
 
