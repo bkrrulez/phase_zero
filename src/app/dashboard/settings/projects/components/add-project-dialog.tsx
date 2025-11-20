@@ -19,10 +19,14 @@ import { useToast } from '@/hooks/use-toast';
 import { addProjectAnalysis, getLatestProjectAnalysis, addNewProjectAnalysisVersion } from '@/app/dashboard/actions';
 import * as React from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useProjects } from '@/app/dashboard/contexts/ProjectsContext';
 
 
-const projectSchema = z.object({
-  projectName: z.string().min(1, 'Project name is required.'),
+const createProjectSchema = (projects: { name: string }[]) => z.object({
+  projectName: z.string().min(1, 'Project name is required.').refine(
+    (name) => !projects.some(p => p.name.toLowerCase() === name.toLowerCase()),
+    { message: 'A project with this name already exists. Please choose a different name.' }
+  ),
   projectManager: z.string().min(1, 'Project Manager is required.'),
   address: z.string().min(1, 'Address is required.'),
   projectOwner: z.string().min(1, 'Project Owner is required.'),
@@ -35,7 +39,7 @@ const projectSchema = z.object({
   currentUse: z.string().min(1, "Current use is required."),
 });
 
-export type ProjectFormValues = z.infer<typeof projectSchema>;
+export type ProjectFormValues = z.infer<ReturnType<typeof createProjectSchema>>;
 
 interface AddProjectDialogProps {
   isOpen: boolean;
@@ -49,10 +53,11 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     const { t } = useLanguage();
     const router = useRouter();
     const { toast } = useToast();
+    const { projects } = useProjects();
     const [analysisPrompt, setAnalysisPrompt] = React.useState<{projectId: string, latestAnalysisId: string} | null>(null);
 
     const form = useForm<ProjectFormValues>({
-        resolver: zodResolver(projectSchema),
+        resolver: zodResolver(createProjectSchema(projects)),
         defaultValues: {
             projectName: '',
             projectManager: '',

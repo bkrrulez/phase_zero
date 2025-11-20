@@ -19,10 +19,14 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { addProjectAnalysis, getLatestProjectAnalysis, addNewProjectAnalysisVersion } from '@/app/dashboard/actions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useProjects } from '@/app/dashboard/contexts/ProjectsContext';
 
 
-const projectSchema = z.object({
-  projectName: z.string().min(1, 'Project name is required.'),
+const createProjectSchema = (projects: { id: string; name: string }[], currentProjectId: string) => z.object({
+  projectName: z.string().min(1, 'Project name is required.').refine(
+    (name) => !projects.some(p => p.name.toLowerCase() === name.toLowerCase() && p.id !== currentProjectId),
+    { message: 'A project with this name already exists. Please choose a different name.' }
+  ),
   projectManager: z.string().min(1, 'Project Manager is required.'),
   address: z.string().min(1, 'Address is required.'),
   projectOwner: z.string().min(1, 'Project Owner is required.'),
@@ -35,7 +39,7 @@ const projectSchema = z.object({
   currentUse: z.string().min(1, "Current use is required."),
 });
 
-export type ProjectFormValues = z.infer<typeof projectSchema>;
+export type ProjectFormValues = z.infer<ReturnType<typeof createProjectSchema>>;
 
 interface EditProjectDialogProps {
   isOpen: boolean;
@@ -47,6 +51,7 @@ interface EditProjectDialogProps {
 export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project }: EditProjectDialogProps) {
   const { currentUser } = useAuth();
   const { teamMembers } = useMembers();
+  const { projects } = useProjects();
   const { t } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
@@ -54,7 +59,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
 
 
   const form = useForm<ProjectFormValues>({
-    resolver: zodResolver(projectSchema),
+    resolver: zodResolver(createProjectSchema(projects, project.id)),
   });
 
   useEffect(() => {
