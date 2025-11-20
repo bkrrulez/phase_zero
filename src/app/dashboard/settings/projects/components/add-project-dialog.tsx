@@ -166,182 +166,184 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
             {t('fillProjectDetails')}
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 min-h-0 flex flex-col">
-            <ScrollArea className="flex-1 -mx-6 px-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                    {/* Left Column */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg">{t('projectData')}</h3>
-                         <FormField
-                            control={form.control}
-                            name="projectName"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('projectName')}</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="projectManager"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('projectManager')}</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="creator"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>{t('creator')}</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={!canChangeCreator}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={t('selectCreator')} />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {teamMembers.map(member => (
-                                                <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('address')}</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="projectOwner"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('projectOwner')}</FormLabel>
-                                <FormControl><Input {...field} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    {/* Right Column */}
-                    <div className="space-y-4">
-                         <h3 className="font-semibold text-lg">{t('buildingData')}</h3>
-                         <FormField
-                            control={form.control}
-                            name="yearOfConstruction"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('yearOfConstruction')}</FormLabel>
-                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="numberOfFloors"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('geschosse')}</FormLabel>
-                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="escapeLevel"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('fluchtniveau')}</FormLabel>
-                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}/></FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="listedBuilding"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('denkmalschutz')}</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Yes">{t('yes')}</SelectItem>
-                                        <SelectItem value="No">{t('no')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="protectionZone"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('schutzzone')}</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Yes">{t('yes')}</SelectItem>
-                                        <SelectItem value="No">{t('no')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="currentUse"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>{t('aktuelleNutzung')}</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <ScrollArea className="h-48">
-                                            {currentUseOptions.map(opt => (
-                                                <SelectItem key={opt.value} value={opt.value}>
-                                                    {t(opt.label as any) || opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </ScrollArea>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                 </div>
-            </ScrollArea>
-            <DialogFooter className="pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
-                <Button type="submit">{t('save')}</Button>
-                <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
+            <div className="pr-6">
+              <Form {...form}>
+                <form id="add-project-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                      <h3 className="font-semibold text-lg">{t('projectData')}</h3>
+                      <FormField
+                          control={form.control}
+                          name="projectName"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('projectName')}</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="projectManager"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('projectManager')}</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="creator"
+                          render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel>{t('creator')}</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value} disabled={!canChangeCreator}>
+                                      <FormControl>
+                                          <SelectTrigger>
+                                              <SelectValue placeholder={t('selectCreator')} />
+                                          </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                          {teamMembers.map(member => (
+                                              <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="address"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('address')}</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="projectOwner"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('projectOwner')}</FormLabel>
+                              <FormControl><Input {...field} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                  </div>
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                      <h3 className="font-semibold text-lg">{t('buildingData')}</h3>
+                      <FormField
+                          control={form.control}
+                          name="yearOfConstruction"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('yearOfConstruction')}</FormLabel>
+                              <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="numberOfFloors"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('geschosse')}</FormLabel>
+                              <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="escapeLevel"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('fluchtniveau')}</FormLabel>
+                              <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}/></FormControl>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="listedBuilding"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('denkmalschutz')}</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent>
+                                      <SelectItem value="Yes">{t('yes')}</SelectItem>
+                                      <SelectItem value="No">{t('no')}</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="protectionZone"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('schutzzone')}</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent>
+                                      <SelectItem value="Yes">{t('yes')}</SelectItem>
+                                      <SelectItem value="No">{t('no')}</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="currentUse"
+                          render={({ field }) => (
+                              <FormItem>
+                              <FormLabel>{t('aktuelleNutzung')}</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                  <SelectContent>
+                                      <ScrollArea className="h-48">
+                                          {currentUseOptions.map(opt => (
+                                              <SelectItem key={opt.value} value={opt.value}>
+                                                  {t(opt.label as any) || opt.label}
+                                              </SelectItem>
+                                          ))}
+                                      </ScrollArea>
+                                  </SelectContent>
+                              </Select>
+                              <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </ScrollArea>
+        </div>
+        <DialogFooter className="pt-6 border-t">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
+          <Button type="submit" form="add-project-form">{t('save')}</Button>
+          <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
 
