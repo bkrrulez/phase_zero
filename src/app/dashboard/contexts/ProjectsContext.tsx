@@ -43,8 +43,10 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
   const addProject = async (projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<string | undefined> => {
       if (!currentUser) return;
       const newProjectId = await addProjectAction(projectData);
-      await logAction(`User '${currentUser.name}' created project '${projectData.name}' (ID: ${newProjectId}).`);
-      await fetchProjects(); // Re-fetch to get the new project with its ID and number
+      if (newProjectId) {
+          await logAction(`User '${currentUser.name}' created project '${projectData.name}' (ID: ${newProjectId}).`);
+          await fetchProjects(); // Re-fetch to get the new project with its ID and number
+      }
       return newProjectId;
   }
 
