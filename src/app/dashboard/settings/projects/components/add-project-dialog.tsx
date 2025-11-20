@@ -169,7 +169,8 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full px-6 -mx-6">
+          <ScrollArea className="h-full">
+            <div className="px-6">
               <Form {...form}>
                 <form id="add-project-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   {/* Left Column */}
@@ -337,6 +338,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                   </div>
                 </form>
               </Form>
+            </div>
           </ScrollArea>
         </div>
         <DialogFooter className="pt-6 border-t">
