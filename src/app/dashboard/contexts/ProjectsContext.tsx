@@ -42,11 +42,14 @@ export function ProjectsProvider({ children }: { children: React.ReactNode }) {
 
   const addProject = async (projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<{ id?: string, error?: string }> => {
       if (!currentUser) return { error: "User not authenticated" };
+      
       const result = await addProjectAction(projectData);
+      
       if (result.id) {
           await logAction(`User '${currentUser.name}' created project '${projectData.name}' (ID: ${result.id}).`);
           await fetchProjects(); // Re-fetch to get the new project with its ID and number
       }
+      
       return result;
   }
 
