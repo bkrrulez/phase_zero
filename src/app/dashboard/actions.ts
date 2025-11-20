@@ -706,7 +706,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
                 project_owner, year_of_construction, number_of_floors, escape_level, 
-                listedBuilding, protectionZone, current_use
+                listed_building, protection_zone, current_use
              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 
@@ -749,7 +749,7 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
             `UPDATE projects SET 
                 name = $1, project_manager = $2, creator_id = $3, address = $4,
                 project_owner = $5, year_of_construction = $6, number_of_floors = $7,
-                escapeLevel = $8, listed_building = $9, protection_zone = $10, current_use = $11
+                escape_level = $8, listed_building = $9, protection_zone = $10, current_use = $11
              WHERE id = $12`,
             [
                 name, projectManager, creatorId, address, projectOwner, yearOfConstruction,
