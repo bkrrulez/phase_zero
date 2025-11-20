@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { type User } from '@/lib/types';
+import { type Project } from '@/lib/types';
 import { useAuth } from '@/app/dashboard/contexts/AuthContext';
 import { useMembers } from '@/app/dashboard/contexts/MembersContext';
 import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
@@ -169,7 +169,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full pr-6">
+          <ScrollArea className="h-full px-6 -mx-6">
               <Form {...form}>
                 <form id="add-project-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   {/* Left Column */}
