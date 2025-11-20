@@ -1,6 +1,6 @@
 # Application Foundation - Starter Kit
 
-This directory contains all the reusable base components, styles, hooks, and configurations needed to start a new web application with the same design system and UI foundation as the Phase0 project.
+This directory contains all the reusable base components, styles, hooks, and configurations needed to start a new web application with the same design system and UI foundation as the PhaseZero project.
 
 ## How to Use
 

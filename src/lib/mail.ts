@@ -33,15 +33,15 @@ export async function sendPasswordResetEmail({ to, name }: { to: string; name: s
     const mailOptions = {
         from: process.env.SMTP_FROM,
         to: to,
-        subject: 'Your Password Reset Link for Phase0',
+        subject: 'Your Password Reset Link for PhaseZero',
         html: `
             <h1>Password Reset Request</h1>
             <p>Hello ${name},</p>
-            <p>We received a request to reset your password for your Phase0 account. Click the link below to set a new password:</p>
+            <p>We received a request to reset your password for your PhaseZero account. Click the link below to set a new password:</p>
             <p><a href="${resetLink}" target="_blank">Reset Your Password</a></p>
             <p>If you did not make this request, you can safely ignore this email.</p>
             <p>Thanks,</p>
-            <p>The Phase0 Team</p>
+            <p>The PhaseZero Team</p>
         `,
     };
 
@@ -72,14 +72,14 @@ export async function sendPasswordResetConfirmationEmail({ user, teamLead }: Sen
     const mailOptions = {
         from: process.env.SMTP_FROM,
         to: Array.from(recipients).join(','),
-        subject: 'Password Reset Successful for Phase0',
+        subject: 'Password Reset Successful for PhaseZero',
         html: `
             <h1>Password Reset Confirmation</h1>
             <p>Hello,</p>
             <p>This is a confirmation that the password for the account associated with <b>${user.email}</b> has been successfully reset.</p>
             <p>If you did not authorize this change, please contact your administrator immediately.</p>
             <p>Thanks,</p>
-            <p>The Phase0 Team</p>
+            <p>The PhaseZero Team</p>
         `,
     };
 
@@ -123,7 +123,7 @@ export async function sendHolidayRequestUpdateEmail({ request, user, approver, t
             <p>Hello,</p>
             <p>This is to inform you that the holiday request for <b>${user.name}</b> from ${format(new Date(request.startDate), 'PP')} to ${format(new Date(request.endDate), 'PP')} has been <b>${status.toLowerCase()}</b> by ${approver.name}.</p>
             <p>Thanks,</p>
-            <p>The Phase0 Team</p>
+            <p>The PhaseZero Team</p>
         `,
     };
 
@@ -187,7 +187,7 @@ export async function sendContractEndNotifications(
                 <ul>${userListHtml}</ul>
                 <p>Kindly review these contracts and take any necessary actions to ensure continuity or begin offboarding procedures as appropriate.</p>
                 <br/>
-                <p>This is an automated notification from Phase0.</p>
+                <p>This is an automated notification from PhaseZero.</p>
             `,
         };
 
@@ -212,7 +212,7 @@ export async function sendContractEndNotifications(
                 <p>Kindly reach out to your Admin or Supervisor for more details.</p>
                 <br/>
                 <p>Thanks,</p>
-                <p>The Phase0 Team</p>
+                <p>The PhaseZero Team</p>
             `,
         };
         try {

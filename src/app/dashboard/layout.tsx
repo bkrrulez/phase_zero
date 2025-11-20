@@ -167,7 +167,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <Link href="/dashboard" className="flex items-center gap-2.5">
               <LogoIcon className="size-8 shrink-0" />
               <div className="duration-200 group-data-[collapsible=icon]:-translate-x-4 group-data-[collapsible=icon]:opacity-0">
-                  <h1 className="font-bold font-headline text-lg">Phase0</h1>
+                  <h1 className="font-bold font-headline text-lg">PhaseZero</h1>
               </div>
           </Link>
         </SidebarHeader>

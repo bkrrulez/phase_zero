@@ -1,4 +1,4 @@
-# Phase0 by Bikramjit Chowdhury
+# PhaseZero by Bikramjit Chowdhury
 
 This is a Next.js application built for civil engineers and building planners.
 
@@ -43,7 +43,7 @@ SMTP_HOST=your-smtp-host.com
 SMTP_PORT=587
 SMTP_USER=your-smtp-username
 SMTP_PASSWORD=your-smtp-password
-SMTP_FROM="Phase0 <no-reply@yourdomain.com>"
+SMTP_FROM="PhaseZero <no-reply@yourdomain.com>"
 ```
 
 ### 3. Run the Development Server

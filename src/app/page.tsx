@@ -63,7 +63,7 @@ export default function LoginPage() {
               <div className="flex justify-center items-center mb-4">
                 <LogoIcon className="w-12 h-12" />
               </div>
-              <CardTitle className="text-2xl font-bold font-headline text-primary">Phase0</CardTitle>
+              <CardTitle className="text-2xl font-bold font-headline text-primary">PhaseZero</CardTitle>
               <CardDescription>Enter your credentials to access your dashboard</CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,7 +1,7 @@
 
-# Database Schema for Phase0
+# Database Schema for PhaseZero
 
-This document outlines the database schema for the Phase0 application.
+This document outlines the database schema for the PhaseZero application.
 
 ---
 

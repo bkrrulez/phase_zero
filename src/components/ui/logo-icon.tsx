@@ -6,7 +6,7 @@ export const LogoIcon = ({ className }: { className?: string }) => (
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        <title>Phase0 Compass Logo</title>
+        <title>PhaseZero Compass Logo</title>
         <circle cx="21" cy="21" r="18" stroke="hsl(var(--primary))" strokeWidth="2"/>
         <circle cx="21" cy="21" r="14" stroke="hsl(var(--primary))" strokeWidth="1" strokeDasharray="3 3"/>
         
