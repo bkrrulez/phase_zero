@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -71,10 +72,9 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     React.useEffect(() => {
         if (isOpen && currentUser) {
             form.reset({
-                ...form.formState.defaultValues,
-                creator: currentUser.id,
                 projectName: '',
                 projectManager: '',
+                creator: currentUser.id,
                 address: '',
                 projectOwner: '',
                 yearOfConstruction: undefined,
@@ -87,7 +87,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         }
     }, [isOpen, currentUser, form]);
     
-    const canChangeCreator = currentUser.role === 'Super Admin' || currentUser.role === 'Team Lead';
+    const canChangeCreator = currentUser?.role === 'Super Admin' || currentUser?.role === 'Team Lead';
 
     const currentUseOptions = [
         { value: 'General', label: 'General' },
@@ -106,16 +106,12 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     
     async function onSubmit(data: ProjectFormValues) {
         await onAddProject(data);
-        form.reset({
-            ...form.formState.defaultValues,
-            creator: currentUser?.id || ''
-        });
+        onOpenChange(false);
     }
 
     async function handleAnalysis() {
         const data = form.getValues();
         
-        form.trigger();
         const isFormValid = await form.trigger();
         if (!isFormValid) {
              toast({ variant: 'destructive', title: "Incomplete Form", description: "Please fill out all required project details first."});
@@ -167,8 +163,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full">
-            <div className="pr-6">
+          <ScrollArea className="h-full pr-6">
               <Form {...form}>
                 <form id="add-project-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   {/* Left Column */}
@@ -336,7 +331,6 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                   </div>
                 </form>
               </Form>
-            </div>
           </ScrollArea>
         </div>
         <DialogFooter className="pt-6 border-t">

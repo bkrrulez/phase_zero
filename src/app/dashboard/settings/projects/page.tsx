@@ -30,9 +30,10 @@ export default function ProjectsSettingsPage() {
     const [editingProject, setEditingProject] = React.useState<Project | null>(null);
     const [deletingProject, setDeletingProject] = React.useState<Project | null>(null);
 
-    const canManageProjects = currentUser.role === 'Super Admin';
+    const canManageProjects = currentUser?.role === 'Super Admin';
 
     const visibleProjects = React.useMemo(() => {
+        if (!currentUser) return [];
         if (currentUser.role === 'Super Admin') {
             return projects;
         }
@@ -40,6 +41,7 @@ export default function ProjectsSettingsPage() {
     }, [projects, currentUser]);
 
     const handleAddProject = async (data: ProjectFormValues): Promise<string | undefined> => {
+        if (!currentUser) return;
         const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
             name: data.projectName,
             projectManager: data.projectManager,
@@ -55,18 +57,20 @@ export default function ProjectsSettingsPage() {
         };
 
         const newProjectId = await addProject(newProjectData);
-        setIsAddDialogOpen(false);
-        toast({
-            title: t('projectAdded'),
-            description: t('projectAddedDesc', { name: data.projectName }),
-        });
-        logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
+        if (newProjectId) {
+            setIsAddDialogOpen(false);
+            toast({
+                title: t('projectAdded'),
+                description: t('projectAddedDesc', { name: data.projectName }),
+            });
+            logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
+        }
         return newProjectId;
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
         const projectToUpdate = projects.find(p => p.id === projectId);
-        if (!projectToUpdate) return;
+        if (!projectToUpdate || !currentUser) return;
         
         const updatedProjectData: Omit<Project, 'id'> = {
             ...projectToUpdate,
@@ -94,6 +98,8 @@ export default function ProjectsSettingsPage() {
 
     const handleDeleteProject = (projectId: string) => {
         const project = projects.find(p => p.id === projectId);
+        if (!project || !currentUser) return;
+
         deleteProject(projectId);
         setDeletingProject(null);
         toast({
@@ -101,9 +107,7 @@ export default function ProjectsSettingsPage() {
             description: t('projectDeletedDesc'),
             variant: "destructive"
         });
-        if (project) {
-          logAction(`User '${currentUser.name}' deleted project: '${project.name}'.`);
-        }
+        logAction(`User '${currentUser.name}' deleted project: '${project.name}'.`);
     };
 
     return (
