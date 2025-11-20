@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -114,7 +115,7 @@ export default function RuleAnalysisPage() {
                         </Link>
                     </Button>
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysis')} {project ? `for ${project.name}` : ''}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisFor', { name: project?.name || ''})}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
                             {projectAnalysis && <p><span className="font-semibold">{t('analysisVersionHeader')}:</span> {String(projectAnalysis.version).padStart(3, '0')}</p>}
                            {projectAnalysis && (
@@ -130,7 +131,7 @@ export default function RuleAnalysisPage() {
                         </div>
                     </div>
                 </div>
-                 <Button onClick={handleResultClick}>Result</Button>
+                 <Button onClick={handleResultClick}>{t('results')}</Button>
             </div>
 
             {segmentedData.map(({ ruleBook, segments, totalCompleted, totalParameters, totalRows }) => {
@@ -152,7 +153,7 @@ export default function RuleAnalysisPage() {
                                     )}
                                 </div>
                             </CardTitle>
-                            <CardDescription>{t('ruleAnalysisDesc')}</CardDescription>
+                            <CardDescription>{t('ruleAnalysisFilteredDesc')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">

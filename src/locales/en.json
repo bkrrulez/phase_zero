@@ -401,7 +401,9 @@
     "confirmChangesDesc": "Saving new values will refresh the rule analysis. Do you want to proceed?",
     "proceed": "Proceed",
     "ruleAnalysis": "Rule Analysis",
+    "ruleAnalysisFor": "Rule Analysis for {{name}}",
     "ruleAnalysisDesc": "Filtered based on your analysis criteria.",
+    "ruleAnalysisFilteredDesc": "Parameters filtered according to your analysis criteria",
     "section": "Section {{key}}",
     "analyzed": "Analyzed",
     "ruleAnalysisSectionTitle": "Rule Analysis: Section {{key}}",
@@ -426,6 +428,7 @@
     "analysisResultFor": "Analysis Result for {{name}}",
     "analysisResultDesc": "A summary of the completed rule analysis.",
     "endAnalysis": "End Analysis",
+    "results": "Results",
     "revisedChecklistSummary": "Results of the parameter analysis",
     "satisfiabilityOfUnmetParameters": "Result of the project-specific feasibility of the unfulfilled and unverifiable parameters",
     "footerText": "Created by TU Wien, Res. Unit of Structural Engineering and Building Preservation",
@@ -433,5 +436,3 @@
     "analysisStartedTitle": "Analysis Started",
     "analysisStartedDesc": "A new analysis version for project has been created."
 }
-
-    

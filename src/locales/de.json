@@ -400,7 +400,9 @@
     "confirmChangesDesc": "Das Speichern neuer Werte aktualisiert die Regelanalyse. Möchten Sie fortfahren?",
     "proceed": "Fortfahren",
     "ruleAnalysis": "Regelanalyse",
+    "ruleAnalysisFor": "Regelanalyse für {{name}}",
     "ruleAnalysisDesc": "Gefiltert nach Ihren Analysekriterien.",
+    "ruleAnalysisFilteredDesc": "Parameter gefiltert nach Ihren Analysekriterien",
     "section": "Abschnitt {{key}}",
     "analyzed": "Analysiert",
     "ruleAnalysisSectionTitle": "Regelanalyse: Abschnitt {{key}}",
@@ -425,6 +427,7 @@
     "analysisResultFor": "Analyseergebnis für {{name}}",
     "analysisResultDesc": "Eine Zusammenfassung der abgeschlossenen Regelanalyse.",
     "endAnalysis": "Analyse beenden",
+    "results": "Ergebnisse",
     "revisedChecklistSummary": "Ergebnis der Parameteranalyse",
     "satisfiabilityOfUnmetParameters": "Ergebnis der projektspezifischen Erfüllbarkeit der nicht erfüllten und nicht überprüfbaren Parameter",
     "footerText": "Erstellt von der TU Wien, FOB für Hochbau und Gebäudeerhaltung",
@@ -432,5 +435,3 @@
     "analysisStartedTitle": "Analyse gestartet",
     "analysisStartedDesc": "Eine neue Analyseversion für das Projekt wurde erstellt."
 }
-
-    
