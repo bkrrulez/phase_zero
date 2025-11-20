@@ -41,7 +41,7 @@ export type ProjectFormValues = z.infer<typeof projectSchema>;
 interface AddProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddProject: (data: ProjectFormValues) => Promise<{id?: string, error?: string}>;
+  onAddProject: (data: ProjectFormValues) => Promise<{id?: string, error?: string} | void>;
 }
 
 export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProjectDialogProps) {
@@ -106,7 +106,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     
     async function onSubmit(data: ProjectFormValues) {
         const result = await onAddProject(data);
-        if (result.id) {
+        if (result && result.id) {
           onOpenChange(false);
         }
     }
@@ -121,7 +121,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
         }
 
         const result = await onAddProject(data);
-        if (!result.id) {
+        if (!result || !result.id) {
              // Error toast will be shown by the calling component
              return;
         }

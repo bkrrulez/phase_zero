@@ -40,8 +40,11 @@ export default function ProjectsSettingsPage() {
         return projects.filter(p => p.creatorId === currentUser.id);
     }, [projects, currentUser]);
 
-    const handleAddProject = async (data: ProjectFormValues): Promise<{id?: string, error?: string}> => {
-        if (!currentUser) return { error: "Not authenticated" };
+    const handleAddProject = async (data: ProjectFormValues): Promise<{id?: string, error?: string} | void> => {
+        if (!currentUser) {
+            toast({ variant: 'destructive', title: 'Error', description: "Not authenticated" });
+            return { error: "Not authenticated" };
+        }
         const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
             name: data.projectName,
             projectManager: data.projectManager,
