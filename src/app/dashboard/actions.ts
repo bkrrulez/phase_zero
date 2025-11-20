@@ -676,7 +676,7 @@ export async function getProjects(): Promise<Project[]> {
     return result.rows.map(mapDbProjectToProject);
 }
 
-export async function addProject(projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<string | undefined> {
+export async function addProject(projectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'>): Promise<{ id?: string, error?: string }> {
     const { 
         name, 
         projectManager,
@@ -690,6 +690,12 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
         protectionZone,
         currentUse
     } = projectData;
+
+    // Check for existing project name
+    const existingProject = await db.query('SELECT id FROM projects WHERE name = $1', [name]);
+    if (existingProject.rows.length > 0) {
+        return { error: 'Project name already exists. Please check.' };
+    }
 
     const client = await db.connect();
     try {
@@ -718,10 +724,11 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
         await client.query('COMMIT');
         revalidatePath('/dashboard/settings/projects');
         revalidatePath('/dashboard');
-        return result.rows[0].id;
+        return { id: result.rows[0].id };
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error adding project:', error);
+        return { error: 'Failed to add project to the database.' };
     } finally {
         client.release();
     }

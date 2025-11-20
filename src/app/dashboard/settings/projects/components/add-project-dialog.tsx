@@ -41,7 +41,7 @@ export type ProjectFormValues = z.infer<typeof projectSchema>;
 interface AddProjectDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddProject: (data: ProjectFormValues) => Promise<string | undefined>;
+  onAddProject: (data: ProjectFormValues) => Promise<{id?: string, error?: string}>;
 }
 
 export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProjectDialogProps) {
@@ -105,8 +105,10 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     ];
     
     async function onSubmit(data: ProjectFormValues) {
-        await onAddProject(data);
-        onOpenChange(false);
+        const result = await onAddProject(data);
+        if (result.id) {
+          onOpenChange(false);
+        }
     }
 
     async function handleAnalysis() {
@@ -118,18 +120,18 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
              return;
         }
 
-        const projectId = await onAddProject(data);
-        if (!projectId) {
-             toast({ variant: 'destructive', title: "Error", description: "Could not create project." });
+        const result = await onAddProject(data);
+        if (!result.id) {
+             // Error toast will be shown by the calling component
              return;
         }
         
-        const latestAnalysis = await getLatestProjectAnalysis(projectId);
+        const latestAnalysis = await getLatestProjectAnalysis(result.id);
 
         if (latestAnalysis) {
-            setAnalysisPrompt({ projectId: projectId, latestAnalysisId: latestAnalysis.id });
+            setAnalysisPrompt({ projectId: result.id, latestAnalysisId: latestAnalysis.id });
         } else {
-            handleNewAnalysis(projectId);
+            handleNewAnalysis(result.id);
         }
     }
 

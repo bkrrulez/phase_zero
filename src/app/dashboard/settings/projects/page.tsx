@@ -40,8 +40,8 @@ export default function ProjectsSettingsPage() {
         return projects.filter(p => p.creatorId === currentUser.id);
     }, [projects, currentUser]);
 
-    const handleAddProject = async (data: ProjectFormValues): Promise<string | undefined> => {
-        if (!currentUser) return;
+    const handleAddProject = async (data: ProjectFormValues): Promise<{id?: string, error?: string}> => {
+        if (!currentUser) return { error: "Not authenticated" };
         const newProjectData: Omit<Project, 'id' | 'projectNumber' | 'projectCreationDate'> = {
             name: data.projectName,
             projectManager: data.projectManager,
@@ -56,16 +56,22 @@ export default function ProjectsSettingsPage() {
             currentUse: data.currentUse,
         };
 
-        const newProjectId = await addProject(newProjectData);
-        if (newProjectId) {
+        const result = await addProject(newProjectData);
+        if (result.id) {
             setIsAddDialogOpen(false);
             toast({
                 title: t('projectAdded'),
                 description: t('projectAddedDesc', { name: data.projectName }),
             });
             logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
+        } else if (result.error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.error,
+            });
         }
-        return newProjectId;
+        return result;
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
