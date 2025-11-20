@@ -128,7 +128,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{t('editProject')}</DialogTitle>
           <DialogDescription>
@@ -136,9 +136,9 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ScrollArea className="max-h-[70vh]">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 p-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 min-h-0 flex flex-col">
+            <ScrollArea className="flex-1 -mx-6 px-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     {/* Left Column */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg">{t('projectData')}</h3>
@@ -304,7 +304,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                     </div>
                  </div>
             </ScrollArea>
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-6 -mx-6 px-6 border-t bg-background">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                 <Button type="submit">{t('saveChanges')}</Button>
                 <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
@@ -332,5 +332,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
     </>
   );
 }
+
+    
 
     
