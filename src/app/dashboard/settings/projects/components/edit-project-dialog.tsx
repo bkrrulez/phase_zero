@@ -304,7 +304,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                     </div>
                  </div>
             </ScrollArea>
-            <DialogFooter className="pt-6 -mx-6 px-6 border-t bg-background">
+            <DialogFooter className="pt-6 border-t">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('cancel')}</Button>
                 <Button type="submit">{t('saveChanges')}</Button>
                 <Button type="button" variant="secondary" onClick={handleAnalysis}>{t('analysis')}</Button>
