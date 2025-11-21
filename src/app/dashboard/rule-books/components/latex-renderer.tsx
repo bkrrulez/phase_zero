@@ -9,10 +9,12 @@ interface LatexRendererProps {
 }
 
 export function LatexRenderer({ text }: LatexRendererProps) {
-  const parts = text.split(/(\$.*?\$)/);
+  // Replace literal '\n' with actual newline characters
+  const formattedText = text.replace(/\\n/g, '\n');
+  const parts = formattedText.split(/(\$.*?\$)/);
 
   return (
-    <div className="whitespace-normal">
+    <div className="whitespace-pre-wrap">
       {parts.map((part, index) => {
         if (part.startsWith('$') && part.endsWith('$')) {
           // It's a LaTeX part, wrap it in Latex component
