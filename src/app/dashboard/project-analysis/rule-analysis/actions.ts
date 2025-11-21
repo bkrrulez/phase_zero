@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -158,6 +159,9 @@ const getSegmentKey = (gliederung: string): string | null => {
 export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     const filteredData = await getFilteredRuleBooks({ projectAnalysisId });
     const analysisResults = await getAnalysisResults(projectAnalysisId);
+
+    // Sort the filtered data by rulebook name alphabetically
+    filteredData.sort((a, b) => a.ruleBook.versionName.localeCompare(b.ruleBook.versionName));
 
     const resultsMap = new Map<string, RuleAnalysisResult>();
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
