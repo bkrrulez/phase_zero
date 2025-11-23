@@ -230,14 +230,16 @@ export default function RuleBookDetailPage() {
                       >
                          {isRefColumn && cellValue.includes('Tabelle') ? (
                           <div className="whitespace-normal">
-                            {cellValue.split(/, | /).map((part, partIndex) => {
+                            {(cellValue.split(/, | /) || []).map((part, partIndex) => {
                               const trimmedPart = part.replace(/,$/, '');
-                              const isRefTable = details.referenceTables.some(
+                              if (!trimmedPart) return null;
+
+                              const isRefTable = (details.referenceTables || []).some(
                                 (t) => t.name === trimmedPart
                               );
                               if (isRefTable) {
                                 return (
-                                  <React.Fragment key={partIndex}>
+                                  <React.Fragment key={`${entry.id}-ref-${partIndex}`}>
                                     <Button
                                       variant="link"
                                       className="p-0 h-auto text-left"
@@ -250,7 +252,7 @@ export default function RuleBookDetailPage() {
                                 );
                               }
                               return (
-                                <span key={partIndex}>{part}{partIndex < cellValue.split(/, | /).length - 1 ? ' ' : ''}</span>
+                                <span key={`${entry.id}-ref-${partIndex}`}>{part}{partIndex < cellValue.split(/, | /).length - 1 ? ' ' : ''}</span>
                               );
                             })}
                           </div>
