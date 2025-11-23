@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -37,27 +36,27 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                         {t('referenceTableDesc')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 border rounded-lg overflow-auto relative">
-                    <Table>
-                        <TableHeader className="sticky top-0 bg-background z-10">
-                            <TableRow>
-                                {headers.map((header, index) => (
-                                    <TableHead key={`${header}-${index}`} className="whitespace-nowrap">{header}</TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {bodyRows.map((row, rowIndex) => (
-                                <TableRow key={rowIndex}>
-                                    {Array.isArray(row) && (row as string[]).map((cell, cellIndex) => (
-                                        <TableCell key={`${rowIndex}-${cellIndex}`} className="align-top whitespace-nowrap">
-                                            <LatexRenderer text={String(cell ?? '')} />
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                <div className="flex-1 relative border rounded-lg overflow-auto">
+                  <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableRow>
+                              {headers.map((header, index) => (
+                                  <TableHead key={`${header}-${index}`} className="whitespace-nowrap">{header}</TableHead>
+                              ))}
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {bodyRows.map((row, rowIndex) => (
+                              <TableRow key={rowIndex}>
+                                  {Array.isArray(row) && (row as string[]).map((cell, cellIndex) => (
+                                      <TableCell key={`${rowIndex}-${cellIndex}`} className="align-top whitespace-nowrap">
+                                          <LatexRenderer text={String(cell ?? '')} />
+                                      </TableCell>
+                                  ))}
+                              </TableRow>
+                          ))}
+                      </TableBody>
+                  </Table>
                 </div>
             </DialogContent>
         </Dialog>
