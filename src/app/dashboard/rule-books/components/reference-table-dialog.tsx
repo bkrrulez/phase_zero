@@ -29,7 +29,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-6xl flex flex-col h-[90vh]">
+            <DialogContent className="w-[95vw] max-w-7xl h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{t('referenceTableTitle', { name: table.name })}</DialogTitle>
                     <DialogDescription>
@@ -37,7 +37,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                     </DialogDescription>
                 </DialogHeader>
                 <div className="relative flex-1 overflow-auto border rounded-lg">
-                    <Table>
+                    <Table className="table-fixed">
                         <TableHeader className="sticky top-0 bg-background z-10">
                             <TableRow>
                                 {headers.map((header, index) => (
@@ -49,7 +49,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                             {bodyRows.map((row, rowIndex) => (
                                 <TableRow key={rowIndex}>
                                     {Array.isArray(row) && (row as string[]).map((cell, cellIndex) => (
-                                        <TableCell key={`${rowIndex}-${cellIndex}`} className="align-top whitespace-nowrap">
+                                        <TableCell key={`${rowIndex}-${cellIndex}`} className="align-top">
                                             <LatexRenderer text={String(cell ?? '')} />
                                         </TableCell>
                                     ))}
