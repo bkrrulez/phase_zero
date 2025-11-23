@@ -45,6 +45,39 @@ const columnOrder = [
   'Referenztabelle',
 ];
 
+// Helper to render cell content with links
+const renderCellWithLinks = (text: string, tables: ReferenceTable[], onClick: (tableName: string) => void, entryId: string) => {
+    if (!text || !tables || tables.length === 0) {
+        return <LatexRenderer text={text} />;
+    }
+
+    const tableNames = tables.map(t => t.name);
+    // Create a regex that finds any of the table names
+    const regex = new RegExp(`(${tableNames.join('|')})`, 'g');
+    const parts = text.split(regex);
+
+    return (
+        <div className="whitespace-normal">
+            {parts.filter(part => part).map((part, index) => {
+                const isTableName = tableNames.includes(part);
+                if (isTableName) {
+                    return (
+                        <Button
+                            key={`${entryId}-ref-${part}-${index}`}
+                            variant="link"
+                            className="p-0 h-auto text-left"
+                            onClick={() => onClick(part)}
+                        >
+                            {part}
+                        </Button>
+                    );
+                }
+                return <span key={`${entryId}-text-${part}-${index}`}>{part}</span>;
+            })}
+        </div>
+    );
+};
+
 export default function RuleBookDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -218,9 +251,7 @@ export default function RuleBookDetailPage() {
                   {sortedHeaders.map((header) => {
                     const dataObject = entry.data;
                     const cellValue = String(dataObject[header] ?? '');
-
                     const isRefColumn = header === 'Referenztabelle';
-                    const isTextColumn = header === 'Text';
                     
                     return (
                       <td
@@ -228,38 +259,10 @@ export default function RuleBookDetailPage() {
                         className="p-4 align-top border-r"
                         style={getColumnStyle(header)}
                       >
-                         {isRefColumn && cellValue.includes('Tabelle') ? (
-                          <div className="whitespace-normal">
-                            {(cellValue.split(/, | /) || []).filter(p => p.trim() !== '').map((part, partIndex) => {
-                              const trimmedPart = part.replace(/,$/, '');
-                              const isRefTable = (details.referenceTables || []).some(
-                                (t) => t.name === trimmedPart
-                              );
-                              if (isRefTable) {
-                                return (
-                                  <React.Fragment key={`${entry.id}-ref-${trimmedPart}-${partIndex}`}>
-                                    <Button
-                                      variant="link"
-                                      className="p-0 h-auto text-left"
-                                      onClick={() => handleOpenReferenceTable(trimmedPart)}
-                                    >
-                                      {trimmedPart}
-                                    </Button>
-                                    {partIndex < cellValue.split(/, | /).length - 1 ? ', ' : ''}
-                                  </React.Fragment>
-                                );
-                              }
-                              return (
-                                <span key={`${entry.id}-ref-${trimmedPart}-${partIndex}`}>{part}{partIndex < cellValue.split(/, | /).length - 1 ? ' ' : ''}</span>
-                              );
-                            })}
-                          </div>
-                         ) : isTextColumn ? (
-                            <LatexRenderer text={cellValue} />
+                         {isRefColumn ? (
+                            renderCellWithLinks(cellValue, details.referenceTables || [], handleOpenReferenceTable, entry.id)
                          ) : (
-                           <div className="whitespace-normal">
-                            {cellValue}
-                          </div>
+                           <LatexRenderer text={cellValue} />
                         )}
                       </td>
                     );

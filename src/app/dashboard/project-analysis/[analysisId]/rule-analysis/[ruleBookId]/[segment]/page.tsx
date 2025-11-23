@@ -46,6 +46,40 @@ const checklistOptions = [
 const fulfillabilityOptions = ['Light', 'Medium', 'Heavy'];
 
 
+// Helper to render cell content with links
+const renderCellWithLinks = (text: string, tables: ReferenceTable[], onClick: (tableName: string) => void, entryId: string) => {
+    if (!text || !tables || tables.length === 0) {
+        return <LatexRenderer text={text} />;
+    }
+
+    const tableNames = tables.map(t => t.name);
+    // Create a regex that finds any of the table names
+    const regex = new RegExp(`(${tableNames.join('|')})`, 'g');
+    const parts = text.split(regex);
+
+    return (
+        <div className="whitespace-normal">
+            {parts.filter(part => part).map((part, index) => {
+                const isTableName = tableNames.includes(part);
+                if (isTableName) {
+                    return (
+                        <Button
+                            key={`${entryId}-ref-${part}-${index}`}
+                            variant="link"
+                            className="p-0 h-auto text-left"
+                            onClick={() => onClick(part)}
+                        >
+                            {part}
+                        </Button>
+                    );
+                }
+                return <span key={`${entryId}-text-${part}-${index}`}>{part}</span>;
+            })}
+        </div>
+    );
+};
+
+
 export default function SegmentDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -235,7 +269,7 @@ export default function SegmentDetailPage() {
                                     {finalHeaders.map(header => {
                                         const cellValue = String(entry.data[header] ?? '');
                                         return (
-                                            <TableCell key={header} className="align-top border-b" style={getColumnStyle(header)}>
+                                            <TableCell key={`${entry.id}-${header}`} className="align-top border-b" style={getColumnStyle(header)}>
                                                 {header === 'projectChecklist' ? (
                                                     entry.data['Spaltentyp'] === 'Parameter' ? (
                                                         <Select
@@ -260,37 +294,10 @@ export default function SegmentDetailPage() {
                                                             </SelectContent>
                                                         </Select>
                                                     ) : <span className="text-muted-foreground">-</span>
-                                                ) : header === 'Referenztabelle' && cellValue.includes('Tabelle') ? (
-                                                    <div className="whitespace-normal">
-                                                      {(cellValue.match(/[^ ,]+/g) || []).map((part, partIndex) => {
-                                                        const isRefTable = (details.referenceTables || []).some(
-                                                          (t) => t.name === part
-                                                        );
-                                                        if (isRefTable) {
-                                                          return (
-                                                            <React.Fragment key={`${entry.id}-ref-${part}-${partIndex}`}>
-                                                              <Button
-                                                                variant="link"
-                                                                className="p-0 h-auto text-left"
-                                                                onClick={() => handleOpenReferenceTable(part)}
-                                                              >
-                                                                {part}
-                                                              </Button>
-                                                              {' '}
-                                                            </React.Fragment>
-                                                          );
-                                                        }
-                                                        return (
-                                                          <span key={`${entry.id}-ref-${part}-${partIndex}`}>{part} </span>
-                                                        );
-                                                      })}
-                                                    </div>
-                                                ) : header === 'Text' ? (
-                                                    <LatexRenderer text={cellValue} />
+                                                ) : header === 'Referenztabelle' ? (
+                                                    renderCellWithLinks(cellValue, details.referenceTables, handleOpenReferenceTable, entry.id)
                                                 ) : (
-                                                    <div className="whitespace-normal">
-                                                       {cellValue}
-                                                    </div>
+                                                    <LatexRenderer text={cellValue} />
                                                 )}
                                             </TableCell>
                                         );
