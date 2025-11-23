@@ -29,19 +29,21 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-7xl h-[90vh] flex flex-col">
+            <DialogContent className="w-[95vw] max-w-6xl h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{t('referenceTableTitle', { name: table.name })}</DialogTitle>
                     <DialogDescription>
                         {t('referenceTableDesc')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="relative flex-1 overflow-auto border rounded-lg">
-                    <Table className="table-fixed">
+                <div className="flex-1 relative border rounded-lg overflow-auto">
+                    <Table>
                         <TableHeader className="sticky top-0 bg-background z-10">
                             <TableRow>
                                 {headers.map((header, index) => (
-                                    <TableHead key={`${header}-${index}`} className="whitespace-nowrap">{header}</TableHead>
+                                    <TableHead key={`${header}-${index}`} className="whitespace-nowrap" style={{ width: index === 0 ? '300px' : 'auto' }}>
+                                        {header}
+                                    </TableHead>
                                 ))}
                             </TableRow>
                         </TableHeader>
