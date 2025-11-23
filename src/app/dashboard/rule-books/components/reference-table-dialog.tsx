@@ -37,7 +37,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                         {t('referenceTableDesc')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 border rounded-lg" style={{ overflow: 'auto', position: 'relative' }}>
+                <div className="flex-1 border rounded-lg overflow-auto relative">
                     <Table>
                         <TableHeader className="sticky top-0 bg-background z-10">
                             <TableRow>
