@@ -14,6 +14,7 @@ import { type ReferenceTable } from '@/lib/types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { LatexRenderer } from './latex-renderer';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface ReferenceTableDialogProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                     <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
                         {headers.map((header, index) => (
-                          <TableHead key={index} className="whitespace-nowrap">
+                          <TableHead key={index} className={cn("whitespace-nowrap", index === 0 ? "w-[300px]" : "")}>
                             {header}
                           </TableHead>
                         ))}
