@@ -38,7 +38,7 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
                         {t('referenceTableDesc')}
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh] w-full">
+                <ScrollArea className="max-h-[70vh] w-full p-4">
                     <Table>
                         <TableHeader>
                             <TableRow>
