@@ -262,27 +262,26 @@ export default function SegmentDetailPage() {
                                                     ) : <span className="text-muted-foreground">-</span>
                                                 ) : header === 'Referenztabelle' && cellValue.includes('Tabelle') ? (
                                                     <div className="whitespace-normal">
-                                                      {(cellValue.split(/, | /) || []).map((part, partIndex) => {
-                                                        const trimmedPart = part.replace(/,$/, '');
+                                                      {(cellValue.match(/[^ ,]+/g) || []).map((part, partIndex) => {
                                                         const isRefTable = (details.referenceTables || []).some(
-                                                          (t) => t.name === trimmedPart
+                                                          (t) => t.name === part
                                                         );
                                                         if (isRefTable) {
                                                           return (
-                                                            <React.Fragment key={partIndex}>
+                                                            <React.Fragment key={`${entry.id}-ref-${part}-${partIndex}`}>
                                                               <Button
                                                                 variant="link"
                                                                 className="p-0 h-auto text-left"
-                                                                onClick={() => handleOpenReferenceTable(trimmedPart)}
+                                                                onClick={() => handleOpenReferenceTable(part)}
                                                               >
-                                                                {trimmedPart}
+                                                                {part}
                                                               </Button>
-                                                              {partIndex < cellValue.split(/, | /).length - 1 ? ', ' : ''}
+                                                              {' '}
                                                             </React.Fragment>
                                                           );
                                                         }
                                                         return (
-                                                          <span key={partIndex}>{part}{partIndex < cellValue.split(/, | /).length - 1 ? ' ' : ''}</span>
+                                                          <span key={`${entry.id}-ref-${part}-${partIndex}`}>{part} </span>
                                                         );
                                                       })}
                                                     </div>
