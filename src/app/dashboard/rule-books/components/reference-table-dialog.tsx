@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -12,12 +13,47 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type ReferenceTable } from '@/lib/types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { LatexRenderer } from './latex-renderer';
+import { Button } from '@/components/ui/button';
 
 interface ReferenceTableDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   table: ReferenceTable | null;
 }
+
+// Helper to render cell content with links
+const renderCellWithLinks = (text: string, tables: ReferenceTable[], onClick: (tableName: string) => void, entryId: string) => {
+    if (!text || !tables || tables.length === 0) {
+        return <LatexRenderer text={text} />;
+    }
+
+    const tableNames = tables.map(t => t.name);
+    // Create a regex that finds any of the table names
+    const regex = new RegExp(`(${tableNames.join('|')})`, 'g');
+    const parts = text.split(regex);
+
+    return (
+        <div className="whitespace-normal">
+            {parts.filter(part => part).map((part, index) => {
+                const isTableName = tableNames.includes(part);
+                if (isTableName) {
+                    return (
+                        <Button
+                            key={`${entryId}-ref-${part}-${index}`}
+                            variant="link"
+                            className="p-0 h-auto text-left whitespace-nowrap"
+                            onClick={() => onClick(part)}
+                        >
+                            {part}
+                        </Button>
+                    );
+                }
+                return <span key={`${entryId}-text-${part}-${index}`}>{part}</span>;
+            })}
+        </div>
+    );
+};
+
 
 export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceTableDialogProps) {
     const { t } = useLanguage();
@@ -29,36 +65,38 @@ export function ReferenceTableDialog({ isOpen, onOpenChange, table }: ReferenceT
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] max-w-6xl h-[90vh] flex flex-col">
-                <DialogHeader>
+             <DialogContent className="w-full max-w-4xl h-[90vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-2">
                     <DialogTitle>{t('referenceTableTitle', { name: table.name })}</DialogTitle>
                     <DialogDescription>
                         {t('referenceTableDesc')}
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 relative border rounded-lg overflow-auto">
-                    <Table>
-                        <TableHeader className="sticky top-0 bg-background z-10">
-                            <TableRow>
-                                {headers.map((header, index) => (
-                                    <TableHead key={`${header}-${index}`} className="whitespace-nowrap" style={{ width: index === 0 ? '300px' : 'auto' }}>
-                                        {header}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {bodyRows.map((row, rowIndex) => (
-                                <TableRow key={rowIndex}>
-                                    {Array.isArray(row) && (row as string[]).map((cell, cellIndex) => (
-                                        <TableCell key={`${rowIndex}-${cellIndex}`} className="align-top">
-                                            <LatexRenderer text={String(cell ?? '')} />
-                                        </TableCell>
+                <div className="flex-1 overflow-x-auto border-t">
+                    <div className="h-full overflow-y-auto">
+                        <Table className="min-w-full">
+                            <TableHeader className="sticky top-0 bg-background z-10">
+                                <TableRow>
+                                    {headers.map((header, index) => (
+                                        <TableHead key={`${header}-${index}`} className="whitespace-nowrap">
+                                            {header}
+                                        </TableHead>
                                     ))}
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {bodyRows.map((row, rowIndex) => (
+                                    <TableRow key={rowIndex}>
+                                        {Array.isArray(row) && (row as string[]).map((cell, cellIndex) => (
+                                            <TableCell key={`${rowIndex}-${cellIndex}`} className="align-top">
+                                                <LatexRenderer text={String(cell ?? '')} />
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
