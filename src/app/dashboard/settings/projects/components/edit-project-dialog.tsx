@@ -91,7 +91,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         { value: 'Retail Outlet/ Shopping Center', label: 'Retail Outlet/ Shopping Center' },
         { value: 'Educational Institution/ School/ Kindergarten', label: 'Educational Institution/ School/ Kindergarten' },
         { value: 'Business Premises', label: 'Business Premises' },
-        { value: 'Garage/ Covered Parking, Parking Deck', label: 'Garage/ Covered Parking, Parking Deck' },
+        { value: 'Garage/ Covered Parking/ Parking Deck', label: 'Garage/ Covered Parking/ Parking Deck' },
         { value: 'Gas Station', label: 'Gas Station' },
         { value: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters', label: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters' },
         { value: 'Non-residential', label: 'Non-residential' },
@@ -336,9 +336,6 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                 <AlertDialogAction onClick={handleNewAnalysis}>{t('newAnalysis')}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
-
-    

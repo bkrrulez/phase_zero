@@ -37,7 +37,7 @@ const currentUseOptions: MultiSelectOption[] = [
     { value: 'Retail Outlet/ Shopping Center', label: 'Retail Outlet/ Shopping Center' },
     { value: 'Educational Institution/ School/ Kindergarten', label: 'Educational Institution/ School/ Kindergarten' },
     { value: 'Business Premises', label: 'Business Premises' },
-    { value: 'Garage/ Covered Parking, Parking Deck', label: 'Garage/ Covered Parking, Parking Deck' },
+    { value: 'Garage/ Covered Parking/ Parking Deck', label: 'Garage/ Covered Parking/ Parking Deck' },
     { value: 'Gas Station', label: 'Gas Station' },
     { value: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters', label: 'Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters' },
     { value: 'Non Residential', label: 'Non Residential' },
@@ -200,7 +200,7 @@ export default function AnalysisDetailPage() {
                          toast({ variant: 'destructive', title: "No Applicable Rules", description: "No rule books match the selected criteria. Please adjust your selection or import relevant rule books." });
                     }
                 } else {
-                    toast({ title: t('save'), description: t('analysisSavedDesc') });
+                    toast({ title: t('save') + "d!", description: t('analysisSavedDesc') });
                     await fetchDetails(analysisId);
                 }
             } else {
@@ -302,5 +302,3 @@ export default function AnalysisDetailPage() {
         </>
     );
 }
-
-    
