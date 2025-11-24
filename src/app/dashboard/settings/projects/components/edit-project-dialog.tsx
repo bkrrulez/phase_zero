@@ -321,7 +321,6 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    
      <AlertDialog open={!!analysisPrompt} onOpenChange={() => setAnalysisPrompt(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -336,6 +335,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                 <AlertDialogAction onClick={handleNewAnalysis}>{t('newAnalysis')}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
