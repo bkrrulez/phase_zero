@@ -317,7 +317,7 @@
     "Inn/ Restaurant/ Cafe": "Gasthaus/ Restaurant/ Café",
     "Retail Outlet/ Shopping Center": "Verkaufsstätte/ Einkaufszentrum",
     "Educational Institution/ School/ Kindergarten": "Bildungseinrichtung/ Schule/ Kindergarten",
-    "Business Premises": "Betriebsanlagen",
+    "Business Premises": "Betriebsstätte/ Betriebsgebäude",
     "Garage/ Covered Parking/ Parking Deck": "Garage/ Überdachte Stellplätze/ Parkdeck",
     "Gas Station": "Tankstelle",
     "Special Buildings: Hospital/ Nursing Home/ Assembly Halls/ Shelters": "Sonderbauten: Krankenhaus/ Pflegeheim/ Versammlungsstätten/ Schutzbauten",
@@ -404,7 +404,6 @@
     "ruleAnalysisFilteredDesc": "Parameter gefiltert nach Ihren Analysekriterien.",
     "section": "Abschnitt {{key}}",
     "analyzed": "analysiert",
-    "ruleBookDetailsTitle": "Regelwerkdetails",
     "ruleAnalysisSectionTitle": "Regelanalyse: Abschnitt {{key}}",
     "sectionRuleBook": "Regelwerk",
     "projectChecklist": "Projekt Checkliste",
@@ -441,3 +440,5 @@
     "row": "Zeile",
     "rows": "Zeilen"
 }
+
+    
