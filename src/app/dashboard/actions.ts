@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -24,45 +23,43 @@ import { revalidatePath } from 'next/cache';
 
 const cleanUpArrayField = (field: any): string[] => {
     if (!field) return [];
-    // If the field is already a clean array, return it.
-    if (Array.isArray(field) && !field.some(item => typeof item === 'string' && (item.includes('{') || item.includes(',')))) {
+    // If the field is already a clean array of strings, return it.
+    if (Array.isArray(field) && field.every(item => typeof item === 'string')) {
         return field;
     }
     
-    // Flatten whatever we have into a single string.
-    const rawString = Array.isArray(field) ? field.join(',') : String(field);
-
-    // Clean the string of postgres array characters.
-    const cleanedString = rawString.replace(/["{}]/g, '');
-    
-    // If after cleaning, we have an empty string, return empty array.
-    if (!cleanedString) return [];
-    
-    // The string is now just comma-separated values.
-    const potentialValues = cleanedString.split(',');
-
-    // A final check to merge single characters back together if they were exploded.
-    const finalValues: string[] = [];
-    let characterBuffer: string[] = [];
-
-    for (const value of potentialValues) {
-        if (value.length === 1) {
-            characterBuffer.push(value);
-        } else {
-            if (characterBuffer.length > 0) {
-                finalValues.push(characterBuffer.join(''));
-                characterBuffer = [];
+    // Handle PostgreSQL array literal format, e.g., '{"Value1","Value, with comma"}'
+    if (typeof field === 'string' && field.startsWith('{') && field.endsWith('}')) {
+        const cleanedString = field.substring(1, field.length - 1);
+        
+        // This is a more robust way to parse postgres array strings,
+        // accounting for quoted elements that may contain commas.
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < cleanedString.length; i++) {
+            const char = cleanedString[i];
+            if (char === '"' && (i === 0 || cleanedString[i-1] !== '\\')) {
+                inQuotes = !inQuotes;
+                continue; // Skip the quote itself
             }
-            if (value) { // Don't add empty strings from multiple commas
-                finalValues.push(value);
+            if (char === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += char;
             }
         }
-    }
-    if (characterBuffer.length > 0) {
-        finalValues.push(characterBuffer.join(''));
+        result.push(current); // Add the last element
+        return result.map(item => item.trim());
     }
 
-    return finalValues;
+    // Fallback for simple comma-separated strings or other unexpected formats
+    if (typeof field === 'string') {
+        return field.split(',').map(item => item.trim());
+    }
+    
+    return [];
 };
 
 
