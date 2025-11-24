@@ -404,6 +404,7 @@
     "ruleAnalysisFilteredDesc": "Parameter gefiltert nach Ihren Analysekriterien.",
     "section": "Abschnitt {{key}}",
     "analyzed": "analysiert",
+    "ruleBookDetailsTitle": "Regelwerkdetails",
     "ruleAnalysisSectionTitle": "Regelanalyse: Abschnitt {{key}}",
     "sectionRuleBook": "Regelwerk",
     "projectChecklist": "Projekt Checkliste",
@@ -436,5 +437,7 @@
     "analysisAlreadyExistsTitle": "Analyse existiert bereits",
     "analysisAlreadyExistsDesc": "Es existiert bereits eine Analyse zu diesem Projekt.",
     "openLastAnalysis": "Letzte Analyse öffnen",
-    "newAnalysis": "Neue Analyse"
+    "newAnalysis": "Neue Analyse",
+    "row": "Zeile",
+    "rows": "Zeilen"
 }

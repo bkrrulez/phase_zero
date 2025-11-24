@@ -404,7 +404,7 @@
     "ruleAnalysisFor": "Parameter Analysis for {{name}}",
     "ruleAnalysisFilteredDesc": "Parameters filtered based on your analysis criteria.",
     "section": "Section {{key}}",
-    "analyzed": "Analyzed",
+    "analyzed": "analyzed",
     "ruleAnalysisSectionTitle": "Rule Analysis: Section {{key}}",
     "sectionRuleBook": "Rule Book",
     "projectChecklist": "Project Checklist",
@@ -437,5 +437,7 @@
     "analysisAlreadyExistsTitle": "Analysis Already Exists",
     "analysisAlreadyExistsDesc": "An analysis for this project is already present.",
     "openLastAnalysis": "Open Last Analysis",
-    "newAnalysis": "New Analysis"
+    "newAnalysis": "New Analysis",
+    "row": "Row",
+    "rows": "Rows"
 }

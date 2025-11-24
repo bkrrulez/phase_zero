@@ -143,7 +143,7 @@ export default function RuleAnalysisPage() {
                             <CardTitle className="flex justify-between items-center">
                                 <span>{ruleBook.versionName}</span>
                                 <div className="flex items-center gap-4 text-sm font-medium">
-                                    <span className="text-muted-foreground">{totalRows} {totalRows === 1 ? 'Row' : 'Rows'}</span>
+                                    <span className="text-muted-foreground">{totalRows} {totalRows === 1 ? t('row') : t('rows')}</span>
                                     {totalParameters > 0 && (
                                         <div className="flex items-center gap-2">
                                             <span>{totalCompleted} / {totalParameters}</span>
@@ -172,7 +172,7 @@ export default function RuleAnalysisPage() {
                                                 <h3 className="font-semibold text-lg">{t('section', { key: segment.key })}</h3>
                                                 {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                                             </div>
-                                            <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? 'Row' : 'Rows'}</p>
+                                            <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>
                                             
                                             {!hasNoParameters && (
                                                 <div>
