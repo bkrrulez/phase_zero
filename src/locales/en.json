@@ -433,5 +433,9 @@
     "footerText": "Created by TU Wien, Res. Unit of Structural Engineering and Building Preservation",
     "analysisSavedDesc": "Analysis details have been saved.",
     "analysisStartedTitle": "Analysis Started",
-    "analysisStartedDesc": "A new analysis version for project has been created."
+    "analysisStartedDesc": "A new analysis version for project has been created.",
+    "analysisAlreadyExistsTitle": "Analysis Already Exists",
+    "analysisAlreadyExistsDesc": "An analysis for this project is already present.",
+    "openLastAnalysis": "Open Last Analysis",
+    "newAnalysis": "New Analysis"
 }

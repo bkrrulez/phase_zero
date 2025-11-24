@@ -325,15 +325,15 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
      <AlertDialog open={!!analysisPrompt} onOpenChange={() => setAnalysisPrompt(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Analysis Already Exists</AlertDialogTitle>
+                <AlertDialogTitle>{t('analysisAlreadyExistsTitle')}</AlertDialogTitle>
                 <AlertDialogDescription>
-                    An analysis for this project is already present.
+                    {t('analysisAlreadyExistsDesc')}
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleOpenLastAnalysis}>Open Last Analysis</AlertDialogAction>
-                <AlertDialogAction onClick={handleNewAnalysis}>New Analysis</AlertDialogAction>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleOpenLastAnalysis}>{t('openLastAnalysis')}</AlertDialogAction>
+                <AlertDialogAction onClick={handleNewAnalysis}>{t('newAnalysis')}</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
