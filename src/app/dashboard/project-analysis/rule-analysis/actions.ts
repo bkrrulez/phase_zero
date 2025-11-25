@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -360,27 +359,20 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     if (!targetEntry) throw new Error("Could not find the specific rule book entry.");
 
     let topic = 'General';
-    // Find the topic by looking for the first row in the current segment that is a section header.
     let lastValidTopic = 'General';
+    
     for (const entry of ruleBookDetails.entries) {
-        const currentSegmentKey = getSegmentKey(String(entry.data['Gliederung'] || ''));
         const isSection = entry.data['Spaltentyp'] === 'Abschnitt';
-
+        
         if (isSection) {
             lastValidTopic = String(entry.data['Text'] || 'General');
         }
-        
-        if (currentSegmentKey === segmentKey && isSection) {
-            topic = String(entry.data['Text'] || 'General');
-            break; // Found the header for the current segment
-        }
-        // If we passed the current segment, use the last valid topic found.
-        if (currentSegmentKey && currentSegmentKey > segmentKey) {
+
+        if (entry.id === ruleBookEntryId) {
             topic = lastValidTopic;
             break;
         }
     }
-
 
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
