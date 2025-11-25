@@ -41,8 +41,6 @@ const fulfillabilityColors = {
   'Heavy': '#B07AA1',
 };
 
-// Helper to get the correct segment key for an entry.
-// It looks for the first sequence of digits at the start of the string.
 const getSegmentKey = (gliederung: string): string => {
   if (!gliederung || typeof gliederung !== 'string') return '0';
   const match = gliederung.trim().match(/^(\d+)/);
@@ -66,12 +64,10 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   const ruleBookMap = new Map(allRuleBooks.map(book => [book.id, book]));
 
   const entryIds = analysisResults.rows.map(r => r.rule_book_entry_id);
-  // Fetch entries and their rule book IDs
   const entryRes = await db.query('SELECT id, rule_book_id, data FROM rule_book_entries WHERE id = ANY($1::text[])', [entryIds]);
   
   const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
 
-  // Group entries by rule book to process them efficiently
   const entriesByBook = new Map<string, any[]>();
   entryRes.rows.forEach(row => {
       if (!entriesByBook.has(row.rule_book_id)) {
@@ -80,7 +76,6 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
       entriesByBook.get(row.rule_book_id)!.push(row);
   });
 
-  // Process each rule book's entries
   for (const [bookId, entries] of entriesByBook.entries()) {
       const book = ruleBookMap.get(bookId);
       if (!book) continue;
@@ -89,25 +84,25 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
       if (!ruleBookDetails) continue;
       
       const segmentTopics = new Map<string, string>();
-      let lastSegmentKey = '0';
-      
-      // First pass to find the topic for each segment
-      for(const entry of ruleBookDetails.entries) {
+      let lastTopic = '';
+      for (const entry of ruleBookDetails.entries) {
         const gliederung = entry.data['Gliederung'] as string;
-        const segmentKey = getSegmentKey(gliederung);
-        if(segmentKey !== '0' && !segmentTopics.has(segmentKey)) {
-          segmentTopics.set(segmentKey, entry.data['Text'] as string);
+        const spaltentyp = entry.data['Spaltentyp'] as string;
+        if (spaltentyp === 'Abschnitt' && gliederung) {
+            const segmentKey = getSegmentKey(gliederung);
+            if (segmentKey && !segmentTopics.has(segmentKey)) {
+                segmentTopics.set(segmentKey, entry.data['Text'] || '');
+            }
         }
       }
 
-      // Second pass to associate each entry with its correct segment and topic
-      lastSegmentKey = '0';
+      let lastSegmentKey = '0';
       for (const entry of ruleBookDetails.entries) {
           const gliederung = entry.data['Gliederung'] as string;
-          const segmentKey = getSegmentKey(gliederung);
+          const currentSegmentKey = getSegmentKey(gliederung);
           
-          if(segmentKey !== '0') {
-            lastSegmentKey = segmentKey;
+          if(currentSegmentKey !== '0') {
+            lastSegmentKey = currentSegmentKey;
           }
           
           const topic = segmentTopics.get(lastSegmentKey) || '';

@@ -2,9 +2,9 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { getRuleBookDetails, getRuleBooks } from '../../../rule-books/actions';
+import { getRuleBookDetails, getRuleBooks } from '@/app/dashboard/rule-books/actions';
 import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
-import { getProjectAnalysisDetails } from '../../actions';
+import { getProjectAnalysisDetails } from '@/app/dashboard/actions';
 import de from '@/locales/de.json';
 import en from '@/locales/en.json';
 
@@ -210,7 +210,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 totalRows: segmentEntries.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
-                firstRowText: segmentEntries[0]?.data['Text'] || '',
+                firstRowText: segmentEntries.find(e => e.data['Spaltentyp'] === 'Abschnitt')?.data['Text'] || segmentEntries[0]?.data['Text'] || '',
             };
         });
 
@@ -348,7 +348,7 @@ export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, c
         
         if (existingResult.rows.length > 0) {
             await client.query(
-                'UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2, last_updated = NOW() WHERE id = $3',
+                'UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2 WHERE id = $3',
                 [checklistStatus, revisedFulfillability, existingResult.rows[0].id]
             );
         } else {
