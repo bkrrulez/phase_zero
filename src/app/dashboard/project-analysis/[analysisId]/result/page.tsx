@@ -46,8 +46,8 @@ const ParametersTable = ({ parameters, onRowClick, analysisId }: { parameters: A
     const filteredParameters = parameters.filter(param => selectedFulfillability.includes(param.fulfillability || ''));
 
     const columns = selectedFulfillability.length > 1 
-        ? ['Rule Book Name', 'Section', 'Topic', 'Structure', 'Fulfillability']
-        : ['Rule Book Name', 'Section', 'Topic', 'Structure'];
+        ? ['Rule Book Name', 'Section', 'Structure', 'Fulfillability']
+        : ['Rule Book Name', 'Section', 'Structure'];
 
     return (
         <div className="space-y-4">
@@ -76,14 +76,8 @@ const ParametersTable = ({ parameters, onRowClick, analysisId }: { parameters: A
                             >
                                 {param.segmentKey}
                             </TableCell>
-                            <TableCell 
-                                className="cursor-pointer hover:underline text-primary max-w-xs truncate"
-                                onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
-                            >
-                                {param.topic}
-                            </TableCell>
                              <TableCell 
-                                className="cursor-pointer hover:underline text-primary"
+                                className="cursor-pointer hover:underline text-primary max-w-xs truncate"
                                 onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
                             >
                                 {param.structure}
