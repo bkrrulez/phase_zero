@@ -454,5 +454,7 @@
     "Section": "Section",
     "Topic": "Topic",
     "Structure": "Structure",
-    "Fulfillability": "Fulfillability"
+    "Fulfillability": "Fulfillability",
+    "analysisIncompleteTitle": "Analysis Incomplete",
+    "analysisIncompleteDesc": "Please analyse the remaining parameters."
 }

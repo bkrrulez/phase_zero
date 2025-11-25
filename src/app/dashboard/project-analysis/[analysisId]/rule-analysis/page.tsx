@@ -90,8 +90,8 @@ export default function RuleAnalysisPage() {
         } else {
             toast({
                 variant: 'destructive',
-                title: 'Analysis Incomplete',
-                description: 'Please analyze the remaining sections.'
+                title: t('analysisIncompleteTitle'),
+                description: t('analysisIncompleteDesc'),
             });
         }
     };

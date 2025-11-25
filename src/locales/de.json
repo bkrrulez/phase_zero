@@ -454,5 +454,7 @@
     "Section": "Abschnitt",
     "Topic": "Thema",
     "Structure": "Gliederung",
-    "Fulfillability": "Erfüllbarkeit"
+    "Fulfillability": "Erfüllbarkeit",
+    "analysisIncompleteTitle": "Analyse nicht vollständig!",
+    "analysisIncompleteDesc": "Bitte analysieren Sie die verbleibenden Parameters."
 }
