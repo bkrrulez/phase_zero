@@ -1,10 +1,11 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
-import { getRuleBookDetails, getRuleBooks } from '../../rule-books/actions';
+import { getRuleBookDetails, getRuleBooks } from '@/app/dashboard/rule-books/actions';
 import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
-import { getProjectAnalysisDetails } from '../../actions';
+import { getProjectAnalysisDetails } from '@/app/dashboard/actions';
 import de from '@/locales/de.json';
 import en from '@/locales/en.json';
 
@@ -355,32 +356,34 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error("Could not find rulebook details to save context.");
 
+    const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
+    if (!targetEntry) throw new Error("Could not find the specific rule book entry.");
+
     let topic = 'General';
-    let structure = '';
-    let text = '';
+    // Find the topic by looking for the first row in the current segment that is a section header.
     let lastValidTopic = 'General';
-    let lastValidSegmentKey: string | null = null;
-    
-    const targetEntryIndex = ruleBookDetails.entries.findIndex(e => e.id === ruleBookEntryId);
+    for (const entry of ruleBookDetails.entries) {
+        const currentSegmentKey = getSegmentKey(String(entry.data['Gliederung'] || ''));
+        const isSection = entry.data['Spaltentyp'] === 'Abschnitt';
 
-    if (targetEntryIndex !== -1) {
-        const targetEntry = ruleBookDetails.entries[targetEntryIndex];
-        structure = (targetEntry.data['Gliederung'] as string) || '';
-        text = (targetEntry.data['Text'] as string) || '';
-
-        // Find the topic of the current section by looking backwards from the current entry
-        for (let i = targetEntryIndex; i >= 0; i--) {
-            const entry = ruleBookDetails.entries[i];
-            const gliederung = String(entry.data['Gliederung'] || '');
-            const entrySegmentKey = getSegmentKey(gliederung);
-            const entryIsSection = entry.data['Spaltentyp'] === 'Abschnitt';
-
-            if (entryIsSection && entrySegmentKey && structure.startsWith(entrySegmentKey)) {
-                topic = entry.data['Text'] as string || 'General';
-                break; // Found the most specific parent section
-            }
+        if (isSection) {
+            lastValidTopic = String(entry.data['Text'] || 'General');
+        }
+        
+        if (currentSegmentKey === segmentKey && isSection) {
+            topic = String(entry.data['Text'] || 'General');
+            break; // Found the header for the current segment
+        }
+        // If we passed the current segment, use the last valid topic found.
+        if (currentSegmentKey && currentSegmentKey > segmentKey) {
+            topic = lastValidTopic;
+            break;
         }
     }
+
+
+    const structure = (targetEntry.data['Gliederung'] as string) || '';
+    const text = (targetEntry.data['Text'] as string) || '';
     
     const client = await db.connect();
     try {
