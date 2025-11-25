@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { getRuleBookDetails, getRuleBooks } from '../../../rule-books/actions';
+import { getRuleBookDetails, getRuleBooks } from '@/app/dashboard/rule-books/actions';
 import { type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 
 interface ParameterDetail {
@@ -41,12 +41,14 @@ const fulfillabilityColors = {
   'Heavy': '#B07AA1',
 };
 
-// Helper function to get the correct segment key for an entry
+// Helper to get the correct segment key for an entry.
+// It looks for the first sequence of digits at the start of the string.
 const getSegmentKey = (gliederung: string): string => {
   if (!gliederung || typeof gliederung !== 'string') return '0';
-  const match = gliederung.trim().match(/^(\d+|§\s*\d+)/);
-  return match ? match[0].replace('§', '').trim() : '0';
+  const match = gliederung.trim().match(/^(\d+)/);
+  return match ? match[0] : '0';
 };
+
 
 export async function getAnalysisResultData(projectAnalysisId: string): Promise<AnalysisResultData> {
   const analysisResults = await db.query('SELECT * FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
@@ -64,42 +66,63 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   const ruleBookMap = new Map(allRuleBooks.map(book => [book.id, book]));
 
   const entryIds = analysisResults.rows.map(r => r.rule_book_entry_id);
-  const entryRes = await db.query('SELECT id, rule_book_id, data FROM rule_book_entries WHERE id = ANY($1)', [entryIds]);
+  // Fetch entries and their rule book IDs
+  const entryRes = await db.query('SELECT id, rule_book_id, data FROM rule_book_entries WHERE id = ANY($1::text[])', [entryIds]);
   
   const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
 
-  // Pre-process all entries to build the map correctly
-  for (const book of allRuleBooks) {
-      const details = await getRuleBookDetails(book.id);
-      if (details) {
-          const segmentTopics: Record<string, string> = {};
-          details.entries.forEach(entry => {
-              const segmentKey = getSegmentKey(entry.data['Gliederung'] as string);
-              if (!segmentTopics[segmentKey]) {
-                  segmentTopics[segmentKey] = entry.data['Text'] as string;
-              }
-          });
+  // Group entries by rule book to process them efficiently
+  const entriesByBook = new Map<string, any[]>();
+  entryRes.rows.forEach(row => {
+      if (!entriesByBook.has(row.rule_book_id)) {
+          entriesByBook.set(row.rule_book_id, []);
+      }
+      entriesByBook.get(row.rule_book_id)!.push(row);
+  });
 
-          details.entries.forEach(entry => {
-              const segmentKey = getSegmentKey(entry.data['Gliederung'] as string);
-              entryDetailsMap.set(entry.id, {
-                  ruleBookId: book.id,
-                  ruleBookName: book.versionName,
-                  segmentKey: segmentKey,
-                  topic: segmentTopics[segmentKey] || '',
-                  structure: entry.data['Gliederung'] as string,
-              });
+  // Process each rule book's entries
+  for (const [bookId, entries] of entriesByBook.entries()) {
+      const book = ruleBookMap.get(bookId);
+      if (!book) continue;
+
+      const ruleBookDetails = await getRuleBookDetails(bookId);
+      if (!ruleBookDetails) continue;
+      
+      const segmentTopics = new Map<string, string>();
+      let lastSegmentKey = '0';
+      
+      // First pass to find the topic for each segment
+      for(const entry of ruleBookDetails.entries) {
+        const gliederung = entry.data['Gliederung'] as string;
+        const segmentKey = getSegmentKey(gliederung);
+        if(segmentKey !== '0' && !segmentTopics.has(segmentKey)) {
+          segmentTopics.set(segmentKey, entry.data['Text'] as string);
+        }
+      }
+
+      // Second pass to associate each entry with its correct segment and topic
+      lastSegmentKey = '0';
+      for (const entry of ruleBookDetails.entries) {
+          const gliederung = entry.data['Gliederung'] as string;
+          const segmentKey = getSegmentKey(gliederung);
+          
+          if(segmentKey !== '0') {
+            lastSegmentKey = segmentKey;
+          }
+          
+          const topic = segmentTopics.get(lastSegmentKey) || '';
+
+          entryDetailsMap.set(entry.id, {
+              ruleBookId: bookId,
+              ruleBookName: book.versionName,
+              segmentKey: lastSegmentKey,
+              topic: topic,
+              structure: gliederung,
           });
       }
   }
 
-
-  const checklistCounts: Record<keyof typeof checklistColors, number> = {
-    'fulfilled': 0,
-    'notFulfilled': 0,
-    'notRelevant': 0,
-    'notVerifiable': 0,
-  };
+  const checklistCounts: Record<keyof typeof checklistColors, number> = { 'fulfilled': 0, 'notFulfilled': 0, 'notRelevant': 0, 'notVerifiable': 0 };
   const fulfillabilityCounts: Record<string, number> = { 'Light': 0, 'Medium': 0, 'Heavy': 0 };
 
   const notFulfilledParameters: ParameterDetail[] = [];
@@ -123,6 +146,7 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
     }
 
     const entryDetails = entryDetailsMap.get(result.rule_book_entry_id);
+    
     if (entryDetails) {
       const parameterDetail: ParameterDetail = {
         entryId: result.rule_book_entry_id,

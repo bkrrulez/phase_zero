@@ -14,7 +14,7 @@ fi
 # ==============================================================================
 # IMPORTANT: Manually set the migration file you want to run here.
 # ==============================================================================
-MIGRATION_FILE="scripts/migrations/001_initial_schema.sql"
+MIGRATION_FILE="scripts/migrations/002_add_analysis_results_table.sql"
 # ==============================================================================
 
 
@@ -35,5 +35,3 @@ if [ $? -eq 0 ]; then
 else
   echo "❌ Error applying migration. Please check the output above for details."
 fi
-
-    

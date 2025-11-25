@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
-import { getRuleBookDetails, getRuleBooks } from '../../rule-books/actions';
+import { getRuleBookDetails, getRuleBooks } from '../../../rule-books/actions';
 import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
 import { getProjectAnalysisDetails } from '../../actions';
 import de from '@/locales/de.json';
@@ -342,21 +341,30 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 }
 
 export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability }: Omit<RuleAnalysisResult, 'id'>) {
-    const existingResult = await db.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
-    
-    if (existingResult.rows.length > 0) {
-        // Update
-        await db.query(
-            'UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2, last_updated = NOW() WHERE id = $3',
-            [checklistStatus, revisedFulfillability, existingResult.rows[0].id]
-        );
-    } else {
-        // Insert
-        const newId = `rar-${Date.now()}-${Math.random()}`;
-        await db.query(
-            'INSERT INTO rule_analysis_results (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability) VALUES ($1, $2, $3, $4, $5)',
-            [newId, projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability]
-        );
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        const existingResult = await client.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
+        
+        if (existingResult.rows.length > 0) {
+            await client.query(
+                'UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2, last_updated = NOW() WHERE id = $3',
+                [checklistStatus, revisedFulfillability, existingResult.rows[0].id]
+            );
+        } else {
+            const newId = `rar-${Date.now()}-${Math.random()}`;
+            await client.query(
+                'INSERT INTO rule_analysis_results (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability) VALUES ($1, $2, $3, $4, $5)',
+                [newId, projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error saving analysis result:', error);
+        throw error;
+    } finally {
+        client.release();
     }
 }
 
