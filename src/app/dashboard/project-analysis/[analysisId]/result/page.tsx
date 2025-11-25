@@ -13,8 +13,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
+import { RuleBookSegmentViewer, type ViewerProps } from './components/rule-book-segment-viewer';
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, payload }: any) => {
@@ -32,53 +33,74 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   );
 };
 
-const ParameterDetailTable = ({ parameters }: { parameters: { structure: string; text: string }[] }) => {
+const ParametersTable = ({ parameters, onRowClick, analysisId }: { parameters: AnalysisResultData['notFulfilledParameters'], onRowClick: (props: ViewerProps) => void, analysisId: string }) => {
     const { t } = useLanguage();
-    if (parameters.length === 0) {
-        return <p className="text-sm text-muted-foreground px-4 py-2">No parameters in this category.</p>;
-    }
+    const [selectedFulfillability, setSelectedFulfillability] = React.useState<string[]>(['Heavy']);
+    
+    const fulfillabilityOptions: MultiSelectOption[] = [
+        { value: 'Heavy', label: t('Heavy') },
+        { value: 'Medium', label: t('Medium') },
+        { value: 'Light', label: t('Light') }
+    ];
+
+    const filteredParameters = parameters.filter(param => selectedFulfillability.includes(param.fulfillability || ''));
+
+    const columns = selectedFulfillability.length > 1 
+        ? ['Rule Book Name', 'Section', 'Topic', 'Structure', 'Fulfillability']
+        : ['Rule Book Name', 'Section', 'Topic', 'Structure'];
+
     return (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead className="w-[150px]">{t('structureColumn')}</TableHead>
-                    <TableHead>Text</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {parameters.map((param, index) => (
-                    <TableRow key={index}>
-                        <TableCell>{param.structure}</TableCell>
-                        <TableCell>{param.text}</TableCell>
+        <div className="space-y-4">
+            <div className="flex justify-end">
+                <MultiSelect 
+                    options={fulfillabilityOptions}
+                    selected={selectedFulfillability}
+                    onChange={setSelectedFulfillability}
+                    placeholder="Filter by fulfillability..."
+                    className="w-full sm:w-[250px]"
+                />
+            </div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        {columns.map(col => <TableHead key={col}>{t(col as any) || col}</TableHead>)}
                     </TableRow>
-                ))}
-            </TableBody>
-        </Table>
+                </TableHeader>
+                <TableBody>
+                    {filteredParameters.length > 0 ? filteredParameters.map((param, index) => (
+                        <TableRow key={`${param.entryId}-${index}`}>
+                            <TableCell>{param.ruleBookName}</TableCell>
+                            <TableCell 
+                                className="cursor-pointer hover:underline text-primary"
+                                onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
+                            >
+                                {param.segmentKey}
+                            </TableCell>
+                            <TableCell 
+                                className="cursor-pointer hover:underline text-primary max-w-xs truncate"
+                                onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
+                            >
+                                {param.topic}
+                            </TableCell>
+                             <TableCell 
+                                className="cursor-pointer hover:underline text-primary"
+                                onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
+                            >
+                                {param.structure}
+                            </TableCell>
+                            {columns.includes('Fulfillability') && <TableCell>{t(param.fulfillability as any)}</TableCell>}
+                        </TableRow>
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-24 text-center">No parameters match the selected filter.</TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </div>
     );
 };
 
-const ParameterGroup = ({ group }: { group: AnalysisResultData['notFulfilledParameters'] }) => {
-    const { t } = useLanguage();
-    const order: (keyof typeof group)[] = ['Heavy', 'Medium', 'Light'];
-    return (
-        <Accordion type="multiple" className="w-full">
-            {order.map(level => {
-                const parameters = group[level];
-                if (parameters.length > 0) {
-                    return (
-                         <AccordionItem value={level} key={level}>
-                            <AccordionTrigger className="font-semibold">{t(level)} ({parameters.length})</AccordionTrigger>
-                            <AccordionContent>
-                                <ParameterDetailTable parameters={parameters}/>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )
-                }
-                return null;
-            })}
-        </Accordion>
-    );
-};
 
 export default function AnalysisResultPage() {
     const params = useParams();
@@ -87,9 +109,10 @@ export default function AnalysisResultPage() {
     const { t } = useLanguage();
 
     const [projectName, setProjectName] = React.useState('');
-    const [chartData, setChartData] = React.useState<AnalysisResultData | null>(null);
+    const [resultData, setResultData] = React.useState<AnalysisResultData | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
+    const [viewerProps, setViewerProps] = React.useState<ViewerProps | null>(null);
 
     React.useEffect(() => {
         async function fetchData() {
@@ -104,7 +127,7 @@ export default function AnalysisResultPage() {
                 if (!details) throw new Error('Project details not found');
 
                 setProjectName(details.project.name);
-                setChartData(data);
+                setResultData(data);
             } catch (err) {
                 console.error(err);
                 setError('Failed to load analysis results.');
@@ -119,6 +142,10 @@ export default function AnalysisResultPage() {
         router.push('/dashboard/project-analysis');
     }
 
+    const handleRowClick = (props: ViewerProps) => {
+        setViewerProps(props);
+    }
+
     if (isLoading) {
         return (
              <div className="space-y-6">
@@ -127,6 +154,7 @@ export default function AnalysisResultPage() {
                     <Skeleton className="h-96"/>
                     <Skeleton className="h-96"/>
                 </div>
+                 <Skeleton className="h-96 w-full"/>
             </div>
         );
     }
@@ -136,122 +164,126 @@ export default function AnalysisResultPage() {
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                    <Button asChild variant="outline" size="icon">
-                        <Link href={`/dashboard/project-analysis/${analysisId}/rule-analysis`}>
-                            <ArrowLeft className="h-4 w-4" />
-                            <span className="sr-only">{t('back')}</span>
-                        </Link>
-                    </Button>
-                    <div className="flex-1">
-                        <h1 className="text-3xl font-bold font-headline">{t('analysisResultFor', { name: projectName })}</h1>
-                        <p className="text-muted-foreground">{t('analysisResultDesc')}</p>
+        <>
+            <div className="space-y-6">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                        <Button asChild variant="outline" size="icon">
+                            <Link href={`/dashboard/project-analysis/${analysisId}/rule-analysis`}>
+                                <ArrowLeft className="h-4 w-4" />
+                                <span className="sr-only">{t('back')}</span>
+                            </Link>
+                        </Button>
+                        <div className="flex-1">
+                            <h1 className="text-3xl font-bold font-headline">{t('analysisResultFor', { name: projectName })}</h1>
+                            <p className="text-muted-foreground">{t('analysisResultDesc')}</p>
+                        </div>
                     </div>
+                    <Button onClick={handleEndAnalysis}>{t('endAnalysis')}</Button>
                 </div>
-                 <Button onClick={handleEndAnalysis}>{t('endAnalysis')}</Button>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-center">{t('revisedChecklistSummary')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                         {chartData && chartData.checklistData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={400}>
-                                <PieChart>
-                                    <Pie
-                                        data={chartData.checklistData}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}
-                                        outerRadius={150}
-                                        dataKey="value"
-                                        nameKey="name"
-                                    >
-                                        {chartData.checklistData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        formatter={(value, name) => {
-                                            const translatedName = t(name as any);
-                                            const total = chartData.checklistData.reduce((acc, item) => acc + item.value, 0);
-                                            const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
-                                            return [`${value} (${percentage}%)`, translatedName];
-                                        }}
-                                    />
-                                    <Legend 
-                                        formatter={(value) => t(value as any)} 
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="h-96 flex items-center justify-center text-muted-foreground">No data available.</div>
-                        )}
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-center">{t('satisfiabilityOfUnmetParameters')}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {chartData && chartData.fulfillabilityData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={400}>
-                                <PieChart>
-                                    <Pie
-                                        data={chartData.fulfillabilityData}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={renderCustomizedLabel}
-                                        outerRadius={150}
-                                        dataKey="value"
-                                        nameKey="name"
-                                    >
-                                        {chartData.fulfillabilityData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip 
-                                        formatter={(value, name) => {
-                                            const translatedName = t(name as any);
-                                            const total = chartData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0);
-                                            const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
-                                            return [`${value} (${percentage}%)`, translatedName];
-                                        }}
-                                    />
-                                     <Legend formatter={(value) => t(value as any)} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                         ) : (
-                            <div className="h-96 flex items-center justify-center text-muted-foreground">No data available.</div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-            
-            {chartData && (
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-center">{t('revisedChecklistSummary')}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {resultData && resultData.checklistData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <PieChart>
+                                        <Pie
+                                            data={resultData.checklistData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                            outerRadius={150}
+                                            dataKey="value"
+                                            nameKey="name"
+                                        >
+                                            {resultData.checklistData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            formatter={(value, name) => {
+                                                const translatedName = t(name as any);
+                                                const total = resultData.checklistData.reduce((acc, item) => acc + item.value, 0);
+                                                const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
+                                                return [`${value} (${percentage}%)`, translatedName];
+                                            }}
+                                        />
+                                        <Legend formatter={(value) => t(value as any)} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-96 flex items-center justify-center text-muted-foreground">No data available.</div>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-center">{t('satisfiabilityOfUnmetParameters')}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {resultData && resultData.fulfillabilityData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <PieChart>
+                                        <Pie
+                                            data={resultData.fulfillabilityData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={renderCustomizedLabel}
+                                            outerRadius={150}
+                                            dataKey="value"
+                                            nameKey="name"
+                                        >
+                                            {resultData.fulfillabilityData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip 
+                                            formatter={(value, name) => {
+                                                const translatedName = t(name as any);
+                                                const total = resultData.fulfillabilityData.reduce((acc, item) => acc + item.value, 0);
+                                                const percentage = total > 0 ? ((value as number / total) * 100).toFixed(1) : 0;
+                                                return [`${value} (${percentage}%)`, translatedName];
+                                            }}
+                                        />
+                                        <Legend formatter={(value) => t(value as any)} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-96 flex items-center justify-center text-muted-foreground">No data available.</div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+                
                 <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                    <Tabs defaultValue="not-fulfilled" className="w-full">
-                        <div className="p-2">
+                    <Tabs defaultValue="not-fulfilled">
+                        <div className="p-4 border-b">
                             <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="not-fulfilled">{t('notFulfilledParametersTab')}</TabsTrigger>
                                 <TabsTrigger value="not-verifiable">{t('notVerifiableParametersTab')}</TabsTrigger>
                             </TabsList>
                         </div>
                         <TabsContent value="not-fulfilled" className="mt-0 p-4">
-                            <ParameterGroup group={chartData.notFulfilledParameters} />
+                            {resultData && <ParametersTable parameters={resultData.notFulfilledParameters} onRowClick={handleRowClick} analysisId={analysisId}/>}
                         </TabsContent>
                         <TabsContent value="not-verifiable" className="mt-0 p-4">
-                            <ParameterGroup group={chartData.notVerifiableParameters} />
+                            {resultData && <ParametersTable parameters={resultData.notVerifiableParameters} onRowClick={handleRowClick} analysisId={analysisId}/>}
                         </TabsContent>
                     </Tabs>
                 </div>
-            )}
-        </div>
+            </div>
+
+            <RuleBookSegmentViewer 
+                isOpen={!!viewerProps}
+                onOpenChange={() => setViewerProps(null)}
+                viewerProps={viewerProps}
+            />
+        </>
     );
 }

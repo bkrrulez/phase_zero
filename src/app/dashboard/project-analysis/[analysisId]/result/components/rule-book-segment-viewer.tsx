@@ -10,15 +10,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
 import { LatexRenderer } from '@/app/dashboard/rule-books/components/latex-renderer';
 import { Button } from '@/components/ui/button';
-import { ReferenceTableDialog } from '@/app/dashboard/rule-books/components/reference-table-dialog';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SegmentDetails {
     entries: RuleBookEntry[];
-    referenceTables: ReferenceTable[];
 }
 
-interface ViewerProps {
+export interface ViewerProps {
     projectAnalysisId: string;
     ruleBookId: string;
     segmentKey: string;
@@ -36,7 +35,6 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
     const [details, setDetails] = React.useState<SegmentDetails | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
-    const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
     const highlightRef = React.useRef<HTMLTableRowElement>(null);
 
     const { projectAnalysisId, ruleBookId, segmentKey, highlightEntryId } = viewerProps || {};
@@ -65,53 +63,21 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
         }
     }, [loading]);
     
-    const handleOpenReferenceTable = (tableName: string) => {
-        const table = details?.referenceTables.find((t) => t.name === tableName);
-        if (table) setSelectedTable(table);
-    };
-
-    const renderCellWithLinks = (text: string, tables: ReferenceTable[], onClick: (tableName: string) => void, entryId: string) => {
-        if (!text || !tables || tables.length === 0) {
-            return <LatexRenderer text={text} />;
-        }
-        const tableNames = tables.map(t => t.name);
-        const regex = new RegExp(`(${tableNames.join('|')})`, 'g');
-        const parts = text.split(regex);
-
-        return (
-            <div className="whitespace-normal">
-                {parts.filter(part => part).map((part, index) => {
-                    const isTableName = tableNames.includes(part);
-                    if (isTableName) {
-                        return (
-                            <Button key={`${entryId}-ref-${part}-${index}`} variant="link" className="p-0 h-auto text-left" onClick={() => onClick(part)}>
-                                {part}
-                            </Button>
-                        );
-                    }
-                    return <span key={`${entryId}-text-${part}-${index}`}>{part}</span>;
-                })}
-            </div>
-        );
-    };
-
-    const headers = details?.entries.length ? Object.keys(details.entries[0].data) : [];
-    const columnOrder = ['Gliederung', 'Text', 'Referenztabelle'];
-    const sortedHeaders = [...headers].sort((a,b) => {
-        const indexA = columnOrder.indexOf(a);
-        const indexB = columnOrder.indexOf(b);
-        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
-    });
+    const headers = ['Structure', 'Text', 'Project Checklist', 'Project-based Fulfillability'];
+    
+    const checklistOptions = [
+        { key: 'fulfilled', value: 'Fulfilled' },
+        { key: 'notFulfilled', value: 'Not Fulfilled' },
+        { key: 'notRelevant', value: 'Not relevant' },
+        { key: 'notVerifiable', value: 'Not verifiable' },
+    ];
+    const fulfillabilityOptions = ['Light', 'Medium', 'Heavy'];
 
     return (
-        <>
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-screen-2xl w-[95vw] h-[90vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-2 shrink-0">
-                    <DialogTitle>Rule Book Section: {segmentKey}</DialogTitle>
+                    <DialogTitle>{t('ruleAnalysisSectionTitle', { key: segmentKey || '' })}</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 overflow-x-auto border-t">
                     <div className="min-w-max h-full overflow-y-auto">
@@ -123,7 +89,7 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                             <Table>
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
-                                        {sortedHeaders.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
+                                        {headers.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -133,14 +99,28 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                                             ref={entry.id === highlightEntryId ? highlightRef : null}
                                             className={cn(entry.id === highlightEntryId && 'bg-blue-100 dark:bg-blue-900/50')}
                                         >
-                                            {sortedHeaders.map(header => (
-                                                <TableCell key={header}>
-                                                    {header === 'Referenztabelle'
-                                                        ? renderCellWithLinks(String(entry.data[header] ?? ''), details.referenceTables, handleOpenReferenceTable, entry.id)
-                                                        : <LatexRenderer text={String(entry.data[header] ?? '')} />
-                                                    }
-                                                </TableCell>
-                                            ))}
+                                            <TableCell><LatexRenderer text={String(entry.data['Gliederung'] ?? '')} /></TableCell>
+                                            <TableCell><LatexRenderer text={String(entry.data['Text'] ?? '')} /></TableCell>
+                                            <TableCell>
+                                                {entry.data['Spaltentyp'] === 'Parameter' ? (
+                                                    <Select value={entry.analysis?.checklistStatus || ''}>
+                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                                                        <SelectContent>
+                                                            {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : <span className="text-muted-foreground">-</span>}
+                                            </TableCell>
+                                            <TableCell>
+                                                {['Not Fulfilled', 'Not verifiable'].includes(entry.analysis?.checklistStatus || '') ? (
+                                                     <Select value={entry.analysis?.revisedFulfillability || ''}>
+                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                                                        <SelectContent>
+                                                            {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any)}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : <span className="text-muted-foreground">-</span>}
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -150,12 +130,5 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                 </div>
             </DialogContent>
         </Dialog>
-        <ReferenceTableDialog
-            isOpen={!!selectedTable}
-            onOpenChange={() => setSelectedTable(null)}
-            table={selectedTable}
-        />
-        </>
     );
 }
-

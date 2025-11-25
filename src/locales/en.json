@@ -447,5 +447,10 @@
     "rowCountInAnalysisDesc": "Display the total number of rows for each section in the parameter analysis view.",
     "notFulfilledParametersTab": "Not Fulfilled Parameters",
     "notVerifiableParametersTab": "Not Verifiable Parameters",
-    "structureColumn": "Structure"
+    "structureColumn": "Structure",
+    "Rule Book Name": "Rule Book Name",
+    "Section": "Section",
+    "Topic": "Topic",
+    "Structure": "Structure",
+    "Fulfillability": "Fulfillability"
 }

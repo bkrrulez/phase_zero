@@ -447,5 +447,10 @@
     "rowCountInAnalysisDesc": "Zeigt die Gesamtzahl der Zeilen für jeden Abschnitt in der Parameteranalyse-Ansicht an.",
     "notFulfilledParametersTab": "Nicht erfüllte Parameter",
     "notVerifiableParametersTab": "Nicht überprüfbare Parameter",
-    "structureColumn": "Gliederung"
+    "structureColumn": "Gliederung",
+    "Rule Book Name": "Regelwerk Name",
+    "Section": "Abschnitt",
+    "Topic": "Thema",
+    "Structure": "Gliederung",
+    "Fulfillability": "Erfüllbarkeit"
 }
