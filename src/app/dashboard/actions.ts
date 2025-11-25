@@ -1210,7 +1210,7 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         // Use ON CONFLICT to handle both insert and update in one query
         await db.query(
             `INSERT INTO system_settings (key, value) VALUES ($1, $2)
-             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, last_modified = NOW()`,
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
             [key, value]
         );
         revalidatePath('/dashboard/settings/admin-panel'); // Revalidate admin panel when a setting changes
