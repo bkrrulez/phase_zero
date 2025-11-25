@@ -33,6 +33,7 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 const ParameterDetailTable = ({ parameters }: { parameters: { structure: string; text: string }[] }) => {
+    const { t } = useLanguage();
     if (parameters.length === 0) {
         return <p className="text-sm text-muted-foreground px-4 py-2">No parameters in this category.</p>;
     }
@@ -40,7 +41,7 @@ const ParameterDetailTable = ({ parameters }: { parameters: { structure: string;
         <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead className="w-[150px]">Structure</TableHead>
+                    <TableHead className="w-[150px]">{t('structureColumn')}</TableHead>
                     <TableHead>Text</TableHead>
                 </TableRow>
             </TableHeader>
@@ -234,22 +235,22 @@ export default function AnalysisResultPage() {
             </div>
             
             {chartData && (
-                <Card>
-                    <CardContent className="p-0">
-                        <Tabs defaultValue="not-fulfilled">
-                            <TabsList className="p-2 h-auto rounded-b-none">
-                                <TabsTrigger value="not-fulfilled">Not Fulfilled Parameters</TabsTrigger>
-                                <TabsTrigger value="not-verifiable">Not Verifiable Parameters</TabsTrigger>
+                <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                    <Tabs defaultValue="not-fulfilled" className="w-full">
+                        <div className="p-2">
+                            <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="not-fulfilled">{t('notFulfilledParametersTab')}</TabsTrigger>
+                                <TabsTrigger value="not-verifiable">{t('notVerifiableParametersTab')}</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="not-fulfilled" className="mt-0 p-4">
-                                <ParameterGroup group={chartData.notFulfilledParameters} />
-                            </TabsContent>
-                            <TabsContent value="not-verifiable" className="mt-0 p-4">
-                                <ParameterGroup group={chartData.notVerifiableParameters} />
-                            </TabsContent>
-                        </Tabs>
-                    </CardContent>
-                </Card>
+                        </div>
+                        <TabsContent value="not-fulfilled" className="mt-0 p-4">
+                            <ParameterGroup group={chartData.notFulfilledParameters} />
+                        </TabsContent>
+                        <TabsContent value="not-verifiable" className="mt-0 p-4">
+                            <ParameterGroup group={chartData.notVerifiableParameters} />
+                        </TabsContent>
+                    </Tabs>
+                </div>
             )}
         </div>
     );

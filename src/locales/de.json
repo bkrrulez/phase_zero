@@ -373,7 +373,7 @@
     "missingColumnsError": "Fehlende Pflichtspalten im Blatt 'Main': {{columns}}",
     "missingTableSheetError": "Tabellenblatt '{{name}}' fehlt in der hochgeladenen Datei. Bitte überprüfen.",
     "ruleBookDeleted": "Regelwerk gelöscht",
-    "projectAnalysis": "Projektverwaltung",
+    "projectAnalysis": "Projektanalyse",
     "projectAnalysisSubtitle": "Analysen für Ihre Projekte verwalten und durchführen.",
     "addNewAnalysis": "Neu hinzufügen",
     "allAnalyses": "Alle Analysen",
@@ -405,7 +405,7 @@
     "parameterAnalysisPageTitle": "Parameteranalyse für {{name}}",
     "ruleAnalysisFilteredDesc": "Parameter gefiltert nach Ihren Analysekriterien.",
     "section": "Abschnitt {{key}}",
-    "analyzed": "analysiert",
+    "analyzed": "Analysiert",
     "ruleAnalysisSectionTitle": "Regelanalyse: Abschnitt {{key}}",
     "sectionRuleBook": "Regelwerk",
     "projectChecklist": "Projekt Checkliste",
@@ -444,7 +444,8 @@
     "globalUISettings": "Globale UI-Einstellungen",
     "globalUISettingsDesc": "Diese Einstellungen wirken sich auf die Benutzeroberfläche für alle Benutzer der Anwendung aus.",
     "rowCountInAnalysis": "Zeilenanzahl auf der Parameteranalyse-Seite",
-    "rowCountInAnalysisDesc": "Zeigt die Gesamtzahl der Zeilen für jeden Abschnitt in der Parameteranalyse-Ansicht an."
+    "rowCountInAnalysisDesc": "Zeigt die Gesamtzahl der Zeilen für jeden Abschnitt in der Parameteranalyse-Ansicht an.",
+    "notFulfilledParametersTab": "Nicht erfüllte Parameter",
+    "notVerifiableParametersTab": "Nicht überprüfbare Parameter",
+    "structureColumn": "Gliederung"
 }
-
-    

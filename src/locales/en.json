@@ -444,7 +444,8 @@
     "globalUISettings": "Global UI Settings",
     "globalUISettingsDesc": "These settings affect the user interface for all users of the application.",
     "rowCountInAnalysis": "Row count in Parameter Analysis page",
-    "rowCountInAnalysisDesc": "Display the total number of rows for each section in the parameter analysis view."
+    "rowCountInAnalysisDesc": "Display the total number of rows for each section in the parameter analysis view.",
+    "notFulfilledParametersTab": "Not Fulfilled Parameters",
+    "notVerifiableParametersTab": "Not Verifiable Parameters",
+    "structureColumn": "Structure"
 }
-
-    
