@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -23,6 +24,7 @@ interface SegmentStat {
     totalRows: number;
     totalParameters: number;
     completedParameters: number;
+    firstRowText: string;
 }
 
 interface SegmentedRuleBook {
@@ -169,12 +171,17 @@ export default function RuleAnalysisPage() {
                                             onClick={() => handleSegmentClick(ruleBook.id, segment.key)}
                                             className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
                                         >
-                                            <div className="flex justify-between items-center">
+                                            <div className="flex justify-between items-start">
                                                 <h3 className="font-semibold text-lg">{t('section', { key: segment.key })}</h3>
-                                                {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                                                {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />}
                                             </div>
+                                            
                                             {showRowCount && <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
                                             
+                                            {segment.firstRowText && (
+                                                <p className="text-sm text-muted-foreground truncate" title={segment.firstRowText}>{segment.firstRowText}</p>
+                                            )}
+
                                             {!hasNoParameters && (
                                                 <div>
                                                     <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
