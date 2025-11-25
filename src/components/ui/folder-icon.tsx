@@ -7,8 +7,8 @@ export const FolderIcon = ({ className, project }: { className?: string, project
         ? `${project.address.substring(0, maxAddressLength)}...`
         : project.address;
 
-    const maxProjectNameLength = 12;
-    const truncatedProjectName = project.name.length > maxProjectNameLength
+    const maxProjectNameLength = 13;
+    const truncatedProjectName = project.name.length >= maxProjectNameLength
         ? `${project.name.substring(0, 10)}...`
         : project.name;
 
@@ -19,6 +19,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
             xmlns="http://www.w3.org/2000/svg"
             className={className}
         >
+            <title>{project.name}</title>
             <path 
                 d="M5 6 H30 L38 12 H95 V16 H5Z"
                 className="fill-primary"
