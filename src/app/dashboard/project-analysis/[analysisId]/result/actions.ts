@@ -15,17 +15,17 @@ interface ParameterDetail {
   fulfillability: string | null;
 }
 
-interface ChartData {
-  name: string;
-  value: number;
-  fill: string;
-}
-
-export interface AnalysisResultData {
+interface AnalysisResultData {
   checklistData: ChartData[];
   fulfillabilityData: ChartData[];
   notFulfilledParameters: ParameterDetail[];
   notVerifiableParameters: ParameterDetail[];
+}
+
+interface ChartData {
+  name: string;
+  value: number;
+  fill: string;
 }
 
 const checklistColors = {
@@ -41,10 +41,13 @@ const fulfillabilityColors = {
   'Heavy': '#B07AA1',
 };
 
-const getSegmentKey = (gliederung: string): string => {
-  if (!gliederung || typeof gliederung !== 'string') return '0';
-  const match = gliederung.trim().match(/^(\d+)/);
-  return match ? match[0] : '0';
+const getSegmentKey = (gliederung: string): string | null => {
+  if (!gliederung || typeof gliederung !== 'string') return null;
+  const match = gliederung.trim().match(/^(\d+|§\s*\d+)/);
+  if (match) {
+    return match[0].replace(/§\s*/, '');
+  }
+  return null;
 };
 
 
@@ -62,12 +65,15 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
 
   const allRuleBooks = await getRuleBooks();
   const ruleBookMap = new Map(allRuleBooks.map(book => [book.id, book]));
-
   const entryIds = analysisResults.rows.map(r => r.rule_book_entry_id);
+  
+  if (entryIds.length === 0) {
+      return { checklistData: [], fulfillabilityData: [], notFulfilledParameters: [], notVerifiableParameters: [] };
+  }
+
   const entryRes = await db.query('SELECT id, rule_book_id, data FROM rule_book_entries WHERE id = ANY($1::text[])', [entryIds]);
   
   const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
-
   const entriesByBook = new Map<string, any[]>();
   entryRes.rows.forEach(row => {
       if (!entriesByBook.has(row.rule_book_id)) {
@@ -76,46 +82,38 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
       entriesByBook.get(row.rule_book_id)!.push(row);
   });
 
-  for (const [bookId, entries] of entriesByBook.entries()) {
+  for (const [bookId] of entriesByBook.entries()) {
       const book = ruleBookMap.get(bookId);
       if (!book) continue;
-
+      
       const ruleBookDetails = await getRuleBookDetails(bookId);
       if (!ruleBookDetails) continue;
-      
-      const segmentTopics = new Map<string, string>();
-      let lastTopic = '';
-      for (const entry of ruleBookDetails.entries) {
-        const gliederung = entry.data['Gliederung'] as string;
-        const spaltentyp = entry.data['Spaltentyp'] as string;
-        if (spaltentyp === 'Abschnitt' && gliederung) {
-            const segmentKey = getSegmentKey(gliederung);
-            if (segmentKey && !segmentTopics.has(segmentKey)) {
-                segmentTopics.set(segmentKey, entry.data['Text'] || '');
-            }
-        }
-      }
 
-      let lastSegmentKey = '0';
+      let lastValidSegmentKey = '0';
+      let lastValidTopic = '';
+
       for (const entry of ruleBookDetails.entries) {
           const gliederung = entry.data['Gliederung'] as string;
+          const spaltentyp = entry.data['Spaltentyp'] as string;
           const currentSegmentKey = getSegmentKey(gliederung);
-          
-          if(currentSegmentKey !== '0') {
-            lastSegmentKey = currentSegmentKey;
+
+          if (currentSegmentKey !== null && spaltentyp === 'Abschnitt') {
+              lastValidSegmentKey = currentSegmentKey;
+              lastValidTopic = entry.data['Text'] || '';
           }
           
-          const topic = segmentTopics.get(lastSegmentKey) || '';
+          const finalSegmentKey = currentSegmentKey ?? lastValidSegmentKey;
 
           entryDetailsMap.set(entry.id, {
               ruleBookId: bookId,
               ruleBookName: book.versionName,
-              segmentKey: lastSegmentKey,
-              topic: topic,
+              segmentKey: finalSegmentKey,
+              topic: finalSegmentKey === lastValidSegmentKey ? lastValidTopic : '', // Ensure topic matches segment
               structure: gliederung,
           });
       }
   }
+
 
   const checklistCounts: Record<keyof typeof checklistColors, number> = { 'fulfilled': 0, 'notFulfilled': 0, 'notRelevant': 0, 'notVerifiable': 0 };
   const fulfillabilityCounts: Record<string, number> = { 'Light': 0, 'Medium': 0, 'Heavy': 0 };
@@ -171,3 +169,4 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   
   return { checklistData, fulfillabilityData, notFulfilledParameters, notVerifiableParameters };
 }
+
