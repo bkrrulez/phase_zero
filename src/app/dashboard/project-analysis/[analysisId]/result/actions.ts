@@ -65,18 +65,25 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
 
   const allRuleBooks = await getRuleBooks();
   const ruleBookMap = new Map(allRuleBooks.map(book => [book.id, book]));
-  const entryIds = analysisResults.rows.map(r => r.rule_book_entry_id);
+  const entryIdsInResults = new Set(analysisResults.rows.map(r => r.rule_book_entry_id));
+
+  const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
+
+  // Get all unique rule book IDs from the entries that have results
+  const ruleBookIdsInResults = new Set<string>();
+  const entryIdToRuleBookIdMap = new Map<string, string>();
   
-  if (entryIds.length === 0) {
-      return { checklistData: [], fulfillabilityData: [], notFulfilledParameters: [], notVerifiableParameters: [] };
+  // This intermediate query is necessary to know which rule books we need to process
+  if (entryIdsInResults.size > 0) {
+    const entriesToRuleBooksRes = await db.query('SELECT id, rule_book_id FROM rule_book_entries WHERE id = ANY($1::text[])', [Array.from(entryIdsInResults)]);
+    entriesToRuleBooksRes.rows.forEach(row => {
+        ruleBookIdsInResults.add(row.rule_book_id);
+        entryIdToRuleBookIdMap.set(row.id, row.rule_book_id);
+    });
   }
 
-  const entryRes = await db.query('SELECT id, rule_book_id, data FROM rule_book_entries WHERE id = ANY($1::text[])', [entryIds]);
-  
-  const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
-  const bookIdsWithResults = new Set(entryRes.rows.map(row => row.rule_book_id));
-
-  for (const bookId of bookIdsWithResults) {
+  // Now, for each relevant rule book, process its entire structure once
+  for (const bookId of ruleBookIdsInResults) {
       const book = ruleBookMap.get(bookId);
       if (!book) continue;
       
@@ -89,22 +96,23 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
       for (const entry of ruleBookDetails.entries) {
           const gliederung = entry.data['Gliederung'] as string;
           const spaltentyp = entry.data['Spaltentyp'] as string;
-          const currentSegmentKey = getSegmentKey(gliederung);
-
-          if (currentSegmentKey !== null && spaltentyp === 'Abschnitt') {
-              lastValidSegmentKey = currentSegmentKey;
-              lastValidTopic = entry.data['Text'] || '';
+          
+          if (gliederung && spaltentyp === 'Abschnitt') {
+              const currentSegmentKey = getSegmentKey(gliederung);
+              if(currentSegmentKey) {
+                lastValidSegmentKey = currentSegmentKey;
+                lastValidTopic = entry.data['Text'] || '';
+              }
           }
           
-          const finalSegmentKey = currentSegmentKey ?? lastValidSegmentKey;
-
-          if (entryRes.rows.some(r => r.id === entry.id)) {
+          // If this entry is one of the ones we have a result for, store its structural context
+          if (entryIdsInResults.has(entry.id)) {
               entryDetailsMap.set(entry.id, {
                   ruleBookId: bookId,
                   ruleBookName: book.versionName,
-                  segmentKey: finalSegmentKey,
+                  segmentKey: lastValidSegmentKey,
                   topic: lastValidTopic,
-                  structure: gliederung,
+                  structure: gliederung || '',
               });
           }
       }
