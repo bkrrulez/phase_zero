@@ -149,13 +149,15 @@ export default function SegmentDetailPage() {
         try {
             await saveAnalysisResult({
                 projectAnalysisId: analysisId,
+                ruleBookId: ruleBookId,
                 ruleBookEntryId: entryId,
                 checklistStatus: newData.checklistStatus!,
                 revisedFulfillability: newData.revisedFulfillability
             });
             toast({ title: t('save') + "d!", description: 'Your changes have been saved.', duration: 2000 });
-        } catch {
-            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save your changes.' });
+        } catch(e) {
+            console.error(e);
+            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save your changes. Check console for details.' });
         }
     };
     

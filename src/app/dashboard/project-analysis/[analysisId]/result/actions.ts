@@ -2,8 +2,6 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { getRuleBookDetails, getRuleBooks } from '@/app/dashboard/rule-books/actions';
-import { type RuleBookEntry, type ReferenceTable } from '@/lib/types';
 
 interface ParameterDetail {
   entryId: string;
@@ -41,20 +39,11 @@ const fulfillabilityColors = {
   'Heavy': '#B07AA1',
 };
 
-const getSegmentKey = (gliederung: string): string | null => {
-  if (!gliederung || typeof gliederung !== 'string') return null;
-  const match = gliederung.trim().match(/^(\d+|§\s*\d+)/);
-  if (match) {
-    return match[0].replace(/§\s*/, '');
-  }
-  return null;
-};
-
-
 export async function getAnalysisResultData(projectAnalysisId: string): Promise<AnalysisResultData> {
-  const analysisResults = await db.query('SELECT * FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
+  const analysisResultsRes = await db.query('SELECT * FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
+  const analysisResults = analysisResultsRes.rows;
   
-  if (analysisResults.rows.length === 0) {
+  if (analysisResults.length === 0) {
     return {
       checklistData: [],
       fulfillabilityData: [],
@@ -63,65 +52,8 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
     };
   }
 
-  const allRuleBooks = await getRuleBooks();
-  const ruleBookMap = new Map(allRuleBooks.map(book => [book.id, book]));
-  const entryIdsInResults = new Set(analysisResults.rows.map(r => r.rule_book_entry_id));
-
-  const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
-
-  // Get all unique rule book IDs from the entries that have results
-  const ruleBookIdsInResults = new Set<string>();
-  const entryIdToRuleBookIdMap = new Map<string, string>();
-  
-  // This intermediate query is necessary to know which rule books we need to process
-  if (entryIdsInResults.size > 0) {
-    const entriesToRuleBooksRes = await db.query('SELECT id, rule_book_id FROM rule_book_entries WHERE id = ANY($1::text[])', [Array.from(entryIdsInResults)]);
-    entriesToRuleBooksRes.rows.forEach(row => {
-        ruleBookIdsInResults.add(row.rule_book_id);
-        entryIdToRuleBookIdMap.set(row.id, row.rule_book_id);
-    });
-  }
-
-  // Now, for each relevant rule book, process its entire structure once
-  for (const bookId of ruleBookIdsInResults) {
-      const book = ruleBookMap.get(bookId);
-      if (!book) continue;
-      
-      const ruleBookDetails = await getRuleBookDetails(bookId);
-      if (!ruleBookDetails) continue;
-
-      let lastValidSegmentKey = '0';
-      let lastValidTopic = '';
-
-      for (const entry of ruleBookDetails.entries) {
-          const gliederung = entry.data['Gliederung'] as string;
-          const spaltentyp = entry.data['Spaltentyp'] as string;
-          
-          if (gliederung && spaltentyp === 'Abschnitt') {
-              const currentSegmentKey = getSegmentKey(gliederung);
-              if(currentSegmentKey) {
-                lastValidSegmentKey = currentSegmentKey;
-                lastValidTopic = entry.data['Text'] || '';
-              }
-          }
-          
-          // If this entry is one of the ones we have a result for, store its structural context
-          if (entryIdsInResults.has(entry.id)) {
-              entryDetailsMap.set(entry.id, {
-                  ruleBookId: bookId,
-                  ruleBookName: book.versionName,
-                  segmentKey: lastValidSegmentKey,
-                  topic: lastValidTopic,
-                  structure: gliederung || '',
-              });
-          }
-      }
-  }
-
-
   const checklistCounts: Record<keyof typeof checklistColors, number> = { 'fulfilled': 0, 'notFulfilled': 0, 'notRelevant': 0, 'notVerifiable': 0 };
   const fulfillabilityCounts: Record<string, number> = { 'Light': 0, 'Medium': 0, 'Heavy': 0 };
-
   const notFulfilledParameters: ParameterDetail[] = [];
   const notVerifiableParameters: ParameterDetail[] = [];
 
@@ -132,7 +64,7 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
     'Not verifiable': 'notVerifiable',
   };
 
-  for (const result of analysisResults.rows) {
+  for (const result of analysisResults) {
     const statusKey = checklistTranslationMap[result.checklist_status];
     if (statusKey) {
       checklistCounts[statusKey]++;
@@ -142,24 +74,20 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
       fulfillabilityCounts[result.revised_fulfillability]++;
     }
 
-    const entryDetails = entryDetailsMap.get(result.rule_book_entry_id);
-    
-    if (entryDetails) {
-      const parameterDetail: ParameterDetail = {
-        entryId: result.rule_book_entry_id,
-        ruleBookId: entryDetails.ruleBookId,
-        ruleBookName: entryDetails.ruleBookName,
-        segmentKey: entryDetails.segmentKey,
-        topic: entryDetails.topic,
-        structure: entryDetails.structure,
-        fulfillability: result.revised_fulfillability,
-      };
+    const parameterDetail: ParameterDetail = {
+      entryId: result.rule_book_entry_id,
+      ruleBookId: result.rule_book_id,
+      ruleBookName: result.rule_book_name,
+      segmentKey: result.section_key,
+      topic: result.topic,
+      structure: result.structure,
+      fulfillability: result.revised_fulfillability,
+    };
 
-      if (result.checklist_status === 'Not Fulfilled') {
-        notFulfilledParameters.push(parameterDetail);
-      } else if (result.checklist_status === 'Not verifiable') {
-        notVerifiableParameters.push(parameterDetail);
-      }
+    if (result.checklist_status === 'Not Fulfilled') {
+      notFulfilledParameters.push(parameterDetail);
+    } else if (result.checklist_status === 'Not verifiable') {
+      notVerifiableParameters.push(parameterDetail);
     }
   }
 

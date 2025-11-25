@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -341,22 +340,87 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     };
 }
 
-export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability }: Omit<RuleAnalysisResult, 'id'>) {
-    const existingResult = await db.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
+interface SaveAnalysisResultPayload {
+    projectAnalysisId: string;
+    ruleBookId: string;
+    ruleBookEntryId: string;
+    checklistStatus: string;
+    revisedFulfillability: string | null;
+}
+
+export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
+    const { projectAnalysisId, ruleBookId, ruleBookEntryId, checklistStatus, revisedFulfillability } = payload;
     
-    if (existingResult.rows.length > 0) {
-        // Update
-        await db.query(
-            'UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2, last_updated = NOW() WHERE id = $3',
-            [checklistStatus, revisedFulfillability, existingResult.rows[0].id]
-        );
-    } else {
-        // Insert
-        const newId = `rar-${Date.now()}-${Math.random()}`;
-        await db.query(
-            'INSERT INTO rule_analysis_results (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability) VALUES ($1, $2, $3, $4, $5)',
-            [newId, projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability]
-        );
+    // This action now requires full context to save a snapshot
+    const ruleBookDetails = await getRuleBookDetails(ruleBookId);
+    if (!ruleBookDetails) throw new Error("Could not find rulebook details to save context.");
+
+    let sectionKey = '0';
+    let topic = 'General';
+    let structure = '';
+    let text = '';
+    
+    let lastValidSegmentKey = '0';
+    let lastValidTopic = 'General';
+
+    for (const entry of ruleBookDetails.entries) {
+        const currentGliederung = entry.data['Gliederung'] as string;
+        
+        if (entry.data['Spaltentyp'] === 'Abschnitt' && currentGliederung) {
+            const currentSegmentKey = getSegmentKey(currentGliederung);
+            if(currentSegmentKey) {
+                lastValidSegmentKey = currentSegmentKey;
+                lastValidTopic = entry.data['Text'] as string || '';
+            }
+        }
+        
+        if (entry.id === ruleBookEntryId) {
+            sectionKey = lastValidSegmentKey;
+            topic = lastValidTopic;
+            structure = currentGliederung;
+            text = entry.data['Text'] as string;
+            break; 
+        }
+    }
+    
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        const existingResult = await client.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
+        
+        if (existingResult.rows.length > 0) {
+            // Update
+            await client.query(
+                `UPDATE rule_analysis_results 
+                 SET 
+                    checklist_status = $1, 
+                    revised_fulfillability = $2,
+                    rule_book_name = $3,
+                    section_key = $4,
+                    topic = $5,
+                    structure = $6,
+                    text = $7,
+                    rule_book_id = $8
+                 WHERE id = $9`,
+                [checklistStatus, revisedFulfillability, ruleBookDetails.ruleBook.versionName, sectionKey, topic, structure, text, ruleBookId, existingResult.rows[0].id]
+            );
+        } else {
+            // Insert
+            const newId = `rar-${Date.now()}-${Math.random()}`;
+            await client.query(
+                `INSERT INTO rule_analysis_results 
+                    (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability, rule_book_name, section_key, topic, structure, text, rule_book_id) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                [newId, projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability, ruleBookDetails.ruleBook.versionName, sectionKey, topic, structure, text, ruleBookId]
+            );
+        }
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error saving analysis result:', error);
+        throw error;
+    } finally {
+        client.release();
     }
 }
 
