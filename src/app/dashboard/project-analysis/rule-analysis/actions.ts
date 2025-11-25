@@ -360,7 +360,7 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     let text = '';
     let lastValidTopic = 'General';
     let lastValidSegmentKey: string | null = null;
-
+    
     const targetEntryIndex = ruleBookDetails.entries.findIndex(e => e.id === ruleBookEntryId);
 
     if (targetEntryIndex !== -1) {
@@ -373,12 +373,11 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
             const entry = ruleBookDetails.entries[i];
             const gliederung = String(entry.data['Gliederung'] || '');
             const entrySegmentKey = getSegmentKey(gliederung);
-            
-            if (entry.data['Spaltentyp'] === 'Abschnitt' && entrySegmentKey) {
-                 if (structure.startsWith(entrySegmentKey)) {
-                    topic = entry.data['Text'] as string || 'General';
-                    break;
-                 }
+            const entryIsSection = entry.data['Spaltentyp'] === 'Abschnitt';
+
+            if (entryIsSection && entrySegmentKey && structure.startsWith(entrySegmentKey)) {
+                topic = entry.data['Text'] as string || 'General';
+                break; // Found the most specific parent section
             }
         }
     }
