@@ -20,17 +20,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
             className={className}
         >
             <title>{project.name}</title>
-            <style>
-                {`
-                    text>title {
-                        display: none;
-                    }
-                    text:hover>title {
-                        display: block;
-                        background-color: hsl(var(--primary));
-                    }
-                `}
-            </style>
+            
             <path 
                 d="M5 6 H30 L38 12 H95 V16 H5Z"
                 className="fill-primary"
