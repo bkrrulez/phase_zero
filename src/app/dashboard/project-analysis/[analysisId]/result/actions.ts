@@ -74,15 +74,9 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   const entryRes = await db.query('SELECT id, rule_book_id, data FROM rule_book_entries WHERE id = ANY($1::text[])', [entryIds]);
   
   const entryDetailsMap = new Map<string, { ruleBookName: string; segmentKey: string; topic: string; structure: string; ruleBookId: string }>();
-  const entriesByBook = new Map<string, any[]>();
-  entryRes.rows.forEach(row => {
-      if (!entriesByBook.has(row.rule_book_id)) {
-          entriesByBook.set(row.rule_book_id, []);
-      }
-      entriesByBook.get(row.rule_book_id)!.push(row);
-  });
+  const bookIdsWithResults = new Set(entryRes.rows.map(row => row.rule_book_id));
 
-  for (const [bookId] of entriesByBook.entries()) {
+  for (const bookId of bookIdsWithResults) {
       const book = ruleBookMap.get(bookId);
       if (!book) continue;
       
@@ -104,13 +98,15 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
           
           const finalSegmentKey = currentSegmentKey ?? lastValidSegmentKey;
 
-          entryDetailsMap.set(entry.id, {
-              ruleBookId: bookId,
-              ruleBookName: book.versionName,
-              segmentKey: finalSegmentKey,
-              topic: finalSegmentKey === lastValidSegmentKey ? lastValidTopic : '', // Ensure topic matches segment
-              structure: gliederung,
-          });
+          if (entryRes.rows.some(r => r.id === entry.id)) {
+              entryDetailsMap.set(entry.id, {
+                  ruleBookId: bookId,
+                  ruleBookName: book.versionName,
+                  segmentKey: finalSegmentKey,
+                  topic: lastValidTopic,
+                  structure: gliederung,
+              });
+          }
       }
   }
 
@@ -169,4 +165,3 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
   
   return { checklistData, fulfillabilityData, notFulfilledParameters, notVerifiableParameters };
 }
-
