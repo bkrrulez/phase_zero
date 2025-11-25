@@ -12,6 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, payload }: any) => {
@@ -29,6 +32,52 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   );
 };
 
+const ParameterDetailTable = ({ parameters }: { parameters: { structure: string; text: string }[] }) => {
+    if (parameters.length === 0) {
+        return <p className="text-sm text-muted-foreground px-4 py-2">No parameters in this category.</p>;
+    }
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead className="w-[150px]">Structure</TableHead>
+                    <TableHead>Text</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {parameters.map((param, index) => (
+                    <TableRow key={index}>
+                        <TableCell>{param.structure}</TableCell>
+                        <TableCell>{param.text}</TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    );
+};
+
+const ParameterGroup = ({ group }: { group: AnalysisResultData['notFulfilledParameters'] }) => {
+    const { t } = useLanguage();
+    const order: (keyof typeof group)[] = ['Heavy', 'Medium', 'Light'];
+    return (
+        <Accordion type="multiple" className="w-full">
+            {order.map(level => {
+                const parameters = group[level];
+                if (parameters.length > 0) {
+                    return (
+                         <AccordionItem value={level} key={level}>
+                            <AccordionTrigger className="font-semibold">{t(level)} ({parameters.length})</AccordionTrigger>
+                            <AccordionContent>
+                                <ParameterDetailTable parameters={parameters}/>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )
+                }
+                return null;
+            })}
+        </Accordion>
+    );
+};
 
 export default function AnalysisResultPage() {
     const params = useParams();
@@ -183,6 +232,25 @@ export default function AnalysisResultPage() {
                     </CardContent>
                 </Card>
             </div>
+            
+            {chartData && (
+                <Card>
+                    <CardContent className="p-0">
+                        <Tabs defaultValue="not-fulfilled">
+                            <TabsList className="p-2 h-auto rounded-b-none">
+                                <TabsTrigger value="not-fulfilled">Not Fulfilled Parameters</TabsTrigger>
+                                <TabsTrigger value="not-verifiable">Not Verifiable Parameters</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="not-fulfilled" className="mt-0 p-4">
+                                <ParameterGroup group={chartData.notFulfilledParameters} />
+                            </TabsContent>
+                            <TabsContent value="not-verifiable" className="mt-0 p-4">
+                                <ParameterGroup group={chartData.notVerifiableParameters} />
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }

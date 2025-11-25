@@ -3,6 +3,19 @@
 
 import { db } from '@/lib/db';
 import { getAnalysisResults as getAllResults } from '../../rule-analysis/actions';
+import { type RuleBookEntry } from '@/lib/types';
+
+
+interface ParameterDetail {
+    structure: string;
+    text: string;
+}
+
+interface GroupedParameters {
+    Heavy: ParameterDetail[];
+    Medium: ParameterDetail[];
+    Light: ParameterDetail[];
+}
 
 interface ChartData {
   name: string;
@@ -13,6 +26,8 @@ interface ChartData {
 export interface AnalysisResultData {
   checklistData: ChartData[];
   fulfillabilityData: ChartData[];
+  notFulfilledParameters: GroupedParameters;
+  notVerifiableParameters: GroupedParameters;
 }
 
 const checklistColors = {
@@ -52,17 +67,44 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
     'Heavy': 0,
   };
 
-  results.forEach(result => {
-    if (result.checklistStatus) {
-        const key = checklistTranslationMap[result.checklistStatus];
-        if (key && checklistCounts.hasOwnProperty(key)) {
-            checklistCounts[key]++;
+  const notFulfilledParameters: GroupedParameters = { Heavy: [], Medium: [], Light: [] };
+  const notVerifiableParameters: GroupedParameters = { Heavy: [], Medium: [], Light: [] };
+
+  if (results.length > 0) {
+      const entryIds = results.map(r => r.ruleBookEntryId);
+      const entryRes = await db.query('SELECT id, data FROM rule_book_entries WHERE id = ANY($1)', [entryIds]);
+      const entryMap = new Map<string, RuleBookEntry['data']>();
+      entryRes.rows.forEach(row => entryMap.set(row.id, row.data));
+
+      results.forEach(result => {
+        if (result.checklistStatus) {
+            const key = checklistTranslationMap[result.checklistStatus];
+            if (key && checklistCounts.hasOwnProperty(key)) {
+                checklistCounts[key]++;
+            }
         }
-    }
-    if (result.revisedFulfillability && fulfillabilityCounts.hasOwnProperty(result.revisedFulfillability)) {
-      fulfillabilityCounts[result.revisedFulfillability]++;
-    }
-  });
+        if (result.revisedFulfillability && fulfillabilityCounts.hasOwnProperty(result.revisedFulfillability)) {
+          fulfillabilityCounts[result.revisedFulfillability]++;
+        }
+
+        const entryData = entryMap.get(result.ruleBookEntryId);
+        if (entryData) {
+            const detail: ParameterDetail = {
+                structure: entryData['Gliederung'] || 'N/A',
+                text: entryData['Text'] || 'N/A',
+            };
+
+            const fulfillabilityKey = result.revisedFulfillability as keyof GroupedParameters;
+
+            if (result.checklistStatus === 'Not Fulfilled' && fulfillabilityKey) {
+                notFulfilledParameters[fulfillabilityKey]?.push(detail);
+            } else if (result.checklistStatus === 'Not verifiable' && fulfillabilityKey) {
+                notVerifiableParameters[fulfillabilityKey]?.push(detail);
+            }
+        }
+      });
+  }
+
 
   const checklistData = (Object.entries(checklistCounts) as [keyof typeof checklistColors, number][])
     .filter(([, value]) => value > 0)
@@ -80,5 +122,5 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
       fill: fulfillabilityColors[name as keyof typeof fulfillabilityColors] || '#cccccc',
     }));
 
-  return { checklistData, fulfillabilityData };
+  return { checklistData, fulfillabilityData, notFulfilledParameters, notVerifiableParameters };
 }
