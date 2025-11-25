@@ -24,7 +24,7 @@ interface SegmentStat {
     totalRows: number;
     totalParameters: number;
     completedParameters: number;
-    firstRowText: string;
+    firstRowText?: string;
 }
 
 interface SegmentedRuleBook {
@@ -118,7 +118,7 @@ export default function RuleAnalysisPage() {
                         </Link>
                     </Button>
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisFor', { name: project?.name || ''})}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{t('parameterAnalysisFor', { name: project?.name || ''})}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
                             {projectAnalysis && <p><span className="font-semibold">{t('analysisVersionHeader')}:</span> {String(projectAnalysis.version).padStart(3, '0')}</p>}
                            {projectAnalysis && (
@@ -199,5 +199,3 @@ export default function RuleAnalysisPage() {
         </div>
     );
 }
-
-    

@@ -198,7 +198,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 if (!analysis || !analysis.checklistStatus) {
                     return false; // Not started
                 }
-                 if (['Unachievable', 'Not verifiable'].includes(analysis.checklistStatus)) {
+                 if (['Not Fulfilled', 'Not verifiable'].includes(analysis.checklistStatus)) {
                     // If it requires fulfillability, it must have a value.
                     return !!analysis.revisedFulfillability;
                 }
@@ -211,6 +211,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 totalRows: segmentEntries.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
+                firstRowText: segmentEntries[0]?.data['Text'] || '',
             };
         });
 
