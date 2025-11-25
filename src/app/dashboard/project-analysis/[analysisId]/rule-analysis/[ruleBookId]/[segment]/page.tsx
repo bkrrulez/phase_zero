@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -151,7 +152,7 @@ export default function SegmentDetailPage() {
                 projectAnalysisId: analysisId,
                 ruleBookId: ruleBookId,
                 ruleBookEntryId: entryId,
-                segmentKey: segment, // Pass the current segment key
+                segmentKey: segment,
                 checklistStatus: newData.checklistStatus!,
                 revisedFulfillability: newData.revisedFulfillability
             });
@@ -314,9 +315,9 @@ export default function SegmentDetailPage() {
         <AlertDialog open={showNoMoreSegmentsAlert} onOpenChange={setShowNoMoreSegmentsAlert}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Analysis Complete</AlertDialogTitle>
+                    <AlertDialogTitle>{t('noMoreParametersTitle')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        No more sections left for analysis.
+                        {t('noMoreParametersDesc')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

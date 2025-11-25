@@ -456,5 +456,7 @@
     "Structure": "Structure",
     "Fulfillability": "Fulfillability",
     "analysisIncompleteTitle": "Analysis Incomplete",
-    "analysisIncompleteDesc": "Please analyse the remaining parameters."
+    "analysisIncompleteDesc": "Please analyse the remaining parameters.",
+    "noMoreParametersTitle": "No More Parameters",
+    "noMoreParametersDesc": "Please go back to the overview."
 }

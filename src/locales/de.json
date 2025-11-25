@@ -456,5 +456,7 @@
     "Structure": "Gliederung",
     "Fulfillability": "Erfüllbarkeit",
     "analysisIncompleteTitle": "Analyse nicht vollständig!",
-    "analysisIncompleteDesc": "Bitte analysieren Sie die verbleibenden Parameters."
+    "analysisIncompleteDesc": "Bitte analysieren Sie die verbleibenden Parameters.",
+    "noMoreParametersTitle": "keine weiteren Parameter",
+    "noMoreParametersDesc": "Bitte gehen Sie zurück zur Übersicht."
 }
