@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowDown, ArrowUp } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,21 +33,54 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
   );
 };
 
+type SortableColumn = 'ruleBookName' | 'fulfillability';
+
 const ParametersTable = ({ parameters, onRowClick, analysisId }: { parameters: AnalysisResultData['notFulfilledParameters'], onRowClick: (props: ViewerProps) => void, analysisId: string }) => {
     const { t } = useLanguage();
-    const [selectedFulfillability, setSelectedFulfillability] = React.useState<string[]>(['Heavy']);
+    const [selectedFulfillability, setSelectedFulfillability] = React.useState<string[]>(['Light', 'Medium', 'Heavy']);
+    const [sortColumn, setSortColumn] = React.useState<SortableColumn | null>(null);
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
     
     const fulfillabilityOptions: MultiSelectOption[] = [
-        { value: 'Heavy', label: t('Heavy') },
+        { value: 'Light', label: t('Light') },
         { value: 'Medium', label: t('Medium') },
-        { value: 'Light', label: t('Light') }
+        { value: 'Heavy', label: t('Heavy') }
     ];
 
-    const filteredParameters = parameters.filter(param => selectedFulfillability.includes(param.fulfillability || ''));
+    const handleSort = (column: SortableColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
 
-    const columns = selectedFulfillability.length > 1 
-        ? ['Rule Book Name', 'Section', 'Structure', 'Fulfillability']
-        : ['Rule Book Name', 'Section', 'Structure'];
+    const renderSortIcon = (column: SortableColumn) => {
+        if (sortColumn !== column) {
+            return <ArrowUp className="ml-2 h-4 w-4 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />;
+        }
+        return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+    }
+
+    const sortedParameters = React.useMemo(() => {
+        const filtered = parameters.filter(param => selectedFulfillability.includes(param.fulfillability || ''));
+        
+        if (sortColumn) {
+            return [...filtered].sort((a, b) => {
+                const valA = (sortColumn === 'ruleBookName' ? a.ruleBookName : a.fulfillability || '').toLowerCase();
+                const valB = (sortColumn === 'ruleBookName' ? b.ruleBookName : b.fulfillability || '').toLowerCase();
+                
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        
+        return filtered;
+    }, [parameters, selectedFulfillability, sortColumn, sortDirection]);
+
+    const columns = ['Rule Book Name', 'Structure', 'Section', 'Fulfillability'];
 
     return (
         <div className="space-y-4">
@@ -63,26 +96,45 @@ const ParametersTable = ({ parameters, onRowClick, analysisId }: { parameters: A
             <Table>
                 <TableHeader>
                     <TableRow>
-                        {columns.map(col => <TableHead key={col}>{t(col as any) || col}</TableHead>)}
+                       <TableHead 
+                            onClick={() => handleSort('ruleBookName')}
+                            className="cursor-pointer group"
+                        >
+                            <div className="flex items-center">
+                                {t('Rule Book Name')}
+                                {renderSortIcon('ruleBookName')}
+                            </div>
+                        </TableHead>
+                        <TableHead>{t('Structure')}</TableHead>
+                        <TableHead>{t('Section')}</TableHead>
+                        <TableHead 
+                            onClick={() => handleSort('fulfillability')}
+                            className="cursor-pointer group"
+                        >
+                             <div className="flex items-center">
+                                {t('Fulfillability')}
+                                {renderSortIcon('fulfillability')}
+                            </div>
+                        </TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredParameters.length > 0 ? filteredParameters.map((param, index) => (
+                    {sortedParameters.length > 0 ? sortedParameters.map((param, index) => (
                         <TableRow key={`${param.entryId}-${index}`}>
                             <TableCell>{param.ruleBookName}</TableCell>
+                            <TableCell 
+                                className="cursor-pointer hover:underline text-primary max-w-xs truncate"
+                                onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
+                            >
+                                {param.structure}
+                            </TableCell>
                             <TableCell 
                                 className="cursor-pointer hover:underline text-primary"
                                 onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
                             >
                                 {param.segmentKey}
                             </TableCell>
-                             <TableCell 
-                                className="cursor-pointer hover:underline text-primary max-w-xs truncate"
-                                onClick={() => onRowClick({ projectAnalysisId: analysisId, ruleBookId: param.ruleBookId, segmentKey: param.segmentKey, highlightEntryId: param.entryId })}
-                            >
-                                {param.structure}
-                            </TableCell>
-                            {columns.includes('Fulfillability') && <TableCell>{t(param.fulfillability as any)}</TableCell>}
+                            <TableCell>{t(param.fulfillability as any)}</TableCell>
                         </TableRow>
                     )) : (
                         <TableRow>
