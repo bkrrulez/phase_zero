@@ -79,17 +79,20 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                 <DialogHeader className="p-6 pb-2 shrink-0">
                     <DialogTitle>{t('ruleAnalysisSectionTitle', { key: segmentKey || '' })}</DialogTitle>
                 </DialogHeader>
-                <div className="flex-1 overflow-x-auto border-t">
-                    <div className="min-w-max h-full overflow-y-auto">
+                <div className="flex-1 overflow-auto border-t">
+                    <div className="h-full">
                         {loading ? (
                             <Skeleton className="h-full w-full" />
                         ) : error ? (
                             <div className="text-destructive p-4">{error}</div>
                         ) : (
-                            <Table>
+                            <Table className="table-fixed w-full">
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
-                                        {headers.map(header => <TableHead key={header}>{t(header as any) || header}</TableHead>)}
+                                        <TableHead className="w-[15%]">{t('Structure' as any)}</TableHead>
+                                        <TableHead className="w-[40%]">{t('Text' as any)}</TableHead>
+                                        <TableHead className="w-[22.5%]">{t('Project Checklist' as any)}</TableHead>
+                                        <TableHead className="w-[22.5%]">{t('Project-based Fulfillability' as any)}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -99,11 +102,11 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                                             ref={entry.id === highlightEntryId ? highlightRef : null}
                                             className={cn(entry.id === highlightEntryId && 'bg-blue-100 dark:bg-blue-900/50')}
                                         >
-                                            <TableCell><LatexRenderer text={String(entry.data['Gliederung'] ?? '')} /></TableCell>
-                                            <TableCell><LatexRenderer text={String(entry.data['Text'] ?? '')} /></TableCell>
-                                            <TableCell>
+                                            <TableCell className="align-top"><LatexRenderer text={String(entry.data['Gliederung'] ?? '')} /></TableCell>
+                                            <TableCell className="align-top"><LatexRenderer text={String(entry.data['Text'] ?? '')} /></TableCell>
+                                            <TableCell className="align-top">
                                                 {entry.data['Spaltentyp'] === 'Parameter' ? (
-                                                    <Select value={entry.analysis?.checklistStatus || ''}>
+                                                    <Select value={entry.analysis?.checklistStatus || ''} disabled>
                                                         <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
                                                             {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
@@ -111,9 +114,9 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                                                     </Select>
                                                 ) : <span className="text-muted-foreground">-</span>}
                                             </TableCell>
-                                            <TableCell>
+                                            <TableCell className="align-top">
                                                 {['Not Fulfilled', 'Not verifiable'].includes(entry.analysis?.checklistStatus || '') ? (
-                                                     <Select value={entry.analysis?.revisedFulfillability || ''}>
+                                                     <Select value={entry.analysis?.revisedFulfillability || ''} disabled>
                                                         <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
                                                         <SelectContent>
                                                             {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any)}</SelectItem>)}
