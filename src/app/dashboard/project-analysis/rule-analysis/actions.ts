@@ -358,18 +358,29 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     let topic = 'General';
     let structure = '';
     let text = '';
-    
-    // Find the topic of the current section
-    const sectionHeader = ruleBookDetails.entries.find(e => e.data['Spaltentyp'] === 'Abschnitt' && getSegmentKey(String(e.data['Gliederung'])) === segmentKey);
-    if (sectionHeader) {
-        topic = sectionHeader.data['Text'] as string || 'General';
-    }
+    let lastValidTopic = 'General';
+    let lastValidSegmentKey: string | null = null;
 
-    // Find the specific entry being updated to get its structure and text
-    const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
-    if(targetEntry) {
+    const targetEntryIndex = ruleBookDetails.entries.findIndex(e => e.id === ruleBookEntryId);
+
+    if (targetEntryIndex !== -1) {
+        const targetEntry = ruleBookDetails.entries[targetEntryIndex];
         structure = (targetEntry.data['Gliederung'] as string) || '';
         text = (targetEntry.data['Text'] as string) || '';
+
+        // Find the topic of the current section by looking backwards from the current entry
+        for (let i = targetEntryIndex; i >= 0; i--) {
+            const entry = ruleBookDetails.entries[i];
+            const gliederung = String(entry.data['Gliederung'] || '');
+            const entrySegmentKey = getSegmentKey(gliederung);
+            
+            if (entry.data['Spaltentyp'] === 'Abschnitt' && entrySegmentKey) {
+                 if (structure.startsWith(entrySegmentKey)) {
+                    topic = entry.data['Text'] as string || 'General';
+                    break;
+                 }
+            }
+        }
     }
     
     const client = await db.connect();
