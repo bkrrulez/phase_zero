@@ -257,7 +257,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                           <SidebarMenuItem>
                               <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/admin-panel")}>
                                   <Link href="/dashboard/settings/admin-panel">
-                                      <SlidersHorizontal /> Admin Panel
+                                      <SlidersHorizontal /> {t('adminPanel')}
                                   </Link>
                               </SidebarMenuButton>
                           </SidebarMenuItem>

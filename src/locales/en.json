@@ -337,6 +337,7 @@
     "ruleBookName": "Rule Book Name",
     "importDate": "Import Date",
     "rows": "Rows",
+    "row": "Row",
     "noRuleBooks": "No rule books have been imported yet.",
     "importError": "Import Error",
     "importSuccess": "Import Successful",
@@ -438,6 +439,12 @@
     "analysisAlreadyExistsDesc": "An analysis for this project is already present.",
     "openLastAnalysis": "Open Last Analysis",
     "newAnalysis": "New Analysis",
-    "row": "Row",
-    "rows": "Rows"
+    "adminPanel": "Admin Panel",
+    "adminPanelSubtitle": "Manage global application settings and features.",
+    "globalUISettings": "Global UI Settings",
+    "globalUISettingsDesc": "These settings affect the user interface for all users of the application.",
+    "rowCountInAnalysis": "Row count in Parameter Analysis page",
+    "rowCountInAnalysisDesc": "Display the total number of rows for each section in the parameter analysis view."
 }
+
+    

@@ -8,9 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminPanel } from '../../contexts/AdminPanelContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 function AdminPanelContent() {
   const { showRowCount, setShowRowCount, isLoading } = useAdminPanel();
+  const { t } = useLanguage();
 
   const handleRowCountToggle = (isChecked: boolean) => {
     setShowRowCount(isChecked);
@@ -23,17 +25,17 @@ function AdminPanelContent() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Global UI Settings</CardTitle>
+        <CardTitle>{t('globalUISettings')}</CardTitle>
         <CardDescription>
-          These settings affect the user interface for all users of the application.
+          {t('globalUISettingsDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
           <Label htmlFor="row-count-toggle" className="flex flex-col space-y-1">
-            <span>Row count in Parameter Analysis page</span>
+            <span>{t('rowCountInAnalysis')}</span>
             <span className="font-normal leading-snug text-muted-foreground">
-              Display the total number of rows for each section in the parameter analysis view.
+             {t('rowCountInAnalysisDesc')}
             </span>
           </Label>
           <Switch
@@ -50,16 +52,17 @@ function AdminPanelContent() {
 
 export default function AdminPanelPage() {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
 
   if (currentUser?.role !== 'Super Admin') {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Access Denied</CardTitle>
-          <CardDescription>You do not have permission to view this page.</CardDescription>
+          <CardTitle>{t('accessDenied')}</CardTitle>
+          <CardDescription>{t('noPermissionPage')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <p>Please contact an administrator if you believe this is an error.</p>
+          <p>{t('contactAdmin')}</p>
         </CardContent>
       </Card>
     );
@@ -68,9 +71,9 @@ export default function AdminPanelPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Admin Panel</h1>
+        <h1 className="text-3xl font-bold font-headline">{t('adminPanel')}</h1>
         <p className="text-muted-foreground">
-          Manage global application settings and features.
+          {t('adminPanelSubtitle')}
         </p>
       </div>
       <AdminPanelContent />

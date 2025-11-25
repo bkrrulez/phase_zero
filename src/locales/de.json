@@ -336,6 +336,7 @@
     "ruleBookName": "Name des Regelwerks",
     "importDate": "Importdatum",
     "rows": "Zeilen",
+    "row": "Zeile",
     "noRuleBooks": "Es wurden noch keine Regelwerke importiert.",
     "importError": "Importfehler",
     "importSuccess": "Import erfolgreich",
@@ -437,8 +438,12 @@
     "analysisAlreadyExistsDesc": "Es existiert bereits eine Analyse zu diesem Projekt.",
     "openLastAnalysis": "Letzte Analyse öffnen",
     "newAnalysis": "Neue Analyse",
-    "row": "Zeile",
-    "rows": "Zeilen"
+    "adminPanel": "Admin-Panel",
+    "adminPanelSubtitle": "Globale Anwendungseinstellungen und -funktionen verwalten.",
+    "globalUISettings": "Globale UI-Einstellungen",
+    "globalUISettingsDesc": "Diese Einstellungen wirken sich auf die Benutzeroberfläche für alle Benutzer der Anwendung aus.",
+    "rowCountInAnalysis": "Zeilenanzahl auf der Parameteranalyse-Seite",
+    "rowCountInAnalysisDesc": "Zeigt die Gesamtzahl der Zeilen für jeden Abschnitt in der Parameteranalyse-Ansicht an."
 }
 
     
