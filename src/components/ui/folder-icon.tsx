@@ -7,6 +7,11 @@ export const FolderIcon = ({ className, project }: { className?: string, project
         ? `${project.address.substring(0, maxAddressLength)}...`
         : project.address;
 
+    const maxProjectNameLength = 12;
+    const truncatedProjectName = project.name.length > maxProjectNameLength
+        ? `${project.name.substring(0, 10)}...`
+        : project.name;
+
     return (
         <svg
             viewBox="0 0 100 60"
@@ -38,7 +43,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
                 alignmentBaseline="middle"
                 className="text-[13px] font-bold fill-primary-foreground"
             >
-                {project.name}
+                {truncatedProjectName}
             </text>
             <text
                 x="8"
