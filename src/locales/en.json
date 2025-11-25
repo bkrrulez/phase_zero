@@ -402,7 +402,7 @@
     "confirmChangesDesc": "Saving new values will refresh the rule analysis. Do you want to proceed?",
     "proceed": "Proceed",
     "ruleAnalysis": "Rule Analysis",
-    "ruleAnalysisFor": "Parameter Analysis for {{name}}",
+    "parameterAnalysisPageTitle": "Parameter Analysis for {{name}}",
     "ruleAnalysisFilteredDesc": "Parameters filtered based on your analysis criteria.",
     "section": "Section {{key}}",
     "analyzed": "analyzed",
