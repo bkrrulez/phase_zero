@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -16,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminPanel } from '@/app/dashboard/contexts/AdminPanelContext';
 
 
 interface SegmentStat {
@@ -39,6 +39,7 @@ export default function RuleAnalysisPage() {
     const analysisId = params.analysisId as string;
     const { t } = useLanguage();
     const { toast } = useToast();
+    const { showRowCount } = useAdminPanel();
 
     const [projectAnalysis, setProjectAnalysis] = React.useState<ProjectAnalysis | null>(null);
     const [project, setProject] = React.useState<Project | null>(null);
@@ -143,7 +144,7 @@ export default function RuleAnalysisPage() {
                             <CardTitle className="flex justify-between items-center">
                                 <span>{ruleBook.versionName}</span>
                                 <div className="flex items-center gap-4 text-sm font-medium">
-                                    <span className="text-muted-foreground">{totalRows} {totalRows === 1 ? t('row') : t('rows')}</span>
+                                    {showRowCount && <span className="text-muted-foreground">{totalRows} {totalRows === 1 ? t('row') : t('rows')}</span>}
                                     {totalParameters > 0 && (
                                         <div className="flex items-center gap-2">
                                             <span>{totalCompleted} / {totalParameters}</span>
@@ -172,7 +173,7 @@ export default function RuleAnalysisPage() {
                                                 <h3 className="font-semibold text-lg">{t('section', { key: segment.key })}</h3>
                                                 {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500" />}
                                             </div>
-                                            <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>
+                                            {showRowCount && <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
                                             
                                             {!hasNoParameters && (
                                                 <div>
@@ -191,3 +192,5 @@ export default function RuleAnalysisPage() {
         </div>
     );
 }
+
+    

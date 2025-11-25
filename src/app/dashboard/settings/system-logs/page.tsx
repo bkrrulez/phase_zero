@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { format, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, SlidersHorizontal } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
@@ -174,3 +174,5 @@ export default function SystemLogsPage() {
     </div>
   );
 }
+
+    

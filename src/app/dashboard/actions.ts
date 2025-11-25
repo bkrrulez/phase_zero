@@ -23,25 +23,29 @@ import { revalidatePath } from 'next/cache';
 
 const cleanUpArrayField = (field: any): string[] => {
     if (!field) return [];
-    // If the field is already a clean array of strings, return it.
     if (Array.isArray(field) && field.every(item => typeof item === 'string')) {
         return field;
     }
     
-    // Handle PostgreSQL array literal format, e.g., '{"Value1","Value, with comma"}'
     if (typeof field === 'string' && field.startsWith('{') && field.endsWith('}')) {
         const cleanedString = field.substring(1, field.length - 1);
         
-        // This is a more robust way to parse postgres array strings,
-        // accounting for quoted elements that may contain commas.
-        const result = [];
+        const result: string[] = [];
         let current = '';
         let inQuotes = false;
         for (let i = 0; i < cleanedString.length; i++) {
             const char = cleanedString[i];
-            if (char === '"' && (i === 0 || cleanedString[i-1] !== '\\')) {
+            
+            // Handle escaped quotes
+            if (char === '\\' && i + 1 < cleanedString.length && cleanedString[i+1] === '"') {
+                current += '"';
+                i++; // Skip the next character
+                continue;
+            }
+
+            if (char === '"') {
                 inQuotes = !inQuotes;
-                continue; // Skip the quote itself
+                continue; 
             }
             if (char === ',' && !inQuotes) {
                 result.push(current);
@@ -50,11 +54,10 @@ const cleanUpArrayField = (field: any): string[] => {
                 current += char;
             }
         }
-        result.push(current); // Add the last element
+        result.push(current);
         return result.map(item => item.trim());
     }
 
-    // Fallback for simple comma-separated strings or other unexpected formats
     if (typeof field === 'string') {
         return field.split(',').map(item => item.trim());
     }
@@ -753,7 +756,7 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
             `UPDATE projects SET 
                 name = $1, project_manager = $2, creator_id = $3, address = $4,
                 project_owner = $5, year_of_construction = $6, number_of_floors = $7,
-                escape_level = $8, listed_building = $9, protection_zone = $10, current_use = $11
+                escapeLevel = $8, listed_building = $9, protection_zone = $10, current_use = $11
              WHERE id = $12`,
             [
                 name, projectManager, creatorId, address, projectOwner, yearOfConstruction,
@@ -1197,30 +1200,25 @@ export async function getSystemSetting(key: string): Promise<string | null> {
         }
         return null;
     } catch (error) {
-        console.error(`Failed to get setting for key '${key}', returning null:`, error);
+        console.error(`Failed to get setting for key '${key}', table might not exist. Returning null:`, error);
         return null;
     }
 }
 
 export async function setSystemSetting(key: string, value: string): Promise<void> {
     try {
+        // Use ON CONFLICT to handle both insert and update in one query
         await db.query(
             `INSERT INTO system_settings (key, value) VALUES ($1, $2)
-             ON CONFLICT (key) DO UPDATE SET value = $2`,
+             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, last_modified = NOW()`,
             [key, value]
         );
+        revalidatePath('/dashboard/settings/admin-panel'); // Revalidate admin panel when a setting changes
     } catch (error) {
         console.error(`Failed to set setting for key '${key}':`, error);
+        throw error;
     }
 }
-
-export async function getIsHolidaysNavVisible(): Promise<boolean> {
-  const isVisible = await getSystemSetting('isHolidaysNavVisible');
-  return isVisible !== 'false';
-}
-
-export async function setIsHolidaysNavVisible(isVisible: boolean): Promise<void> {
-  await setSystemSetting('isHolidaysNavVisible', String(isVisible));
-}
+    
 
     

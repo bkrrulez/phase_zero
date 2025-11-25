@@ -21,6 +21,7 @@ import {
   LifeBuoy,
   BookText,
   BarChart2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import * as React from 'react';
@@ -67,7 +68,7 @@ import { PushMessagesProvider, usePushMessages } from "./contexts/PushMessagesCo
 import { SystemLogProvider } from "./contexts/SystemLogContext";
 import { NotificationsProvider, useNotifications } from "./contexts/NotificationsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { SettingsProvider, useSettings } from "./contexts/SettingsContext";
+import { AdminPanelProvider } from "./contexts/AdminPanelContext";
 import { LanguageProvider, useLanguage } from "./contexts/LanguageContext";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -110,7 +111,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { currentUser, logout, isLoading: isAuthLoading } = useAuth();
   const { teamMembers, fetchMembers } = useMembers();
   const { fetchContracts } = useContracts();
-  const { isHolidaysNavVisible, isLoading: isSettingsLoading } = useSettings();
   const { t } = useLanguage();
   const { pushMessages, userMessageStates } = usePushMessages();
   const { notifications } = useNotifications();
@@ -144,7 +144,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   const totalUnreadCount = activeUnreadPushCount + unreadRequestCount;
   
-  const isLoading = isAuthLoading || isSettingsLoading;
+  const isLoading = isAuthLoading;
 
   if (isLoading || !currentUser) {
     return (
@@ -255,6 +255,13 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                       {currentUser.role === 'Super Admin' && (
                         <>
                           <SidebarMenuItem>
+                              <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/admin-panel")}>
+                                  <Link href="/dashboard/settings/admin-panel">
+                                      <SlidersHorizontal /> Admin Panel
+                                  </Link>
+                              </SidebarMenuButton>
+                          </SidebarMenuItem>
+                          <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={pathname.startsWith("/dashboard/settings/push-messages")}>
                                 <Link href="/dashboard/settings/push-messages">
                                     <Send /> {t('pushMessages')}
@@ -359,7 +366,7 @@ function DataProviders({
         <MembersProvider>
             <AuthProvider>
                 <SystemLogProvider>
-                    <SettingsProvider>
+                    <AdminPanelProvider>
                         <TeamsProvider>
                             <ProjectsProvider>
                                 <PushMessagesProvider>
@@ -369,7 +376,7 @@ function DataProviders({
                                 </PushMessagesProvider>
                             </ProjectsProvider>
                         </TeamsProvider>
-                    </SettingsProvider>
+                    </AdminPanelProvider>
                 </SystemLogProvider>
             </AuthProvider>
         </MembersProvider>
@@ -389,3 +396,5 @@ export default function DashboardLayout({
     </DataProviders>
   );
 }
+
+    

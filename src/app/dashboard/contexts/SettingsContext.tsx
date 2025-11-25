@@ -34,7 +34,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const setIsHolidaysNavVisible = async (isVisible: boolean) => {
     _setIsHolidaysNavVisible(isVisible);
     await setSystemSetting('isHolidaysNavVisible', String(isVisible));
-    await logAction(`User '${currentUser.name}' set 'Display Holidays' navigation to ${isVisible}.`);
+    if (currentUser) {
+        await logAction(`User '${currentUser.name}' set 'Display Holidays' navigation to ${isVisible}.`);
+    }
   };
 
   return (
