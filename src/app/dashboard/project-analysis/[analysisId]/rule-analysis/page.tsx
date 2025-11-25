@@ -172,14 +172,14 @@ export default function RuleAnalysisPage() {
                                             className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
                                         >
                                             <div className="flex justify-between items-start">
-                                                <h3 className="font-medium text-base">{t('section', { key: segment.key })}</h3>
+                                                <h3 className="text-sm text-muted-foreground">{t('section', { key: segment.key })}</h3>
                                                 {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />}
                                             </div>
                                             
                                             {showRowCount && <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
                                             
                                             {segment.firstRowText && (
-                                                <p className="text-sm font-semibold text-foreground truncate" title={segment.firstRowText}>{segment.firstRowText}</p>
+                                                <p className="text-sm font-bold text-muted-foreground truncate" title={segment.firstRowText}>{segment.firstRowText}</p>
                                             )}
 
                                             {!hasNoParameters && (
@@ -199,5 +199,3 @@ export default function RuleAnalysisPage() {
         </div>
     );
 }
-
-    
