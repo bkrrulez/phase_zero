@@ -405,7 +405,7 @@
     "parameterAnalysisPageTitle": "Parameter Analysis for {{name}}",
     "ruleAnalysisFilteredDesc": "Parameters filtered based on your analysis criteria.",
     "section": "Section {{key}}",
-    "analyzed": "analyzed",
+    "analyzed": "Analyzed",
     "ruleAnalysisSectionTitle": "Rule Analysis: Section {{key}}",
     "sectionRuleBook": "Rule Book",
     "projectChecklist": "Project Checklist",
