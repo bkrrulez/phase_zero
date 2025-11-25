@@ -210,7 +210,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 totalRows: segmentEntries.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
-                firstRowText: segmentEntries[0]?.data['Text'] || '',
+                firstRowText: segmentEntries.find(e => e.data['Spaltentyp'] === 'Abschnitt')?.data['Text'] || segmentEntries[0]?.data['Text'] || '',
             };
         });
 
@@ -351,7 +351,6 @@ interface SaveAnalysisResultPayload {
 export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     const { projectAnalysisId, ruleBookId, ruleBookEntryId, checklistStatus, revisedFulfillability } = payload;
     
-    // This action now requires full context to save a snapshot
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error("Could not find rulebook details to save context.");
 
@@ -364,13 +363,13 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     let lastValidTopic = 'General';
 
     for (const entry of ruleBookDetails.entries) {
-        const currentGliederung = entry.data['Gliederung'] as string;
+        const currentGliederung = entry.data['Gliederung'] as string || '';
         
-        if (entry.data['Spaltentyp'] === 'Abschnitt' && currentGliederung) {
+        if (entry.data['Spaltentyp'] === 'Abschnitt') {
             const currentSegmentKey = getSegmentKey(currentGliederung);
             if(currentSegmentKey) {
                 lastValidSegmentKey = currentSegmentKey;
-                lastValidTopic = entry.data['Text'] as string || '';
+                lastValidTopic = entry.data['Text'] as string || 'General';
             }
         }
         
