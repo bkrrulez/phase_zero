@@ -76,7 +76,7 @@ export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
     }
 
     const newUseArray = cleanUpArrayField(analysisNewUse);
-    const fulfillabilityArray = cleanUpArrayField(analysisFulfillability);
+    const fulfillabilityArray = cleanUpArrayField(fulfillability);
 
     if (newUseArray.length === 0 || !fulfillabilityArray || fulfillabilityArray.length === 0) {
         return [];
@@ -357,23 +357,18 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
 
     const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
     if (!targetEntry) throw new Error("Could not find the specific rule book entry.");
-
-    let topic = 'General';
-    let lastValidTopic = 'General';
     
-    for (const entry of ruleBookDetails.entries) {
-        const isSection = entry.data['Spaltentyp'] === 'Abschnitt';
-        
-        if (isSection) {
-            lastValidTopic = String(entry.data['Text'] || 'General');
-        }
+    // Correctly find the topic for the given segmentKey
+    const sectionHeaderEntry = ruleBookDetails.entries.find(e => {
+        const gliederung = String(e.data['Gliederung'] || '');
+        // Find the first entry that IS a section header and whose Gliederung starts with the segmentKey.
+        // This handles cases where section is "7" and Gliederung might be "7", "7.1", etc.
+        // We look for the main section header, which usually has a structure exactly matching the segment key.
+        return e.data['Spaltentyp'] === 'Abschnitt' && gliederung.trim() === segmentKey;
+    });
 
-        if (entry.id === ruleBookEntryId) {
-            topic = lastValidTopic;
-            break;
-        }
-    }
-
+    const topic = sectionHeaderEntry ? String(sectionHeaderEntry.data['Text'] || 'General') : 'General';
+    
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
     
