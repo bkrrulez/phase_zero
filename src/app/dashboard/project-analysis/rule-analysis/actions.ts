@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -76,7 +77,7 @@ export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
     }
 
     const newUseArray = cleanUpArrayField(analysisNewUse);
-    const fulfillabilityArray = cleanUpArrayField(fulfillability);
+    const fulfillabilityArray = cleanUpArrayField(analysisFulfillability);
 
     if (newUseArray.length === 0 || !fulfillabilityArray || fulfillabilityArray.length === 0) {
         return [];
