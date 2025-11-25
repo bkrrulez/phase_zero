@@ -155,7 +155,6 @@ export default function SegmentDetailPage() {
                 checklistStatus: newData.checklistStatus!,
                 revisedFulfillability: newData.revisedFulfillability
             });
-            toast({ title: t('save') + "d!", description: 'Your changes have been saved.', duration: 2000 });
         } catch(e) {
             console.error(e);
             toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save your changes. Check console for details.' });
