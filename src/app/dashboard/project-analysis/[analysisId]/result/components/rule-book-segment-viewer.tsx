@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -63,8 +62,6 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
         }
     }, [loading]);
     
-    const headers = ['Structure', 'Text', 'Project Checklist', 'Project-based Fulfillability'];
-    
     const checklistOptions = [
         { key: 'fulfilled', value: 'Fulfilled' },
         { key: 'notFulfilled', value: 'Not Fulfilled' },
@@ -89,10 +86,10 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                             <Table className="table-fixed w-full">
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
-                                        <TableHead className="w-[15%]">{t('Structure' as any)}</TableHead>
-                                        <TableHead className="w-[40%]">{t('Text' as any)}</TableHead>
-                                        <TableHead className="w-[22.5%]">{t('Project Checklist' as any)}</TableHead>
-                                        <TableHead className="w-[22.5%]">{t('Project-based Fulfillability' as any)}</TableHead>
+                                        <TableHead className="w-1/4">{t('Structure' as any)}</TableHead>
+                                        <TableHead>{t('Text' as any)}</TableHead>
+                                        <TableHead className="w-1/4">{t('viewerProjectChecklist')}</TableHead>
+                                        <TableHead className="w-1/4">{t('viewerProjectBasedFulfillability')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

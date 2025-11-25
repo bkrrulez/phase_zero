@@ -410,6 +410,8 @@
     "sectionRuleBook": "Regelwerk",
     "projectChecklist": "Projekt Checkliste",
     "projectBasedFulfillability": "Projektbezogene Erfüllbarkeit",
+    "viewerProjectChecklist": "Projekt Checkliste",
+    "viewerProjectBasedFulfillability": "Projektbezogene Erfüllbarkeit",
     "Light": "Leicht",
     "Medium": "Mittel",
     "Heavy": "Schwer",

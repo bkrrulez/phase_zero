@@ -410,6 +410,8 @@
     "sectionRuleBook": "Rule Book",
     "projectChecklist": "Project Checklist",
     "projectBasedFulfillability": "Project-based Fulfillability",
+    "viewerProjectChecklist": "Project Checklist",
+    "viewerProjectBasedFulfillability": "Project-based Fulfillability",
     "Light": "Light",
     "Medium": "Medium",
     "Heavy": "Heavy",
