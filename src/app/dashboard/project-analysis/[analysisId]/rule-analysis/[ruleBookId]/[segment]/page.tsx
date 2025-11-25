@@ -151,6 +151,7 @@ export default function SegmentDetailPage() {
                 projectAnalysisId: analysisId,
                 ruleBookId: ruleBookId,
                 ruleBookEntryId: entryId,
+                segmentKey: segment, // Pass the current segment key
                 checklistStatus: newData.checklistStatus!,
                 revisedFulfillability: newData.revisedFulfillability
             });
