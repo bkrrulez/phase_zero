@@ -756,7 +756,7 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
             `UPDATE projects SET 
                 name = $1, project_manager = $2, creator_id = $3, address = $4,
                 project_owner = $5, year_of_construction = $6, number_of_floors = $7,
-                escapeLevel = $8, listed_building = $9, protection_zone = $10, current_use = $11
+                escape_level = $8, listed_building = $9, protection_zone = $10, current_use = $11
              WHERE id = $12`,
             [
                 name, projectManager, creatorId, address, projectOwner, yearOfConstruction,
