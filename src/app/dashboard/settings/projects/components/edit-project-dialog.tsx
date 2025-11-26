@@ -224,7 +224,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>{t('yearOfConstruction')}</FormLabel>
-                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}/></FormControl>
+                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                     </FormItem>
                                 )}
@@ -235,7 +235,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>{t('geschosse')}</FormLabel>
-                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                     </FormItem>
                                 )}
@@ -246,7 +246,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>{t('fluchtniveau')}</FormLabel>
-                                    <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)}/></FormControl>
+                                    <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                     </FormItem>
                                 )}
