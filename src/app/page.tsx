@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -12,6 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { ForgotPasswordDialog } from './components/forgot-password-dialog';
 import { verifyUserCredentials } from './dashboard/actions';
 import { Eye, EyeOff } from 'lucide-react';
+import en from '@/locales/en.json';
+import de from '@/locales/de.json';
+
+const translations = { en, de };
+
+type Locale = 'en' | 'de';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,6 +26,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isForgotDialogOpen, setIsForgotDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [language, setLanguage] = useState<Locale>('de');
+
+  const t = (key: keyof typeof en) => {
+    return translations[language][key] || key;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,24 +42,24 @@ export default function LoginPage() {
         if (user) {
             if (typeof window !== 'undefined') {
                 window.localStorage.setItem('currentUserId', JSON.stringify(user.id));
+                window.localStorage.setItem('locale', language);
             }
             router.push('/dashboard');
         } else {
             toast({
               variant: 'destructive',
-              title: 'Login Failed',
-              description: 'Invalid email or password.',
+              title: t('loginFailedTitle' as any),
+              description: t('loginFailedDesc' as any),
             });
         }
     } catch (error) {
         console.error("Login error:", error);
         toast({
           variant: 'destructive',
-          title: 'Login Error',
-          description: 'An unexpected error occurred. Please try again.',
+          title: t('loginErrorTitle' as any),
+          description: t('loginErrorDesc' as any),
         });
     }
-
 
     setIsLoading(false);
   };
@@ -57,6 +67,23 @@ export default function LoginPage() {
   return (
     <>
       <div className="flex flex-col min-h-screen bg-background">
+        <header className="absolute top-0 right-0 p-4">
+            <div className="text-sm">
+                <button 
+                    onClick={() => setLanguage('de')} 
+                    className={`px-2 py-1 ${language === 'de' ? 'font-bold' : 'hover:underline'}`}
+                >
+                    DE
+                </button>
+                /
+                <button 
+                    onClick={() => setLanguage('en')} 
+                    className={`px-2 py-1 ${language === 'en' ? 'font-bold' : 'hover:underline'}`}
+                >
+                    EN
+                </button>
+            </div>
+        </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <Card className="w-full max-w-sm mx-auto shadow-xl">
             <CardHeader className="text-center">
@@ -64,24 +91,24 @@ export default function LoginPage() {
                 <LogoIcon className="w-12 h-12" />
               </div>
               <CardTitle className="text-2xl font-bold font-headline text-primary">PhaseZero</CardTitle>
-              <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+              <CardDescription>{t('loginDescription' as any)}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('loginEmailLabel' as any)}</Label>
                   <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} disabled={isLoading} />
                 </div>
                 <div className="grid gap-2">
                   <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">{t('loginPasswordLabel' as any)}</Label>
                     <Button
                       type="button"
                       variant="link"
                       className="inline-block ml-auto h-auto p-0 text-sm underline"
                       onClick={() => setIsForgotDialogOpen(true)}
                     >
-                      Forgot password?
+                      {t('forgotPasswordLink' as any)}
                     </Button>
                   </div>
                   <div className="relative">
@@ -108,14 +135,14 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Logging in...' : 'Login'}
+                    {isLoading ? t('loggingInButton' as any) : t('loginButton' as any)}
                 </Button>
               </form>
             </CardContent>
           </Card>
         </main>
         <footer className="p-4 text-center text-xs text-muted-foreground">
-          Created by TU Wien, Res. Unit of Structural Engineering and Building Preservation
+          {t('footerText' as any)}
         </footer>
       </div>
       <ForgotPasswordDialog 
