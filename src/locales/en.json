@@ -1,3 +1,4 @@
+
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -467,5 +468,8 @@
     "loginFailedTitle": "Login Failed",
     "loginFailedDesc": "Invalid email or password.",
     "loginErrorTitle": "Login Error",
-    "loginErrorDesc": "An unexpected error occurred. Please try again."
+    "loginErrorDesc": "An unexpected error occurred. Please try again.",
+    "savedToastTitle": "Saved!",
+    "unfreezeConfirmationTitle": "Unfreeze?",
+    "analysisSavedTitle": "Saved!"
 }
