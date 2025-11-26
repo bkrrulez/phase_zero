@@ -7,10 +7,33 @@ export const FolderIcon = ({ className, project }: { className?: string, project
         ? `${project.address.substring(0, maxAddressLength)}...`
         : project.address;
 
-    const maxProjectNameLength = 13;
-    const truncatedProjectName = project.name.length >= maxProjectNameLength
-        ? `${project.name.substring(0, 10)}...`
-        : project.name;
+    const maxLineLength = 15;
+    let line1 = project.name;
+    let line2 = '';
+
+    if (project.name.length > maxLineLength) {
+        const words = project.name.split(' ');
+        let currentLine = '';
+        const lines = [];
+
+        for (const word of words) {
+            if ((currentLine + word).length > maxLineLength) {
+                lines.push(currentLine.trim());
+                currentLine = word + ' ';
+            } else {
+                currentLine += word + ' ';
+            }
+        }
+        lines.push(currentLine.trim());
+
+        line1 = lines[0] || '';
+        if (lines.length > 1) {
+            line2 = lines.slice(1).join(' ');
+            if (line2.length > maxLineLength) {
+                line2 = `${line2.substring(0, maxLineLength - 3)}...`;
+            }
+        }
+    }
 
     return (
         <svg
@@ -38,16 +61,29 @@ export const FolderIcon = ({ className, project }: { className?: string, project
                 <title>Project Number: {project.projectNumber}</title>
                 {project.projectNumber}
             </text>
+            
             <text
                 x="50"
-                y="36"
+                y={line2 ? "30" : "36"} // Adjust y position if there's a second line
                 textAnchor="middle"
                 alignmentBaseline="middle"
-                className="text-[13px] font-bold fill-primary-foreground"
+                className="text-[10px] font-bold fill-primary-foreground"
             >
                 <title>{project.name}</title>
-                {truncatedProjectName}
+                {line1}
             </text>
+            {line2 && (
+                <text
+                    x="50"
+                    y="42"
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    className="text-[10px] font-bold fill-primary-foreground"
+                >
+                    {line2}
+                </text>
+            )}
+
             <text
                 x="8"
                 y="54"
