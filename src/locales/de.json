@@ -270,7 +270,7 @@
     "noContractsFound": "Für den ausgewählten Benutzer wurden keine Verträge gefunden.",
     "nameColumn": "Name",
     "sendNow": "Jetzt senden",
-    "sending": "Wird gesendet...",
+    "sending": "Senden...",
     "addNotification": "Benachrichtigung hinzufügen",
     "recipientUsers": "Empfänger Benutzer",
     "recipientEmails": "Empfänger E-Mails",
@@ -456,7 +456,7 @@
     "Fulfillability": "Erfüllbarkeit",
     "analysisIncompleteTitle": "Analyse nicht vollständig!",
     "analysisIncompleteDesc": "Bitte analysieren Sie die verbleibenden Parameters.",
-    "noMoreParametersTitle": "keine weiteren Parameter",
+    "noMoreParametersTitle": "Keine weiteren Parameter",
     "noMoreParametersDesc": "Bitte gehen Sie zurück zur Übersicht.",
     "loginDescription": "Geben Sie Ihre Zugangsdaten ein",
     "loginEmailLabel": "E-Mail",
@@ -467,5 +467,7 @@
     "loginFailedTitle": "Anmeldung fehlgeschlagen",
     "loginFailedDesc": "Ungültige E-Mail oder Passwort.",
     "loginErrorTitle": "Anmeldefehler",
-    "loginErrorDesc": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+    "loginErrorDesc": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "savedToastTitle": "Gespeichert!",
+    "unfreezeConfirmationTitle": "Sperre aufheben?"
 }
