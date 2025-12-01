@@ -434,6 +434,8 @@
     "revisedChecklistSummary": "Ergebnis der Parameteranalyse",
     "satisfiabilityOfUnmetParameters": "Ergebnis der projektspezifischen Erfüllbarkeit der nicht erfüllten und nicht überprüfbaren Parameter",
     "footerText": "Erstellt von der TU Wien, FOB für Hochbau und Gebäudeerhaltung",
+    "analysisSavedTitle": "Speichern!",
+    "analysisSavedDesc": "Analyse-Details wurden gespeichert.",
     "analysisStartedTitle": "Analyse gestartet",
     "analysisStartedDesc": "Eine neue Analyseversion für das Projekt wurde erstellt.",
     "analysisAlreadyExistsTitle": "Analyse existiert bereits",
@@ -470,8 +472,7 @@
     "loginErrorDesc": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "savedToastTitle": "Gespeichert!",
     "unfreezeConfirmationTitle": "Sperre aufheben?",
-    "analysisSavedTitle": "Speichern!",
-    "analysisSavedDesc": "Analyse-Details wurden gespeichert."
+    "noMatchingParameters": "Keine Parameter unter dem gewählten Filter zu finden."
 }
 
     

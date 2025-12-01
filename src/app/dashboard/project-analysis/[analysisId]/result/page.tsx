@@ -138,7 +138,7 @@ const ParametersTable = ({ parameters, onRowClick, analysisId }: { parameters: A
                         </TableRow>
                     )) : (
                         <TableRow>
-                            <TableCell colSpan={columns.length} className="h-24 text-center">No parameters match the selected filter.</TableCell>
+                            <TableCell colSpan={columns.length} className="h-24 text-center">{t('noMatchingParameters')}</TableCell>
                         </TableRow>
                     )}
                 </TableBody>
@@ -246,8 +246,6 @@ export default function AnalysisResultPage() {
                                             outerRadius={150}
                                             dataKey="value"
                                             nameKey="name"
-                                            startAngle={90}
-                                            endAngle={-270}
                                         >
                                             {resultData.checklistData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.fill} />
