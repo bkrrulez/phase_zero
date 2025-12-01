@@ -95,9 +95,14 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
     .filter(([, value]) => value > 0)
     .map(([name, value]) => ({ name, value, fill: checklistColors[name] }));
 
-  const fulfillabilityData = Object.entries(fulfillabilityCounts)
-    .filter(([, value]) => value > 0)
-    .map(([name, value]) => ({ name, value, fill: fulfillabilityColors[name as keyof typeof fulfillabilityColors] }));
+  const desiredOrder = ['Light', 'Medium', 'Heavy'];
+  const fulfillabilityData = desiredOrder
+    .filter(name => fulfillabilityCounts[name] > 0)
+    .map(name => ({
+        name: name,
+        value: fulfillabilityCounts[name],
+        fill: fulfillabilityColors[name as keyof typeof fulfillabilityColors]
+    }));
   
   return { checklistData, fulfillabilityData, notFulfilledParameters, notVerifiableParameters };
 }
