@@ -91,12 +91,17 @@ export async function getAnalysisResultData(projectAnalysisId: string): Promise<
     }
   }
 
-  const checklistData = (Object.entries(checklistCounts) as [keyof typeof checklistColors, number][])
-    .filter(([, value]) => value > 0)
-    .map(([name, value]) => ({ name, value, fill: checklistColors[name] }));
+  const checklistOrder: (keyof typeof checklistColors)[] = ['fulfilled', 'notFulfilled', 'notVerifiable', 'notRelevant'];
+  const checklistData = checklistOrder
+    .filter(name => checklistCounts[name] > 0)
+    .map(name => ({
+        name: name,
+        value: checklistCounts[name],
+        fill: checklistColors[name]
+    }));
 
-  const desiredOrder = ['Light', 'Medium', 'Heavy'];
-  const fulfillabilityData = desiredOrder
+  const fulfillabilityOrder = ['Light', 'Medium', 'Heavy'];
+  const fulfillabilityData = fulfillabilityOrder
     .filter(name => fulfillabilityCounts[name] > 0)
     .map(name => ({
         name: name,
