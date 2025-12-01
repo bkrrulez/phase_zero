@@ -246,6 +246,8 @@ export default function AnalysisResultPage() {
                                             outerRadius={150}
                                             dataKey="value"
                                             nameKey="name"
+                                            startAngle={90}
+                                            endAngle={-270}
                                         >
                                             {resultData.checklistData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -284,6 +286,8 @@ export default function AnalysisResultPage() {
                                             outerRadius={150}
                                             dataKey="value"
                                             nameKey="name"
+                                            startAngle={90}
+                                            endAngle={-270}
                                         >
                                             {resultData.fulfillabilityData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.fill} />
