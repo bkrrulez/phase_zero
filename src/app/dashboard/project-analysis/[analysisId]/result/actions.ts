@@ -34,9 +34,9 @@ const checklistColors = {
 };
 
 const fulfillabilityColors = {
-  'Light': '#A0CBE8',
-  'Medium': '#4E79A7',
-  'Heavy': '#B07AA1',
+  'Light': '#BAB0AC',
+  'Medium': '#7A746F',
+  'Heavy': '#000000',
 };
 
 export async function getAnalysisResultData(projectAnalysisId: string): Promise<AnalysisResultData> {
