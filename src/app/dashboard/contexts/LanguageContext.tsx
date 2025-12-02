@@ -24,7 +24,7 @@ function useLocalStorage(key: string, initialValue: Locale): [Locale, (value: Lo
         setIsMounted(true);
         try {
             const item = window.localStorage.getItem(key);
-            if (item) {
+            if (item && (item === 'en' || item === 'de')) {
                 setStoredValue(item as Locale);
             }
         } catch (error) {
