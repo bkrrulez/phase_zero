@@ -349,9 +349,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                   {t('footerText')}
               </footer>
             </div>
+            <Toaster />
         </div>
       </SidebarInset>
-      <Toaster />
     </SidebarProvider>
   );
 }
