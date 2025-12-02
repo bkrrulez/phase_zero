@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -18,18 +17,20 @@ interface LanguageContextType {
 const LanguageContext = React.createContext<LanguageContextType | undefined>(undefined);
 
 function useLocalStorage(key: string, initialValue: Locale): [Locale, (value: Locale) => void] {
-    const [storedValue, setStoredValue] = React.useState<Locale>(() => {
-        if (typeof window === 'undefined') {
-            return initialValue;
-        }
+    const [storedValue, setStoredValue] = React.useState<Locale>(initialValue);
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
         try {
             const item = window.localStorage.getItem(key);
-            return item ? (item as Locale) : initialValue;
+            if (item) {
+                setStoredValue(item as Locale);
+            }
         } catch (error) {
             console.error(error);
-            return initialValue;
         }
-    });
+    }, [key]);
 
     const setValue = (value: Locale) => {
         try {
@@ -41,11 +42,13 @@ function useLocalStorage(key: string, initialValue: Locale): [Locale, (value: Lo
             console.error(error);
         }
     };
-    return [storedValue, setValue];
+    
+    // Return the initialValue until the component is mounted to avoid hydration mismatch
+    return [isMounted ? storedValue : initialValue, setValue];
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useLocalStorage('locale', 'en');
+  const [language, setLanguage] = useLocalStorage('locale', 'de');
 
   const t = (key: keyof typeof en, options?: Record<string, string | number>): string => {
     let translation = translations[language][key] || translations['en'][key] || key;
