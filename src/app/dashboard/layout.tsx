@@ -88,11 +88,21 @@ const getStatus = (startDate: string, endDate: string) => {
 
 function LanguageToggle() {
     const { language, setLanguage } = useLanguage();
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
 
     const toggleLanguage = () => {
         const newLang = language === 'en' ? 'de' : 'en';
         setLanguage(newLang);
     };
+
+    if (!isMounted) {
+        return null;
+    }
 
     return (
         <div className="flex items-center space-x-2">
