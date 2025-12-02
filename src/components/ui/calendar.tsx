@@ -127,14 +127,16 @@ function Calendar({
         day_hidden: "invisible",
         ...classNames,
       }}
-      {...props}
       components={{
         Caption: props.captionLayout === 'dropdown-buttons' ? CustomCaption : undefined,
         ...props.components,
       }}
+      {...props}
     />
   )
 }
 Calendar.displayName = "Calendar"
 
 export { Calendar }
+
+    
