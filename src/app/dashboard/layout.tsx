@@ -74,6 +74,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractsProvider, useContracts } from "./contexts/ContractsContext";
+import { Toaster } from "@/components/ui/toaster";
 
 
 const getStatus = (startDate: string, endDate: string) => {
@@ -350,6 +351,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </div>
         </div>
       </SidebarInset>
+      <Toaster />
     </SidebarProvider>
   );
 }
