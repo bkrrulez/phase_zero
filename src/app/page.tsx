@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,10 +27,26 @@ export default function LoginPage() {
   const [isForgotDialogOpen, setIsForgotDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [language, setLanguage] = useState<Locale>('de');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const storedLang = localStorage.getItem('locale');
+    if (storedLang === 'en' || storedLang === 'de') {
+      setLanguage(storedLang);
+    }
+  }, []);
 
   const t = (key: keyof typeof en) => {
     return translations[language][key] || key;
   };
+
+  const handleSetLanguage = (lang: Locale) => {
+    setLanguage(lang);
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('locale', lang);
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,21 +84,23 @@ export default function LoginPage() {
     <>
       <div className="flex flex-col min-h-screen bg-background">
         <header className="absolute top-0 right-0 p-4">
+          {isMounted && (
             <div className="text-sm">
                 <button 
-                    onClick={() => setLanguage('de')} 
+                    onClick={() => handleSetLanguage('de')} 
                     className={`px-2 py-1 ${language === 'de' ? 'font-bold' : 'hover:underline'}`}
                 >
                     DE
                 </button>
                 /
                 <button 
-                    onClick={() => setLanguage('en')} 
+                    onClick={() => handleSetLanguage('en')} 
                     className={`px-2 py-1 ${language === 'en' ? 'font-bold' : 'hover:underline'}`}
                 >
                     EN
                 </button>
             </div>
+          )}
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <Card className="w-full max-w-sm mx-auto shadow-xl">
