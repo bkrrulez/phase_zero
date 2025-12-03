@@ -47,3 +47,4 @@ pnpm-debug.log*
 # Docker related files
 Dockerfile
 docker-compose.yaml
+.gitlab-ci.yml
