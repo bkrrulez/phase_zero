@@ -220,7 +220,7 @@
     "downloadContract": "Zugangsdokument herunterladen",
     "memberContractTab": "Mitgliederzugang",
     "contactSupportTitle": "Support kontaktieren",
-    "contactSupportDesc": "Für weitere Hilfe, Unterstützung oder um Probleme im Zusammenhang mit dieser Anwendung zu melden, wenden Sie sich bitte an den Entwickler:",
+    "contactSupportDesc": "Für weitere Hilfe, Unterstützung oder um Probleme im Zusammenhang mit dieser Anwendung zu melden, unbearbeiten Sie bitte an den Entwickler:",
     "uploadContractTitle": "Zugangsdokument hochladen",
     "uploadContractDesc": "Wählen Sie ein Mitglied aus und laden Sie dessen Zugangsdokument im PDF-Format hoch. Dies überschreibt jedes bestehende Dokument.",
     "selectMemberLabel": "Mitglied auswählen",
@@ -472,7 +472,7 @@
     "loginErrorDesc": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "savedToastTitle": "Gespeichert!",
     "unfreezeConfirmationTitle": "Sperre aufheben?",
-    "noMatchingParameters": "Keine Parameter unter dem gewählten Filter zu finden."
+    "noMatchingParameters": "Keine Parameter unter dem gewählten Filter zu finden.",
+    "saveSettings": "Speichern",
+    "btnSaveImportSettings": "Änderungen speichern"
 }
-
-    

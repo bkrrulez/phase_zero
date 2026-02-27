@@ -185,7 +185,7 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t('cancel')}
               </Button>
-              <Button type="submit">{t('saveSettings')}</Button>
+              <Button type="submit">{t('btnSaveImportSettings')}</Button>
             </DialogFooter>
           </form>
         </Form>

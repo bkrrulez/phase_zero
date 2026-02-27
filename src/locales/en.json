@@ -472,7 +472,7 @@
     "loginErrorDesc": "An unexpected error occurred. Please try again.",
     "savedToastTitle": "Gespeichert!",
     "unfreezeConfirmationTitle": "Unfreeze?",
-    "noMatchingParameters": "No parameters match the selected filter."
+    "noMatchingParameters": "No parameters match the selected filter.",
+    "saveSettings": "Save Settings",
+    "btnSaveImportSettings": "Save Settings"
 }
-
-    
