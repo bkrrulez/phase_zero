@@ -167,6 +167,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
     return filteredData.map(({ ruleBook, entries }) => {
         let lastSegmentKey: string | null = null;
+        const orderedSegmentKeys: string[] = [];
         const segments = entries.reduce((acc, entry) => {
             const gliederung = String(entry.data['Gliederung'] || '');
             let currentSegmentKey = getSegmentKey(gliederung);
@@ -182,13 +183,14 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             
             if (!acc[finalSegmentKey]) {
                 acc[finalSegmentKey] = [];
+                orderedSegmentKeys.push(finalSegmentKey);
             }
             acc[finalSegmentKey].push(entry);
             
             return acc;
         }, {} as Record<string, RuleBookEntry[]>);
 
-        const segmentStats = Object.keys(segments).map(key => {
+        const segmentStats = orderedSegmentKeys.map(key => {
             const segmentEntries = segments[key];
             const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
             
@@ -214,11 +216,15 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             };
         });
 
+        // Always show the 1st section box.
+        // Additionally show Sections where at least 1 parameter is available.
+        const displayedSegments = segmentStats.filter((s, index) => index === 0 || s.totalParameters > 0);
+
         const totalParameterRows = entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length;
 
         return {
             ruleBook,
-            segments: segmentStats,
+            segments: displayedSegments,
             totalRows: entries.length,
             totalParameters: totalParameterRows,
             totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
@@ -340,22 +346,76 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     };
 }
 
-export async function saveAnalysisResult({ projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability }: Omit<RuleAnalysisResult, 'id'>) {
+interface SaveAnalysisResultPayload {
+    projectAnalysisId: string;
+    ruleBookId: string;
+    ruleBookEntryId: string;
+    segmentKey: string;
+    checklistStatus: string;
+    revisedFulfillability: string | null;
+}
+
+export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
+    const { projectAnalysisId, ruleBookId, ruleBookEntryId, segmentKey, checklistStatus, revisedFulfillability } = payload;
+    
+    const ruleBookDetails = await getRuleBookDetails(ruleBookId);
+    if (!ruleBookDetails) throw new Error("Could not find rulebook details to save context.");
+
+    const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
+    if (!targetEntry) throw new Error("Could not find the specific rule book entry.");
+    
+    // Correctly find the topic for the given segmentKey
+    const sectionHeaderEntry = ruleBookDetails.entries.find(e => {
+        const gliederung = String(e.data['Gliederung'] || '');
+        // Find the first entry that IS a section header and whose Gliederung matches the segmentKey.
+        return e.data['Spaltentyp'] === 'Abschnitt' && gliederung.trim() === segmentKey;
+    });
+
+    const topic = sectionHeaderEntry ? String(sectionHeaderEntry.data['Text'] || 'General') : 'General';
+    
+    const structure = (targetEntry.data['Gliederung'] as string) || '';
+    const text = (targetEntry.data['Text'] as string) || '';
+    
     const client = await db.connect();
     try {
         await client.query('BEGIN');
         const existingResult = await client.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
         
+        const dataToSave = {
+            checklist_status: checklistStatus,
+            revised_fulfillability: revisedFulfillability,
+            rule_book_name: ruleBookDetails.ruleBook.versionName,
+            section_key: segmentKey,
+            topic: topic,
+            structure: structure,
+            text: text,
+            rule_book_id: ruleBookId
+        };
+        
         if (existingResult.rows.length > 0) {
+            // Update
             await client.query(
-                'UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2 WHERE id = $3',
-                [checklistStatus, revisedFulfillability, existingResult.rows[0].id]
+                `UPDATE rule_analysis_results 
+                 SET 
+                    checklist_status = $1, 
+                    revised_fulfillability = $2,
+                    rule_book_name = $3,
+                    section_key = $4,
+                    topic = $5,
+                    structure = $6,
+                    text = $7,
+                    rule_book_id = $8
+                 WHERE id = $9`,
+                [dataToSave.checklist_status, dataToSave.revised_fulfillability, dataToSave.rule_book_name, dataToSave.section_key, dataToSave.topic, dataToSave.structure, dataToSave.text, dataToSave.rule_book_id, existingResult.rows[0].id]
             );
         } else {
+            // Insert
             const newId = `rar-${Date.now()}-${Math.random()}`;
             await client.query(
-                'INSERT INTO rule_analysis_results (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability) VALUES ($1, $2, $3, $4, $5)',
-                [newId, projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability]
+                `INSERT INTO rule_analysis_results 
+                    (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability, rule_book_name, section_key, topic, structure, text, rule_book_id) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                [newId, projectAnalysisId, ruleBookEntryId, dataToSave.checklist_status, dataToSave.revised_fulfillability, dataToSave.rule_book_name, dataToSave.section_key, dataToSave.topic, dataToSave.structure, dataToSave.text, dataToSave.rule_book_id]
             );
         }
         await client.query('COMMIT');

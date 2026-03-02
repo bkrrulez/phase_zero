@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -168,6 +167,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
     return filteredData.map(({ ruleBook, entries }) => {
         let lastSegmentKey: string | null = null;
+        const orderedSegmentKeys: string[] = [];
         const segments = entries.reduce((acc, entry) => {
             const gliederung = String(entry.data['Gliederung'] || '');
             let currentSegmentKey = getSegmentKey(gliederung);
@@ -183,13 +183,14 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             
             if (!acc[finalSegmentKey]) {
                 acc[finalSegmentKey] = [];
+                orderedSegmentKeys.push(finalSegmentKey);
             }
             acc[finalSegmentKey].push(entry);
             
             return acc;
         }, {} as Record<string, RuleBookEntry[]>);
 
-        const segmentStats = Object.keys(segments).map(key => {
+        const segmentStats = orderedSegmentKeys.map(key => {
             const segmentEntries = segments[key];
             const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
             
@@ -215,11 +216,15 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             };
         });
 
+        // Always show the 1st section box.
+        // Additionally show Sections where at least 1 parameter is available.
+        const displayedSegments = segmentStats.filter((s, index) => index === 0 || s.totalParameters > 0);
+
         const totalParameterRows = entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length;
 
         return {
             ruleBook,
-            segments: segmentStats,
+            segments: displayedSegments,
             totalRows: entries.length,
             totalParameters: totalParameterRows,
             totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
@@ -362,9 +367,7 @@ export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
     // Correctly find the topic for the given segmentKey
     const sectionHeaderEntry = ruleBookDetails.entries.find(e => {
         const gliederung = String(e.data['Gliederung'] || '');
-        // Find the first entry that IS a section header and whose Gliederung starts with the segmentKey.
-        // This handles cases where section is "7" and Gliederung might be "7", "7.1", etc.
-        // We look for the main section header, which usually has a structure exactly matching the segment key.
+        // Find the first entry that IS a section header and whose Gliederung matches the segmentKey.
         return e.data['Spaltentyp'] === 'Abschnitt' && gliederung.trim() === segmentKey;
     });
 
