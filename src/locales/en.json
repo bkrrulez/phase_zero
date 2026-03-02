@@ -1,4 +1,3 @@
-
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -474,5 +473,6 @@
     "unfreezeConfirmationTitle": "Unfreeze?",
     "noMatchingParameters": "No parameters match the selected filter.",
     "saveSettings": "Save Settings",
-    "btnSaveImportSettings": "Save Settings"
+    "btnSaveImportSettings": "Save Settings",
+    "exportResult": "Export Result"
 }

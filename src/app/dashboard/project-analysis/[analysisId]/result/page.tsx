@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -10,12 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { ArrowLeft, ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowLeft, ArrowDown, ArrowUp, FileDown } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { RuleBookSegmentViewer, type ViewerProps } from './components/rule-book-segment-viewer';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, payload }: any) => {
@@ -157,6 +159,7 @@ export default function AnalysisResultPage() {
     const [projectName, setProjectName] = React.useState('');
     const [resultData, setResultData] = React.useState<AnalysisResultData | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [isExporting, setIsExporting] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [viewerProps, setViewerProps] = React.useState<ViewerProps | null>(null);
 
@@ -192,6 +195,98 @@ export default function AnalysisResultPage() {
         setViewerProps(props);
     }
 
+    const handleExportPDF = async () => {
+        if (!projectName || !resultData) return;
+        setIsExporting(true);
+        
+        try {
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            
+            // Heading
+            doc.setFontSize(18);
+            doc.text(t('analysisResultFor', { name: projectName }), 14, 20);
+            
+            // Subtitle
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(t('analysisResultDesc'), 14, 28);
+            doc.setTextColor(0);
+
+            let currentY = 35;
+
+            // Capture Pie Charts
+            const chart1El = document.getElementById('chart-revised-checklist');
+            const chart2El = document.getElementById('chart-satisfiability');
+
+            if (chart1El && chart2El) {
+                const canvas1 = await html2canvas(chart1El);
+                const canvas2 = await html2canvas(chart2El);
+                
+                const imgWidth = (pageWidth - 38) / 2;
+                const imgHeight1 = (canvas1.height * imgWidth) / canvas1.width;
+                const imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
+
+                doc.addImage(canvas1.toDataURL('image/png'), 'PNG', 14, currentY, imgWidth, imgHeight1);
+                doc.addImage(canvas2.toDataURL('image/png'), 'PNG', 14 + imgWidth + 10, currentY, imgWidth, imgHeight2);
+                
+                currentY += Math.max(imgHeight1, imgHeight2) + 15;
+            }
+
+            // Not Fulfilled Parameters Table
+            doc.setFontSize(14);
+            doc.text(t('notFulfilledParametersTab'), 14, currentY);
+            currentY += 5;
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [[t('Rule Book Name'), t('Structure'), t('Section'), t('Fulfillability')]],
+                body: resultData.notFulfilledParameters.map(p => [
+                    p.ruleBookName,
+                    p.structure,
+                    p.segmentKey,
+                    t(p.fulfillability as any)
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [78, 121, 167], textColor: 255 },
+                styles: { fontSize: 9 },
+            });
+
+            currentY = (doc as any).lastAutoTable.finalY + 15;
+
+            // Page break check
+            if (currentY > 250) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            // Not Verifiable Parameters Table
+            doc.setFontSize(14);
+            doc.text(t('notVerifiableParametersTab'), 14, currentY);
+            currentY += 5;
+
+            autoTable(doc, {
+                startY: currentY,
+                head: [[t('Rule Book Name'), t('Structure'), t('Section'), t('Fulfillability')]],
+                body: resultData.notVerifiableParameters.map(p => [
+                    p.ruleBookName,
+                    p.structure,
+                    p.segmentKey,
+                    t(p.fulfillability as any)
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [176, 122, 161], textColor: 255 },
+                styles: { fontSize: 9 },
+            });
+
+            doc.save(`Analysis_Result_${projectName.replace(/\s+/g, '_')}.pdf`);
+        } catch (err) {
+            console.error('Failed to generate PDF:', err);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     if (isLoading) {
         return (
              <div className="space-y-6">
@@ -225,13 +320,19 @@ export default function AnalysisResultPage() {
                             <p className="text-muted-foreground">{t('analysisResultDesc')}</p>
                         </div>
                     </div>
-                    <Button onClick={handleEndAnalysis}>{t('endAnalysis')}</Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={handleExportPDF} disabled={isExporting}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            {isExporting ? t('sending') : t('exportResult')}
+                        </Button>
+                        <Button onClick={handleEndAnalysis}>{t('endAnalysis')}</Button>
+                    </div>
                 </div>
                 
                 <div className="grid md:grid-cols-2 gap-6">
-                    <Card>
+                    <Card id="chart-revised-checklist">
                         <CardHeader>
-                            <CardTitle className="text-center">{t('revisedChecklistSummary')}</CardTitle>
+                            <CardTitle className="text-center text-base md:text-lg">{t('revisedChecklistSummary')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {resultData && resultData.checklistData.length > 0 ? (
@@ -269,9 +370,9 @@ export default function AnalysisResultPage() {
                             )}
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card id="chart-satisfiability">
                         <CardHeader>
-                            <CardTitle className="text-center">{t('satisfiabilityOfUnmetParameters')}</CardTitle>
+                            <CardTitle className="text-center text-base md:text-lg">{t('satisfiabilityOfUnmetParameters')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {resultData && resultData.fulfillabilityData.length > 0 ? (

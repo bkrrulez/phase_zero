@@ -1,6 +1,5 @@
-
 {
-    "dashboard": "Dashboard",
+    "dashboard": "Berichte",
     "team": "Team",
     "reports": "Berichte",
     "holidays": "Urlaube",
@@ -116,8 +115,8 @@
     "changePhoto": "Foto ändern",
     "fullName": "Vollständiger Name",
     "emailAddress": "E-Mail-Addresse",
-    "contractDetails": "Zugriffsdetails",
-    "contractDetailsDesc": "Ihre Arbeitsvertragsinformationen. Diese Felder können nur von einem Teamleiter oder Administrator bearbeitet werden.",
+    "accessDetails": "Zugriffsdetails",
+    "accessDetailsDesc": "Ihre Arbeitsvertragsinformationen. Diese Felder können nur von einem Teamleiter oder Administrator bearbeitet werden.",
     "weeklyHours": "Wochenstunden",
     "employmentStartDate": "Beginn des Arbeitsverhältnisses",
     "employmentEndDate": "Ende des Arbeitsverhältnisses",
@@ -468,11 +467,12 @@
     "loggingInButton": "Anmelden...",
     "loginFailedTitle": "Anmeldung fehlgeschlagen",
     "loginFailedDesc": "Ungültige E-Mail oder Passwort.",
-    "loginErrorTitle": "Anmeldefehler",
+    "loginErrorTitle": "Anmeldehfehler",
     "loginErrorDesc": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "savedToastTitle": "Gespeichert!",
     "unfreezeConfirmationTitle": "Sperre aufheben?",
     "noMatchingParameters": "Keine Parameter unter dem gewählten Filter zu finden.",
     "saveSettings": "Speichern",
-    "btnSaveImportSettings": "Änderungen speichern"
+    "btnSaveImportSettings": "Änderungen speichern",
+    "exportResult": "Ergebnis exportieren"
 }
