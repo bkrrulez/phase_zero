@@ -89,7 +89,7 @@ export default function AnalysisDetailPage() {
             if (data) {
                 setDetails(data);
 
-                const initialUse = Array.isArray(data.analysis.newUse)
+                const fetchedUse = Array.isArray(data.analysis.newUse)
                     ? data.analysis.newUse
                     : data.analysis.newUse
                     ? [data.analysis.newUse]
@@ -101,9 +101,14 @@ export default function AnalysisDetailPage() {
                     ? [data.analysis.fulfillability]
                     : [];
 
-                setNewUse(initialUse);
+                // Requirement: Default to 'General' if no 'New Use' is saved yet (e.g., first time)
+                const displayUse = fetchedUse.length > 0 ? fetchedUse : ['General'];
+
+                setNewUse(displayUse);
                 setFulfillability(initialFulfill);
-                setInitialNewUse(initialUse);
+                
+                // Track the actual persisted state separately to correctly identify changes
+                setInitialNewUse(fetchedUse);
                 setInitialFulfillability(initialFulfill);
             } else {
                 setError('Analysis not found.');
@@ -305,5 +310,3 @@ export default function AnalysisDetailPage() {
         </>
     );
 }
-
-    
