@@ -67,7 +67,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
                 y={line2 ? "30" : "36"} // Adjust y position if there's a second line
                 textAnchor="middle"
                 alignmentBaseline="middle"
-                className="text-[10px] font-bold fill-primary-foreground"
+                className="text-[9px] font-bold fill-primary-foreground"
             >
                 <title>{project.name}</title>
                 {line1}
@@ -78,7 +78,7 @@ export const FolderIcon = ({ className, project }: { className?: string, project
                     y="42"
                     textAnchor="middle"
                     alignmentBaseline="middle"
-                    className="text-[10px] font-bold fill-primary-foreground"
+                    className="text-[9px] font-bold fill-primary-foreground"
                 >
                     {line2}
                 </text>
