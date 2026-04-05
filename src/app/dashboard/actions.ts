@@ -827,14 +827,48 @@ export async function addNewProjectAnalysisVersion(projectId: string): Promise<P
     const client = await db.connect();
     try {
         await client.query('BEGIN');
-        const existingRes = await client.query('SELECT MAX(version) as max_version FROM project_analyses WHERE project_id = $1', [projectId]);
-        const newVersion = (existingRes.rows[0]?.max_version || 0) + 1;
         
-        const id = `pa-${Date.now()}`;
-        const result = await client.query(
-            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, '{}', '{}') RETURNING *`,
-            [id, projectId, newVersion]
+        // Get the latest analysis version and ID to inherit data from
+        const latestRes = await client.query(
+            'SELECT id, version, new_use, fulfillability FROM project_analyses WHERE project_id = $1 ORDER BY version DESC LIMIT 1',
+            [projectId]
         );
+        const latestAnalysis = latestRes.rows[0];
+        const newVersion = (latestAnalysis?.version || 0) + 1;
+        
+        const newId = `pa-${Date.now()}`;
+        
+        // Inherit selection criteria (New Use / Fulfillability) from the previous version
+        const inheritedNewUse = latestAnalysis?.new_use || [];
+        const inheritedFulfillability = latestAnalysis?.fulfillability || [];
+
+        const result = await client.query(
+            `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [newId, projectId, newVersion, inheritedNewUse, inheritedFulfillability]
+        );
+        
+        // If there was a previous analysis, copy its results to the new version
+        if (latestAnalysis) {
+            await client.query(
+                `INSERT INTO rule_analysis_results 
+                    (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability, rule_book_name, section_key, topic, structure, text, rule_book_id) 
+                 SELECT 
+                    'rar-' || floor(random() * 1000000000)::text || '-' || extract(epoch from clock_timestamp())::text || '-' || rule_book_entry_id, 
+                    $1, 
+                    rule_book_entry_id, 
+                    checklist_status, 
+                    revised_fulfillability, 
+                    rule_book_name, 
+                    section_key, 
+                    topic, 
+                    structure, 
+                    text, 
+                    rule_book_id 
+                 FROM rule_analysis_results 
+                 WHERE project_analysis_id = $2`,
+                [newId, latestAnalysis.id]
+            );
+        }
         
         await client.query('COMMIT');
         revalidatePath('/dashboard/project-analysis');
