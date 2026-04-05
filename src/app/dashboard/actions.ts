@@ -130,6 +130,7 @@ const mapDbProjectToProject = (dbProject: any): Project => ({
     projectOwner: dbProject.project_owner,
     yearOfConstruction: dbProject.year_of_construction,
     numberOfFloors: dbProject.number_of_floors,
+    floorsOverGround: dbProject.floors_over_ground,
     escapeLevel: dbProject.escape_level,
     listedBuilding: dbProject.listed_building,
     protectionZone: dbProject.protection_zone,
@@ -685,6 +686,7 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
         projectOwner,
         yearOfConstruction,
         numberOfFloors,
+        floorsOverGround,
         escapeLevel,
         listedBuilding,
         protectionZone,
@@ -711,12 +713,12 @@ export async function addProject(projectData: Omit<Project, 'id' | 'projectNumbe
         const result = await client.query(
             `INSERT INTO projects (
                 id, name, project_number, project_manager, creator_id, address, 
-                project_owner, year_of_construction, number_of_floors, escape_level, 
+                project_owner, year_of_construction, number_of_floors, floors_over_ground, escape_level, 
                 listed_building, protection_zone, current_use
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
             [
                 id, name, projectNumber, projectManager, creatorId, address, 
-                projectOwner, yearOfConstruction || null, numberOfFloors || null, escapeLevel || null, 
+                projectOwner, yearOfConstruction || null, numberOfFloors || null, floorsOverGround || null, escapeLevel || null, 
                 listedBuilding, protectionZone, currentUse || null
             ]
         );
@@ -743,6 +745,7 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
         projectOwner,
         yearOfConstruction,
         numberOfFloors,
+        floorsOverGround,
         escapeLevel,
         listedBuilding,
         protectionZone,
@@ -756,11 +759,12 @@ export async function updateProject(projectId: string, data: Omit<Project, 'id'>
             `UPDATE projects SET 
                 name = $1, project_manager = $2, creator_id = $3, address = $4,
                 project_owner = $5, year_of_construction = $6, number_of_floors = $7,
-                escape_level = $8, listed_building = $9, protection_zone = $10, current_use = $11
-             WHERE id = $12`,
+                floors_over_ground = $8, escape_level = $9, listed_building = $10, 
+                protection_zone = $11, current_use = $12
+             WHERE id = $13`,
             [
                 name, projectManager, creatorId, address, projectOwner, yearOfConstruction,
-                numberOfFloors, escapeLevel, listedBuilding, protectionZone, currentUse,
+                numberOfFloors, floorsOverGround, escapeLevel, listedBuilding, protectionZone, currentUse,
                 projectId
             ]
         );
@@ -1219,6 +1223,3 @@ export async function setSystemSetting(key: string, value: string): Promise<void
         throw error;
     }
 }
-    
-
-    

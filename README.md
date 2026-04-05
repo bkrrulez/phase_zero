@@ -60,7 +60,7 @@ The application should now be running and accessible at [http://localhost:3000](
 
 ## Data Persistence
 
-For rapid prototyping and ease of use, this application uses the browser's **`localStorage`** to persist data. All data (users, time entries, projects, etc.) is initialized from a mock data file (`src/lib/mock-data.ts`) and then stored in your browser. This means:
-- Changes you make are saved locally in your browser.
-- Clearing your browser's `localStorage` will reset the application to its initial state.
+For rapid prototyping and ease of use, I use Postgresql online DB and access it via the env file. This means:
+- Changes you make are saved globally and not only in your local system.
 - The data is not shared between different browsers or users.
+- Using the DATABASE_URL parameter, multiple frontends hosted in different systems can connect to the same DB (Not Advisable for Production)

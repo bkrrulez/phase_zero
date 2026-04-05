@@ -34,6 +34,7 @@ export type Project = {
   projectOwner: string;
   yearOfConstruction?: number;
   numberOfFloors?: number;
+  floorsOverGround?: number;
   escapeLevel?: number;
   listedBuilding: boolean;
   protectionZone: boolean;

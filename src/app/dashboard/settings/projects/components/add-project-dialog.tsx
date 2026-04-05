@@ -33,6 +33,7 @@ const createProjectSchema = (projects: { name: string }[]) => z.object({
   creator: z.string().min(1, 'Creator is required.'),
   yearOfConstruction: z.coerce.number().int().min(0).max(9999).optional(),
   numberOfFloors: z.coerce.number().int().min(0).max(9999).optional(),
+  floorsOverGround: z.coerce.number().int().min(0).max(9999).optional(),
   escapeLevel: z.coerce.number().min(0).max(999.99).optional(),
   listedBuilding: z.enum(['Yes', 'No']),
   protectionZone: z.enum(['Yes', 'No']),
@@ -66,6 +67,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
             projectOwner: '',
             yearOfConstruction: undefined,
             numberOfFloors: undefined,
+            floorsOverGround: undefined,
             escapeLevel: undefined,
             listedBuilding: 'No',
             protectionZone: 'No',
@@ -83,6 +85,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                 projectOwner: '',
                 yearOfConstruction: undefined,
                 numberOfFloors: undefined,
+                floorsOverGround: undefined,
                 escapeLevel: undefined,
                 listedBuilding: 'No',
                 protectionZone: 'No',
@@ -174,7 +177,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                 <Form {...form}>
                   <form id="add-project-form" onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     {/* Left Column */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <h3 className="font-semibold text-lg">{t('projectData')}</h3>
                         <FormField
                             control={form.control}
@@ -244,7 +247,7 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                         />
                     </div>
                     {/* Right Column */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <h3 className="font-semibold text-lg">{t('buildingData')}</h3>
                         <FormField
                             control={form.control}
@@ -263,6 +266,17 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>{t('geschosse')}</FormLabel>
+                                <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="floorsOverGround"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>{t('floorsOverGround')}</FormLabel>
                                 <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.value)} /></FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -366,5 +380,3 @@ export function AddProjectDialog({ isOpen, onOpenChange, onAddProject }: AddProj
     </>
   );
 }
-
-    

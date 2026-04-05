@@ -33,6 +33,7 @@ const createProjectSchema = (projects: { id: string; name: string }[], currentPr
   creator: z.string().min(1, 'Creator is required.'),
   yearOfConstruction: z.coerce.number().int().min(0).max(9999).optional(),
   numberOfFloors: z.coerce.number().int().min(0).max(9999).optional(),
+  floorsOverGround: z.coerce.number().int().min(0).max(9999).optional(),
   escapeLevel: z.coerce.number().min(0).max(999.99).optional(),
   listedBuilding: z.enum(['Yes', 'No']),
   protectionZone: z.enum(['Yes', 'No']),
@@ -72,6 +73,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
         projectOwner: project.projectOwner,
         yearOfConstruction: project.yearOfConstruction ?? undefined,
         numberOfFloors: project.numberOfFloors ?? undefined,
+        floorsOverGround: project.floorsOverGround ?? undefined,
         escapeLevel: project.escapeLevel ?? undefined,
         listedBuilding: project.listedBuilding ? 'Yes' : 'No',
         protectionZone: project.protectionZone ? 'Yes' : 'No',
@@ -146,7 +148,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                     <div className="px-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                         {/* Left Column */}
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <h3 className="font-semibold text-lg">{t('projectData')}</h3>
                             <FormField
                                 control={form.control}
@@ -216,7 +218,7 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                             />
                         </div>
                         {/* Right Column */}
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             <h3 className="font-semibold text-lg">{t('buildingData')}</h3>
                             <FormField
                                 control={form.control}
@@ -235,6 +237,17 @@ export function EditProjectDialog({ isOpen, onOpenChange, onSaveProject, project
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>{t('geschosse')}</FormLabel>
+                                    <FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="floorsOverGround"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>{t('floorsOverGround')}</FormLabel>
                                     <FormControl><Input type="number" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                     </FormItem>

@@ -1,3 +1,4 @@
+
 {
     "dashboard": "Dashboard",
     "team": "Team",
@@ -295,7 +296,8 @@
     "selectCreator": "Select a Creator",
     "buildingData": "Building Data",
     "yearOfConstruction": "Year of Construction",
-    "geschosse": "Number of Floors",
+    "geschosse": "Total Number of Floors",
+    "floorsOverGround": "Number of Floors Over Ground",
     "fluchtniveau": "Escape Level (in meters)",
     "denkmalschutz": "Listed Building",
     "schutzzone": "Protection Zone",
@@ -469,7 +471,7 @@
     "loginFailedDesc": "Invalid email or password.",
     "loginErrorTitle": "Login Error",
     "loginErrorDesc": "An unexpected error occurred. Please try again.",
-    "savedToastTitle": "Gespeichert!",
+    "savedToastTitle": "Saved!",
     "unfreezeConfirmationTitle": "Unfreeze?",
     "noMatchingParameters": "No parameters match the selected filter.",
     "saveSettings": "Save Settings",

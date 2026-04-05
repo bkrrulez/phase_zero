@@ -1,3 +1,4 @@
+
 {
     "dashboard": "Berichte",
     "team": "Team",
@@ -295,7 +296,8 @@
     "selectCreator": "Ersteller auswählen",
     "buildingData": "Gebäudedaten",
     "yearOfConstruction": "Baujahr",
-    "geschosse": "Geschoße",
+    "geschosse": "Gesamte Geschoße",
+    "floorsOverGround": "Oberirrdische Geschoße",
     "fluchtniveau": "Fluchtniveau (in Metern)",
     "denkmalschutz": "Denkmalschutz",
     "schutzzone": "Schutzzone",

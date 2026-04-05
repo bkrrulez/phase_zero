@@ -139,19 +139,23 @@ export default function ProjectDashboardPage() {
             projectOwner: data.projectOwner,
             yearOfConstruction: data.yearOfConstruction,
             numberOfFloors: data.numberOfFloors,
+            floorsOverGround: data.floorsOverGround,
             escapeLevel: data.escapeLevel,
             listedBuilding: data.listedBuilding === 'Yes',
             protectionZone: data.protectionZone === 'Yes',
             currentUse: data.currentUse,
         };
 
-        await addProject(newProjectData);
-        setIsAddDialogOpen(false);
-        toast({
-            title: t('projectAdded'),
-            description: t('projectAddedDesc', { name: data.projectName }),
-        });
-        logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
+        const result = await addProject(newProjectData);
+        if (result && result.id) {
+            setIsAddDialogOpen(false);
+            toast({
+                title: t('projectAdded'),
+                description: t('projectAddedDesc', { name: data.projectName }),
+            });
+            logAction(`User '${currentUser.name}' created a new project: '${data.projectName}'.`);
+        }
+        return result;
     };
 
     const handleSaveProject = (projectId: string, data: ProjectFormValues) => {
@@ -167,6 +171,7 @@ export default function ProjectDashboardPage() {
             projectOwner: data.projectOwner,
             yearOfConstruction: data.yearOfConstruction,
             numberOfFloors: data.numberOfFloors,
+            floorsOverGround: data.floorsOverGround,
             escapeLevel: data.escapeLevel,
             listedBuilding: data.listedBuilding === 'Yes',
             protectionZone: data.protectionZone === 'Yes',
