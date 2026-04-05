@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getProjectAnalysisDetails, updateProjectAnalysis } from '../../actions';
-import { deleteAnalysisResults, getFilteredRuleBooks } from '../rule-analysis/actions';
+import { getFilteredRuleBooks } from '../rule-analysis/actions';
 import { type ProjectAnalysis, type Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -159,11 +159,11 @@ export default function AnalysisDetailPage() {
             // If no changes but user wants to proceed, just navigate
             router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
         } else if (hasChanges()) { // Handles saving for the first time
-            proceedWithSave(andProceed, false);
+            proceedWithSave(andProceed);
         }
     }
 
-    const proceedWithSave = async (andProceed: boolean, shouldDeleteOldResults: boolean) => {
+    const proceedWithSave = async (andProceed: boolean) => {
         setIsConfirmingSave(false);
         setIsSaving(true);
         try {
@@ -184,10 +184,6 @@ export default function AnalysisDetailPage() {
                 if (changes.length > 0) {
                     const logMessage = `User "${currentUser?.name}" changed Project Analysis details for '${details.project.name}' (Version ${String(details.analysis.version).padStart(3,'0')}): ${changes.join(' and ')}.`;
                     await logAction(logMessage);
-                }
-
-                if (shouldDeleteOldResults) {
-                    await deleteAnalysisResults(analysisId);
                 }
 
                 if (andProceed) {
@@ -303,7 +299,7 @@ export default function AnalysisDetailPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => proceedWithSave(saveAndProceed, true)}>{t('proceed')}</AlertDialogAction>
+                        <AlertDialogAction onClick={() => proceedWithSave(saveAndProceed)}>{t('proceed')}</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
