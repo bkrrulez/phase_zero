@@ -34,6 +34,17 @@ NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
 NEXT_PUBLIC_ADMIN_PASSWORD=password
 ```
 
+**Database Connection:**
+The application tracks DATABASE_URL parameter to connect to a local or remote database. It enables the application to connect with a database hosted on a different server or to a different service. alternatively local DB parameters can be used as listed below to connect to a DB hosted locally.
+
+# PostgreSQL Database Configuration
+POSTGRES_DB=phasezero_db
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=<strong password>
+
+# DB URL (Optional) Add '?sslmode=require' to enable SSL connection
+DATABASE_URL="postgresql://admin:<strong_password>@dpg-d72088nfte5s73fec1i0-a.frankfurt-postgres.aws.amazon.com/phase0_db_4d40?sslmode=require"
+
 **Email Notifications (Optional):**
 The application uses `nodemailer` to send password change notifications via email. This feature is optional and the app will function without it.
 
