@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -9,7 +8,7 @@ import { getProjectAnalysisDetails } from '@/app/dashboard/actions';
 import { type RuleBook, type ProjectAnalysis, type Project } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
@@ -49,6 +48,9 @@ export default function RuleAnalysisPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [isAnalysisComplete, setIsAnalysisComplete] = React.useState(false);
+    
+    // State to track expanded rule books
+    const [expandedBooks, setExpandedBooks] = React.useState<Record<string, boolean>>({});
 
 
     React.useEffect(() => {
@@ -69,6 +71,15 @@ export default function RuleAnalysisPage() {
 
                 const isComplete = segmentedBooks.every(book => book.totalParameters === 0 || book.totalCompleted === book.totalParameters);
                 setIsAnalysisComplete(isComplete);
+
+                // Initialize expansion: first book true, others false
+                if (segmentedBooks.length > 0) {
+                    const initialExpansion: Record<string, boolean> = {};
+                    segmentedBooks.forEach((book, index) => {
+                        initialExpansion[book.ruleBook.id] = index === 0;
+                    });
+                    setExpandedBooks(initialExpansion);
+                }
 
             } catch (err) {
                 console.error(err);
@@ -94,6 +105,13 @@ export default function RuleAnalysisPage() {
                 description: t('analysisIncompleteDesc'),
             });
         }
+    };
+
+    const toggleBookExpansion = (bookId: string) => {
+        setExpandedBooks(prev => ({
+            ...prev,
+            [bookId]: !prev[bookId]
+        }));
     };
 
     if (isLoading) {
@@ -140,11 +158,19 @@ export default function RuleAnalysisPage() {
             {segmentedData.map(({ ruleBook, segments, totalCompleted, totalParameters, totalRows }) => {
                 const isComplete = totalParameters > 0 && totalCompleted === totalParameters;
                 const overallProgress = totalParameters > 0 ? (totalCompleted / totalParameters) * 100 : 0;
+                const isExpanded = !!expandedBooks[ruleBook.id];
+
                 return (
                     <Card key={ruleBook.id}>
-                        <CardHeader>
+                        <CardHeader 
+                            className="cursor-pointer select-none hover:bg-muted/30 transition-colors"
+                            onClick={() => toggleBookExpansion(ruleBook.id)}
+                        >
                             <CardTitle className="flex justify-between items-center">
-                                <span>{ruleBook.versionName}</span>
+                                <div className="flex items-center gap-2">
+                                    <span>{ruleBook.versionName}</span>
+                                    {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                                </div>
                                 <div className="flex items-center gap-4 text-sm font-medium">
                                     {showRowCount && <span className="text-muted-foreground">{totalRows} {totalRows === 1 ? t('row') : t('rows')}</span>}
                                     {totalParameters > 0 && (
@@ -158,41 +184,46 @@ export default function RuleAnalysisPage() {
                             </CardTitle>
                             <CardDescription>{t('ruleAnalysisFilteredDesc')}</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                {segments.map(segment => {
-                                    const progress = segment.totalParameters > 0 ? (segment.completedParameters / segment.totalParameters) * 100 : 0;
-                                    const hasNoParameters = segment.totalParameters === 0;
-                                    const isSegmentComplete = !hasNoParameters && segment.completedParameters === segment.totalParameters;
+                        {isExpanded && (
+                            <CardContent>
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                    {segments.map(segment => {
+                                        const progress = segment.totalParameters > 0 ? (segment.completedParameters / segment.totalParameters) * 100 : 0;
+                                        const hasNoParameters = segment.totalParameters === 0;
+                                        const isSegmentComplete = !hasNoParameters && segment.completedParameters === segment.totalParameters;
 
-                                    return (
-                                        <div
-                                            key={segment.key}
-                                            onClick={() => handleSegmentClick(ruleBook.id, segment.key)}
-                                            className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <h3 className="text-sm text-muted-foreground">{t('section', { key: segment.key })}</h3>
-                                                {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />}
-                                            </div>
-                                            
-                                            {showRowCount && <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
-                                            
-                                            {segment.firstRowText && (
-                                                <p className="text-sm font-bold text-muted-foreground truncate" title={segment.firstRowText}>{segment.firstRowText}</p>
-                                            )}
-
-                                            {!hasNoParameters && (
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
-                                                    <Progress value={progress} className="h-2 mt-1" />
+                                        return (
+                                            <div
+                                                key={segment.key}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSegmentClick(ruleBook.id, segment.key);
+                                                }}
+                                                className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <h3 className="text-sm text-muted-foreground">{t('section', { key: segment.key })}</h3>
+                                                    {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />}
                                                 </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </CardContent>
+                                                
+                                                {showRowCount && <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
+                                                
+                                                {segment.firstRowText && (
+                                                    <p className="text-sm font-bold text-muted-foreground truncate" title={segment.firstRowText}>{segment.firstRowText}</p>
+                                                )}
+
+                                                {!hasNoParameters && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
+                                                        <Progress value={progress} className="h-2 mt-1" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </CardContent>
+                        )}
                     </Card>
                 )
             })}
