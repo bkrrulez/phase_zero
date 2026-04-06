@@ -476,5 +476,8 @@
     "noMatchingParameters": "Keine Parameter unter dem gewählten Filter zu finden.",
     "saveSettings": "Speichern",
     "btnSaveImportSettings": "Änderungen speichern",
-    "exportResult": "Ergebnis exportieren"
+    "exportResult": "Ergebnis exportieren",
+    "btnPreviousSegment": "Zurück",
+    "noMorePreviousSegmentsTitle": "Kein vorheriger Abschnitt vorhanden!",
+    "noMorePreviousSegmentsDesc": "Bitte gehen Sie zurück zur Übersicht."
 }

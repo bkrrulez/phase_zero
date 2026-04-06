@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -98,6 +97,7 @@ export default function SegmentDetailPage() {
     const [orderedSegments, setOrderedSegments] = React.useState<{ ruleBookId: string; segmentKey: string; }[]>([]);
     
     const [showNoMoreSegmentsAlert, setShowNoMoreSegmentsAlert] = React.useState(false);
+    const [showNoMorePreviousAlert, setShowNoMorePreviousAlert] = React.useState(false);
     const [selectedTable, setSelectedTable] = React.useState<ReferenceTable | null>(null);
 
 
@@ -174,6 +174,19 @@ export default function SegmentDetailPage() {
             setShowNoMoreSegmentsAlert(true);
         }
     };
+
+    const handlePrevious = () => {
+        const currentIndex = orderedSegments.findIndex(
+            s => s.ruleBookId === ruleBookId && s.segmentKey === segment
+        );
+
+        if (currentIndex > 0) {
+            const prevSegment = orderedSegments[currentIndex - 1];
+            router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis/${prevSegment.ruleBookId}/${prevSegment.segmentKey}`);
+        } else {
+            setShowNoMorePreviousAlert(true);
+        }
+    };
     
     const handleOpenReferenceTable = (tableName: string) => {
         const table = details?.referenceTables.find((t) => t.name === tableName);
@@ -182,6 +195,11 @@ export default function SegmentDetailPage() {
 
     const handleCloseAlert = () => {
         setShowNoMoreSegmentsAlert(false);
+        router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
+    };
+
+    const handleClosePreviousAlert = () => {
+        setShowNoMorePreviousAlert(false);
         router.push(`/dashboard/project-analysis/${analysisId}/rule-analysis`);
     };
 
@@ -227,7 +245,7 @@ export default function SegmentDetailPage() {
     };
 
     const newUseDisplay = (details.projectAnalysis.newUse || []).map(u => t(u as any) || u).join(', ');
-    const fulfillabilityDisplay = (details.projectAnalysis.fulfillability || []).map(f => t(f as any) || f).join(', ');
+    const fulfillabilityDisplay = (details.projectAnalysis.fulfillability || []).map(f => f.toLowerCase().includes('bitte') ? '' : (t(f as any) || f)).filter(Boolean).join(', ');
 
     return (
         <>
@@ -250,7 +268,7 @@ export default function SegmentDetailPage() {
                     </div>
                 </div>
                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => router.back()}>{t('cancel')}</Button>
+                    <Button variant="outline" onClick={handlePrevious}>{t('btnPreviousSegment')}</Button>
                     <Button onClick={handleNext}>{t('next')}</Button>
                 </div>
             </div>
@@ -325,6 +343,21 @@ export default function SegmentDetailPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        <AlertDialog open={showNoMorePreviousAlert} onOpenChange={setShowNoMorePreviousAlert}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{t('noMorePreviousSegmentsTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {t('noMorePreviousSegmentsDesc')}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogAction onClick={handleClosePreviousAlert}>OK</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
         <ReferenceTableDialog
             isOpen={!!selectedTable}
             onOpenChange={() => setSelectedTable(null)}
