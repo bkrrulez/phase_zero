@@ -101,8 +101,8 @@ export default function AnalysisDetailPage() {
                     ? [data.analysis.fulfillability]
                     : [];
 
-                // Requirement: Default to 'General' if no 'New Use' is saved yet (e.g., first time)
-                const displayUse = fetchedUse.length > 0 ? fetchedUse : ['General'];
+                // Requirement: Default to 'General' and 'Non Residential' if no 'New Use' is saved yet
+                const displayUse = fetchedUse.length > 0 ? fetchedUse : ['General', 'Non Residential'];
 
                 setNewUse(displayUse);
                 setFulfillability(initialFulfill);
@@ -139,6 +139,20 @@ export default function AnalysisDetailPage() {
         const sortedInitialFulfill = [...initialFulfillability].sort();
         return sortedCurrentFulfill.some((val, i) => val !== sortedInitialFulfill[i]);
     }, [newUse, initialNewUse, fulfillability, initialFulfillability]);
+
+    const handleNewUseChange = (selected: string[]) => {
+        let updated = [...selected];
+        const justAddedResidential = selected.includes('Residential') && !newUse.includes('Residential');
+        const justAddedNonResidential = selected.includes('Non Residential') && !newUse.includes('Non Residential');
+
+        if (justAddedResidential) {
+            updated = updated.filter(u => u !== 'Non Residential');
+        } else if (justAddedNonResidential) {
+            updated = updated.filter(u => u !== 'Residential');
+        }
+        
+        setNewUse(updated);
+    };
 
     const handleSaveInitiation = (andProceed: boolean) => {
         if (newUse.length === 0 || fulfillability.length === 0) {
@@ -264,7 +278,7 @@ export default function AnalysisDetailPage() {
                                 <MultiSelect
                                     options={translatedCurrentUseOptions}
                                     selected={newUse}
-                                    onChange={setNewUse}
+                                    onChange={handleNewUseChange}
                                     placeholder={t('selectNewUse')}
                                 />
                             </div>
