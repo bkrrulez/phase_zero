@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -18,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { RuleBookSegmentViewer, type ViewerProps } from './components/rule-book-segment-viewer';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jsPDF';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const RADIAN = Math.PI / 180;
