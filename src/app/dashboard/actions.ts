@@ -839,8 +839,26 @@ export async function addNewProjectAnalysisVersion(projectId: string): Promise<P
         const newId = `pa-${Date.now()}`;
         
         // Inherit selection criteria (New Use / Fulfillability) from the previous version
-        const inheritedNewUse = latestAnalysis?.new_use || [];
+        let inheritedNewUse = latestAnalysis?.new_use || [];
         const inheritedFulfillability = latestAnalysis?.fulfillability || [];
+
+        // Apply specific inheritance rules for 'New Use'
+        // Rule: Default to 'General' and 'Non Residential'
+        // Exception: If previous version has 'Residential', don't add 'Non Residential'
+        
+        if (!inheritedNewUse.includes('General')) {
+            inheritedNewUse.push('General');
+        }
+        
+        if (inheritedNewUse.includes('Residential')) {
+            // Ensure 'Non Residential' is NOT selected if 'Residential' was inherited
+            inheritedNewUse = inheritedNewUse.filter((u: string) => u !== 'Non Residential');
+        } else {
+            // If 'Residential' is not there, ensure 'Non Residential' is selected
+            if (!inheritedNewUse.includes('Non Residential')) {
+                inheritedNewUse.push('Non Residential');
+            }
+        }
 
         const result = await client.query(
             `INSERT INTO project_analyses (id, project_id, version, new_use, fulfillability) VALUES ($1, $2, $3, $4, $5) RETURNING *`,

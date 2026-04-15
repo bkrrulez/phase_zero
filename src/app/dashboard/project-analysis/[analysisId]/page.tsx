@@ -142,13 +142,26 @@ export default function AnalysisDetailPage() {
 
     const handleNewUseChange = (selected: string[]) => {
         let updated = [...selected];
-        const justAddedResidential = selected.includes('Residential') && !newUse.includes('Residential');
-        const justAddedNonResidential = selected.includes('Non Residential') && !newUse.includes('Non Residential');
+        
+        // Find newly added items
+        const added = selected.filter(x => !newUse.includes(x));
+
+        // 1. Handle Mutual Exclusivity between Residential and Non Residential
+        const justAddedResidential = added.includes('Residential');
+        const justAddedNonResidential = added.includes('Non Residential');
 
         if (justAddedResidential) {
             updated = updated.filter(u => u !== 'Non Residential');
         } else if (justAddedNonResidential) {
             updated = updated.filter(u => u !== 'Residential');
+        }
+
+        // 2. Requirement: if user selects any option except 'Residential' then 'Non Residential' should get auto selected
+        // This should only happen if Residential isn't currently being selected in this step
+        const selectionTriggersNonRes = added.some(x => x !== 'Residential' && x !== 'Non Residential');
+        
+        if (selectionTriggersNonRes && !updated.includes('Residential') && !updated.includes('Non Residential')) {
+            updated.push('Non Residential');
         }
         
         setNewUse(updated);
