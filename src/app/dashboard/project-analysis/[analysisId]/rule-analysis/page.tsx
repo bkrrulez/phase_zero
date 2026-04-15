@@ -16,6 +16,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminPanel } from '@/app/dashboard/contexts/AdminPanelContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 interface SegmentStat {
@@ -48,9 +58,13 @@ export default function RuleAnalysisPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [isAnalysisComplete, setIsAnalysisComplete] = React.useState(false);
+    const [globalStats, setGlobalStats] = React.useState({ total: 0, completed: 0 });
     
     // State to track expanded rule books
     const [expandedBooks, setExpandedBooks] = React.useState<Record<string, boolean>>({});
+    
+    // State for partial analysis confirmation
+    const [isPartialAlertOpen, setIsPartialAlertOpen] = React.useState(false);
 
 
     React.useEffect(() => {
@@ -71,6 +85,10 @@ export default function RuleAnalysisPage() {
 
                 const isComplete = segmentedBooks.every(book => book.totalParameters === 0 || book.totalCompleted === book.totalParameters);
                 setIsAnalysisComplete(isComplete);
+                
+                const globalTotal = segmentedBooks.reduce((acc, book) => acc + book.totalParameters, 0);
+                const globalCompleted = segmentedBooks.reduce((acc, book) => acc + book.totalCompleted, 0);
+                setGlobalStats({ total: globalTotal, completed: globalCompleted });
 
                 // Initialize expansion: first book true, others false
                 if (segmentedBooks.length > 0) {
@@ -96,15 +114,24 @@ export default function RuleAnalysisPage() {
     };
 
     const handleResultClick = () => {
+        if (globalStats.completed === 0) {
+            toast({
+                variant: 'destructive',
+                title: t('fillAtLeastOneParameter'),
+            });
+            return;
+        }
+
         if (isAnalysisComplete) {
             router.push(`/dashboard/project-analysis/${analysisId}/result`);
         } else {
-            toast({
-                variant: 'destructive',
-                title: t('analysisIncompleteTitle'),
-                description: t('analysisIncompleteDesc'),
-            });
+            setIsPartialAlertOpen(true);
         }
+    };
+    
+    const handleProceedToResult = () => {
+        setIsPartialAlertOpen(false);
+        router.push(`/dashboard/project-analysis/${analysisId}/result`);
     };
 
     const toggleBookExpansion = (bookId: string) => {
@@ -227,6 +254,21 @@ export default function RuleAnalysisPage() {
                     </Card>
                 )
             })}
+
+            <AlertDialog open={isPartialAlertOpen} onOpenChange={setIsPartialAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('analysisPartiallyCompleteTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('analysisPartiallyCompleteDesc')}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleProceedToResult}>{t('proceedBtn')}</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getAnalysisResultData, type AnalysisResultData } from './actions';
 import { getProjectAnalysisDetails } from '../../../actions';
+import { getSegmentedRuleBookData } from '@/app/dashboard/project-analysis/rule-analysis/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { RuleBookSegmentViewer, type ViewerProps } from './components/rule-book-segment-viewer';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import jsPDF from 'jsPDF';
 import autoTable from 'jspdf-autotable';
 
 const RADIAN = Math.PI / 180;
@@ -162,21 +164,28 @@ export default function AnalysisResultPage() {
     const [isExporting, setIsExporting] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [viewerProps, setViewerProps] = React.useState<ViewerProps | null>(null);
+    const [isPartial, setIsPartial] = React.useState(false);
 
     React.useEffect(() => {
         async function fetchData() {
             if (!analysisId) return;
             setIsLoading(true);
             try {
-                const [details, data] = await Promise.all([
+                const [details, data, segmentedBooks] = await Promise.all([
                     getProjectAnalysisDetails(analysisId),
-                    getAnalysisResultData(analysisId)
+                    getAnalysisResultData(analysisId),
+                    getSegmentedRuleBookData(analysisId)
                 ]);
 
                 if (!details) throw new Error('Project details not found');
 
                 setProjectName(details.project.name);
                 setResultData(data);
+                
+                const globalTotal = segmentedBooks.reduce((acc, book) => acc + book.totalParameters, 0);
+                const globalCompleted = segmentedBooks.reduce((acc, book) => acc + book.totalCompleted, 0);
+                setIsPartial(globalCompleted < globalTotal);
+
             } catch (err) {
                 console.error(err);
                 setError('Failed to load analysis results.');
@@ -210,7 +219,9 @@ export default function AnalysisResultPage() {
             // Subtitle
             doc.setFontSize(10);
             doc.setTextColor(100);
-            doc.text(t('analysisResultDesc'), 14, 28);
+            const desc = isPartial ? t('partialAnalysisResultDesc') : t('analysisResultDesc');
+            const warning = isPartial ? ` ${t('incompleteAnalysisWarning')}` : '';
+            doc.text(`${desc}${warning}`, 14, 28);
             doc.setTextColor(0);
 
             let currentY = 35;
@@ -317,7 +328,16 @@ export default function AnalysisResultPage() {
                         </Button>
                         <div className="flex-1">
                             <h1 className="text-3xl font-bold font-headline">{t('analysisResultFor', { name: projectName })}</h1>
-                            <p className="text-muted-foreground">{t('analysisResultDesc')}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-muted-foreground">
+                                    {isPartial ? t('partialAnalysisResultDesc') : t('analysisResultDesc')}
+                                </p>
+                                {isPartial && (
+                                    <span className="text-destructive font-semibold">
+                                        {t('incompleteAnalysisWarning')}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">

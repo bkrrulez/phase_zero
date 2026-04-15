@@ -479,5 +479,11 @@
     "exportResult": "Export Result",
     "btnPreviousSegment": "Previous",
     "noMorePreviousSegmentsTitle": "No Previous Section Left!",
-    "noMorePreviousSegmentsDesc": "Please go back to the overview."
+    "noMorePreviousSegmentsDesc": "Please go back to the overview.",
+    "fillAtLeastOneParameter": "Fill at least 1 parameter to generate results.!",
+    "analysisPartiallyCompleteTitle": "Partial Analysis",
+    "analysisPartiallyCompleteDesc": "Analysis is partially complete. Do you want to proceed?",
+    "proceedBtn": "Proceed",
+    "partialAnalysisResultDesc": "A summary of the partial rule analysis.",
+    "incompleteAnalysisWarning": "(Attention! analysis is incomplete.)"
 }

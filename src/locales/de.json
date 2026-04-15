@@ -141,7 +141,7 @@
     "passwordChangedDesc": "Das Passwort für {{name}} wurde geändert und eine Benachrichtigungs-E-Mail wurde gesendet.",
     "error": "Fehler",
     "smtpError": "Passwortänderungsbenachrichtigung konnte nicht gesendet werden. Bitte überprüfen Sie die SMTP-Einstellungen.",
-    "userDeleted": "Benutzer gelöscht",
+    "userDeleted": "Benutzer löschen",
     "userDeletedDesc": "Benutzer {{name}} erfolgreich gelöscht.",
     "monthlyHours": "Monatsstunden",
     "monthlyHoursDesc": "Doppelklicken Sie auf einen Balken, um Einträge für diesen Tag anzuzeigen oder zu bearbeiten.",
@@ -479,5 +479,11 @@
     "exportResult": "Ergebnis exportieren",
     "btnPreviousSegment": "Zurück",
     "noMorePreviousSegmentsTitle": "Kein vorheriger Abschnitt vorhanden!",
-    "noMorePreviousSegmentsDesc": "Bitte gehen Sie zurück zur Übersicht."
+    "noMorePreviousSegmentsDesc": "Bitte gehen Sie zurück zur Übersicht.",
+    "fillAtLeastOneParameter": "Füllen Sie mindestens 1 Parameter aus, um Ergebnisse zu generieren.!",
+    "analysisPartiallyCompleteTitle": "Teilanalyse",
+    "analysisPartiallyCompleteDesc": "Die Analyse ist teilweise abgeschlossen. Möchten Sie fortfahren?",
+    "proceedBtn": "Fortfahren",
+    "partialAnalysisResultDesc": "Eine Zusammenfassung der teilweisen Regelanalyse.",
+    "incompleteAnalysisWarning": "(Achtung! Analyse nicht vollständig.)"
 }
