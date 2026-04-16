@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -32,18 +31,7 @@ const importSettingSchema = z.object({
 
 const formSchema = z.object({
   settings: z.array(importSettingSchema),
-}).refine(data => {
-  for (const setting of data.settings) {
-    if (setting.type === 'Drop Down' && !setting.values) {
-      return false;
-    }
-  }
-  return true;
-}, {
-  message: 'valuesRequired',
-  path: ['settings'], 
 });
-
 
 export type ImportSetting = z.infer<typeof importSettingSchema>;
 
@@ -130,7 +118,12 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                 control={form.control}
                                 name={`settings.${index}.name`}
                                 render={({ field }) => (
-                                    <Input {...field} disabled={isDefault} placeholder={t('columnName')}/>
+                                    <FormItem>
+                                        <FormControl>
+                                            <Input {...field} disabled={isDefault} placeholder={t('columnName')}/>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
                         </TableCell>
@@ -139,7 +132,11 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                 control={form.control}
                                 name={`settings.${index}.isMandatory`}
                                 render={({ field }) => (
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isDefault} />
+                                    <FormItem>
+                                        <FormControl>
+                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} disabled={isDefault} />
+                                        </FormControl>
+                                    </FormItem>
                                 )}
                             />
                         </TableCell>
@@ -148,16 +145,21 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                 control={form.control}
                                 name={`settings.${index}.type`}
                                 render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={isDefault}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Free Text">{t('freeText')}</SelectItem>
-                                            <SelectItem value="Drop Down">{t('dropDown')}</SelectItem>
-                                            <SelectItem value="Table">{t('table')}</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <FormItem>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={isDefault}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Free Text">{t('freeText')}</SelectItem>
+                                                <SelectItem value="Drop Down">{t('dropDown')}</SelectItem>
+                                                <SelectItem value="Table">{t('table')}</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
                         </TableCell>
@@ -166,11 +168,16 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                 control={form.control}
                                 name={`settings.${index}.values`}
                                 render={({ field }) => (
-                                    <Input 
-                                      {...field} 
-                                      placeholder={columnType === 'Drop Down' ? "Comma-separated values" : "-"} 
-                                      disabled={columnType === 'Free Text' || columnType === 'Table'} 
-                                    />
+                                    <FormItem>
+                                        <FormControl>
+                                            <Input 
+                                              {...field} 
+                                              placeholder={columnType === 'Drop Down' ? "Comma-separated values" : "-"} 
+                                              disabled={columnType === 'Free Text' || columnType === 'Table'} 
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
                         </TableCell>
@@ -188,15 +195,6 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
               </Table>
             </div>
             
-            {/* Display form-level error for refined validation */}
-            {form.formState.errors.settings && (
-              <div className="mt-4 p-2 border border-destructive/50 bg-destructive/10 rounded text-sm text-destructive font-medium">
-                {form.formState.errors.settings.root?.message 
-                  ? t(form.formState.errors.settings.root.message as any) 
-                  : t('valuesRequired' as any)}
-              </div>
-            )}
-
             <DialogFooter className="pt-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t('cancel')}
