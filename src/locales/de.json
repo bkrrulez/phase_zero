@@ -485,5 +485,7 @@
     "analysisPartiallyCompleteDesc": "Die Analyse ist teilweise abgeschlossen. Möchten Sie fortfahren?",
     "proceedBtn": "Fortfahren",
     "partialAnalysisResultDesc": "Eine Zusammenfassung der teilweisen Regelanalyse.",
-    "incompleteAnalysisWarning": "(Achtung! Analyse nicht vollständig.)"
+    "incompleteAnalysisWarning": "(Achtung! Analyse nicht vollständig.)",
+    "importSettingsSaveSuccess": "Import-Einstellungen gespeichert.",
+    "importSettingsSaveSuccessDesc": "Die Konfiguration für den Import von Regelwerken wurde erfolgreich aktualisiert."
 }

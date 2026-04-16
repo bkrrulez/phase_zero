@@ -485,5 +485,7 @@
     "analysisPartiallyCompleteDesc": "Analysis is partially complete. Do you want to proceed?",
     "proceedBtn": "Proceed",
     "partialAnalysisResultDesc": "A summary of the partial rule analysis.",
-    "incompleteAnalysisWarning": "(Attention! analysis is incomplete.)"
+    "incompleteAnalysisWarning": "(Attention! analysis is incomplete.)",
+    "importSettingsSaveSuccess": "Import Settings Saved.",
+    "importSettingsSaveSuccessDesc": "Your rule book import configuration has been updated."
 }

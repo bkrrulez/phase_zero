@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -155,6 +154,10 @@ export default function RuleBooksPage() {
   const handleSaveSettings = (settings: ImportSetting[]) => {
     setImportSettings(settings);
     setIsSettingsOpen(false);
+    toast({
+      title: t('importSettingsSaveSuccess'),
+      description: t('importSettingsSaveSuccessDesc'),
+    });
   }
 
   const handleDelete = async () => {

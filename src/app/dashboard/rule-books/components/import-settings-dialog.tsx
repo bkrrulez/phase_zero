@@ -41,7 +41,7 @@ const formSchema = z.object({
   return true;
 }, {
   message: 'valuesRequired',
-  path: ['settings'], // This might not point to a specific field, but it's a form-level error.
+  path: ['settings'], 
 });
 
 
@@ -64,8 +64,10 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
   });
   
   React.useEffect(() => {
-    form.reset({ settings });
-  }, [settings, form]);
+    if (isOpen) {
+      form.reset({ settings });
+    }
+  }, [settings, form, isOpen]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -104,7 +106,7 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60vh] overflow-y-auto border rounded-md">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -118,6 +120,7 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                 <TableBody>
                   {fields.map((field, index) => {
                      const columnType = form.watch(`settings.${index}.type`);
+                     // Initial col-X fields are considered default and protected
                      const isDefault = field.id.startsWith('col-');
 
                      return (
@@ -127,7 +130,7 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                 control={form.control}
                                 name={`settings.${index}.name`}
                                 render={({ field }) => (
-                                    <Input {...field} disabled={isDefault} />
+                                    <Input {...field} disabled={isDefault} placeholder={t('columnName')}/>
                                 )}
                             />
                         </TableCell>
@@ -163,7 +166,11 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                                 control={form.control}
                                 name={`settings.${index}.values`}
                                 render={({ field }) => (
-                                    <Input {...field} placeholder="Comma-separated values" disabled={columnType === 'Free Text' || columnType === 'Table'} />
+                                    <Input 
+                                      {...field} 
+                                      placeholder={columnType === 'Drop Down' ? "Comma-separated values" : "-"} 
+                                      disabled={columnType === 'Free Text' || columnType === 'Table'} 
+                                    />
                                 )}
                             />
                         </TableCell>
@@ -180,12 +187,23 @@ export function ImportSettingsDialog({ isOpen, onOpenChange, settings, onSave }:
                 </TableBody>
               </Table>
             </div>
-            {form.formState.errors.settings && <p className="text-sm font-medium text-destructive mt-2">{t(form.formState.errors.settings.message as any)}</p>}
+            
+            {/* Display form-level error for refined validation */}
+            {form.formState.errors.settings && (
+              <div className="mt-4 p-2 border border-destructive/50 bg-destructive/10 rounded text-sm text-destructive font-medium">
+                {form.formState.errors.settings.root?.message 
+                  ? t(form.formState.errors.settings.root.message as any) 
+                  : t('valuesRequired' as any)}
+              </div>
+            )}
+
             <DialogFooter className="pt-6">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t('cancel')}
               </Button>
-              <Button type="submit">{t('btnSaveImportSettings')}</Button>
+              <Button type="submit">
+                {t('btnSaveImportSettings')}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
