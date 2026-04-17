@@ -32,6 +32,7 @@ interface RuleBookDetails {
   entries: RuleBookEntry[];
   referenceTables: ReferenceTable[];
   allVersions: {version: number, id: string}[];
+  importSettings?: any[];
 }
 
 const columnOrder = [
@@ -163,7 +164,12 @@ export default function RuleBookDetailPage() {
     });
   };
 
-  const sortedHeaders = getSortedHeaders(headers, columnOrder);
+  // Use Import Settings as the primary source for column order
+  const dynamicOrder = details.importSettings && details.importSettings.length > 0 
+    ? details.importSettings.map(s => s.name) 
+    : columnOrder;
+
+  const sortedHeaders = getSortedHeaders(headers, dynamicOrder);
   
   return (
     <>

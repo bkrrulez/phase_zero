@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -125,7 +123,7 @@ export async function deleteRuleBook(ruleBookId: string, deleteAllVersions: bool
 }
 
 
-export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook: RuleBook, entries: RuleBookEntry[], referenceTables: ReferenceTable[], allVersions: {version: number, id: string}[] } | null> {
+export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook: RuleBook, entries: RuleBookEntry[], referenceTables: ReferenceTable[], allVersions: {version: number, id: string}[], importSettings?: any[] } | null> {
     const client = await db.connect();
     try {
         const ruleBookRes = await client.query('SELECT * FROM rule_books WHERE id = $1', [ruleBookId]);
@@ -142,6 +140,17 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
         const entriesRes = await client.query('SELECT * FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY id', [ruleBookId]);
         
         const refTablesRes = await client.query('SELECT * FROM reference_tables WHERE rule_book_id = $1', [ruleBookId]);
+
+        // Fetch Import Settings for column ordering
+        const settingsRes = await client.query('SELECT value FROM system_settings WHERE key = $1', ['import_rule_book_settings']);
+        let importSettings = [];
+        if (settingsRes.rows.length > 0) {
+            try {
+                importSettings = JSON.parse(settingsRes.rows[0].value);
+            } catch (e) {
+                console.error("Failed to parse settings", e);
+            }
+        }
 
         return {
             ruleBook: {
@@ -164,6 +173,7 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
                 data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data || [],
             })),
             allVersions: allVersionsRes.rows.map(row => ({ id: row.id, version: row.version })),
+            importSettings,
         };
     } catch (error) {
         console.error(`Error getting details for rule book with ID ${ruleBookId}:`, error);
