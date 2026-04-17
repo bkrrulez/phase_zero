@@ -209,6 +209,10 @@ export default function SegmentDetailPage() {
 
     const finalHeaders = ['Gliederung', 'Text', 'Referenztabelle', 'projectChecklist', 'projectBasedFulfillability'];
     
+    // Logic to hide 'Referenztabelle' if all cells in that column are blank in this section
+    const isReferenceTableEmpty = details.entries.every(entry => !String(entry.data['Referenztabelle'] ?? '').trim());
+    const visibleHeaders = finalHeaders.filter(header => header !== 'Referenztabelle' || !isReferenceTableEmpty);
+
     const getColumnStyle = (header: string): React.CSSProperties => {
         const style: React.CSSProperties = { width: 'auto' };
         if (header === 'Text') {
@@ -254,7 +258,7 @@ export default function SegmentDetailPage() {
                 <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
                     <thead className="sticky top-0 bg-card z-10">
                         <TableRow>
-                            {finalHeaders.map(header => <TableHead key={header} className="border-b" style={getColumnStyle(header)}>{t(header as any) || header}</TableHead>)}
+                            {visibleHeaders.map(header => <TableHead key={header} className="border-b" style={getColumnStyle(header)}>{t(header as any) || header}</TableHead>)}
                         </TableRow>
                     </thead>
                     <TableBody>
@@ -264,7 +268,7 @@ export default function SegmentDetailPage() {
 
                             return (
                                 <TableRow key={entry.id}>
-                                    {finalHeaders.map(header => {
+                                    {visibleHeaders.map(header => {
                                         const cellValue = String(entry.data[header] ?? '');
                                         return (
                                             <TableCell key={`${entry.id}-${header}`} className="align-top border-b" style={getColumnStyle(header)}>
