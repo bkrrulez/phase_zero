@@ -59,26 +59,97 @@ type GetFilteredRuleBooksParams = {
     fulfillability?: string[];
 }
 
+/**
+ * Filter Logic Engine
+ * Determines if a row from a rulebook should be included based on project criteria.
+ */
+function shouldIncludeEntry(entry: RuleBookEntry, context: { 
+    lowerCaseNewUseWords: Set<string>, 
+    lowerCaseFulfillability: string[], 
+    projectEscapeLevel: number | null | undefined 
+}) {
+    const data = entry.data;
+    const headers = Object.keys(data);
+
+    // 1. Ausschliessen Check (Optional column)
+    const ausschliessenVal = String(data['Ausschliessen'] || '').trim().toLowerCase();
+    if (['yes', 'ja'].includes(ausschliessenVal)) return false;
+
+    // 2. Fulfillability Check (Inherited from Logic 1)
+    const erfullbarkeitValue = String(data['Erfüllbarkeit'] || '').trim().toLowerCase();
+    let erfullbarkeitMatch = (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen');
+    if (!erfullbarkeitMatch) {
+        erfullbarkeitMatch = context.lowerCaseFulfillability.includes(erfullbarkeitValue);
+    }
+    if (!erfullbarkeitMatch) return false;
+
+    // 3. Nutzung Check (Logic 2: checks all columns starting with "Nutzung")
+    const nutzungHeaders = headers.filter(h => h.toLowerCase().startsWith('nutzung'));
+    let nutzungMatch = false;
+    
+    if (nutzungHeaders.length === 0) {
+        nutzungMatch = true; // No filter specified, treated as general
+    } else {
+        for (const h of nutzungHeaders) {
+            const val = String(data[h] || '').trim();
+            // If any nutzung column is empty or says "please select", it's a general rule for this row
+            if (val === '' || val.toLowerCase() === 'bitte auswaehlen') {
+                nutzungMatch = true;
+                break;
+            }
+            // Keyword overlap logic
+            const entryWords = new Set(val.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+            const matchingWords = [...entryWords].filter(word => context.lowerCaseNewUseWords.has(word));
+            if (matchingWords.length >= 2 || (entryWords.size < 2 && matchingWords.length > 0)) {
+                nutzungMatch = true;
+                break;
+            }
+        }
+    }
+    if (!nutzungMatch) return false;
+
+    // 4. Fluchtniveau Check (Logic 2)
+    // Only apply if the column exists in the rulebook
+    const hasFluchtniveauCol = headers.some(h => h === 'Fluchtniveau');
+    if (hasFluchtniveauCol) {
+        const fnVal = String(data['Fluchtniveau'] || '').trim().toLowerCase();
+        const level = context.projectEscapeLevel;
+        
+        // Blank cells in this column are treated as Null (always match)
+        if (fnVal !== '' && fnVal !== 'bitte auswaehlen') {
+            // If the rule specifies a range but the project has no level, we exclude it
+            if (level === null || level === undefined) {
+                return false;
+            }
+            
+            if (fnVal === 'unter 22') {
+                if (level >= 22) return false;
+            } else if (fnVal === '22 bis 32') {
+                if (level < 22 || level >= 32) return false;
+            } else if (fnVal === 'ueber 22') {
+                if (level < 22) return false;
+            } else if (fnVal === 'ueber 32') {
+                if (level < 32) return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
     const { projectAnalysisId, newUse: newUseParam, fulfillability: fulfillabilityParam } = params;
     
-    let analysisNewUse: string[] | null | undefined = newUseParam;
-    let analysisFulfillability: string[] | null | undefined = fulfillabilityParam;
-
-    // If newUse or fulfillability are not passed directly, fetch them.
-    if (!analysisNewUse || !analysisFulfillability) {
-        const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
-        if (!analysisDetails) {
-            throw new Error('Analysis details not found');
-        }
-        analysisNewUse = analysisDetails.analysis.newUse;
-        analysisFulfillability = analysisDetails.analysis.fulfillability;
+    const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
+    if (!analysisDetails) {
+        throw new Error('Analysis details not found');
     }
 
-    const newUseArray = cleanUpArrayField(analysisNewUse);
-    const fulfillabilityArray = cleanUpArrayField(analysisFulfillability);
+    const newUseArray = cleanUpArrayField(newUseParam || analysisDetails.analysis.newUse);
+    const fulfillabilityArray = cleanUpArrayField(fulfillabilityParam || analysisDetails.analysis.fulfillability);
+    const projectEscapeLevel = analysisDetails.project.escapeLevel;
 
-    if (newUseArray.length === 0 || !fulfillabilityArray || fulfillabilityArray.length === 0) {
+    if (newUseArray.length === 0 || fulfillabilityArray.length === 0) {
         return [];
     }
     
@@ -88,6 +159,11 @@ export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
     const germanFulfillability = fulfillabilityArray.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
+    const filterContext = {
+        lowerCaseNewUseWords,
+        lowerCaseFulfillability,
+        projectEscapeLevel
+    };
 
     // Always fetch the latest versions of all rule books
     const allRuleBooks = await getRuleBooks();
@@ -97,34 +173,7 @@ export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
         const details = await getRuleBookDetails(book.id);
         if (!details) continue;
 
-        const filteredEntries = details.entries.filter(entry => {
-            const nutzungValue = (entry.data['Nutzung'] || '').trim();
-            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
-
-            // --- Fulfillability Check ---
-            let erfullbarkeitMatch = false;
-            if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
-                erfullbarkeitMatch = true;
-            } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
-                erfullbarkeitMatch = true;
-            }
-            
-            // --- Usage Check ---
-            let nutzungMatch = false;
-            if (nutzungValue === '' || nutzungValue.toLowerCase() === 'bitte auswaehlen') {
-                nutzungMatch = true;
-            } else {
-                const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
-                if (entryNutzungWords.size > 0) {
-                    const matchingWords = [...entryNutzungWords].filter(word => lowerCaseNewUseWords.has(word));
-                    if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
-                        nutzungMatch = true;
-                    }
-                }
-            }
-
-            return nutzungMatch && erfullbarkeitMatch;
-        });
+        const filteredEntries = details.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
 
         if (filteredEntries.length > 0) {
             filteredRuleBooksData.push({
@@ -270,8 +319,9 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const { newUse, fulfillability } = analysisDetails.analysis;
     const newUseArray = cleanUpArrayField(newUse);
     const fulfillabilityArray = cleanUpArrayField(fulfillability);
+    const projectEscapeLevel = analysisDetails.project.escapeLevel;
 
-    if (newUseArray.length === 0 || !fulfillabilityArray) throw new Error('Analysis criteria not set.');
+    if (newUseArray.length === 0 || fulfillabilityArray.length === 0) throw new Error('Analysis criteria not set.');
 
     const germanNewUses = newUseArray.map(use => getGermanTranslation(use));
     const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
@@ -279,38 +329,16 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const germanFulfillability = fulfillabilityArray.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
+    const filterContext = {
+        lowerCaseNewUseWords,
+        lowerCaseFulfillability,
+        projectEscapeLevel
+    };
 
-    // First, filter based on New Use and Fulfillability
-    const filteredEntries = ruleBookDetails.entries.filter(entry => {
-        const nutzungValue = (entry.data['Nutzung'] || '').trim();
-        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
+    // First, filter all entries from the rulebook based on the context
+    const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
 
-        // --- Fulfillability Check ---
-        let erfullbarkeitMatch = false;
-        if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
-            erfullbarkeitMatch = true;
-        } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
-            erfullbarkeitMatch = true;
-        }
-        
-        // --- Usage Check ---
-        let nutzungMatch = false;
-        if (nutzungValue === '' || nutzungValue.toLowerCase() === 'bitte auswaehlen') {
-            nutzungMatch = true;
-        } else {
-            const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
-            if (entryNutzungWords.size > 0) {
-                const matchingWords = [...entryNutzungWords].filter(word => lowerCaseNewUseWords.has(word));
-                if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
-                    nutzungMatch = true;
-                }
-            }
-        }
-        
-        return nutzungMatch && erfullbarkeitMatch;
-    });
-
-    // Then, get all entries for the requested section
+    // Then, extract only those that belong to the requested segment
     const segmentEntries: RuleBookEntry[] = [];
     let lastSegmentKey: string | null = null;
     for (const entry of filteredEntries) {
