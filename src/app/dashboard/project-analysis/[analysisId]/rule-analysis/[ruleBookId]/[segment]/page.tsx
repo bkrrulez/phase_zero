@@ -207,8 +207,6 @@ export default function SegmentDetailPage() {
     if (error) return <div className="text-destructive p-8 text-center">{error}</div>;
     if (!details) return <div className="p-8 text-center">No details found for this section.</div>;
 
-    // Fixed set of columns as requested: 
-    // 'Structure', 'Text', 'Reference Table', 'Project Checklist', 'Project-based Fulfillability'
     const finalHeaders = ['Gliederung', 'Text', 'Referenztabelle', 'projectChecklist', 'projectBasedFulfillability'];
     
     const getColumnStyle = (header: string): React.CSSProperties => {

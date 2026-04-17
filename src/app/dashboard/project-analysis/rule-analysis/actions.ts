@@ -29,17 +29,14 @@ const getGermanTranslation = (key: string, fromLocale: 'en' | 'de' = 'en'): stri
 // Helper function to clean up corrupted array data from the database
 const cleanUpArrayField = (field: any): string[] => {
     if (Array.isArray(field)) {
-        // If it's a clean array of strings, just return it.
         if (field.every(item => typeof item === 'string')) {
             return field;
         }
     }
     if (typeof field === 'string') {
-        // Handle PostgreSQL array literal format, e.g., '{"Value1","Value2"}'
         if (field.startsWith('{') && field.endsWith('}')) {
             return field.substring(1, field.length - 1).split(',').map(item => item.replace(/"/g, '').trim());
         }
-        // Handle simple comma-separated string
         return field.split(',').map(item => item.trim());
     }
     return [];
@@ -53,113 +50,122 @@ type RuleAnalysisResult = {
     revisedFulfillability: string | null;
 }
 
-type GetFilteredRuleBooksParams = {
-    projectAnalysisId: string;
-    newUse?: string[];
-    fulfillability?: string[];
+/**
+ * Filter Logic Engine (Logic 2)
+ */
+function shouldIncludeEntry(entry: RuleBookEntry, context: { 
+    lowerCaseNewUseWords: Set<string>, 
+    lowerCaseFulfillability: string[], 
+    projectEscapeLevel: number | null | undefined 
+}) {
+    const data = entry.data;
+    const headers = Object.keys(data);
+
+    // 1. Ausschliessen Check
+    const ausschliessenHeader = headers.find(h => h.trim().toLowerCase() === 'ausschliessen');
+    if (ausschliessenHeader) {
+        const val = String(data[ausschliessenHeader] || '').trim().toLowerCase();
+        if (['yes', 'ja'].includes(val)) return false;
+    }
+
+    // 2. Erfüllbarkeit Check
+    const erfullbarkeitHeader = headers.find(h => h.trim() === 'Erfüllbarkeit');
+    if (erfullbarkeitHeader) {
+        const val = String(data[erfullbarkeitHeader] || '').trim().toLowerCase();
+        if (val !== '' && val !== 'bitte auswaehlen') {
+            if (!context.lowerCaseFulfillability.includes(val)) return false;
+        }
+    }
+
+    // 3. Nutzung Check (Scan all columns starting with "Nutzung")
+    const nutzungHeaders = headers.filter(h => h.trim().toLowerCase().startsWith('nutzung'));
+    let nutzungMatch = (nutzungHeaders.length === 0); 
+    
+    for (const h of nutzungHeaders) {
+        const val = String(data[h] || '').trim();
+        if (val === '' || val.toLowerCase() === 'bitte auswaehlen') {
+            nutzungMatch = true;
+            break;
+        }
+        const entryWords = new Set(val.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+        const matchingWords = [...entryWords].filter(word => context.lowerCaseNewUseWords.has(word));
+        if (matchingWords.length >= 2 || (entryWords.size < 2 && matchingWords.length > 0)) {
+            nutzungMatch = true;
+            break;
+        }
+    }
+    if (!nutzungMatch) return false;
+
+    // 4. Fluchtniveau Check
+    const fluchtniveauHeader = headers.find(h => h.trim() === 'Fluchtniveau');
+    if (fluchtniveauHeader) {
+        const val = String(data[fluchtniveauHeader] || '').trim().toLowerCase();
+        if (val !== '' && val !== 'bitte auswaehlen') {
+            const level = context.projectEscapeLevel;
+            if (level === null || level === undefined) {
+                return false;
+            }
+            
+            if (val === 'unter 22') {
+                if (level >= 22) return false;
+            } else if (val === '22 bis 32') {
+                if (level < 22 || level >= 32) return false;
+            } else if (val === 'ueber 22') {
+                if (level < 22) return false;
+            } else if (val === 'ueber 32') {
+                if (level < 32) return false;
+            }
+        }
+    }
+
+    return true;
 }
 
-export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
+export async function getFilteredRuleBooks(params: { projectAnalysisId: string, newUse?: string[], fulfillability?: string[] }) {
     const { projectAnalysisId, newUse: newUseParam, fulfillability: fulfillabilityParam } = params;
     
-    let analysisNewUse: string[] | null | undefined = newUseParam;
-    let analysisFulfillability: string[] | null | undefined = fulfillabilityParam;
+    const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
+    if (!analysisDetails) throw new Error('Analysis details not found');
 
-    // If newUse or fulfillability are not passed directly, fetch them.
-    if (!analysisNewUse || !analysisFulfillability) {
-        const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
-        if (!analysisDetails) {
-            throw new Error('Analysis details not found');
-        }
-        analysisNewUse = analysisDetails.analysis.newUse;
-        analysisFulfillability = analysisDetails.analysis.fulfillability;
-    }
+    const newUseArray = cleanUpArrayField(newUseParam || analysisDetails.analysis.newUse);
+    const fulfillabilityArray = cleanUpArrayField(fulfillabilityParam || analysisDetails.analysis.fulfillability);
+    const projectEscapeLevel = analysisDetails.project.escapeLevel !== undefined ? Number(analysisDetails.project.escapeLevel) : null;
 
-    const newUseArray = cleanUpArrayField(analysisNewUse);
-    const fulfillabilityArray = cleanUpArrayField(analysisFulfillability);
-
-    if (newUseArray.length === 0 || !fulfillabilityArray || fulfillabilityArray.length === 0) {
-        return [];
-    }
+    if (newUseArray.length === 0 || fulfillabilityArray.length === 0) return [];
     
     const germanNewUses = newUseArray.map(use => getGermanTranslation(use));
     const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
-
     const germanFulfillability = fulfillabilityArray.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
+    const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
-    // Always fetch the latest versions of all rule books
     const allRuleBooks = await getRuleBooks();
     const filteredRuleBooksData = [];
 
     for (const book of allRuleBooks) {
         const details = await getRuleBookDetails(book.id);
         if (!details) continue;
-
-        const filteredEntries = details.entries.filter(entry => {
-            const nutzungValue = (entry.data['Nutzung'] || '').trim();
-            const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
-
-            // --- Fulfillability Check ---
-            let erfullbarkeitMatch = false;
-            if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
-                erfullbarkeitMatch = true;
-            } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
-                erfullbarkeitMatch = true;
-            }
-            
-            // --- Usage Check ---
-            let nutzungMatch = false;
-            if (nutzungValue === '' || nutzungValue.toLowerCase() === 'bitte auswaehlen') {
-                nutzungMatch = true;
-            } else {
-                const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
-                if (entryNutzungWords.size > 0) {
-                    const matchingWords = [...entryNutzungWords].filter(word => lowerCaseNewUseWords.has(word));
-                    if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
-                        nutzungMatch = true;
-                    }
-                }
-            }
-
-            return nutzungMatch && erfullbarkeitMatch;
-        });
-
+        const filteredEntries = details.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
         if (filteredEntries.length > 0) {
-            filteredRuleBooksData.push({
-                ruleBook: book,
-                entries: filteredEntries,
-            });
+            filteredRuleBooksData.push({ ruleBook: book, entries: filteredEntries });
         }
     }
     return filteredRuleBooksData;
 }
 
-
 const getSegmentKey = (gliederung: string): string | null => {
     if (!gliederung || typeof gliederung !== 'string') return null;
-    
-    // Match the first number sequence at the start of the string
     const match = gliederung.trim().match(/^\d+/);
-    if (match) {
-        return match[0];
-    }
-
-    // Handle cases like '§ 123'
+    if (match) return match[0];
     const paragraphMatch = gliederung.trim().match(/^§\s*(\d+)/);
-    if (paragraphMatch && paragraphMatch[1]) {
-        return paragraphMatch[1];
-    }
-    
+    if (paragraphMatch && paragraphMatch[1]) return paragraphMatch[1];
     return null;
 };
 
 export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     const filteredData = await getFilteredRuleBooks({ projectAnalysisId });
     const analysisResults = await getAnalysisResults(projectAnalysisId);
-
-    // Sort the filtered data by rulebook name alphabetically
     filteredData.sort((a, b) => a.ruleBook.versionName.localeCompare(b.ruleBook.versionName));
 
     const resultsMap = new Map<string, RuleAnalysisResult>();
@@ -171,42 +177,25 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
         const segments = entries.reduce((acc, entry) => {
             const gliederung = String(entry.data['Gliederung'] || '');
             let currentSegmentKey = getSegmentKey(gliederung);
-            
-            if (currentSegmentKey) {
-                lastSegmentKey = currentSegmentKey;
-            } else {
-                currentSegmentKey = lastSegmentKey;
-            }
-
-            // Fallback for entries that still don't have a section key
+            if (currentSegmentKey) { lastSegmentKey = currentSegmentKey; } else { currentSegmentKey = lastSegmentKey; }
             const finalSegmentKey = currentSegmentKey || '0';
-            
             if (!acc[finalSegmentKey]) {
                 acc[finalSegmentKey] = [];
                 orderedSegmentKeys.push(finalSegmentKey);
             }
             acc[finalSegmentKey].push(entry);
-            
             return acc;
         }, {} as Record<string, RuleBookEntry[]>);
 
         const segmentStats = orderedSegmentKeys.map(key => {
             const segmentEntries = segments[key];
             const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
-            
             const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
-                if (!analysis || !analysis.checklistStatus) {
-                    return false; // Not started
-                }
-                 if (['Not Fulfilled', 'Not verifiable'].includes(analysis.checklistStatus)) {
-                    // If it requires fulfillability, it must have a value.
-                    return !!analysis.revisedFulfillability;
-                }
-                // For other statuses, just having the status is enough.
+                if (!analysis || !analysis.checklistStatus) return false;
+                if (['Not Fulfilled', 'Not verifiable'].includes(analysis.checklistStatus)) return !!analysis.revisedFulfillability;
                 return true;
             }).length;
-
             return {
                 key,
                 totalRows: segmentEntries.length,
@@ -216,17 +205,12 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             };
         });
 
-        // Always show the 1st section box.
-        // Additionally show Sections where at least 1 parameter is available.
         const displayedSegments = segmentStats.filter((s, index) => index === 0 || s.totalParameters > 0);
-
-        const totalParameterRows = entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length;
-
         return {
             ruleBook,
             segments: displayedSegments,
             totalRows: entries.length,
-            totalParameters: totalParameterRows,
+            totalParameters: entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length,
             totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
         };
     });
@@ -235,19 +219,13 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 export async function getOrderedSegments(projectAnalysisId: string): Promise<{ ruleBookId: string; segmentKey: string; }[]> {
     const segmentedData = await getSegmentedRuleBookData(projectAnalysisId);
     const orderedSegments: { ruleBookId: string; segmentKey: string; }[] = [];
-
     for (const ruleBookData of segmentedData) {
         for (const segment of ruleBookData.segments) {
-            orderedSegments.push({
-                ruleBookId: ruleBookData.ruleBook.id,
-                segmentKey: segment.key,
-            });
+            orderedSegments.push({ ruleBookId: ruleBookData.ruleBook.id, segmentKey: segment.key });
         }
     }
-
     return orderedSegments;
 }
-
 
 export async function getAnalysisResults(projectAnalysisId: string): Promise<RuleAnalysisResult[]> {
     const res = await db.query('SELECT * FROM rule_analysis_results WHERE project_analysis_id = $1', [projectAnalysisId]);
@@ -267,67 +245,28 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
     if (!ruleBookDetails) throw new Error('Rule book details not found');
 
-    const { newUse, fulfillability } = analysisDetails.analysis;
-    const newUseArray = cleanUpArrayField(newUse);
-    const fulfillabilityArray = cleanUpArrayField(fulfillability);
+    const newUseArray = cleanUpArrayField(analysisDetails.analysis.newUse);
+    const fulfillabilityArray = cleanUpArrayField(analysisDetails.analysis.fulfillability);
+    const projectEscapeLevel = analysisDetails.project.escapeLevel !== undefined ? Number(analysisDetails.project.escapeLevel) : null;
 
-    if (newUseArray.length === 0 || !fulfillabilityArray) throw new Error('Analysis criteria not set.');
+    if (newUseArray.length === 0 || fulfillabilityArray.length === 0) throw new Error('Analysis criteria not set.');
 
     const germanNewUses = newUseArray.map(use => getGermanTranslation(use));
     const lowerCaseNewUseWords = new Set(germanNewUses.flatMap(use => use.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean)));
-    
     const germanFulfillability = fulfillabilityArray.map(f => getGermanTranslation(f));
     const lowerCaseFulfillability = germanFulfillability.map(f => f.toLowerCase());
 
+    const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
-    // First, filter based on New Use and Fulfillability
-    const filteredEntries = ruleBookDetails.entries.filter(entry => {
-        const nutzungValue = (entry.data['Nutzung'] || '').trim();
-        const erfullbarkeitValue = (entry.data['Erfüllbarkeit'] || '').trim().toLowerCase();
+    const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
 
-        // --- Fulfillability Check ---
-        let erfullbarkeitMatch = false;
-        if (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen') {
-            erfullbarkeitMatch = true;
-        } else if (lowerCaseFulfillability.includes(erfullbarkeitValue)) {
-            erfullbarkeitMatch = true;
-        }
-        
-        // --- Usage Check ---
-        let nutzungMatch = false;
-        if (nutzungValue === '' || nutzungValue.toLowerCase() === 'bitte auswaehlen') {
-            nutzungMatch = true;
-        } else {
-            const entryNutzungWords = new Set(nutzungValue.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
-            if (entryNutzungWords.size > 0) {
-                const matchingWords = [...entryNutzungWords].filter(word => lowerCaseNewUseWords.has(word));
-                if (matchingWords.length >= 2 || (entryNutzungWords.size < 2 && matchingWords.length > 0)) {
-                    nutzungMatch = true;
-                }
-            }
-        }
-        
-        return nutzungMatch && erfullbarkeitMatch;
-    });
-
-    // Then, get all entries for the requested section
     const segmentEntries: RuleBookEntry[] = [];
     let lastSegmentKey: string | null = null;
     for (const entry of filteredEntries) {
         const gliederung = String(entry.data['Gliederung'] || '');
         let currentSegmentKey = getSegmentKey(gliederung);
-
-        if (currentSegmentKey) {
-            lastSegmentKey = currentSegmentKey;
-        } else {
-            currentSegmentKey = lastSegmentKey;
-        }
-        
-        const finalSegmentKey = currentSegmentKey || '0';
-
-        if (finalSegmentKey === segmentKey) {
-            segmentEntries.push(entry);
-        }
+        if (currentSegmentKey) { lastSegmentKey = currentSegmentKey; } else { currentSegmentKey = lastSegmentKey; }
+        if ((currentSegmentKey || lastSegmentKey || '0') === segmentKey) segmentEntries.push(entry);
     }
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
@@ -338,85 +277,38 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         projectAnalysis: analysisDetails.analysis,
         ruleBook: ruleBookDetails.ruleBook,
         segmentKey,
-        entries: segmentEntries.map(entry => ({
-            ...entry,
-            analysis: resultsMap.get(entry.id)
-        })),
+        entries: segmentEntries.map(entry => ({ ...entry, analysis: resultsMap.get(entry.id) })),
         referenceTables: ruleBookDetails.referenceTables || []
     };
 }
 
-interface SaveAnalysisResultPayload {
-    projectAnalysisId: string;
-    ruleBookId: string;
-    ruleBookEntryId: string;
-    segmentKey: string;
-    checklistStatus: string;
-    revisedFulfillability: string | null;
-}
-
-export async function saveAnalysisResult(payload: SaveAnalysisResultPayload) {
+export async function saveAnalysisResult(payload: { projectAnalysisId: string, ruleBookId: string, ruleBookEntryId: string, segmentKey: string, checklistStatus: string, revisedFulfillability: string | null }) {
     const { projectAnalysisId, ruleBookId, ruleBookEntryId, segmentKey, checklistStatus, revisedFulfillability } = payload;
-    
     const ruleBookDetails = await getRuleBookDetails(ruleBookId);
-    if (!ruleBookDetails) throw new Error("Could not find rulebook details to save context.");
-
+    if (!ruleBookDetails) throw new Error("Rulebook details not found.");
     const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
-    if (!targetEntry) throw new Error("Could not find the specific rule book entry.");
+    if (!targetEntry) throw new Error("Rule book entry not found.");
     
-    // Correctly find the topic for the given segmentKey
     const sectionHeaderEntry = ruleBookDetails.entries.find(e => {
         const gliederung = String(e.data['Gliederung'] || '');
-        // Find the first entry that IS a section header and whose Gliederung matches the segmentKey.
         return e.data['Spaltentyp'] === 'Abschnitt' && gliederung.trim() === segmentKey;
     });
 
     const topic = sectionHeaderEntry ? String(sectionHeaderEntry.data['Text'] || 'General') : 'General';
-    
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
     
     const client = await db.connect();
     try {
         await client.query('BEGIN');
-        const existingResult = await client.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
-        
-        const dataToSave = {
-            checklist_status: checklistStatus,
-            revised_fulfillability: revisedFulfillability,
-            rule_book_name: ruleBookDetails.ruleBook.versionName,
-            section_key: segmentKey,
-            topic: topic,
-            structure: structure,
-            text: text,
-            rule_book_id: ruleBookId
-        };
-        
-        if (existingResult.rows.length > 0) {
-            // Update
-            await client.query(
-                `UPDATE rule_analysis_results 
-                 SET 
-                    checklist_status = $1, 
-                    revised_fulfillability = $2,
-                    rule_book_name = $3,
-                    section_key = $4,
-                    topic = $5,
-                    structure = $6,
-                    text = $7,
-                    rule_book_id = $8
-                 WHERE id = $9`,
-                [dataToSave.checklist_status, dataToSave.revised_fulfillability, dataToSave.rule_book_name, dataToSave.section_key, dataToSave.topic, dataToSave.structure, dataToSave.text, dataToSave.rule_book_id, existingResult.rows[0].id]
-            );
+        const existing = await client.query('SELECT id FROM rule_analysis_results WHERE project_analysis_id = $1 AND rule_book_entry_id = $2', [projectAnalysisId, ruleBookEntryId]);
+        if (existing.rows.length > 0) {
+            await client.query(`UPDATE rule_analysis_results SET checklist_status = $1, revised_fulfillability = $2, rule_book_name = $3, section_key = $4, topic = $5, structure = $6, text = $7, rule_book_id = $8 WHERE id = $9`,
+                [checklistStatus, revisedFulfillability, ruleBookDetails.ruleBook.versionName, segmentKey, topic, structure, text, ruleBookId, existing.rows[0].id]);
         } else {
-            // Insert
             const newId = `rar-${Date.now()}-${Math.random()}`;
-            await client.query(
-                `INSERT INTO rule_analysis_results 
-                    (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability, rule_book_name, section_key, topic, structure, text, rule_book_id) 
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-                [newId, projectAnalysisId, ruleBookEntryId, dataToSave.checklist_status, dataToSave.revised_fulfillability, dataToSave.rule_book_name, dataToSave.section_key, dataToSave.topic, dataToSave.structure, dataToSave.text, dataToSave.rule_book_id]
-            );
+            await client.query(`INSERT INTO rule_analysis_results (id, project_analysis_id, rule_book_entry_id, checklist_status, revised_fulfillability, rule_book_name, section_key, topic, structure, text, rule_book_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                [newId, projectAnalysisId, ruleBookEntryId, checklistStatus, revisedFulfillability, ruleBookDetails.ruleBook.versionName, segmentKey, topic, structure, text, ruleBookId]);
         }
         await client.query('COMMIT');
     } catch (error) {
