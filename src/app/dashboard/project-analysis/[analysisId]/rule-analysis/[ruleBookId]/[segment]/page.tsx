@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -206,37 +207,16 @@ export default function SegmentDetailPage() {
     if (error) return <div className="text-destructive p-8 text-center">{error}</div>;
     if (!details) return <div className="p-8 text-center">No details found for this section.</div>;
 
-    const headersFromData = details.entries.length > 0 ? Object.keys(details.entries[0].data) : [];
-    
-    const hasReferenceTableContent = details.entries.some(entry => entry.data['Referenztabelle'] && String(entry.data['Referenztabelle']).trim() !== '');
-
-    const columnsToHide = ['Usage', 'Column Type', 'Fulfillability', 'Checklist', 'Nutzung', 'Spaltentyp', 'Erfüllbarkeit', 'Checkliste'];
-    if (!hasReferenceTableContent) {
-        columnsToHide.push('Referenztabelle');
-    }
-
-    const displayHeaders = headersFromData.filter(
-        h => !columnsToHide.includes(h)
-    );
-    
-    const columnOrder: string[] = ['Gliederung', 'Text', 'Referenztabelle'];
-
-    const sortedHeaders = displayHeaders.sort((a,b) => {
-        const indexA = columnOrder.indexOf(a);
-        const indexB = columnOrder.indexOf(b);
-        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
-    });
-
-    const finalHeaders = [...sortedHeaders, 'projectChecklist', 'projectBasedFulfillability'];
+    // Fixed set of columns as requested: 
+    // 'Structure', 'Text', 'Reference Table', 'Project Checklist', 'Project-based Fulfillability'
+    const finalHeaders = ['Gliederung', 'Text', 'Referenztabelle', 'projectChecklist', 'projectBasedFulfillability'];
     
     const getColumnStyle = (header: string): React.CSSProperties => {
         const style: React.CSSProperties = { width: 'auto' };
-
         if (header === 'Text') {
             style.maxWidth = '55ch';
+        } else if (header === 'Gliederung' || header === 'Referenztabelle') {
+            style.maxWidth = '20ch';
         } else {
             style.maxWidth = '30ch';
         }
