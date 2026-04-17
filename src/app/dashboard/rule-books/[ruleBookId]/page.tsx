@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -168,7 +167,7 @@ export default function RuleBookDetailPage() {
   
   return (
     <>
-      <div className="flex flex-col gap-6" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="flex flex-col gap-6 max-w-full" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Fixed Header */}
         <div className="flex items-start justify-between gap-4 shrink-0">
           <div className="flex items-start gap-4">
