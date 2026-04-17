@@ -257,6 +257,10 @@ export default function AnalysisDetailPage() {
         return <div className="text-center text-destructive p-8">{error || "Could not load analysis details."}</div>
     }
 
+    const escapeLevelFormatted = (details.project.escapeLevel !== undefined && details.project.escapeLevel !== null) 
+        ? details.project.escapeLevel.toFixed(2) 
+        : '';
+
     return (
         <>
             <div className="space-y-6">
@@ -281,7 +285,7 @@ export default function AnalysisDetailPage() {
                         <CardTitle>{t('analysisDetails')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div className="space-y-2">
                                 <Label>{t('currentUse')}</Label>
                                 <Input value={t(details.project.currentUse as any) || details.project.currentUse || 'N/A'} disabled />
@@ -303,6 +307,10 @@ export default function AnalysisDetailPage() {
                                     onChange={setFulfillability}
                                     placeholder={t('selectFulfillability')}
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>{t('fluchtniveau')}</Label>
+                                <Input value={escapeLevelFormatted} disabled />
                             </div>
                         </div>
                     </CardContent>
