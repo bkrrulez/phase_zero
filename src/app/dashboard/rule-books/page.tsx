@@ -21,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSystemLog } from '../contexts/SystemLogContext';
+import { getSystemSetting, setSystemSetting } from '../actions';
 
 
 const defaultImportSettings: ImportSetting[] = [
@@ -48,16 +49,34 @@ export default function RuleBooksPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [deletingBook, setDeletingBook] = React.useState<{book: RuleBook, deleteAll: boolean} | null>(null);
 
-  const fetchRuleBooks = React.useCallback(async () => {
+  const fetchData = React.useCallback(async () => {
     setIsLoading(true);
-    const books = await getRuleBooks();
-    setRuleBooks(books);
-    setIsLoading(false);
+    try {
+      const [books, savedSettings] = await Promise.all([
+        getRuleBooks(),
+        getSystemSetting('import_rule_book_settings')
+      ]);
+      setRuleBooks(books);
+      if (savedSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedSettings);
+          if (Array.isArray(parsedSettings)) {
+            setImportSettings(parsedSettings);
+          }
+        } catch (e) {
+          console.error("Failed to parse saved import settings:", e);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch rule books data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   React.useEffect(() => {
-    fetchRuleBooks();
-  }, [fetchRuleBooks]);
+    fetchData();
+  }, [fetchData]);
 
 
   const handleImportRuleBook = async (name: string, file: File, isNewVersion: boolean) => {
@@ -134,7 +153,7 @@ export default function RuleBooksPage() {
             if (result.success) {
                 toast({ title: t('importSuccess'), description: t('importSuccessDesc', { name, count: plainEntries.length }) });
                 await logAction(`User '${currentUser.name}' imported rule book '${name}' with ${plainEntries.length} rows.`);
-                await fetchRuleBooks(); // Refresh the list
+                await fetchData(); // Refresh the list
                 setIsImportOpen(false);
             }
 
@@ -151,13 +170,31 @@ export default function RuleBooksPage() {
     };
   };
   
-  const handleSaveSettings = (settings: ImportSetting[]) => {
-    setImportSettings(settings);
-    setIsSettingsOpen(false);
-    toast({
-      title: t('importSettingsSaveSuccess'),
-      description: t('importSettingsSaveSuccessDesc'),
-    });
+  const handleSaveSettings = async (settings: ImportSetting[]) => {
+    try {
+      // First update local state for immediate UI feedback
+      setImportSettings(settings);
+      
+      // Persist to database
+      await setSystemSetting('import_rule_book_settings', JSON.stringify(settings));
+      
+      setIsSettingsOpen(false);
+      toast({
+        title: t('importSettingsSaveSuccess'),
+        description: t('importSettingsSaveSuccessDesc'),
+      });
+      
+      if (currentUser) {
+        await logAction(`User '${currentUser.name}' updated rule book import settings.`);
+      }
+    } catch (error) {
+      console.error("Failed to save import settings:", error);
+      toast({
+        variant: 'destructive',
+        title: t('error'),
+        description: "Failed to save settings to the database. Please try again.",
+      });
+    }
   }
 
   const handleDelete = async () => {
@@ -165,7 +202,7 @@ export default function RuleBooksPage() {
     const { book, deleteAll } = deletingBook;
     
     await deleteRuleBook(book.id, deleteAll);
-    await fetchRuleBooks();
+    await fetchData();
     
     const logMessage = deleteAll 
       ? `User '${currentUser.name}' deleted all versions of rule book '${book.versionName}'.`
