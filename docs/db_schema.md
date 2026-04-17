@@ -8,78 +8,77 @@ This document outlines the database schema for the PhaseZero application.
 ## Core Tables
 
 ### `users`
-
 Stores information about individual users.
-
--   `id` (PK, TEXT): Unique identifier for the user (e.g., 'user-1').
--   `name` (TEXT, NOT NULL): Full name of the user.
--   `email` (TEXT, NOT NULL, UNIQUE): Email address, used for login.
--   `password` (TEXT, NOT NULL): User's password (for a real app, this should be a hash).
--   `role` (TEXT, NOT NULL, CHECK in ('User', 'Team Lead', 'Super Admin', 'Expert')): User's role.
--   `avatar` (TEXT): URL to the user's avatar image.
--   `team_id` (FK -> `teams.id`, TEXT): The team the user belongs to. Can be NULL.
--   `reports_to` (FK -> `users.id`, TEXT): The ID of the user's manager. Can be NULL.
--   `contract_pdf` (TEXT): Base64 encoded data URI of the contract PDF. Can be NULL.
-
-### `contracts`
-
-Stores employment contracts for users. A user can have multiple contracts.
-
--   `id` (PK, TEXT): Unique identifier for the contract.
--   `user_id` (FK -> `users.id`, TEXT, NOT NULL): The user this contract belongs to.
--   `start_date` (DATE, NOT NULL): Start date of the employment contract.
--   `end_date` (DATE): End date of the employment contract. NULL if ongoing.
+- `id` (PK, TEXT): Unique identifier.
+- `name` (TEXT, NOT NULL): Full name.
+- `email` (TEXT, NOT NULL, UNIQUE): Login email.
+- `password` (TEXT, NOT NULL): User password.
+- `role` (TEXT): 'User', 'Team Lead', 'Super Admin', 'Expert'.
+- `avatar` (TEXT): URL to avatar image.
+- `team_id` (FK -> `teams.id`): Associated team.
+- `reports_to` (FK -> `users.id`): Manager ID.
+- `contract_pdf` (TEXT): Base64 encoded PDF.
 
 ### `projects`
-
-Stores project information.
-
--   `id` (PK, TEXT): Unique identifier for the project (e.g., 'proj-1').
--   `name` (TEXT, NOT NULL): The name of the project.
--   `project_number` (VARCHAR(10), UNIQUE): Auto-generated unique 5-digit project number.
--   `project_creation_date` (TIMESTAMPTZ): Timestamp when the project was created.
--   `project_manager` (VARCHAR(255)): Name of the project manager.
--   `creator_id` (VARCHAR(255)): User ID of the person who created the project entry.
--   `address` (TEXT): Address of the building/project.
--   `project_owner` (VARCHAR(255)): Name of the project owner.
--   `year_of_construction` (INTEGER): The year the building was constructed.
--   `number_of_floors` (INTEGER): Number of floors in the building.
--   `escape_level` (NUMERIC(5, 2)): The escape level in meters.
--   `listed_building` (BOOLEAN): Whether the building is a listed building.
--   `protection_zone` (BOOLEAN): Whether the building is in a protection zone.
--   `current_use` (VARCHAR(255)): The current use of the building.
-
-### `tasks`
-
-Stores task definitions that can be associated with projects.
-
--   `id` (PK, TEXT): Unique identifier for the task (e.g., 'task-1').
--   `name` (TEXT, NOT NULL): The name of the task.
--   `details` (TEXT): A short description of the task.
+Stores building and project metadata used for filtering rules.
+- `id` (PK, TEXT): Unique identifier.
+- `name` (TEXT, NOT NULL): Project name.
+- `project_number` (VARCHAR(10), UNIQUE): 5-digit number.
+- `address` (TEXT): Building location.
+- `escape_level` (NUMERIC(5, 2)): Float value for Fluchtniveau logic.
+- `current_use` (VARCHAR(255)): Current building usage.
+- `listed_building` (BOOLEAN): Denkmalschutz status.
 
 ---
 
-## Activity & Tracking Tables
+## Rule Book Tables
 
-### `holiday_requests`
+### `rule_books`
+Metadata for imported regulation sets.
+- `id` (PK, TEXT): Unique identifier.
+- `version_name` (TEXT): e.g., "OIB-RL 2".
+- `version` (INTEGER): Version increment.
 
-Stores user requests for holidays.
+### `rule_book_entries`
+Individual rows/requirements within a rule book.
+- `id` (PK, TEXT): Unique identifier.
+- `data` (JSONB): Stores all dynamic columns (Nutzung, Fluchtniveau, etc.).
 
--   `id` (PK, TEXT): Unique identifier for the request.
--   `user_id` (FK -> `users.id`, TEXT, NOT NULL): The user making the request.
--   `start_date` (DATE, NOT NULL): The start date of the holiday.
--   `end_date` (DATE, NOT NULL): The end date of the holiday.
--   `status` (TEXT, NOT NULL): Status of the request ('Pending', 'Approved', 'Rejected').
--   `action_by_user_id` (FK -> `users.id`, TEXT): The user who approved/rejected the request. Can be NULL.
--   `action_timestamp` (TIMESTAMP WITH TIME ZONE): When the action was taken. Can be NULL.
+### `reference_tables`
+Supplementary data sheets linked to rule books.
+- `id` (PK, TEXT): Unique identifier.
+- `name` (TEXT): Sheet name.
+- `data` (JSONB): Tabular data.
 
 ---
 
-## Join Tables (Many-to-Many Relationships)
+## Analysis Tables
 
-### `user_projects`
+### `project_analyses`
+Captures the criteria for a specific analysis run.
+- `id` (PK, TEXT): Unique identifier.
+- `project_id` (FK): Target project.
+- `new_use` (TEXT[]): Array of selected usage types.
+- `fulfillability` (TEXT[]): Array of selected levels (Light, Medium, Heavy).
 
-Links users to the projects they are associated with.
+### `rule_analysis_results`
+Stores the engineer's evaluation of each rule parameter.
+- `id` (PK, TEXT): Unique identifier.
+- `project_analysis_id` (FK): Link to the analysis run.
+- `checklist_status` (TEXT): 'Fulfilled', 'Not Fulfilled', etc.
+- `revised_fulfillability` (TEXT): Engineer's secondary assessment.
 
--   `user_id` (PK, FK -> `users.id`, TEXT, NOT NULL)
--   `project_id` (PK, FK -> `projects.id`, TEXT, NOT NULL)
+---
+
+## System Tables
+
+### `system_settings`
+Persists global application configurations.
+- `key` (TEXT, PK): Setting name (e.g., 'import_rule_book_settings').
+- `value` (TEXT): JSON configuration string.
+
+### `system_logs`
+Audit trail of admin actions.
+- `id` (PK, TEXT): Unique identifier.
+- `timestamp` (TIMESTAMPTZ): Entry time.
+- `message` (TEXT): Activity description.
