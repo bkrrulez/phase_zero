@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -257,8 +256,12 @@ export default function AnalysisDetailPage() {
         return <div className="text-center text-destructive p-8">{error || "Could not load analysis details."}</div>
     }
 
-    const escapeLevelFormatted = (details.project.escapeLevel !== undefined && details.project.escapeLevel !== null) 
-        ? details.project.escapeLevel.toFixed(2) 
+    const escapeLevelValue = details.project.escapeLevel !== undefined && details.project.escapeLevel !== null 
+        ? Number(details.project.escapeLevel) 
+        : null;
+
+    const escapeLevelFormatted = (escapeLevelValue !== null && !isNaN(escapeLevelValue))
+        ? escapeLevelValue.toFixed(2) 
         : '';
 
     return (

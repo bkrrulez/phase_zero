@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -128,10 +127,10 @@ const mapDbProjectToProject = (dbProject: any): Project => ({
     creatorId: dbProject.creator_id,
     address: dbProject.address,
     projectOwner: dbProject.project_owner,
-    yearOfConstruction: dbProject.year_of_construction,
-    numberOfFloors: dbProject.number_of_floors,
-    floorsOverGround: dbProject.floors_over_ground,
-    escapeLevel: dbProject.escape_level,
+    yearOfConstruction: dbProject.year_of_construction ? Number(dbProject.year_of_construction) : undefined,
+    numberOfFloors: dbProject.number_of_floors ? Number(dbProject.number_of_floors) : undefined,
+    floorsOverGround: dbProject.floors_over_ground ? Number(dbProject.floors_over_ground) : undefined,
+    escapeLevel: dbProject.escape_level ? Number(dbProject.escape_level) : undefined,
     listedBuilding: dbProject.listed_building,
     protectionZone: dbProject.protection_zone,
     currentUse: dbProject.current_use,
@@ -203,7 +202,7 @@ export async function verifyUserCredentials(email: string, password_input: strin
             WHERE c.user_id = u.id
         ) as contracts,
         COALESCE(array_agg(DISTINCT up.project_id) FILTER (WHERE up.project_id IS NOT NULL), '{}') as associated_project_ids
-        FROM users u
+                FROM users u
         LEFT JOIN user_projects up ON u.id = up.user_id
         WHERE u.email = $1 AND u.password = $2
         GROUP BY u.id
