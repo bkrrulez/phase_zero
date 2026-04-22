@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db } from '@/lib/db';
@@ -194,7 +193,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
         
         const entryIdToSegmentKey = new Map<string, string>();
         const segmentKeyToMarkerText = new Map<string, string>();
-        const segmentKeyToInternalId = new Map<string, string>(); // Paragraph number for old, counter for new
+        const segmentKeyToInternalId = new Map<string, string>(); 
         
         let currentSectionCounter = 0;
         let lastSegmentKey: string | null = null;
@@ -240,7 +239,6 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             segmentGroups[key].push(entry);
         }
 
-        // Numerical sort for paragraph-based books
         if (!usesSectionType) {
             orderedActiveKeys.sort((a, b) => {
                 const numA = parseInt(segmentKeyToInternalId.get(a) || '0', 10);
@@ -329,7 +327,6 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
-    // Re-segmenting locally to maintain consistency
     const allEntriesRes = await db.query(
         'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
         [ruleBookId]

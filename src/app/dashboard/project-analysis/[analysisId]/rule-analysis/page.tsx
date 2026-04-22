@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -10,10 +9,9 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from '../../../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminPanel } from '@/app/dashboard/contexts/AdminPanelContext';
 import {
@@ -30,6 +28,7 @@ import {
 
 interface SegmentStat {
     key: string;
+    displayIndex: number;
     totalRows: number;
     totalParameters: number;
     completedParameters: number;
@@ -60,10 +59,7 @@ export default function RuleAnalysisPage() {
     const [isAnalysisComplete, setIsAnalysisComplete] = React.useState(false);
     const [globalStats, setGlobalStats] = React.useState({ total: 0, completed: 0 });
     
-    // State to track expanded rule books
     const [expandedBooks, setExpandedBooks] = React.useState<Record<string, boolean>>({});
-    
-    // State for partial analysis confirmation
     const [isPartialAlertOpen, setIsPartialAlertOpen] = React.useState(false);
 
 
@@ -81,7 +77,7 @@ export default function RuleAnalysisPage() {
                 
                 setProjectAnalysis(analysisDetails.analysis);
                 setProject(analysisDetails.project);
-                setSegmentedData(segmentedBooks);
+                setSegmentedData(segmentedBooks as any);
 
                 const isComplete = segmentedBooks.every(book => book.totalParameters === 0 || book.totalCompleted === book.totalParameters);
                 setIsAnalysisComplete(isComplete);
@@ -90,7 +86,6 @@ export default function RuleAnalysisPage() {
                 const globalCompleted = segmentedBooks.reduce((acc, book) => acc + book.totalCompleted, 0);
                 setGlobalStats({ total: globalTotal, completed: globalCompleted });
 
-                // Initialize expansion: first book true, others false
                 if (segmentedBooks.length > 0) {
                     const initialExpansion: Record<string, boolean> = {};
                     segmentedBooks.forEach((book, index) => {
@@ -213,7 +208,7 @@ export default function RuleAnalysisPage() {
                         </CardHeader>
                         {isExpanded && (
                             <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                     {segments.map(segment => {
                                         const progress = segment.totalParameters > 0 ? (segment.completedParameters / segment.totalParameters) * 100 : 0;
                                         const hasNoParameters = segment.totalParameters === 0;
@@ -226,25 +221,31 @@ export default function RuleAnalysisPage() {
                                                     e.stopPropagation();
                                                     handleSegmentClick(ruleBook.id, segment.key);
                                                 }}
-                                                className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors"
+                                                className="border rounded-lg p-4 hover:bg-muted/50 cursor-pointer space-y-2 transition-colors min-h-[120px] flex flex-col justify-between"
                                             >
-                                                <div className="flex justify-between items-start">
-                                                    <h3 className="text-sm text-muted-foreground">{t('section', { key: segment.key })}</h3>
-                                                    {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />}
-                                                </div>
-                                                
-                                                {showRowCount && <p className="text-xs text-muted-foreground">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
-                                                
-                                                {segment.firstRowText && (
-                                                    <p className="text-sm font-bold text-muted-foreground truncate" title={segment.firstRowText}>{segment.firstRowText}</p>
-                                                )}
-
-                                                {!hasNoParameters && (
-                                                    <div>
-                                                        <p className="text-sm text-muted-foreground">{segment.completedParameters} / {segment.totalParameters} {t('analyzed')}</p>
-                                                        <Progress value={progress} className="h-2 mt-1" />
+                                                <div className="space-y-1">
+                                                    <div className="flex justify-between items-start">
+                                                        <h3 className="text-sm font-bold text-primary">{t('section', { key: segment.displayIndex })}</h3>
+                                                        {(isSegmentComplete || hasNoParameters) && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
                                                     </div>
-                                                )}
+                                                    
+                                                    {segment.firstRowText && (
+                                                        <p className="text-xs text-muted-foreground line-clamp-2" title={segment.firstRowText}>{segment.firstRowText}</p>
+                                                    )}
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                     {showRowCount && <p className="text-[10px] text-muted-foreground/60">{segment.totalRows} {segment.totalRows === 1 ? t('row') : t('rows')}</p>}
+                                                    {!hasNoParameters && (
+                                                        <div>
+                                                            <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                                                                <span>{segment.completedParameters} / {segment.totalParameters}</span>
+                                                                <span>{Math.round(progress)}%</span>
+                                                            </div>
+                                                            <Progress value={progress} className="h-1" />
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     })}
