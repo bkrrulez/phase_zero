@@ -392,7 +392,8 @@ export async function saveAnalysisResult(payload: { projectAnalysisId: string, r
     const fullEntries = fullEntriesRes.rows;
     const sectionRow = fullEntries.find(e => isSectionMarker({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey.replace('seg-','')));
 
-    const topic = sectionRow ? String(sectionRow.data['Text'] || `Section ${segmentKey}`) : `Section ${segmentKey}`;
+    const cleanSegmentName = segmentKey.replace('seg-', '');
+    const topic = sectionRow ? String(sectionRow.data['Text'] || `Section ${cleanSegmentName}`) : `Section ${cleanSegmentName}`;
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
     
