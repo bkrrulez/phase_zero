@@ -61,7 +61,7 @@ const isSectionMarker = (entry: RuleBookEntry) => {
 };
 
 /**
- * Filter Logic Engine (Logic 2)
+ * Filter Logic Engine
  */
 function shouldIncludeEntry(entry: RuleBookEntry, context: { 
     lowerCaseNewUseWords: Set<string>, 
@@ -87,7 +87,7 @@ function shouldIncludeEntry(entry: RuleBookEntry, context: {
         }
     }
 
-    // 3. Nutzung Check (Scan all columns starting with "Nutzung")
+    // 3. Nutzung Check
     const nutzungHeaders = headers.filter(h => h.trim().toLowerCase().startsWith('nutzung'));
     let nutzungMatch = (nutzungHeaders.length === 0); 
     
@@ -194,6 +194,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
         
         const entryIdToSegmentKey = new Map<string, string>();
         const segmentKeyToMarkerText = new Map<string, string>();
+        const segmentKeyToInternalId = new Map<string, string>(); // Paragraph number for old, counter for new
         
         let currentSectionCounter = 0;
         let lastSegmentKey: string | null = null;
@@ -206,15 +207,17 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             if (usesSectionType) {
                 if (type === 'section') {
                     currentSectionCounter++;
-                    currentSegmentKey = String(currentSectionCounter);
+                    currentSegmentKey = `seg-${currentSectionCounter}`;
                     segmentKeyToMarkerText.set(currentSegmentKey, String(entry.data['Text'] || ''));
+                    segmentKeyToInternalId.set(currentSegmentKey, String(currentSectionCounter));
                 }
             } else {
                 const gKey = getSegmentKeyFromGliederung(gliederung);
                 if (gKey) {
-                    currentSegmentKey = gKey;
+                    currentSegmentKey = `seg-${gKey}`;
                     if (!segmentKeyToMarkerText.has(currentSegmentKey)) {
                         segmentKeyToMarkerText.set(currentSegmentKey, String(entry.data['Text'] || ''));
+                        segmentKeyToInternalId.set(currentSegmentKey, gKey);
                     }
                 }
             }
@@ -222,14 +225,14 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             if (currentSegmentKey) {
                 lastSegmentKey = currentSegmentKey;
             }
-            entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
+            entryIdToSegmentKey.set(entry.id, lastSegmentKey || 'seg-0');
         }
 
         const segmentGroups: Record<string, RuleBookEntry[]> = {};
         const orderedActiveKeys: string[] = [];
 
         for (const entry of filteredEntries) {
-            const key = entryIdToSegmentKey.get(entry.id) || '0';
+            const key = entryIdToSegmentKey.get(entry.id) || 'seg-0';
             if (!segmentGroups[key]) {
                 segmentGroups[key] = [];
                 orderedActiveKeys.push(key);
@@ -237,15 +240,12 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             segmentGroups[key].push(entry);
         }
 
-        // Sort keys logically for old-style books (numerical sorting)
+        // Numerical sort for paragraph-based books
         if (!usesSectionType) {
             orderedActiveKeys.sort((a, b) => {
-                const numA = parseInt(a, 10);
-                const numB = parseInt(b, 10);
-                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                if (!isNaN(numA)) return -1;
-                if (!isNaN(numB)) return 1;
-                return a.localeCompare(b);
+                const numA = parseInt(segmentKeyToInternalId.get(a) || '0', 10);
+                const numB = parseInt(segmentKeyToInternalId.get(b) || '0', 10);
+                return numA - numB;
             });
         }
 
@@ -261,7 +261,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
             return {
                 key,
-                displayIndex: 0,
+                internalId: segmentKeyToInternalId.get(key) || '0',
                 totalRows: group.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
@@ -272,8 +272,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
         const visibleSegments = segmentsStats.filter((s, i) => i === 0 || s.totalParameters > 0);
         const finalSegments = visibleSegments.map((s, i) => ({
             ...s,
-            // Logic: Sequential (1, 2, 3) for new styled books. Paragraph Number for old styled books.
-            displayIndex: usesSectionType ? (i + 1) : parseInt(s.key, 10)
+            displayIndex: usesSectionType ? (i + 1) : parseInt(s.internalId, 10)
         }));
 
         result.push({
@@ -330,6 +329,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
+    // Re-segmenting locally to maintain consistency
     const allEntriesRes = await db.query(
         'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
         [ruleBookId]
@@ -349,19 +349,19 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         if (usesSectionType) {
             if (type === 'section') {
                 currentSectionCounter++;
-                currentSegmentKey = String(currentSectionCounter);
+                currentSegmentKey = `seg-${currentSectionCounter}`;
             }
         } else {
             const gKey = getSegmentKeyFromGliederung(gliederung);
-            if (gKey) currentSegmentKey = gKey;
+            if (gKey) currentSegmentKey = `seg-${gKey}`;
         }
         
         if (currentSegmentKey) lastSegmentKey = currentSegmentKey;
-        entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
+        entryIdToSegmentKey.set(entry.id, lastSegmentKey || 'seg-0');
     }
 
     const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
-    const segmentEntries = filteredEntries.filter(e => (entryIdToSegmentKey.get(e.id) || '0') === segmentKey);
+    const segmentEntries = filteredEntries.filter(e => entryIdToSegmentKey.get(e.id) === segmentKey);
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
     const resultsMap = new Map<string, RuleAnalysisResult>();
@@ -390,7 +390,7 @@ export async function saveAnalysisResult(payload: { projectAnalysisId: string, r
     
     const fullEntriesRes = await db.query('SELECT data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC', [ruleBookId]);
     const fullEntries = fullEntriesRes.rows;
-    const sectionRow = fullEntries.find(e => isSectionMarker({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey));
+    const sectionRow = fullEntries.find(e => isSectionMarker({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey.replace('seg-','')));
 
     const topic = sectionRow ? String(sectionRow.data['Text'] || `Section ${segmentKey}`) : `Section ${segmentKey}`;
     const structure = (targetEntry.data['Gliederung'] as string) || '';
