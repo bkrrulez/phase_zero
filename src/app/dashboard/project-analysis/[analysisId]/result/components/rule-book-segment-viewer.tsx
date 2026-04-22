@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 interface SegmentDetails {
     entries: RuleBookEntry[];
+    displayIndex: number;
 }
 
 export interface ViewerProps {
@@ -45,7 +46,7 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                 setLoading(true);
                 try {
                     const data = await getSegmentDetails({ projectAnalysisId, ruleBookId, segmentKey });
-                    setDetails(data);
+                    setDetails(data as any);
                 } catch (err) {
                     console.error(err);
                     setError('Failed to load segment details.');
@@ -75,7 +76,7 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-screen-2xl w-[95vw] h-[90vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-2 shrink-0">
-                    <DialogTitle>{t('ruleAnalysisSectionTitle', { key: segmentKey || '' })}</DialogTitle>
+                    <DialogTitle>{t('ruleAnalysisSectionTitle', { key: details?.displayIndex || '' })}</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 overflow-auto border-t">
                     <div className="h-full">

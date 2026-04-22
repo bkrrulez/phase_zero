@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/db';
 import { getRuleBookDetails, getRuleBooks } from '@/app/dashboard/rule-books/actions';
-import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
+import { type RuleBook, type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
 import { getProjectAnalysisDetails } from '@/app/dashboard/actions';
 import de from '@/locales/de.json';
 import en from '@/locales/en.json';
@@ -50,8 +50,15 @@ type RuleAnalysisResult = {
     revisedFulfillability: string | null;
 }
 
-const isParameter = (entry: RuleBookEntry) => String(entry.data['Spaltentyp'] || '').toLowerCase() === 'parameter';
-const isSection = (entry: RuleBookEntry) => String(entry.data['Spaltentyp'] || '').toLowerCase() === 'section';
+const isParameter = (entry: RuleBookEntry) => {
+    const val = String(entry.data['Spaltentyp'] || '').toLowerCase();
+    return val === 'parameter';
+};
+
+const isSection = (entry: RuleBookEntry) => {
+    const val = String(entry.data['Spaltentyp'] || '').toLowerCase();
+    return val === 'section';
+};
 
 /**
  * Filter Logic Engine (Logic 2)
@@ -174,69 +181,103 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     const resultsMap = new Map<string, RuleAnalysisResult>();
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
 
-    return filteredData.map(({ ruleBook, entries }) => {
-        let lastSegmentKey: string | null = null;
-        let sectionCounter = 0;
-        const orderedSegmentKeys: string[] = [];
+    const result = [];
+
+    for (const { ruleBook, entries: filteredEntries } of filteredData) {
+        // Fetch ALL entries for this rulebook to build a stable segmentation map
+        const allEntriesRes = await db.query(
+            'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
+            [ruleBook.id]
+        );
+        const allEntries = allEntriesRes.rows;
+
+        const usesSectionType = allEntries.some(e => isSection({ data: e.data } as any));
         
-        // Determine if this rulebook uses 'section' type delimiters
-        const usesSectionType = entries.some(isSection);
+        const entryIdToSegmentKey = new Map<string, string>();
+        const segmentKeyToMarkerText = new Map<string, string>();
+        
+        let currentSectionCounter = 0;
+        let lastSegmentKey: string | null = null;
+        let currentSegmentKey: string | null = null;
 
-        const segments = entries.reduce((acc, entry) => {
+        for (const entry of allEntries) {
             const gliederung = String(entry.data['Gliederung'] || '');
-            let currentSegmentKey = null;
-
+            const type = String(entry.data['Spaltentyp'] || '').toLowerCase();
+            
             if (usesSectionType) {
-                if (isSection(entry)) {
-                    sectionCounter++;
-                    currentSegmentKey = String(sectionCounter);
+                if (type === 'section') {
+                    currentSectionCounter++;
+                    currentSegmentKey = String(currentSectionCounter);
+                    segmentKeyToMarkerText.set(currentSegmentKey, String(entry.data['Text'] || ''));
                 }
             } else {
-                currentSegmentKey = getSegmentKeyFromGliederung(gliederung);
+                const gKey = getSegmentKeyFromGliederung(gliederung);
+                if (gKey) {
+                    currentSegmentKey = gKey;
+                    if (!segmentKeyToMarkerText.has(currentSegmentKey)) {
+                        segmentKeyToMarkerText.set(currentSegmentKey, String(entry.data['Text'] || ''));
+                    }
+                }
             }
-
-            if (currentSegmentKey) { 
-                lastSegmentKey = currentSegmentKey; 
-            } else { 
-                currentSegmentKey = lastSegmentKey; 
+            
+            if (currentSegmentKey) {
+                lastSegmentKey = currentSegmentKey;
             }
+            entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
+        }
 
-            const finalSegmentKey = currentSegmentKey || '0';
-            if (!acc[finalSegmentKey]) {
-                acc[finalSegmentKey] = [];
-                orderedSegmentKeys.push(finalSegmentKey);
+        // Group the FILTERED entries using the stable map
+        const segmentGroups: Record<string, RuleBookEntry[]> = {};
+        const orderedActiveKeys: string[] = [];
+
+        for (const entry of filteredEntries) {
+            const key = entryIdToSegmentKey.get(entry.id) || '0';
+            if (!segmentGroups[key]) {
+                segmentGroups[key] = [];
+                orderedActiveKeys.push(key);
             }
-            acc[finalSegmentKey].push(entry);
-            return acc;
-        }, {} as Record<string, RuleBookEntry[]>);
+            segmentGroups[key].push(entry);
+        }
 
-        const segmentStats = orderedSegmentKeys.map(key => {
-            const segmentEntries = segments[key];
-            const parameterEntries = segmentEntries.filter(isParameter);
+        const segmentsStats = orderedActiveKeys.map((key) => {
+            const group = segmentGroups[key];
+            const parameterEntries = group.filter(isParameter);
             const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
                 if (!analysis || !analysis.checklistStatus) return false;
                 if (['Not Fulfilled', 'Not verifiable'].includes(analysis.checklistStatus)) return !!analysis.revisedFulfillability;
                 return true;
             }).length;
+
             return {
                 key,
-                totalRows: segmentEntries.length,
+                displayIndex: 0, // Placeholder
+                totalRows: group.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
-                firstRowText: segmentEntries.find(isSection)?.data['Text'] || segmentEntries[0]?.data['Text'] || '',
+                firstRowText: segmentKeyToMarkerText.get(key) || group[0]?.data['Text'] || '',
             };
         });
 
-        const displayedSegments = segmentStats.filter((s, index) => index === 0 || s.totalParameters > 0);
-        return {
+        // Filter out segments with 0 parameters unless it's the very first one (intro)
+        const visibleSegments = segmentsStats.filter((s, i) => i === 0 || s.totalParameters > 0);
+        
+        // Final sequential numbering for display
+        const finalSegments = visibleSegments.map((s, i) => ({
+            ...s,
+            displayIndex: i + 1
+        }));
+
+        result.push({
             ruleBook,
-            segments: displayedSegments,
-            totalRows: entries.length,
-            totalParameters: entries.filter(isParameter).length,
-            totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
-        };
-    });
+            segments: finalSegments,
+            totalRows: filteredEntries.length,
+            totalParameters: filteredEntries.filter(isParameter).length,
+            totalCompleted: segmentsStats.reduce((sum, s) => sum + s.completedParameters, 0)
+        });
+    }
+    
+    return result;
 }
 
 export async function getOrderedSegments(projectAnalysisId: string): Promise<{ ruleBookId: string; segmentKey: string; }[]> {
@@ -281,43 +322,55 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
-    const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
-
-    const usesSectionType = filteredEntries.some(isSection);
-    const segmentEntries: RuleBookEntry[] = [];
-    let sectionCounter = 0;
+    // Fetch ALL entries for this rulebook to build a stable segmentation map
+    const allEntriesRes = await db.query(
+        'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
+        [ruleBookId]
+    );
+    const allEntries = allEntriesRes.rows;
+    const usesSectionType = allEntries.some(e => isSection({ data: e.data } as any));
+    
+    const entryIdToSegmentKey = new Map<string, string>();
+    let currentSectionCounter = 0;
     let lastSegmentKey: string | null = null;
+    let currentSegmentKey: string | null = null;
 
-    for (const entry of filteredEntries) {
-        let currentSegmentKey = null;
+    for (const entry of allEntries) {
+        const gliederung = String(entry.data['Gliederung'] || '');
+        const type = String(entry.data['Spaltentyp'] || '').toLowerCase();
+        
         if (usesSectionType) {
-            if (isSection(entry)) {
-                sectionCounter++;
-                currentSegmentKey = String(sectionCounter);
+            if (type === 'section') {
+                currentSectionCounter++;
+                currentSegmentKey = String(currentSectionCounter);
             }
         } else {
-            currentSegmentKey = getSegmentKeyFromGliederung(String(entry.data['Gliederung'] || ''));
+            const gKey = getSegmentKeyFromGliederung(gliederung);
+            if (gKey) currentSegmentKey = gKey;
         }
-
-        if (currentSegmentKey) { 
-            lastSegmentKey = currentSegmentKey; 
-        } else { 
-            currentSegmentKey = lastSegmentKey; 
-        }
-
-        if ((currentSegmentKey || '0') === segmentKey) {
-            segmentEntries.push(entry);
-        }
+        
+        if (currentSegmentKey) lastSegmentKey = currentSegmentKey;
+        entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
     }
+
+    // Now filter the entries and collect those belonging to our target segmentKey
+    const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
+    const segmentEntries = filteredEntries.filter(e => (entryIdToSegmentKey.get(e.id) || '0') === segmentKey);
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
     const resultsMap = new Map<string, RuleAnalysisResult>();
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
 
+    // Get display index from segmented data
+    const segmentedData = await getSegmentedRuleBookData(projectAnalysisId);
+    const bookData = segmentedData.find(b => b.ruleBook.id === ruleBookId);
+    const segmentStat = bookData?.segments.find(s => s.key === segmentKey);
+
     return {
         projectAnalysis: analysisDetails.analysis,
         ruleBook: ruleBookDetails.ruleBook,
         segmentKey,
+        displayIndex: segmentStat?.displayIndex || 0,
         entries: segmentEntries.map(entry => ({ ...entry, analysis: resultsMap.get(entry.id) })),
         referenceTables: ruleBookDetails.referenceTables || []
     };
@@ -330,7 +383,12 @@ export async function saveAnalysisResult(payload: { projectAnalysisId: string, r
     const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
     if (!targetEntry) throw new Error("Rule book entry not found.");
     
-    const topic = `Section ${segmentKey}`;
+    // Attempt to find the specific section name for display purposes in results
+    const fullEntriesRes = await db.query('SELECT data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC', [ruleBookId]);
+    const fullEntries = fullEntriesRes.rows;
+    const sectionRow = fullEntries.find(e => isSection({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey));
+
+    const topic = sectionRow ? String(sectionRow.data['Text'] || `Section ${segmentKey}`) : `Section ${segmentKey}`;
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
     

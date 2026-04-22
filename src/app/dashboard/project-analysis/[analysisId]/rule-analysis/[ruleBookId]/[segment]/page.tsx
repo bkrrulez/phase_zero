@@ -33,6 +33,7 @@ interface SectionDetails {
     projectAnalysis: ProjectAnalysis;
     ruleBook: RuleBook;
     segmentKey: string;
+    displayIndex: number;
     entries: EntryWithAnalysis[];
     referenceTables: ReferenceTable[];
 }
@@ -53,7 +54,6 @@ const renderCellWithLinks = (text: string, tables: ReferenceTable[], onClick: (t
     }
 
     const tableNames = tables.map(t => t.name);
-    // Create a regex that finds any of the table names
     const regex = new RegExp(`(${tableNames.join('|')})`, 'g');
     const parts = text.split(regex);
 
@@ -208,8 +208,6 @@ export default function SegmentDetailPage() {
     if (!details) return <div className="p-8 text-center">No details found for this section.</div>;
 
     const finalHeaders = ['Gliederung', 'Text', 'Referenztabelle', 'projectChecklist', 'projectBasedFulfillability'];
-    
-    // Logic to hide 'Referenztabelle' if all cells in that column are blank in this section
     const isReferenceTableEmpty = details.entries.every(entry => !String(entry.data['Referenztabelle'] ?? '').trim());
     const visibleHeaders = finalHeaders.filter(header => header !== 'Referenztabelle' || !isReferenceTableEmpty);
 
@@ -240,7 +238,7 @@ export default function SegmentDetailPage() {
                         </Link>
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSectionTitle', {key: details.segmentKey})}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{t('ruleAnalysisSectionTitle', {key: details.displayIndex})}</h1>
                         <div className="flex items-center gap-x-4 text-muted-foreground text-sm flex-wrap">
                             <p><span className="font-semibold">{t('sectionRuleBook')}:</span> {details.ruleBook.versionName}</p>
                             {newUseDisplay && <p><span className="font-semibold">{t('newUse')}:</span> {newUseDisplay}</p>}
