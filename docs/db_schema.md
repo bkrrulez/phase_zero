@@ -42,11 +42,14 @@ Metadata for imported regulation sets.
 ### `rule_book_entries`
 Individual rows/requirements within a rule book.
 - `id` (PK, TEXT): Unique identifier.
+- `rule_book_id` (FK -> `rule_books.id`): Associated rule book.
 - `data` (JSONB): Stores all dynamic columns (Nutzung, Fluchtniveau, etc.).
+- `row_index` (INTEGER): The original sequential order from the source file.
 
 ### `reference_tables`
 Supplementary data sheets linked to rule books.
 - `id` (PK, TEXT): Unique identifier.
+- `rule_book_id` (FK -> `rule_books.id`): Associated rule book.
 - `name` (TEXT): Sheet name.
 - `data` (JSONB): Tabular data.
 

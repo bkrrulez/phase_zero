@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/db';
@@ -39,11 +40,13 @@ export async function addRuleBook(payload: AddRuleBookPayload): Promise<{ succes
             [ruleBookId, `${name}-v${newVersion}`, name, newVersion, entries.length]
         );
 
-        for (const entry of entries) {
+        // Use a standard for loop with index to ensure sequential insertion and row_index assignment
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
             const entryId = `rbe-${Date.now()}-${Math.random()}`;
             await client.query(
-                `INSERT INTO rule_book_entries (id, rule_book_id, data) VALUES ($1, $2, $3)`,
-                [entryId, ruleBookId, entry.data]
+                `INSERT INTO rule_book_entries (id, rule_book_id, data, row_index) VALUES ($1, $2, $3, $4)`,
+                [entryId, ruleBookId, entry.data, i]
             );
         }
 
@@ -137,7 +140,8 @@ export async function getRuleBookDetails(ruleBookId: string): Promise<{ ruleBook
         // Fetch all versions for the dropdown
         const allVersionsRes = await client.query('SELECT id, version FROM rule_books WHERE version_name = $1 ORDER BY version DESC', [version_name]);
 
-        const entriesRes = await client.query('SELECT * FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY id', [ruleBookId]);
+        // CRITICAL FIX: Sort by row_index instead of alphabetical ID to preserve file order
+        const entriesRes = await client.query('SELECT * FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC', [ruleBookId]);
         
         const refTablesRes = await client.query('SELECT * FROM reference_tables WHERE rule_book_id = $1', [ruleBookId]);
 
