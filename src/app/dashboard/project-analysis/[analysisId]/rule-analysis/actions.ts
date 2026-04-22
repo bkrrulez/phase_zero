@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/db';
 import { getRuleBookDetails, getRuleBooks } from '@/app/dashboard/rule-books/actions';
-import { type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
+import { type RuleBook, type RuleBookEntry, type ProjectAnalysis, type ReferenceTable } from '@/lib/types';
 import { getProjectAnalysisDetails } from '@/app/dashboard/actions';
 import de from '@/locales/de.json';
 import en from '@/locales/en.json';
@@ -50,14 +50,18 @@ type RuleAnalysisResult = {
     revisedFulfillability: string | null;
 }
 
-type GetFilteredRuleBooksParams = {
-    projectAnalysisId: string;
-    newUse?: string[];
-    fulfillability?: string[];
-}
+const isParameter = (entry: RuleBookEntry) => {
+    const val = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
+    return val === 'parameter';
+};
+
+const isSectionMarker = (entry: RuleBookEntry) => {
+    const val = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
+    return val === 'section';
+};
 
 /**
- * Filter Logic Engine (Logic 1 + Logic 2)
+ * Filter Logic Engine (Logic 2)
  */
 function shouldIncludeEntry(entry: RuleBookEntry, context: { 
     lowerCaseNewUseWords: Set<string>, 
@@ -67,59 +71,58 @@ function shouldIncludeEntry(entry: RuleBookEntry, context: {
     const data = entry.data;
     const headers = Object.keys(data);
 
-    // 1. Ausschliessen Check (Logic 2 specific)
-    const ausschliessenVal = String(data['Ausschliessen'] || '').trim().toLowerCase();
-    if (['yes', 'ja'].includes(ausschliessenVal)) return false;
-
-    // 2. Fulfillability Check
-    const erfullbarkeitValue = String(data['Erfüllbarkeit'] || '').trim().toLowerCase();
-    let erfullbarkeitMatch = (erfullbarkeitValue === '' || erfullbarkeitValue === 'bitte auswaehlen');
-    if (!erfullbarkeitMatch) {
-        erfullbarkeitMatch = context.lowerCaseFulfillability.includes(erfullbarkeitValue);
+    // 1. Ausschliessen Check
+    const ausschliessenHeader = headers.find(h => h.trim().toLowerCase() === 'ausschliessen');
+    if (ausschliessenHeader) {
+        const val = String(data[ausschliessenHeader] || '').trim().toLowerCase();
+        if (['yes', 'ja'].includes(val)) return false;
     }
-    if (!erfullbarkeitMatch) return false;
+
+    // 2. Erfüllbarkeit Check
+    const erfullbarkeitHeader = headers.find(h => h.trim() === 'Erfüllbarkeit');
+    if (erfullbarkeitHeader) {
+        const val = String(data[erfullbarkeitHeader] || '').trim().toLowerCase();
+        if (val !== '' && val !== 'bitte auswaehlen') {
+            if (!context.lowerCaseFulfillability.includes(val)) return false;
+        }
+    }
 
     // 3. Nutzung Check (Scan all columns starting with "Nutzung")
-    const nutzungHeaders = headers.filter(h => h.toLowerCase().startsWith('nutzung'));
-    let nutzungMatch = false;
+    const nutzungHeaders = headers.filter(h => h.trim().toLowerCase().startsWith('nutzung'));
+    let nutzungMatch = (nutzungHeaders.length === 0); 
     
-    if (nutzungHeaders.length === 0) {
-        nutzungMatch = true; 
-    } else {
-        for (const h of nutzungHeaders) {
-            const val = String(data[h] || '').trim();
-            if (val === '' || val.toLowerCase() === 'bitte auswaehlen') {
-                nutzungMatch = true;
-                break;
-            }
-            const entryWords = new Set(val.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
-            const matchingWords = [...entryWords].filter(word => context.lowerCaseNewUseWords.has(word));
-            if (matchingWords.length >= 2 || (entryWords.size < 2 && matchingWords.length > 0)) {
-                nutzungMatch = true;
-                break;
-            }
+    for (const h of nutzungHeaders) {
+        const val = String(data[h] || '').trim();
+        if (val === '' || val.toLowerCase() === 'bitte auswaehlen') {
+            nutzungMatch = true;
+            break;
+        }
+        const entryWords = new Set(val.toLowerCase().replace(/[,;/]/g, ' ').split(' ').filter(Boolean));
+        const matchingWords = [...entryWords].filter(word => context.lowerCaseNewUseWords.has(word));
+        if (matchingWords.length >= 2 || (entryWords.size < 2 && matchingWords.length > 0)) {
+            nutzungMatch = true;
+            break;
         }
     }
     if (!nutzungMatch) return false;
 
-    // 4. Fluchtniveau Check (Logic 2 specific)
-    const hasFluchtniveauCol = headers.some(h => h === 'Fluchtniveau');
-    if (hasFluchtniveauCol) {
-        const fnVal = String(data['Fluchtniveau'] || '').trim().toLowerCase();
-        const level = context.projectEscapeLevel;
-        
-        if (fnVal !== '' && fnVal !== 'bitte auswaehlen') {
+    // 4. Fluchtniveau Check
+    const fluchtniveauHeader = headers.find(h => h.trim() === 'Fluchtniveau');
+    if (fluchtniveauHeader) {
+        const val = String(data[fluchtniveauHeader] || '').trim().toLowerCase();
+        if (val !== '' && val !== 'bitte auswaehlen') {
+            const level = context.projectEscapeLevel;
             if (level === null || level === undefined) {
                 return false;
             }
             
-            if (fnVal === 'unter 22') {
+            if (val === 'unter 22') {
                 if (level >= 22) return false;
-            } else if (fnVal === '22 bis 32') {
+            } else if (val === '22 bis 32') {
                 if (level < 22 || level >= 32) return false;
-            } else if (fnVal === 'ueber 22') {
+            } else if (val === 'ueber 22') {
                 if (level < 22) return false;
-            } else if (fnVal === 'ueber 32') {
+            } else if (val === 'ueber 32') {
                 if (level < 32) return false;
             }
         }
@@ -128,7 +131,7 @@ function shouldIncludeEntry(entry: RuleBookEntry, context: {
     return true;
 }
 
-export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
+export async function getFilteredRuleBooks(params: { projectAnalysisId: string, newUse?: string[], fulfillability?: string[] }) {
     const { projectAnalysisId, newUse: newUseParam, fulfillability: fulfillabilityParam } = params;
     
     const analysisDetails = await getProjectAnalysisDetails(projectAnalysisId);
@@ -161,7 +164,7 @@ export async function getFilteredRuleBooks(params: GetFilteredRuleBooksParams) {
     return filteredRuleBooksData;
 }
 
-const getSegmentKey = (gliederung: string): string | null => {
+const getSegmentKeyFromGliederung = (gliederung: string): string | null => {
     if (!gliederung || typeof gliederung !== 'string') return null;
     const match = gliederung.trim().match(/^\d+/);
     if (match) return match[0];
@@ -178,49 +181,116 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     const resultsMap = new Map<string, RuleAnalysisResult>();
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
 
-    return filteredData.map(({ ruleBook, entries }) => {
-        let lastSegmentKey: string | null = null;
-        const orderedSegmentKeys: string[] = [];
-        const segments = entries.reduce((acc, entry) => {
-            const gliederung = String(entry.data['Gliederung'] || '');
-            let currentSegmentKey = getSegmentKey(gliederung);
-            if (currentSegmentKey) { lastSegmentKey = currentSegmentKey; } else { currentSegmentKey = lastSegmentKey; }
-            const finalSegmentKey = currentSegmentKey || '0';
-            if (!acc[finalSegmentKey]) {
-                acc[finalSegmentKey] = [];
-                orderedSegmentKeys.push(finalSegmentKey);
-            }
-            acc[finalSegmentKey].push(entry);
-            return acc;
-        }, {} as Record<string, RuleBookEntry[]>);
+    const result = [];
 
-        const segmentStats = orderedSegmentKeys.map(key => {
-            const segmentEntries = segments[key];
-            const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
+    for (const { ruleBook, entries: filteredEntries } of filteredData) {
+        // Fetch ALL entries for this rulebook to build a stable segmentation map
+        const allEntriesRes = await db.query(
+            'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
+            [ruleBook.id]
+        );
+        const allEntries = allEntriesRes.rows;
+
+        const usesSectionType = allEntries.some(e => isSectionMarker({ data: e.data } as any));
+        
+        const entryIdToSegmentKey = new Map<string, string>();
+        const segmentKeyToMarkerText = new Map<string, string>();
+        
+        let currentSectionCounter = 0;
+        let lastSegmentKey: string | null = null;
+        let currentSegmentKey: string | null = null;
+
+        for (const entry of allEntries) {
+            const gliederung = String(entry.data['Gliederung'] || '');
+            const type = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
+            
+            if (usesSectionType) {
+                if (type === 'section') {
+                    currentSectionCounter++;
+                    currentSegmentKey = String(currentSectionCounter);
+                    segmentKeyToMarkerText.set(currentSegmentKey, String(entry.data['Text'] || ''));
+                }
+            } else {
+                const gKey = getSegmentKeyFromGliederung(gliederung);
+                if (gKey) {
+                    currentSegmentKey = gKey;
+                    if (!segmentKeyToMarkerText.has(currentSegmentKey)) {
+                        segmentKeyToMarkerText.set(currentSegmentKey, String(entry.data['Text'] || ''));
+                    }
+                }
+            }
+            
+            if (currentSegmentKey) {
+                lastSegmentKey = currentSegmentKey;
+            }
+            entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
+        }
+
+        // Group the FILTERED entries using the stable map
+        const segmentGroups: Record<string, RuleBookEntry[]> = {};
+        const orderedActiveKeys: string[] = [];
+
+        for (const entry of filteredEntries) {
+            const key = entryIdToSegmentKey.get(entry.id) || '0';
+            if (!segmentGroups[key]) {
+                segmentGroups[key] = [];
+                orderedActiveKeys.push(key);
+            }
+            segmentGroups[key].push(entry);
+        }
+
+        // Sort keys logically for old-style books (numerical sorting)
+        if (!usesSectionType) {
+            orderedActiveKeys.sort((a, b) => {
+                const numA = parseInt(a, 10);
+                const numB = parseInt(b, 10);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                if (!isNaN(numA)) return -1;
+                if (!isNaN(numB)) return 1;
+                return a.localeCompare(b);
+            });
+        }
+
+        const segmentsStats = orderedActiveKeys.map((key) => {
+            const group = segmentGroups[key];
+            const parameterEntries = group.filter(isParameter);
             const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
                 if (!analysis || !analysis.checklistStatus) return false;
                 if (['Not Fulfilled', 'Not verifiable'].includes(analysis.checklistStatus)) return !!analysis.revisedFulfillability;
                 return true;
             }).length;
+
             return {
                 key,
-                totalRows: segmentEntries.length,
+                displayIndex: 0, // Placeholder
+                totalRows: group.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
-                firstRowText: segmentEntries.find(e => e.data['Spaltentyp'] === 'Abschnitt')?.data['Text'] || segmentEntries[0]?.data['Text'] || '',
+                firstRowText: segmentKeyToMarkerText.get(key) || group[0]?.data['Text'] || '',
             };
         });
 
-        const displayedSegments = segmentStats.filter((s, index) => index === 0 || s.totalParameters > 0);
-        return {
+        // Filter out segments with 0 parameters unless it's the very first one (intro)
+        const visibleSegments = segmentsStats.filter((s, i) => i === 0 || s.totalParameters > 0);
+        
+        // Final sequential numbering for display (labels are always 1, 2, 3...)
+        const finalSegments = visibleSegments.map((s, i) => ({
+            ...s,
+            // Sequential numbering for new styled books. Actual paragraph numeric key for old styled books.
+            displayIndex: usesSectionType ? (i + 1) : parseInt(s.key, 10)
+        }));
+
+        result.push({
             ruleBook,
-            segments: displayedSegments,
-            totalRows: entries.length,
-            totalParameters: entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length,
-            totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
-        };
-    });
+            segments: finalSegments,
+            totalRows: filteredEntries.length,
+            totalParameters: filteredEntries.filter(isParameter).length,
+            totalCompleted: segmentsStats.reduce((sum, s) => sum + s.completedParameters, 0)
+        });
+    }
+    
+    return result;
 }
 
 export async function getOrderedSegments(projectAnalysisId: string): Promise<{ ruleBookId: string; segmentKey: string; }[]> {
@@ -265,25 +335,55 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
-    const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
-
-    const segmentEntries: RuleBookEntry[] = [];
+    // Fetch ALL entries for this rulebook to build a stable segmentation map
+    const allEntriesRes = await db.query(
+        'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
+        [ruleBookId]
+    );
+    const allEntries = allEntriesRes.rows;
+    const usesSectionType = allEntries.some(e => isSectionMarker({ data: e.data } as any));
+    
+    const entryIdToSegmentKey = new Map<string, string>();
+    let currentSectionCounter = 0;
     let lastSegmentKey: string | null = null;
-    for (const entry of filteredEntries) {
+    let currentSegmentKey: string | null = null;
+
+    for (const entry of allEntries) {
         const gliederung = String(entry.data['Gliederung'] || '');
-        let currentSegmentKey = getSegmentKey(gliederung);
-        if (currentSegmentKey) { lastSegmentKey = currentSegmentKey; } else { currentSegmentKey = lastSegmentKey; }
-        if ((currentSegmentKey || lastSegmentKey || '0') === segmentKey) segmentEntries.push(entry);
+        const type = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
+        
+        if (usesSectionType) {
+            if (type === 'section') {
+                currentSectionCounter++;
+                currentSegmentKey = String(currentSectionCounter);
+            }
+        } else {
+            const gKey = getSegmentKeyFromGliederung(gliederung);
+            if (gKey) currentSegmentKey = gKey;
+        }
+        
+        if (currentSegmentKey) lastSegmentKey = currentSegmentKey;
+        entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
     }
+
+    // Now filter the entries and collect those belonging to our target segmentKey
+    const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
+    const segmentEntries = filteredEntries.filter(e => (entryIdToSegmentKey.get(e.id) || '0') === segmentKey);
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
     const resultsMap = new Map<string, RuleAnalysisResult>();
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
 
+    // Get display index from segmented data to ensure consistency
+    const segmentedData = await getSegmentedRuleBookData(projectAnalysisId);
+    const bookData = segmentedData.find(b => b.ruleBook.id === ruleBookId);
+    const segmentStat = bookData?.segments.find(s => s.key === segmentKey);
+
     return {
         projectAnalysis: analysisDetails.analysis,
         ruleBook: ruleBookDetails.ruleBook,
         segmentKey,
+        displayIndex: segmentStat?.displayIndex || 0,
         entries: segmentEntries.map(entry => ({ ...entry, analysis: resultsMap.get(entry.id) })),
         referenceTables: ruleBookDetails.referenceTables || []
     };
@@ -296,12 +396,12 @@ export async function saveAnalysisResult(payload: { projectAnalysisId: string, r
     const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
     if (!targetEntry) throw new Error("Rule book entry not found.");
     
-    const sectionHeaderEntry = ruleBookDetails.entries.find(e => {
-        const gliederung = String(e.data['Gliederung'] || '');
-        return e.data['Spaltentyp'] === 'Abschnitt' && gliederung.trim() === segmentKey;
-    });
+    // Attempt to find the specific section name for display purposes in results
+    const fullEntriesRes = await db.query('SELECT data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC', [ruleBookId]);
+    const fullEntries = fullEntriesRes.rows;
+    const sectionRow = fullEntries.find(e => isSectionMarker({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey));
 
-    const topic = sectionHeaderEntry ? String(sectionHeaderEntry.data['Text'] || 'General') : 'General';
+    const topic = sectionRow ? String(sectionRow.data['Text'] || `Section ${segmentKey}`) : `Section ${segmentKey}`;
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
     

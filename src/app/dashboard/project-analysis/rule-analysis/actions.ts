@@ -51,12 +51,12 @@ type RuleAnalysisResult = {
 }
 
 const isParameter = (entry: RuleBookEntry) => {
-    const val = String(entry.data['Spaltentyp'] || '').toLowerCase();
+    const val = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
     return val === 'parameter';
 };
 
-const isSection = (entry: RuleBookEntry) => {
-    const val = String(entry.data['Spaltentyp'] || '').toLowerCase();
+const isSectionMarker = (entry: RuleBookEntry) => {
+    const val = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
     return val === 'section';
 };
 
@@ -184,14 +184,13 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     const result = [];
 
     for (const { ruleBook, entries: filteredEntries } of filteredData) {
-        // Fetch ALL entries for this rulebook to build a stable segmentation map
         const allEntriesRes = await db.query(
             'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
             [ruleBook.id]
         );
         const allEntries = allEntriesRes.rows;
 
-        const usesSectionType = allEntries.some(e => isSection({ data: e.data } as any));
+        const usesSectionType = allEntries.some(e => isSectionMarker({ data: e.data } as any));
         
         const entryIdToSegmentKey = new Map<string, string>();
         const segmentKeyToMarkerText = new Map<string, string>();
@@ -202,7 +201,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
         for (const entry of allEntries) {
             const gliederung = String(entry.data['Gliederung'] || '');
-            const type = String(entry.data['Spaltentyp'] || '').toLowerCase();
+            const type = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
             
             if (usesSectionType) {
                 if (type === 'section') {
@@ -226,7 +225,6 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
         }
 
-        // Group the FILTERED entries using the stable map
         const segmentGroups: Record<string, RuleBookEntry[]> = {};
         const orderedActiveKeys: string[] = [];
 
@@ -237,6 +235,18 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 orderedActiveKeys.push(key);
             }
             segmentGroups[key].push(entry);
+        }
+
+        // Sort keys logically for old-style books (numerical sorting)
+        if (!usesSectionType) {
+            orderedActiveKeys.sort((a, b) => {
+                const numA = parseInt(a, 10);
+                const numB = parseInt(b, 10);
+                if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                if (!isNaN(numA)) return -1;
+                if (!isNaN(numB)) return 1;
+                return a.localeCompare(b);
+            });
         }
 
         const segmentsStats = orderedActiveKeys.map((key) => {
@@ -251,7 +261,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
             return {
                 key,
-                displayIndex: 0, // Placeholder
+                displayIndex: 0,
                 totalRows: group.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
@@ -259,13 +269,11 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             };
         });
 
-        // Filter out segments with 0 parameters unless it's the very first one (intro)
         const visibleSegments = segmentsStats.filter((s, i) => i === 0 || s.totalParameters > 0);
-        
-        // Final sequential numbering for display
         const finalSegments = visibleSegments.map((s, i) => ({
             ...s,
-            displayIndex: i + 1
+            // Logic: Sequential (1, 2, 3) for new styled books. Paragraph Number for old styled books.
+            displayIndex: usesSectionType ? (i + 1) : parseInt(s.key, 10)
         }));
 
         result.push({
@@ -322,13 +330,12 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filterContext = { lowerCaseNewUseWords, lowerCaseFulfillability, projectEscapeLevel };
 
-    // Fetch ALL entries for this rulebook to build a stable segmentation map
     const allEntriesRes = await db.query(
         'SELECT id, data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC',
         [ruleBookId]
     );
     const allEntries = allEntriesRes.rows;
-    const usesSectionType = allEntries.some(e => isSection({ data: e.data } as any));
+    const usesSectionType = allEntries.some(e => isSectionMarker({ data: e.data } as any));
     
     const entryIdToSegmentKey = new Map<string, string>();
     let currentSectionCounter = 0;
@@ -337,7 +344,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     for (const entry of allEntries) {
         const gliederung = String(entry.data['Gliederung'] || '');
-        const type = String(entry.data['Spaltentyp'] || '').toLowerCase();
+        const type = String(entry.data['Spaltentyp'] || '').trim().toLowerCase();
         
         if (usesSectionType) {
             if (type === 'section') {
@@ -353,7 +360,6 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         entryIdToSegmentKey.set(entry.id, lastSegmentKey || '0');
     }
 
-    // Now filter the entries and collect those belonging to our target segmentKey
     const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
     const segmentEntries = filteredEntries.filter(e => (entryIdToSegmentKey.get(e.id) || '0') === segmentKey);
     
@@ -361,7 +367,6 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
     const resultsMap = new Map<string, RuleAnalysisResult>();
     analysisResults.forEach(r => resultsMap.set(r.ruleBookEntryId, r));
 
-    // Get display index from segmented data
     const segmentedData = await getSegmentedRuleBookData(projectAnalysisId);
     const bookData = segmentedData.find(b => b.ruleBook.id === ruleBookId);
     const segmentStat = bookData?.segments.find(s => s.key === segmentKey);
@@ -383,10 +388,9 @@ export async function saveAnalysisResult(payload: { projectAnalysisId: string, r
     const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
     if (!targetEntry) throw new Error("Rule book entry not found.");
     
-    // Attempt to find the specific section name for display purposes in results
     const fullEntriesRes = await db.query('SELECT data FROM rule_book_entries WHERE rule_book_id = $1 ORDER BY row_index ASC', [ruleBookId]);
     const fullEntries = fullEntriesRes.rows;
-    const sectionRow = fullEntries.find(e => isSection({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey));
+    const sectionRow = fullEntries.find(e => isSectionMarker({ data: e.data } as any) && String(e.data['Gliederung'] || '').startsWith(segmentKey));
 
     const topic = sectionRow ? String(sectionRow.data['Text'] || `Section ${segmentKey}`) : `Section ${segmentKey}`;
     const structure = (targetEntry.data['Gliederung'] as string) || '';
