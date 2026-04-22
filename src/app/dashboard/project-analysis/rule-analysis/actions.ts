@@ -50,6 +50,9 @@ type RuleAnalysisResult = {
     revisedFulfillability: string | null;
 }
 
+const isParameter = (entry: RuleBookEntry) => String(entry.data['Spaltentyp'] || '').toLowerCase() === 'parameter';
+const isSection = (entry: RuleBookEntry) => String(entry.data['Spaltentyp'] || '').toLowerCase() === 'section';
+
 /**
  * Filter Logic Engine (Logic 2)
  */
@@ -154,7 +157,7 @@ export async function getFilteredRuleBooks(params: { projectAnalysisId: string, 
     return filteredRuleBooksData;
 }
 
-const getSegmentKey = (gliederung: string): string | null => {
+const getSegmentKeyFromGliederung = (gliederung: string): string | null => {
     if (!gliederung || typeof gliederung !== 'string') return null;
     const match = gliederung.trim().match(/^\d+/);
     if (match) return match[0];
@@ -173,11 +176,31 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
     return filteredData.map(({ ruleBook, entries }) => {
         let lastSegmentKey: string | null = null;
+        let sectionCounter = 0;
         const orderedSegmentKeys: string[] = [];
+        
+        // Determine if this rulebook uses 'section' type delimiters
+        const usesSectionType = entries.some(isSection);
+
         const segments = entries.reduce((acc, entry) => {
             const gliederung = String(entry.data['Gliederung'] || '');
-            let currentSegmentKey = getSegmentKey(gliederung);
-            if (currentSegmentKey) { lastSegmentKey = currentSegmentKey; } else { currentSegmentKey = lastSegmentKey; }
+            let currentSegmentKey = null;
+
+            if (usesSectionType) {
+                if (isSection(entry)) {
+                    sectionCounter++;
+                    currentSegmentKey = String(sectionCounter);
+                }
+            } else {
+                currentSegmentKey = getSegmentKeyFromGliederung(gliederung);
+            }
+
+            if (currentSegmentKey) { 
+                lastSegmentKey = currentSegmentKey; 
+            } else { 
+                currentSegmentKey = lastSegmentKey; 
+            }
+
             const finalSegmentKey = currentSegmentKey || '0';
             if (!acc[finalSegmentKey]) {
                 acc[finalSegmentKey] = [];
@@ -189,7 +212,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
         const segmentStats = orderedSegmentKeys.map(key => {
             const segmentEntries = segments[key];
-            const parameterEntries = segmentEntries.filter(e => e.data['Spaltentyp'] === 'Parameter');
+            const parameterEntries = segmentEntries.filter(isParameter);
             const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
                 if (!analysis || !analysis.checklistStatus) return false;
@@ -201,7 +224,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 totalRows: segmentEntries.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
-                firstRowText: segmentEntries.find(e => e.data['Spaltentyp'] === 'Abschnitt')?.data['Text'] || segmentEntries[0]?.data['Text'] || '',
+                firstRowText: segmentEntries.find(isSection)?.data['Text'] || segmentEntries[0]?.data['Text'] || '',
             };
         });
 
@@ -210,7 +233,7 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             ruleBook,
             segments: displayedSegments,
             totalRows: entries.length,
-            totalParameters: entries.filter(e => e.data['Spaltentyp'] === 'Parameter').length,
+            totalParameters: entries.filter(isParameter).length,
             totalCompleted: segmentStats.reduce((sum, s) => sum + s.completedParameters, 0)
         };
     });
@@ -260,13 +283,31 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
 
+    const usesSectionType = filteredEntries.some(isSection);
     const segmentEntries: RuleBookEntry[] = [];
+    let sectionCounter = 0;
     let lastSegmentKey: string | null = null;
+
     for (const entry of filteredEntries) {
-        const gliederung = String(entry.data['Gliederung'] || '');
-        let currentSegmentKey = getSegmentKey(gliederung);
-        if (currentSegmentKey) { lastSegmentKey = currentSegmentKey; } else { currentSegmentKey = lastSegmentKey; }
-        if ((currentSegmentKey || lastSegmentKey || '0') === segmentKey) segmentEntries.push(entry);
+        let currentSegmentKey = null;
+        if (usesSectionType) {
+            if (isSection(entry)) {
+                sectionCounter++;
+                currentSegmentKey = String(sectionCounter);
+            }
+        } else {
+            currentSegmentKey = getSegmentKeyFromGliederung(String(entry.data['Gliederung'] || ''));
+        }
+
+        if (currentSegmentKey) { 
+            lastSegmentKey = currentSegmentKey; 
+        } else { 
+            currentSegmentKey = lastSegmentKey; 
+        }
+
+        if ((currentSegmentKey || '0') === segmentKey) {
+            segmentEntries.push(entry);
+        }
     }
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
@@ -289,12 +330,7 @@ export async function saveAnalysisResult(payload: { projectAnalysisId: string, r
     const targetEntry = ruleBookDetails.entries.find(e => e.id === ruleBookEntryId);
     if (!targetEntry) throw new Error("Rule book entry not found.");
     
-    const sectionHeaderEntry = ruleBookDetails.entries.find(e => {
-        const gliederung = String(e.data['Gliederung'] || '');
-        return e.data['Spaltentyp'] === 'Abschnitt' && gliederung.trim() === segmentKey;
-    });
-
-    const topic = sectionHeaderEntry ? String(sectionHeaderEntry.data['Text'] || 'General') : 'General';
+    const topic = `Section ${segmentKey}`;
     const structure = (targetEntry.data['Gliederung'] as string) || '';
     const text = (targetEntry.data['Text'] as string) || '';
     

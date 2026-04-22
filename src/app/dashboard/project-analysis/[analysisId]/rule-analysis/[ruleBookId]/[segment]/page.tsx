@@ -265,6 +265,7 @@ export default function SegmentDetailPage() {
                         {details.entries.map(entry => {
                             const currentAnalysis = analysisData[entry.id] || {};
                             const showRevisedFulfillability = ['Not Fulfilled', 'Not verifiable'].includes(currentAnalysis.checklistStatus || '');
+                            const isParameterRow = String(entry.data['Spaltentyp'] || '').toLowerCase() === 'parameter';
 
                             return (
                                 <TableRow key={entry.id}>
@@ -273,7 +274,7 @@ export default function SegmentDetailPage() {
                                         return (
                                             <TableCell key={`${entry.id}-${header}`} className="align-top border-b" style={getColumnStyle(header)}>
                                                 {header === 'projectChecklist' ? (
-                                                    entry.data['Spaltentyp'] === 'Parameter' ? (
+                                                    isParameterRow ? (
                                                         <Select
                                                             value={currentAnalysis.checklistStatus}
                                                             onValueChange={value => handleAnalysisChange(entry.id, 'checklistStatus', value)}

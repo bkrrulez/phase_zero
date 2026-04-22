@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -93,36 +94,39 @@ export function RuleBookSegmentViewer({ isOpen, onOpenChange, viewerProps }: Vie
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {details?.entries.map(entry => (
-                                        <TableRow 
-                                            key={entry.id} 
-                                            ref={entry.id === highlightEntryId ? highlightRef : null}
-                                            className={cn(entry.id === highlightEntryId && 'bg-blue-100 dark:bg-blue-900/50')}
-                                        >
-                                            <TableCell className="align-top"><LatexRenderer text={String(entry.data['Gliederung'] ?? '')} /></TableCell>
-                                            <TableCell className="align-top"><LatexRenderer text={String(entry.data['Text'] ?? '')} /></TableCell>
-                                            <TableCell className="align-top">
-                                                {entry.data['Spaltentyp'] === 'Parameter' ? (
-                                                    <Select value={entry.analysis?.checklistStatus || ''} disabled>
-                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : <span className="text-muted-foreground">-</span>}
-                                            </TableCell>
-                                            <TableCell className="align-top">
-                                                {['Not Fulfilled', 'Not verifiable'].includes(entry.analysis?.checklistStatus || '') ? (
-                                                     <Select value={entry.analysis?.revisedFulfillability || ''} disabled>
-                                                        <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any)}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : <span className="text-muted-foreground">-</span>}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {details?.entries.map(entry => {
+                                        const isParameterRow = String(entry.data['Spaltentyp'] || '').toLowerCase() === 'parameter';
+                                        return (
+                                            <TableRow 
+                                                key={entry.id} 
+                                                ref={entry.id === highlightEntryId ? highlightRef : null}
+                                                className={cn(entry.id === highlightEntryId && 'bg-blue-100 dark:bg-blue-900/50')}
+                                            >
+                                                <TableCell className="align-top"><LatexRenderer text={String(entry.data['Gliederung'] ?? '')} /></TableCell>
+                                                <TableCell className="align-top"><LatexRenderer text={String(entry.data['Text'] ?? '')} /></TableCell>
+                                                <TableCell className="align-top">
+                                                    {isParameterRow ? (
+                                                        <Select value={entry.analysis?.checklistStatus || ''} disabled>
+                                                            <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                                                            <SelectContent>
+                                                                {checklistOptions.map(opt => <SelectItem key={opt.key} value={opt.value}>{t(opt.key as any)}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : <span className="text-muted-foreground">-</span>}
+                                                </TableCell>
+                                                <TableCell className="align-top">
+                                                    {['Not Fulfilled', 'Not verifiable'].includes(entry.analysis?.checklistStatus || '') ? (
+                                                         <Select value={entry.analysis?.revisedFulfillability || ''} disabled>
+                                                            <SelectTrigger><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger>
+                                                            <SelectContent>
+                                                                {fulfillabilityOptions.map(opt => <SelectItem key={opt} value={opt}>{t(opt as any)}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : <span className="text-muted-foreground">-</span>}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         )}
