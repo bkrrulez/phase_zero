@@ -130,6 +130,15 @@ function shouldIncludeEntry(entry: RuleBookEntry, context: {
     return true;
 }
 
+const getSegmentKeyFromGliederung = (gliederung: string): string | null => {
+    if (!gliederung || typeof gliederung !== 'string') return null;
+    const match = gliederung.trim().match(/^\d+/);
+    if (match) return match[0];
+    const paragraphMatch = gliederung.trim().match(/^§\s*(\d+)/);
+    if (paragraphMatch && paragraphMatch[1]) return paragraphMatch[1];
+    return null;
+};
+
 export async function getFilteredRuleBooks(params: { projectAnalysisId: string, newUse?: string[], fulfillability?: string[] }) {
     const { projectAnalysisId, newUse: newUseParam, fulfillability: fulfillabilityParam } = params;
     
@@ -162,15 +171,6 @@ export async function getFilteredRuleBooks(params: { projectAnalysisId: string, 
     }
     return filteredRuleBooksData;
 }
-
-const getSegmentKeyFromGliederung = (gliederung: string): string | null => {
-    if (!gliederung || typeof gliederung !== 'string') return null;
-    const match = gliederung.trim().match(/^\d+/);
-    if (match) return match[0];
-    const paragraphMatch = gliederung.trim().match(/^§\s*(\d+)/);
-    if (paragraphMatch && paragraphMatch[1]) return paragraphMatch[1];
-    return null;
-};
 
 export async function getSegmentedRuleBookData(projectAnalysisId: string) {
     const filteredData = await getFilteredRuleBooks({ projectAnalysisId });
@@ -257,9 +257,14 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 return true;
             }).length;
 
+            // NEW: Determine displayIndex based on first non-blank Gliederung in segment
+            const firstRowWithGliederung = group.find(e => String(e.data['Gliederung'] || '').trim());
+            const extractedNum = firstRowWithGliederung ? getSegmentKeyFromGliederung(String(firstRowWithGliederung.data['Gliederung'])) : null;
+
             return {
                 key,
                 internalId: segmentKeyToInternalId.get(key) || '0',
+                displayIndex: extractedNum ? parseInt(extractedNum, 10) : (usesSectionType ? (orderedActiveKeys.indexOf(key) + 1) : parseInt(segmentKeyToInternalId.get(key) || '0', 10)),
                 totalRows: group.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
@@ -267,15 +272,12 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
             };
         });
 
+        // Filter out segments with 0 parameters unless it's the very first one (intro)
         const visibleSegments = segmentsStats.filter((s, i) => i === 0 || s.totalParameters > 0);
-        const finalSegments = visibleSegments.map((s, i) => ({
-            ...s,
-            displayIndex: usesSectionType ? (i + 1) : parseInt(s.internalId, 10)
-        }));
 
         result.push({
             ruleBook,
-            segments: finalSegments,
+            segments: visibleSegments,
             totalRows: filteredEntries.length,
             totalParameters: filteredEntries.filter(isParameter).length,
             totalCompleted: segmentsStats.reduce((sum, s) => sum + s.completedParameters, 0)
