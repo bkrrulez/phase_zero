@@ -11,7 +11,7 @@ import { ArrowLeft, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useLanguage } from '../../../contexts/LanguageContext';
+import { useLanguage } from '@/app/dashboard/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminPanel } from '@/app/dashboard/contexts/AdminPanelContext';
 import { LatexRenderer } from '@/app/dashboard/rule-books/components/latex-renderer';
