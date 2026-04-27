@@ -60,6 +60,31 @@ const isSectionMarker = (entry: RuleBookEntry) => {
 };
 
 /**
+ * Helper to reduce consecutive rows typed as 'header' to only the last one in the sequence.
+ */
+function reduceConsecutiveHeaders(entries: RuleBookEntry[]) {
+    const result = [];
+    for (let i = 0; i < entries.length; i++) {
+        const current = entries[i];
+        const currentType = String(current.data['Spaltentyp'] || '').trim().toLowerCase();
+        
+        if (currentType === 'header') {
+            // Look ahead to see if the next row is also a header
+            if (i < entries.length - 1) {
+                const next = entries[i + 1];
+                const nextType = String(next.data['Spaltentyp'] || '').trim().toLowerCase();
+                if (nextType === 'header') {
+                    // Skip this header, as it's not the last in a consecutive group
+                    continue;
+                }
+            }
+        }
+        result.push(current);
+    }
+    return result;
+}
+
+/**
  * Filter Logic Engine
  */
 function shouldIncludeEntry(entry: RuleBookEntry, context: { 
@@ -249,7 +274,9 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
 
         const segmentsStats = orderedActiveKeys.map((key) => {
             const group = segmentGroups[key];
-            const parameterEntries = group.filter(isParameter);
+            const visibleGroup = reduceConsecutiveHeaders(group); // Apply header reduction logic
+            
+            const parameterEntries = visibleGroup.filter(isParameter);
             const completedCount = parameterEntries.filter(e => {
                 const analysis = resultsMap.get(e.id);
                 if (!analysis || !analysis.checklistStatus) return false;
@@ -257,30 +284,28 @@ export async function getSegmentedRuleBookData(projectAnalysisId: string) {
                 return true;
             }).length;
 
-            // NEW: Determine displayIndex based on first non-blank Gliederung in segment
-            const firstRowWithGliederung = group.find(e => String(e.data['Gliederung'] || '').trim());
+            const firstRowWithGliederung = visibleGroup.find(e => String(e.data['Gliederung'] || '').trim());
             const extractedNum = firstRowWithGliederung ? getSegmentKeyFromGliederung(String(firstRowWithGliederung.data['Gliederung'])) : null;
 
             return {
                 key,
                 internalId: segmentKeyToInternalId.get(key) || '0',
                 displayIndex: extractedNum ? parseInt(extractedNum, 10) : (usesSectionType ? (orderedActiveKeys.indexOf(key) + 1) : parseInt(segmentKeyToInternalId.get(key) || '0', 10)),
-                totalRows: group.length,
+                totalRows: visibleGroup.length,
                 totalParameters: parameterEntries.length,
                 completedParameters: completedCount,
-                firstRowText: segmentKeyToMarkerText.get(key) || group[0]?.data['Text'] || '',
+                firstRowText: segmentKeyToMarkerText.get(key) || visibleGroup[0]?.data['Text'] || '',
             };
         });
 
-        // Filter out segments with 0 parameters unless it's the very first one (intro)
         const visibleSegments = segmentsStats.filter((s, i) => i === 0 || s.totalParameters > 0);
 
         result.push({
             ruleBook,
             segments: visibleSegments,
-            totalRows: filteredEntries.length,
-            totalParameters: filteredEntries.filter(isParameter).length,
-            totalCompleted: segmentsStats.reduce((sum, s) => sum + s.completedParameters, 0)
+            totalRows: visibleSegments.reduce((sum, s) => sum + s.totalRows, 0),
+            totalParameters: visibleSegments.reduce((sum, s) => sum + s.totalParameters, 0),
+            totalCompleted: visibleSegments.reduce((sum, s) => sum + s.completedParameters, 0)
         });
     }
     
@@ -361,6 +386,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
 
     const filteredEntries = ruleBookDetails.entries.filter(entry => shouldIncludeEntry(entry, filterContext));
     const segmentEntries = filteredEntries.filter(e => entryIdToSegmentKey.get(e.id) === segmentKey);
+    const visibleEntries = reduceConsecutiveHeaders(segmentEntries); // Apply header reduction logic
     
     const analysisResults = await getAnalysisResults(projectAnalysisId);
     const resultsMap = new Map<string, RuleAnalysisResult>();
@@ -375,7 +401,7 @@ export async function getSegmentDetails({ projectAnalysisId, ruleBookId, segment
         ruleBook: ruleBookDetails.ruleBook,
         segmentKey,
         displayIndex: segmentStat?.displayIndex || 0,
-        entries: segmentEntries.map(entry => ({ ...entry, analysis: resultsMap.get(entry.id) })),
+        entries: visibleEntries.map(entry => ({ ...entry, analysis: resultsMap.get(entry.id) })),
         referenceTables: ruleBookDetails.referenceTables || []
     };
 }
